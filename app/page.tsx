@@ -19,7 +19,7 @@ export default function Home() {
         </p>
 
         <h1 className="max-w-4xl text-6xl font-bold leading-tight tracking-tight md:text-8xl">
-          Věci mají kolovat!!
+          Věci mají kolovat.
         </h1>
 
         <p className="mt-8 max-w-2xl text-xl text-gray-600">
