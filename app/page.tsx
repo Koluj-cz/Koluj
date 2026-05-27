@@ -15,7 +15,7 @@ export default function Home() {
       <section className="flex flex-col items-center justify-center px-6 py-24 text-center">
 
         <p className="mb-4 rounded-full bg-black px-4 py-1 text-sm text-white">
-          Již brzy
+          Testovací verze
         </p>
 
         <h1 className="max-w-4xl text-6xl font-bold leading-tight tracking-tight md:text-8xl">
