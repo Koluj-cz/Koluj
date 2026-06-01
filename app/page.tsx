@@ -261,7 +261,7 @@ export default function HomePage() {
           </div>
 
           {viewMode === "list" ? (
-            <div className="grid items-stretch gap-8 xl:grid-cols-[1fr_780px]">
+            <div className="grid items-stretch gap-8 xl:grid-cols-[1fr_780px]"> 
               <div className="space-y-4">
                 {filteredItems.map((item) => (
                   <ItemCard key={item.id} item={item} />
