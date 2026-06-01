@@ -1,43 +1,456 @@
-export default function Home() {
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
+import Image from "next/image";
+import Link from "next/link";
+import {
+  ArrowRight,
+  Bike,
+  ChevronDown,
+  Drill,
+  Leaf,
+  LocateFixed,
+  Map,
+  MapPin,
+  Package,
+  Search,
+  ShieldCheck,
+  SlidersHorizontal,
+  Sparkles,
+  Star,
+  Users,
+} from "lucide-react";
+import { supabase } from "@/lib/supabase";
+
+const ItemsMap = dynamic(() => import("@/app/components/ItemsMap"), {
+  ssr: false,
+});
+
+type Item = {
+  id: string;
+  title: string;
+  description: string | null;
+  category: string;
+  condition: string | null;
+  pickup_place: string;
+  pickup_latitude: number | null;
+  pickup_longitude: number | null;
+  price_amount: number | null;
+  price_unit: string | null;
+  primary_image_url: string | null;
+  created_at: string;
+  owner_id: string | null;
+};
+
+const categoryLabels: Record<string, string> = {
+  naradi: "Nářadí",
+  elektronika: "Elektronika",
+  sport: "Sport",
+  outdoor: "Outdoor",
+  dum_zahrada: "Dům a zahrada",
+  auto_moto: "Auto/Moto",
+  foto_video: "Foto a video",
+  party_akce: "Party a akce",
+  ostatni: "Ostatní",
+};
+
+const conditionLabels: Record<string, string> = {
+  new: "Nové",
+  like_new: "Jako nové",
+  good: "Dobrý stav",
+  used: "Běžně používané",
+};
+
+function translatePriceUnit(unit: string | null) {
+  if (unit === "hour") return "hodinu";
+  if (unit === "day") return "den";
+  if (unit === "week") return "týden";
+  if (unit === "month") return "měsíc";
+  if (unit === "piece") return "půjčení";
+  return "";
+}
+
+export default function HomePage() {
+  const [items, setItems] = useState<Item[]>([]);
+  const [search, setSearch] = useState("");
+  const [viewMode, setViewMode] = useState<"list" | "map">("list");
+  const [totalItems, setTotalItems] = useState(0);
+  const [showAllCategories, setShowAllCategories] = useState(false);
+  const [userLocation, setUserLocation] = useState<{
+  latitude: number;
+  longitude: number;
+} | null>(null);
+
+  useEffect(() => {
+    loadItems();
+  }, []);
+
+  async function loadItems() {
+    const { data, count } = await supabase
+      .from("items")
+      .select("*", { count: "exact" })
+      .eq("is_active", true)
+      .order("created_at", { ascending: false })
+      .limit(4);
+
+    setItems(data || []);
+    setTotalItems(count || 0);
+  }
+
+  function useMyLocation() {
+    if (!navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition((position) => {
+      setUserLocation({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+      });
+    });
+  }
+
+  const filteredItems = useMemo(() => {
+    if (!search.trim()) return items;
+
+    const query = search.toLowerCase();
+
+    return items.filter((item) =>
+      `${item.title} ${item.category} ${item.pickup_place}`
+        .toLowerCase()
+        .includes(query)
+    );
+  }, [items, search]);
+
   return (
-    <main className="min-h-screen bg-[#f8f8f5] text-black">
+    <main className="min-h-screen">
+      <div className="koluj-shell-wide">
+        <header className="mb-8 flex items-center justify-between">
+          <Link
+            href="/"
+            className="text-4xl font-black tracking-tight text-[var(--koluj-green)]"
+          >
+            KOLUJ
+          </Link>
 
-      <nav className="flex items-center justify-between px-8 py-6">
-        <h1 className="text-2xl font-bold tracking-tight">
-          KOLUJ
-        </h1>
+          <nav className="hidden items-center gap-8 font-bold text-[var(--koluj-muted)] md:flex">
+            <a href="#explore">Prozkoumat</a>
+            <a href="#mapa">Mapa</a>
+            <a href="#how">Jak to funguje</a>
+          </nav>
 
-        <button className="rounded-full border border-black px-5 py-2 text-sm transition hover:bg-black hover:text-white">
-          Přihlásit se
-        </button>
-      </nav>
+          <Link href="/dashboard" className="koluj-button px-6 py-3">
+            Můj prostor
+          </Link>
+        </header>
 
-      <section className="flex flex-col items-center justify-center px-6 py-24 text-center">
+        <section className="relative min-h-[560px] overflow-hidden py-6">
+          <div className="relative z-20 max-w-3xl">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-4 py-2 text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
+              <Leaf size={16} />
+              Půjčuj si chytře, žij udržitelně
+            </div>
 
-        <p className="mb-4 rounded-full bg-black px-4 py-1 text-sm text-white">
-          Testovací verze
-        </p>
+            <h1 className="koluj-serif max-w-3xl text-6xl font-bold leading-tight tracking-tight md:text-7xl">
+              Půjčuj si věci od lidí ve svém okolí
+            </h1>
 
-        <h1 className="max-w-4xl text-6xl font-bold leading-tight tracking-tight md:text-8xl">
-          Věci mají kolovat.
-        </h1>
+            <p className="mt-6 max-w-2xl text-xl leading-relaxed text-[var(--koluj-muted)]">
+              Ušetři peníze, místo i planetu. Najdi věci, které zrovna
+              potřebuješ, a půjč si je od lidí kolem sebe.
+            </p>
 
-        <p className="mt-8 max-w-2xl text-xl text-gray-600">
-          Půjčuj si věci od lidí ve svém okolí místo jejich kupování.
-        </p>
+            <div className="mt-8 flex max-w-3xl flex-col gap-3 rounded-3xl border border-[var(--koluj-border)] bg-white p-3 shadow-sm md:flex-row">
+              <div className="flex flex-1 items-center gap-3 px-3">
+                <Search size={20} className="text-[var(--koluj-muted)]" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Co hledáš? Např. stan, vrtačka..."
+                  className="w-full bg-transparent py-3 outline-none"
+                />
+              </div>
 
-        <div className="mt-12 flex gap-4">
-          <button className="rounded-2xl bg-black px-8 py-4 text-white transition hover:opacity-90">
-            Začít
-          </button>
+              <button
+                type="button"
+                onClick={useMyLocation}
+                className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--koluj-border)] px-5 py-3 font-bold text-[var(--koluj-muted)] transition hover:bg-[var(--koluj-bg)]"
+              >
+                <LocateFixed size={18} />
+                Okolo mě
+              </button>
 
-          <button className="rounded-2xl border border-gray-300 bg-white px-8 py-4 transition hover:bg-gray-100">
-            Jak to funguje
-          </button>
+              <button className="koluj-button flex items-center justify-center gap-2 px-6 py-3">
+                Hledat
+                <ArrowRight size={18} />
+              </button>
+            </div>
+
+            <div className="mt-5 flex flex-wrap gap-3">
+              <CategoryChip icon={<Drill size={16} />} label="Nářadí" />
+              <CategoryChip icon={<Bike size={16} />} label="Sport" />
+              <CategoryChip icon={<Package size={16} />} label="Elektronika" />
+              <CategoryChip icon={<Sparkles size={16} />} label="Volný čas" />
+
+              {showAllCategories && (
+                <>
+                  <CategoryChip icon={<Package size={16} />} label="Outdoor" />
+                  <CategoryChip icon={<Package size={16} />} label="Dům a zahrada" />
+                  <CategoryChip icon={<Package size={16} />} label="Foto a video" />
+                  <CategoryChip icon={<Package size={16} />} label="Ostatní" />
+                </>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setShowAllCategories((prev) => !prev)}
+                className="flex items-center gap-2 px-3 py-3 font-bold text-[var(--koluj-muted)]"
+              >
+                {showAllCategories ? "Zobrazit méně" : "Zobrazit více"}
+                <ChevronDown size={18} />
+              </button>
+            </div>
+          </div>
+
+          <div className="pointer-events-none absolute right-0 top-0 z-0 hidden w-[60%] lg:block">
+            <Image
+              src="/hero-koluj-1.png"
+              alt="KOLUJ"
+              width={1536}
+              height={1024}
+              priority
+              className="ml-auto h-auto w-full max-w-[1380px] object-contain"
+            />
+          </div>
+        </section>
+
+        <section id="explore" className="mt-4">
+          <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
+            <div>
+              <h2 className="text-4xl font-black">Věci ve tvém okolí</h2>
+              <p className="mt-2 text-[var(--koluj-muted)]">
+                Celkem {totalItems} aktivních věcí. Na hlavní stránce ukazujeme
+                nejnovější 4.
+              </p>
+            </div>
+
+            <div className="flex rounded-2xl border border-[var(--koluj-border)] bg-white p-1">
+              <button
+                onClick={() => setViewMode("list")}
+                className={`flex items-center gap-2 rounded-xl px-5 py-3 font-bold ${
+                  viewMode === "list"
+                    ? "bg-[var(--koluj-bg)] text-[var(--koluj-green)]"
+                    : "text-[var(--koluj-muted)]"
+                }`}
+              >
+                <SlidersHorizontal size={18} />
+                Seznam
+              </button>
+
+              <button
+                onClick={() => setViewMode("map")}
+                className={`flex items-center gap-2 rounded-xl px-5 py-3 font-bold ${
+                  viewMode === "map"
+                    ? "bg-[var(--koluj-bg)] text-[var(--koluj-green)]"
+                    : "text-[var(--koluj-muted)]"
+                }`}
+              >
+                <Map size={18} />
+                Mapa
+              </button>
+            </div>
+          </div>
+
+          {viewMode === "list" ? (
+            <div className="grid items-stretch gap-8 xl:grid-cols-[1fr_780px]">
+              <div className="space-y-4">
+                {filteredItems.map((item) => (
+                  <ItemCard key={item.id} item={item} />
+                ))}
+
+                {filteredItems.length === 0 && (
+                  <div className="koluj-card p-10 text-center">
+                    <h3 className="text-2xl font-black">Nic nenalezeno</h3>
+                    <p className="mt-2 text-[var(--koluj-muted)]">
+                      Zkus jiné hledání nebo kategorii.
+                    </p>
+                  </div>
+                )}
+
+              <div className="mt-6">
+                <Link
+                  href="/veci"
+                  className="koluj-button inline-flex items-center gap-2 px-6 py-3"
+                >
+                  Zobrazit všechny věci
+                  <ArrowRight size={18} />
+                </Link>
+              </div>
+              </div>
+
+              <div className="hidden xl:block">
+                <div className="relative h-[780px] overflow-hidden rounded-[2rem] shadow-sm">
+                  <ItemsMap items={items} userLocation={userLocation} />
+
+                  <button
+                    type="button"
+                    onClick={useMyLocation}
+                    className="absolute bottom-5 right-5 z-[500] flex items-center gap-2 rounded-2xl bg-white px-5 py-3 font-bold shadow-sm"
+                  >
+                    <LocateFixed size={18} />
+                    Moje poloha
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <section className="koluj-card p-5">
+              <div className="relative h-[720px] overflow-hidden rounded-[2rem]">
+                <ItemsMap items={items} userLocation={userLocation} />
+
+                <button
+                  type="button"
+                  onClick={useMyLocation}
+                  className="absolute bottom-5 right-5 z-[500] flex items-center gap-2 rounded-2xl bg-white px-5 py-3 font-bold shadow-sm"
+                >
+                  <LocateFixed size={18} />
+                  Moje poloha
+                </button>
+              </div>
+            </section>
+          )}
+        </section>
+
+        <section id="how" className="mt-16 grid gap-6 md:grid-cols-4">
+          <Feature
+            icon={<Users size={28} />}
+            title="Místní komunita"
+            text="Půjčuj si od lidí ve svém okolí."
+          />
+          <Feature
+            icon={<Leaf size={28} />}
+            title="Udržitelně"
+            text="Dáváme věcem druhou šanci."
+          />
+          <Feature
+            icon={<ShieldCheck size={28} />}
+            title="Bezpečně"
+            text="Profil a domluva před předáním."
+          />
+          <Feature
+            icon={<MapPin size={28} />}
+            title="Blízko"
+            text="Najdi věci kolem sebe."
+          />
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function ItemCard({ item }: { item: Item }) {
+  return (
+    <Link
+      href={`/items/${item.id}`}
+      className="koluj-card grid overflow-hidden p-0 transition hover:-translate-y-1 md:grid-cols-[145px_1fr]"
+    >
+      <div className="relative h-36 bg-[var(--koluj-bg)] md:h-full">
+        {item.primary_image_url ? (
+          <img
+            src={item.primary_image_url}
+            alt={item.title}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full items-center justify-center text-sm text-[var(--koluj-muted)]">
+            Bez fotky
+          </div>
+        )}
+
+        {item.price_amount && item.price_unit && (
+          <div className="absolute bottom-3 left-3 rounded-xl bg-[var(--koluj-green)] px-3 py-1.5 text-xs font-black text-white">
+            {item.price_amount} Kč / {translatePriceUnit(item.price_unit)}
+          </div>
+        )}
+      </div>
+
+      <div className="p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="text-2xl font-black">{item.title}</h3>
+
+            <p className="mt-1 text-sm font-bold text-[var(--koluj-green)]">
+              {categoryLabels[item.category] || item.category}
+            </p>
+          </div>
+
+          <span className="rounded-full bg-[#DDF5DF] px-3 py-1 text-xs font-black uppercase text-[#16803A]">
+            Volné
+          </span>
         </div>
 
-      </section>
+        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[var(--koluj-muted)]">
+          <span className="flex items-center gap-1.5">
+            <MapPin size={15} />
+            {item.pickup_place}
+          </span>
 
-    </main>
+          {item.condition && (
+            <span className="flex items-center gap-1.5">
+              <Star size={15} />
+              {conditionLabels[item.condition] || item.condition}
+            </span>
+          )}
+
+          <span>
+            Přidáno {new Date(item.created_at).toLocaleDateString("cs-CZ")}
+          </span>
+
+          <span>Přidal uživatel</span>
+        </div>
+
+        {item.description && (
+          <p className="mt-3 line-clamp-2 text-sm text-[var(--koluj-muted)]">
+            {item.description}
+          </p>
+        )}
+      </div>
+    </Link>
+  );
+}
+
+function CategoryChip({
+  icon,
+  label,
+}: {
+  icon: React.ReactNode;
+  label: string;
+}) {
+  return (
+    <button className="flex items-center gap-2 rounded-2xl border border-[var(--koluj-border)] bg-white px-4 py-3 font-bold text-[var(--koluj-muted)] transition hover:bg-[var(--koluj-bg)]">
+      {icon}
+      {label}
+    </button>
+  );
+}
+
+function Feature({
+  icon,
+  title,
+  text,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  text: string;
+}) {
+  return (
+    <div className="koluj-card p-6">
+      <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-[var(--koluj-green)]">
+        {icon}
+      </div>
+
+      <h3 className="text-xl font-black">{title}</h3>
+
+      <p className="mt-2 text-[var(--koluj-muted)]">{text}</p>
+    </div>
   );
 }

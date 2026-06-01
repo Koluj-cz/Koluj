@@ -1,12 +1,115 @@
 @import "tailwindcss";
+@import "leaflet/dist/leaflet.css";
 
 :root {
-  --background: #f8f8f5;
-  --foreground: #111111;
+  --koluj-bg: #efebdd;
+  --koluj-surface: #fffdf8;
+  --koluj-text: #1f1f1a;
+  --koluj-muted: #6f6a5f;
+  --koluj-green: #6b7f32;
+  --koluj-green-dark: #536426;
+  --koluj-border: #e3ded2;
+  --koluj-shadow: 0 18px 50px rgba(31, 31, 26, 0.08);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--koluj-bg);
+  color: var(--koluj-text);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+.koluj-shell {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 24px 32px 64px;
+}
+
+.koluj-shell-wide {
+  max-width: 1800px;
+  margin: 0 auto;
+  padding: 32px 24px 64px;
+}
+
+.koluj-header {
+  background: var(--koluj-surface);
+  border: 1px solid var(--koluj-border);
+  border-radius: 28px;
+  box-shadow: var(--koluj-shadow);
+}
+
+.koluj-card {
+  background: var(--koluj-surface);
+  border: 1px solid var(--koluj-border);
+  border-radius: 28px;
+  box-shadow: var(--koluj-shadow);
+}
+
+.koluj-button {
+  background: var(--koluj-green);
+  color: white;
+  border-radius: 16px;
+  font-weight: 700;
+  transition: 0.2s ease;
+}
+
+.koluj-button:hover {
+  background: var(--koluj-green-dark);
+  transform: translateY(-1px);
+}
+
+.koluj-link {
+  color: var(--koluj-green);
+  font-weight: 700;
+}
+
+.koluj-serif {
+  font-family: var(--font-playfair), Georgia, serif;
+}
+
+.koluj-hero-illustration {
+  width: 420px;
+  height: 260px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 48px;
+
+  background:
+    radial-gradient(
+      circle at center,
+      #e7e2d0 0%,
+      #efe9db 60%,
+      transparent 100%
+    );
+
+  font-size: 90px;
+}
+
+.koluj-input {
+  width: 100%;
+  border: 1px solid #d6cfbf;
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 14px 16px;
+  outline: none;
+  transition: 0.2s ease;
+}
+
+.koluj-input::placeholder {
+  color: #9b9488;
+}
+
+.koluj-input:focus {
+  border-color: var(--koluj-green);
+  box-shadow: 0 0 0 3px rgba(107, 127, 50, 0.12);
+}
+
+.koluj-map-count {
+  background: transparent !important;
+  border: 0 !important;
+  box-shadow: none !important;
+  color: white !important;
+  font-weight: 900 !important;
 }

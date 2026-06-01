@@ -1,0 +1,652 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  ArrowLeft,
+  Camera,
+  Check,
+  MapPin,
+  Package,
+  Plus,
+  Star,
+  X,
+} from "lucide-react";
+import toast from "react-hot-toast";
+import { supabase } from "@/lib/supabase";
+
+type PlaceSuggestion = {
+  name: string;
+  label?: string;
+  location?: string;
+  position: { lat: number; lon: number };
+};
+
+export default function NewItemPage() {
+  const router = useRouter();
+
+  const [loading, setLoading] = useState(false);
+  const [photos, setPhotos] = useState<File[]>([]);
+  const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
+  const [mainPhotoIndex, setMainPhotoIndex] = useState(0);
+  const [placeSuggestions, setPlaceSuggestions] = useState<PlaceSuggestion[]>([]);
+
+  const [form, setForm] = useState({
+    title: "",
+    description: "",
+    category: "",
+    condition: "",
+    price_amount: "",
+    price_unit: "day",
+    price_note: "",
+    deposit: "",
+    pickup_place: "",
+    pickup_latitude: null as number | null,
+    pickup_longitude: null as number | null,
+    handover_options: [] as string[],
+    contact_note: "",
+    status: "available",
+    availability_type: "long_term",
+    available_from: "",
+    available_to: "",
+  });
+
+  function updateField(field: string, value: string) {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function toggleHandoverOption(option: string) {
+    setForm((prev) => {
+      const exists = prev.handover_options.includes(option);
+
+      return {
+        ...prev,
+        handover_options: exists
+          ? prev.handover_options.filter((item) => item !== option)
+          : [...prev.handover_options, option],
+      };
+    });
+  }
+
+  function handlePhotos(files: FileList | null) {
+    if (!files) return;
+
+    const selectedFiles = Array.from(files);
+
+    if (photos.length + selectedFiles.length > 8) {
+      toast.error("Můžeš nahrát maximálně 8 fotek");
+      return;
+    }
+
+    const oversized = selectedFiles.find((file) => file.size > 5 * 1024 * 1024);
+
+    if (oversized) {
+      toast.error("Jedna z fotek je větší než 5 MB");
+      return;
+    }
+
+    setPhotos([...photos, ...selectedFiles]);
+    setPhotoPreviews([
+      ...photoPreviews,
+      ...selectedFiles.map((file) => URL.createObjectURL(file)),
+    ]);
+  }
+
+  function removePhoto(index: number) {
+    const newPhotos = photos.filter((_, i) => i !== index);
+    const newPreviews = photoPreviews.filter((_, i) => i !== index);
+
+    setPhotos(newPhotos);
+    setPhotoPreviews(newPreviews);
+
+    if (mainPhotoIndex === index) {
+      setMainPhotoIndex(0);
+    } else if (mainPhotoIndex > index) {
+      setMainPhotoIndex(mainPhotoIndex - 1);
+    }
+  }
+
+  async function searchPlaces(value: string) {
+    setForm({
+      ...form,
+      pickup_place: value,
+      pickup_latitude: null,
+      pickup_longitude: null,
+    });
+
+    if (value.length < 2) {
+      setPlaceSuggestions([]);
+      return;
+    }
+
+    const response = await fetch(`/api/places?q=${encodeURIComponent(value)}`);
+    const data = await response.json();
+
+    setPlaceSuggestions(data.items || []);
+  }
+
+  function selectPlace(place: PlaceSuggestion) {
+    setForm({
+      ...form,
+      pickup_place: `${place.name}${place.location ? `, ${place.location}` : ""}`,
+      pickup_latitude: place.position.lat,
+      pickup_longitude: place.position.lon,
+    });
+
+    setPlaceSuggestions([]);
+  }
+
+  async function handleSubmit() {
+    setLoading(true);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      toast.error("Musíš být přihlášený");
+      setLoading(false);
+      return;
+    }
+
+    if (photos.length === 0) {
+      toast.error("Nahraj alespoň jednu fotku");
+      setLoading(false);
+      return;
+    }
+
+    if (!form.title.trim()) {
+      toast.error("Vyplň název věci");
+      setLoading(false);
+      return;
+    }
+
+    if (!form.category) {
+      toast.error("Vyber kategorii");
+      setLoading(false);
+      return;
+    }
+
+    if (!form.condition) {
+      toast.error("Vyber stav věci");
+      setLoading(false);
+      return;
+    }
+
+    if (!form.description.trim()) {
+      toast.error("Vyplň popis");
+      setLoading(false);
+      return;
+    }
+
+    if (!form.price_amount.trim()) {
+      toast.error("Vyplň cenu");
+      setLoading(false);
+      return;
+    }
+
+    if (!form.price_unit) {
+      toast.error("Vyber jednotku ceny");
+      setLoading(false);
+      return;
+    }
+
+    if (!form.pickup_place.trim() || !form.pickup_latitude || !form.pickup_longitude) {
+      toast.error("Vyber místo předání z našeptávače");
+      setLoading(false);
+      return;
+    }
+
+    if (form.handover_options.length === 0) {
+      toast.error("Vyber alespoň jednu možnost předání");
+      setLoading(false);
+      return;
+    }
+
+    if (
+      form.availability_type === "period" &&
+      (!form.available_from || !form.available_to)
+    ) {
+      toast.error("Vyplň dostupnost od/do");
+      setLoading(false);
+      return;
+    }
+
+    const { data: item, error: itemError } = await supabase
+      .from("items")
+      .insert({
+        owner_id: user.id,
+        title: form.title,
+        description: form.description,
+        category: form.category,
+        condition: form.condition,
+        price_amount: Number(form.price_amount),
+        price_unit: form.price_unit,
+        price_note: form.price_note || null,
+        deposit: form.deposit ? Number(form.deposit) : null,
+        pickup_place: form.pickup_place,
+        pickup_latitude: form.pickup_latitude,
+        pickup_longitude: form.pickup_longitude,
+        handover_options: form.handover_options,
+        contact_note: form.contact_note,
+        status: form.status,
+        availability_type: form.availability_type,
+        available_from:
+          form.availability_type === "period" ? form.available_from : null,
+        available_to:
+          form.availability_type === "period" ? form.available_to : null,
+        is_active: true,
+      })
+      .select()
+      .single();
+
+    if (itemError || !item) {
+      toast.error(itemError?.message || "Nepodařilo se uložit věc");
+      setLoading(false);
+      return;
+    }
+
+    const orderedPhotos = [...photos];
+    const [mainPhoto] = orderedPhotos.splice(mainPhotoIndex, 1);
+    const finalPhotos = [mainPhoto, ...orderedPhotos];
+
+    let primaryImageUrl = "";
+
+    for (let index = 0; index < finalPhotos.length; index++) {
+      const photo = finalPhotos[index];
+      const fileExt = photo.name.split(".").pop();
+      const filePath = `${user.id}/${item.id}/${index}.${fileExt}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("items")
+        .upload(filePath, photo);
+
+      if (uploadError) {
+        toast.error(uploadError.message);
+        setLoading(false);
+        return;
+      }
+
+      const { data: publicUrl } = supabase.storage
+        .from("items")
+        .getPublicUrl(filePath);
+
+      if (index === 0) {
+        primaryImageUrl = publicUrl.publicUrl;
+      }
+
+      await supabase.from("item_images").insert({
+        item_id: item.id,
+        image_url: publicUrl.publicUrl,
+        sort_order: index,
+      });
+    }
+
+    await supabase
+      .from("items")
+      .update({ primary_image_url: primaryImageUrl })
+      .eq("id", item.id);
+
+    toast.success("Věc byla přidána");
+    router.push("/dashboard/my-items");
+  }
+
+  return (
+    <main className="min-h-screen">
+      <div className="koluj-shell">
+        <header className="mb-8 flex items-center justify-between">
+          <Link
+            href="/dashboard"
+            className="flex items-center gap-2 font-bold text-[var(--koluj-green)]"
+          >
+            <ArrowLeft size={20} />
+            Dashboard
+          </Link>
+
+          <button
+            onClick={handleSubmit}
+            disabled={loading}
+            className="koluj-button px-6 py-3 disabled:opacity-60"
+          >
+            {loading ? "Ukládám..." : "Přidat věc"}
+          </button>
+        </header>
+
+        <section className="mt-16 px-8">
+          <h1 className="koluj-serif text-7xl font-bold leading-tight tracking-tight">
+            Přidat věc
+          </h1>
+
+          <p className="mt-6 max-w-2xl text-2xl leading-relaxed text-[var(--koluj-muted)]">
+            Vyplň jen to důležité. Čím jasnější informace, tím méně zbytečného domlouvání.
+          </p>
+        </section>
+
+        <section className="mt-14 grid gap-8 px-8 lg:grid-cols-[1fr_360px]">
+          <div className="space-y-8">
+            <div className="koluj-card p-8">
+              <SectionTitle icon={<Camera size={24} />} title="Fotky" />
+
+              <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+                {photoPreviews.map((preview, index) => (
+                  <div
+                    key={index}
+                    className="relative overflow-hidden rounded-3xl border border-[var(--koluj-border)] bg-[var(--koluj-bg)]"
+                  >
+                    <img
+                      src={preview}
+                      alt="Náhled fotky"
+                      className="h-36 w-full object-cover"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={() => setMainPhotoIndex(index)}
+                      className="absolute left-2 top-2 rounded-full bg-white p-2 text-[var(--koluj-green)] shadow-sm"
+                    >
+                      <Star
+                        size={18}
+                        fill={mainPhotoIndex === index ? "currentColor" : "none"}
+                      />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => removePhoto(index)}
+                      className="absolute right-2 top-2 rounded-full bg-white p-2 text-red-500 shadow-sm"
+                    >
+                      <X size={18} />
+                    </button>
+
+                    {mainPhotoIndex === index && (
+                      <div className="absolute bottom-2 left-2 rounded-full bg-[var(--koluj-green)] px-3 py-1 text-xs font-bold text-white">
+                        Hlavní
+                      </div>
+                    )}
+                  </div>
+                ))}
+
+                {photos.length < 8 && (
+                  <label className="flex h-36 cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-[var(--koluj-border)] bg-[var(--koluj-surface)] text-[var(--koluj-green)] transition hover:bg-[var(--koluj-bg)]">
+                    <Plus size={30} />
+                    <span className="mt-2 text-sm font-bold">Přidat</span>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/png,image/jpeg,image/webp"
+                      onChange={(e) => handlePhotos(e.target.files)}
+                      className="hidden"
+                    />
+                  </label>
+                )}
+              </div>
+
+              <p className="mt-4 text-sm text-[var(--koluj-muted)]">
+                Nahraj 1–8 fotek. Hvězdičkou označ hlavní fotku pro náhled.
+              </p>
+            </div>
+
+            <div className="koluj-card p-8">
+              <SectionTitle icon={<Package size={24} />} title="O věci" />
+
+              <div className="mt-6 space-y-4">
+                <input
+                  value={form.title}
+                  onChange={(e) => updateField("title", e.target.value)}
+                  placeholder="Název věci *"
+                  className="koluj-input"
+                />
+
+                <div className="grid gap-4 md:grid-cols-2">
+                  <select
+                    value={form.category}
+                    onChange={(e) => updateField("category", e.target.value)}
+                    className="koluj-input"
+                  >
+                    <option value="">Kategorie *</option>
+                    <option value="naradi">Nářadí</option>
+                    <option value="elektronika">Elektronika</option>
+                    <option value="sport">Sport</option>
+                    <option value="outdoor">Outdoor</option>
+                    <option value="dum_zahrada">Dům a zahrada</option>
+                    <option value="auto_moto">Auto/Moto</option>
+                    <option value="foto_video">Foto a video</option>
+                    <option value="party_akce">Party a akce</option>
+                    <option value="ostatni">Ostatní</option>
+                  </select>
+
+                  <select
+                    value={form.condition}
+                    onChange={(e) => updateField("condition", e.target.value)}
+                    className="koluj-input"
+                  >
+                    <option value="">Stav věci *</option>
+                    <option value="new">Nové</option>
+                    <option value="like_new">Jako nové</option>
+                    <option value="good">Dobrý stav</option>
+                    <option value="used">Běžně používané</option>
+                  </select>
+                </div>
+
+                <textarea
+                  value={form.description}
+                  onChange={(e) => updateField("description", e.target.value)}
+                  placeholder="Popis *"
+                  className="koluj-input min-h-32"
+                />
+              </div>
+            </div>
+
+            <div className="koluj-card p-8">
+              <SectionTitle title="Cena" />
+
+              <div className="mt-6 space-y-4">
+                <div className="grid gap-4 md:grid-cols-[1fr_180px]">
+                  <input
+                    type="number"
+                    min="0"
+                    value={form.price_amount}
+                    onChange={(e) => updateField("price_amount", e.target.value)}
+                    placeholder="Cena v Kč *"
+                    className="koluj-input"
+                  />
+
+                  <select
+                    value={form.price_unit}
+                    onChange={(e) => updateField("price_unit", e.target.value)}
+                    className="koluj-input"
+                  >
+                    <option value="hour">za hodinu</option>
+                    <option value="day">za den</option>
+                    <option value="week">za týden</option>
+                    <option value="month">za měsíc</option>
+                    <option value="piece">za půjčení</option>
+                  </select>
+                </div>
+
+                <textarea
+                  value={form.price_note}
+                  onChange={(e) => updateField("price_note", e.target.value)}
+                  placeholder="Poznámka k ceně, např. víkend za 250 Kč nebo sleva při delším půjčení"
+                  className="koluj-input min-h-28"
+                />
+
+                <input
+                  type="number"
+                  value={form.deposit}
+                  onChange={(e) => updateField("deposit", e.target.value)}
+                  placeholder="Kauce Kč, volitelné"
+                  className="koluj-input"
+                />
+              </div>
+            </div>
+
+            <div className="koluj-card p-8">
+              <SectionTitle icon={<MapPin size={24} />} title="Předání" />
+
+              <div className="relative mt-6">
+                <input
+                  value={form.pickup_place}
+                  onChange={(e) => searchPlaces(e.target.value)}
+                  placeholder="Místo předání *"
+                  className="koluj-input"
+                />
+
+                {placeSuggestions.length > 0 && (
+                  <div className="absolute z-10 mt-2 w-full overflow-hidden rounded-3xl border border-[var(--koluj-border)] bg-[var(--koluj-surface)] shadow-lg">
+                    {placeSuggestions.map((place, index) => (
+                      <button
+                        key={index}
+                        type="button"
+                        onClick={() => selectPlace(place)}
+                        className="block w-full px-5 py-4 text-left hover:bg-[var(--koluj-bg)]"
+                      >
+                        <div className="font-bold">{place.name}</div>
+                        <div className="text-sm text-[var(--koluj-muted)]">
+                          {place.label} {place.location ? `· ${place.location}` : ""}
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className="mt-5 grid gap-3 md:grid-cols-2">
+                {[
+                  ["pracovni_dny", "Pracovní dny"],
+                  ["vecer_po_praci", "Večer po práci"],
+                  ["vikendy", "Víkendy"],
+                  ["kdykoliv", "Kdykoliv"],
+                ].map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => toggleHandoverOption(value)}
+                    className={`flex items-center gap-3 rounded-2xl border px-4 py-3 font-bold transition ${
+                      form.handover_options.includes(value)
+                        ? "border-[var(--koluj-green)] bg-[var(--koluj-bg)] text-[var(--koluj-green)]"
+                        : "border-[var(--koluj-border)] text-[var(--koluj-muted)]"
+                    }`}
+                  >
+                    {form.handover_options.includes(value) && <Check size={18} />}
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <textarea
+                value={form.contact_note}
+                onChange={(e) => updateField("contact_note", e.target.value)}
+                placeholder="Poznámka k předání, např. ideálně po 17:00"
+                className="koluj-input mt-5 min-h-28"
+              />
+            </div>
+
+            <div className="koluj-card p-8">
+              <SectionTitle title="Dostupnost" />
+
+              <div className="mt-6 grid gap-4 md:grid-cols-2">
+                <select
+                  value={form.status}
+                  onChange={(e) => updateField("status", e.target.value)}
+                  className="koluj-input"
+                >
+                  <option value="available">Volné</option>
+                  <option value="reserved">Rezervované</option>
+                  <option value="borrowed">Půjčené</option>
+                </select>
+
+                <select
+                  value={form.availability_type}
+                  onChange={(e) => updateField("availability_type", e.target.value)}
+                  className="koluj-input"
+                >
+                  <option value="long_term">Dlouhodobě k dispozici</option>
+                  <option value="period">Jen v určitém období</option>
+                </select>
+              </div>
+
+              {form.availability_type === "period" && (
+                <div className="mt-4 grid gap-4 md:grid-cols-2">
+                  <input
+                    type="date"
+                    value={form.available_from}
+                    onChange={(e) => updateField("available_from", e.target.value)}
+                    className="koluj-input"
+                  />
+
+                  <input
+                    type="date"
+                    value={form.available_to}
+                    onChange={(e) => updateField("available_to", e.target.value)}
+                    className="koluj-input"
+                  />
+                </div>
+              )}
+            </div>
+          </div>
+
+          <aside className="hidden lg:block">
+            <div className="koluj-card sticky top-8 p-8">
+              <h2 className="text-2xl font-black">Kontrola před uložením</h2>
+
+              <ul className="mt-6 space-y-4 text-[var(--koluj-muted)]">
+                <CheckLine done={photos.length > 0} text="Alespoň jedna fotka" />
+                <CheckLine done={!!form.title} text="Název věci" />
+                <CheckLine done={!!form.category} text="Kategorie" />
+                <CheckLine done={!!form.condition} text="Stav věci" />
+                <CheckLine done={!!form.price_amount && !!form.price_unit} text="Cena" />
+                <CheckLine done={!!form.pickup_latitude} text="Místo předání" />
+              </ul>
+
+              <button
+                onClick={handleSubmit}
+                disabled={loading}
+                className="koluj-button mt-8 w-full px-6 py-4 disabled:opacity-60"
+              >
+                {loading ? "Ukládám..." : "Přidat věc"}
+              </button>
+            </div>
+          </aside>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function SectionTitle({
+  title,
+  icon,
+}: {
+  title: string;
+  icon?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      {icon && (
+        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-[var(--koluj-green)]">
+          {icon}
+        </div>
+      )}
+      <h2 className="text-2xl font-black">{title}</h2>
+    </div>
+  );
+}
+
+function CheckLine({ done, text }: { done: boolean; text: string }) {
+  return (
+    <li className="flex items-center gap-3">
+      <span
+        className={`flex h-6 w-6 items-center justify-center rounded-full ${
+          done
+            ? "bg-[var(--koluj-green)] text-white"
+            : "bg-[var(--koluj-bg)] text-[var(--koluj-muted)]"
+        }`}
+      >
+        {done ? <Check size={14} /> : ""}
+      </span>
+      {text}
+    </li>
+  );
+}
