@@ -1,8 +1,10 @@
 "use client";
-import Link from "next/link";
+
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
+
+export const dynamic = "force-dynamic";
 
 export default function AuthCallbackPage() {
   const router = useRouter();
@@ -10,7 +12,7 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     async function handleCallback() {
       await supabase.auth.getSession();
-      router.push("/dashboard");
+      router.replace("/dashboard");
     }
 
     handleCallback();
