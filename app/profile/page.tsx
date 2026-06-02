@@ -180,19 +180,19 @@ export default function ProfilePage() {
           </button>
         </header>
 
-        <section className="mt-16 px-8">
-          <h1 className="koluj-serif text-7xl font-bold leading-tight tracking-tight">
+        <section className="mt-10 px-0 md:mt-16 md:px-8">
+          <h1 className="koluj-serif text-5xl font-bold leading-tight tracking-tight md:text-7xl">
             Profil
           </h1>
 
-          <p className="mt-6 max-w-2xl text-2xl leading-relaxed text-[var(--koluj-muted)]">
+          <p className="mt-4 max-w-2xl text-lg leading-relaxed text-[var(--koluj-muted)] md:mt-6 md:text-2xl">
             Vyplň základní údaje, aby ostatní věděli, s kým si věc předávají.
           </p>
         </section>
 
-        <section className="mt-14 grid gap-8 px-8 lg:grid-cols-[1fr_360px]">
+        <section className="mt-10 grid gap-6 px-0 md:mt-14 md:px-0 lg:grid-cols-[1fr_360px]">
           <div className="space-y-8">
-            <div className="koluj-card p-8">
+            <div className="koluj-card p-5 md:p-8">
               <SectionTitle icon={<Mail size={24} />} title="Přihlášení" />
 
               <div className="mt-6 rounded-3xl bg-[var(--koluj-bg)] px-5 py-4">
@@ -203,7 +203,7 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="koluj-card p-8">
+            <div className="koluj-card p-5 md:p-8">
               <SectionTitle icon={<User size={24} />} title="Osobní údaje" />
 
               <div className="mt-6 space-y-5">

@@ -19,15 +19,27 @@ body {
 }
 
 .koluj-shell {
+  width: 100%;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 24px 32px 64px;
+  padding: 16px 12px 56px;
 }
 
 .koluj-shell-wide {
+  width: 100%;
   max-width: 1800px;
   margin: 0 auto;
-  padding: 32px 24px 64px;
+  padding: 16px 12px 56px;
+}
+
+@media (min-width: 768px) {
+  .koluj-shell {
+    padding: 24px 32px 64px;
+  }
+
+  .koluj-shell-wide {
+    padding: 32px 24px 64px;
+  }
 }
 
 .koluj-header {
@@ -63,7 +75,7 @@ body {
 }
 
 .koluj-serif {
-  font-family: var(--font-playfair), Georgia, serif;
+  font-family: var(--font-playfair), Georgia, 'Times New Roman', Times, serif;
 }
 
 .koluj-hero-illustration {
@@ -112,4 +124,54 @@ body {
   box-shadow: none !important;
   color: white !important;
   font-weight: 900 !important;
+} 
+
+@media (max-width: 767px) {
+  .koluj-shell,
+  .koluj-shell-wide {
+    max-width: none;
+    width: 100%;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .koluj-card {
+    border-radius: 22px;
+  }
+
+  .koluj-card.p-8 {
+    padding: 20px;
+  }
+
+  section.px-8,
+  section.md\:px-8 {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .text-7xl {
+    font-size: 3.25rem;
+    line-height: 1;
+  }
+
+  .text-6xl {
+    font-size: 2.75rem;
+    line-height: 1.05;
+  }
+
+  .text-2xl {
+    font-size: 1.15rem;
+    line-height: 1.6;
+  }
+
+  .grid {
+    min-width: 0;
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    max-width: 100%;
+  }
 }
