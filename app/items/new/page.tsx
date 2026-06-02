@@ -314,7 +314,7 @@ export default function NewItemPage() {
         </header>
 
         <section className="mt-16 px-8">
-          <h1 className="koluj-serif text-7xl font-bold leading-tight tracking-tight">
+          <h1 className="koluj-heading">
             Přidat věc
           </h1>
 

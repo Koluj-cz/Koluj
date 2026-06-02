@@ -41,6 +41,12 @@ type Item = {
   primary_image_url: string | null;
   created_at: string;
   owner_id: string | null;
+  status: string | null;
+  profiles: {
+    full_name: string | null;
+    avatar_url: string | null;
+    is_verified: boolean | null;
+  } | null;
 };
 
 const categoryLabels: Record<string, string> = {
@@ -53,6 +59,18 @@ const categoryLabels: Record<string, string> = {
   foto_video: "Foto a video",
   party_akce: "Party a akce",
   ostatni: "Ostatní",
+};
+
+const statusLabels: Record<string, string> = {
+  available: "Volné",
+  reserved: "Rezervované",
+  borrowed: "Půjčené",
+};
+
+const statusClasses: Record<string, string> = {
+  available: "koluj-status-available",
+  reserved: "koluj-status-reserved",
+  borrowed: "koluj-status-borrowed",
 };
 
 const conditionLabels: Record<string, string> = {
@@ -89,7 +107,17 @@ export default function HomePage() {
   async function loadItems() {
     const { data, count } = await supabase
       .from("items")
-      .select("*", { count: "exact" })
+      .select(
+        `
+        *,
+        profiles:profiles!items_owner_id_fkey (
+          full_name,
+          avatar_url,
+          is_verified
+        )
+        `,
+        { count: "exact" }
+      )
       .eq("is_active", true)
       .order("created_at", { ascending: false })
       .limit(4);
@@ -109,25 +137,51 @@ export default function HomePage() {
     });
   }
 
-  const filteredItems = useMemo(() => {
-    if (!search.trim()) return items;
+const filteredItems = useMemo(() => {
+  let result = items;
 
+  if (search.trim()) {
     const query = search.toLowerCase();
 
-    return items.filter((item) =>
+    result = result.filter((item) =>
       `${item.title} ${item.category} ${item.pickup_place}`
         .toLowerCase()
         .includes(query)
     );
-  }, [items, search]);
+  }
+
+  if (userLocation) {
+    result = [...result]
+      .filter((item) => item.pickup_latitude && item.pickup_longitude)
+      .sort((a, b) => {
+        const distanceA = getDistanceKm(
+          userLocation.latitude,
+          userLocation.longitude,
+          a.pickup_latitude!,
+          a.pickup_longitude!
+        );
+
+        const distanceB = getDistanceKm(
+          userLocation.latitude,
+          userLocation.longitude,
+          b.pickup_latitude!,
+          b.pickup_longitude!
+        );
+
+        return distanceA - distanceB;
+      });
+  }
+
+  return result;
+}, [items, search, userLocation]);
 
   return (
     <main className="min-h-screen">
       <div className="koluj-shell-wide">
-        <header className="mb-8 flex items-center justify-between">
+        <header className="koluj-page-header">
           <Link
             href="/"
-            className="text-4xl font-black tracking-tight text-[var(--koluj-green)]"
+            className="koluj-logo"
           >
             KOLUJ
           </Link>
@@ -145,12 +199,12 @@ export default function HomePage() {
 
         <section className="relative min-h-[560px] overflow-hidden py-6">
           <div className="relative z-20 max-w-3xl">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-4 py-2 text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
+            <div className="koluj-pill mb-6">
               <Leaf size={16} />
               Půjčuj si chytře, žij udržitelně
             </div>
 
-            <h1 className="koluj-serif max-w-3xl text-6xl font-bold leading-tight tracking-tight md:text-7xl">
+            <h1 className="koluj-heading">
               Půjčuj si věci od lidí ve svém okolí
             </h1>
 
@@ -159,7 +213,7 @@ export default function HomePage() {
               potřebuješ, a půjč si je od lidí kolem sebe.
             </p>
 
-            <div className="mt-8 flex max-w-3xl flex-col gap-3 rounded-3xl border border-[var(--koluj-border)] bg-white p-3 shadow-sm md:flex-row">
+            <div className="koluj-searchbar mt-8">
               <div className="flex flex-1 items-center gap-3 px-3">
                 <Search size={20} className="text-[var(--koluj-muted)]" />
                 <input
@@ -226,7 +280,7 @@ export default function HomePage() {
         <section id="explore" className="mt-4">
           <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
-              <h2 className="text-4xl font-black">Věci ve tvém okolí</h2>
+              <h2 className="koluj-title">Věci ve tvém okolí</h2>
               <p className="mt-2 text-[var(--koluj-muted)]">
                 Celkem {totalItems} aktivních věcí. Na hlavní stránce ukazujeme
                 nejnovější 4.
@@ -288,7 +342,7 @@ export default function HomePage() {
               </div>
 
               <div className="hidden xl:block">
-                <div className="relative h-[780px] overflow-hidden rounded-[2rem] shadow-sm">
+                <div className="koluj-map-panel koluj-map-panel-small">
                   <ItemsMap items={items} userLocation={userLocation} />
 
                   <button
@@ -304,7 +358,7 @@ export default function HomePage() {
             </div>
           ) : (
             <section className="koluj-card p-5">
-              <div className="relative h-[720px] overflow-hidden rounded-[2rem]">
+              <div className="koluj-map-panel koluj-map-panel-large">
                 <ItemsMap items={items} userLocation={userLocation} />
 
                 <button
@@ -348,11 +402,15 @@ export default function HomePage() {
 }
 
 function ItemCard({ item }: { item: Item }) {
+  const status = item.status || "available";
+  const statusLabel = statusLabels[status] || status;
+  const statusClass = statusClasses[status] || statusClasses.available;
+
+  const ownerName = item.profiles?.full_name || "Uživatel";
+  const ownerInitial = ownerName.charAt(0).toUpperCase();
+
   return (
-    <Link
-      href={`/items/${item.id}`}
-      className="koluj-card grid overflow-hidden p-0 transition hover:-translate-y-1 md:grid-cols-[145px_1fr]"
-    >
+    <Link href={`/items/${item.id}`} className="koluj-card koluj-item-row">
       <div className="relative h-36 bg-[var(--koluj-bg)] md:h-full">
         {item.primary_image_url ? (
           <img
@@ -373,46 +431,63 @@ function ItemCard({ item }: { item: Item }) {
         )}
       </div>
 
-      <div className="p-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h3 className="text-2xl font-black">{item.title}</h3>
+      <div className="grid gap-5 p-5 md:grid-cols-[1fr_210px]">
+        <div>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h3 className="text-2xl font-black">{item.title}</h3>
 
-            <p className="mt-1 text-sm font-bold text-[var(--koluj-green)]">
-              {categoryLabels[item.category] || item.category}
-            </p>
+              <p className="mt-1 text-sm font-bold text-[var(--koluj-green)]">
+                {categoryLabels[item.category] || item.category}
+              </p>
+            </div>
           </div>
 
-          <span className="rounded-full bg-[#DDF5DF] px-3 py-1 text-xs font-black uppercase text-[#16803A]">
-            Volné
-          </span>
-        </div>
-
-        <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[var(--koluj-muted)]">
-          <span className="flex items-center gap-1.5">
-            <MapPin size={15} />
-            {item.pickup_place}
-          </span>
-
-          {item.condition && (
+          <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[var(--koluj-muted)]">
             <span className="flex items-center gap-1.5">
-              <Star size={15} />
-              {conditionLabels[item.condition] || item.condition}
+              <MapPin size={15} />
+              {item.pickup_place}
             </span>
+
+            {item.condition && (
+              <span className="flex items-center gap-1.5">
+                <Star size={15} />
+                {conditionLabels[item.condition] || item.condition}
+              </span>
+            )}
+
+            <span>
+              Přidáno {new Date(item.created_at).toLocaleDateString("cs-CZ")}
+            </span>
+          </div>
+
+          {item.description && (
+            <p className="mt-3 line-clamp-2 text-sm text-[var(--koluj-muted)]">
+              {item.description}
+            </p>
           )}
-
-          <span>
-            Přidáno {new Date(item.created_at).toLocaleDateString("cs-CZ")}
-          </span>
-
-          <span>Přidal uživatel</span>
         </div>
 
-        {item.description && (
-          <p className="mt-3 line-clamp-2 text-sm text-[var(--koluj-muted)]">
-            {item.description}
-          </p>
-        )}
+        <div className="flex items-center justify-between border-t border-[var(--koluj-border)] pt-4 md:flex-col md:items-end md:border-l md:border-t-0 md:py-1 md:pl-6">
+          <span className={`koluj-status-badge hidden md:inline-flex ${statusClass}`}>
+            {statusLabel}
+          </span>
+
+          <div className="flex items-center gap-3 md:justify-end">
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--koluj-bg)] font-black text-[var(--koluj-green)]">
+              {ownerInitial}
+            </div>
+
+            <div className="md:text-right">
+              <p className="font-black">{ownerName}</p>
+
+              <p className="text-sm font-bold text-[var(--koluj-green)]">
+                ★ 5.0
+                <span className="ml-1 text-[var(--koluj-muted)]">(12)</span>
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </Link>
   );
@@ -426,7 +501,7 @@ function CategoryChip({
   label: string;
 }) {
   return (
-    <button className="flex items-center gap-2 rounded-2xl border border-[var(--koluj-border)] bg-white px-4 py-3 font-bold text-[var(--koluj-muted)] transition hover:bg-[var(--koluj-bg)]">
+    <button className="koluj-category-chip">
       {icon}
       {label}
     </button>
@@ -443,14 +518,30 @@ function Feature({
   text: string;
 }) {
   return (
-    <div className="koluj-card p-6">
-      <div className="mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-[var(--koluj-green)]">
-        {icon}
-      </div>
-
+    <div className="koluj-feature-card">
+      <div className="koluj-feature-icon">{icon}</div>
       <h3 className="text-xl font-black">{title}</h3>
-
       <p className="mt-2 text-[var(--koluj-muted)]">{text}</p>
     </div>
   );
+}
+
+function getDistanceKm(
+  lat1: number,
+  lon1: number,
+  lat2: number,
+  lon2: number
+) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLon / 2) *
+      Math.sin(dLon / 2);
+
+  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }

@@ -69,7 +69,7 @@ export default function DashboardPage() {
         </header>
 
         <section className="mt-16 px-8">
-          <h1 className="koluj-serif max-w-3xl text-7xl font-bold leading-tight tracking-tight">
+          <h1 className="koluj-heading">
             {fullName ? `Vítej zpět, ${fullName}!` : "Vítej zpět!"}
           </h1>
 

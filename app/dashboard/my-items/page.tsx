@@ -60,10 +60,10 @@ const statusLabels: Record<string, string> = {
   borrowed: "Půjčené",
 };
 
-const statusStyles: Record<string, string> = {
-  available: "bg-green-100 text-green-800 border-green-200",
-  reserved: "bg-orange-100 text-orange-800 border-orange-200",
-  borrowed: "bg-blue-100 text-blue-800 border-blue-200",
+const statusClasses: Record<string, string> = {
+  available: "koluj-status-available",
+  reserved: "koluj-status-reserved",
+  borrowed: "koluj-status-borrowed",
 };
 
 export default function MyItemsPage() {
@@ -297,7 +297,7 @@ export default function MyItemsPage() {
         </header>
 
         <section className="mt-16 px-8">
-          <h1 className="koluj-serif text-7xl font-bold leading-tight tracking-tight">
+          <h1 className="koluj-heading">
             Moje věci
           </h1>
 
@@ -493,10 +493,9 @@ export default function MyItemsPage() {
                             onChange={(e) =>
                               updateStatus(item, e.target.value)
                             }
-                            className={`min-w-40 rounded-2xl border px-4 py-3 text-center text-sm font-black uppercase tracking-wide outline-none ${
-                              statusStyles[status] ||
-                              "border-[var(--koluj-border)] bg-[var(--koluj-bg)] text-[var(--koluj-muted)]"
-                            }`}
+                              className={`min-w-40 rounded-2xl border px-4 py-3 text-center text-sm font-black uppercase tracking-wide outline-none ${
+                                statusClasses[status] || "koluj-status-available"
+                              }`}
                           >
                             <option value="available">Volné</option>
                             <option value="reserved">Rezervované</option>

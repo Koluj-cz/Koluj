@@ -181,7 +181,7 @@ export default function ProfilePage() {
         </header>
 
         <section className="mt-10 px-0 md:mt-16 md:px-8">
-          <h1 className="koluj-serif text-5xl font-bold leading-tight tracking-tight md:text-7xl">
+          <h1 className="koluj-heading">
             Profil
           </h1>
 
