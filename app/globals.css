@@ -194,7 +194,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 32px;
+  margin-bottom: 0px;
 }
 
 .koluj-logo {
@@ -264,6 +264,7 @@ body {
   display: grid;
   overflow: hidden;
   padding: 0;
+  min-height: 170px; 
   transition: 0.2s ease;
 }
 
@@ -277,7 +278,7 @@ body {
   }
 
   .koluj-item-row {
-    grid-template-columns: 145px 1fr;
+    grid-template-columns: 160px 1fr;
   }
 }
 
@@ -377,10 +378,6 @@ body {
   box-shadow: var(--koluj-shadow);
 }
 
-.koluj-map-panel-small {
-  height: 780px;
-}
-
 .koluj-map-panel-large {
   height: 720px;
 }
@@ -421,4 +418,24 @@ body {
 .koluj-status-borrowed {
   background: #dbeafe;
   color: #1e40af;
+}
+
+.koluj-categories-mobile {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.koluj-categories-mobile::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  .koluj-categories-mobile {
+    display: grid;
+  }
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CircleMarker, MapContainer, Popup, TileLayer, Tooltip, useMap, useMapEvents } from "react-leaflet";
 import Link from "next/link";
 
@@ -31,12 +31,18 @@ function priceUnit(unit: string | null) {
 function MapUpdater({ userLocation }: { userLocation: UserLocation }) {
   const map = useMap();
 
-  if (userLocation) {
+  useEffect(() => {
+    if (!userLocation) return;
+
     map.flyTo([userLocation.latitude, userLocation.longitude], 13, {
       animate: true,
       duration: 0.8,
     });
-  }
+
+    setTimeout(() => {
+      map.invalidateSize();
+    }, 250);
+  }, [map, userLocation]);
 
   return null;
 }
@@ -47,6 +53,20 @@ function ZoomWatcher({ onZoom }: { onZoom: (zoom: number) => void }) {
       onZoom(event.target.getZoom());
     },
   });
+
+  return null;
+}
+
+function ResizeMap() {
+  const map = useMap();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 200);
+
+    return () => clearTimeout(timer);
+  }, [map]);
 
   return null;
 }
@@ -106,6 +126,8 @@ export default function ItemsMap({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
+      <ResizeMap />
+
       <ZoomWatcher onZoom={setZoom} />
       <MapUpdater userLocation={userLocation} />
 
@@ -160,6 +182,7 @@ export default function ItemsMap({
           </Popup>
         </CircleMarker>
       ))}
+      
     </MapContainer>
   );
 }
