@@ -111,10 +111,10 @@ export default function NewItemPage() {
       return;
     }
 
-    const oversized = selectedFiles.find((file) => file.size > 5 * 1024 * 1024);
+    const oversized = selectedFiles.find((file) => file.size > 15 * 1024 * 1024);
 
     if (oversized) {
-      toast.error("Jedna z fotek je větší než 5 MB");
+      toast.error("Jedna z fotek je větší než 15 MB");
       return;
     }
 
@@ -171,6 +171,11 @@ export default function NewItemPage() {
 
   async function handleSubmit() {
     setLoading(true);
+    if (photos.some((photo) => photo.size > 15 * 1024 * 1024)) {
+      toast.error("Fotka je příliš velká. Maximum je 15 MB.");
+      setLoading(false);
+      return;
+    }
 
     const {
       data: { user },
@@ -295,7 +300,12 @@ export default function NewItemPage() {
         .upload(filePath, photo);
 
       if (uploadError) {
-        toast.error(uploadError.message);
+        await supabase
+          .from("items")
+          .delete()
+          .eq("id", item.id);
+
+        toast.error("Nepodařilo se nahrát fotku");
         setLoading(false);
         return;
       }
