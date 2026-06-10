@@ -2,17 +2,37 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Heart, Lock, Package, Plus, User } from "lucide-react";
+import { Heart, Package, User, Handshake, Bell } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import AddItemButton from "@/app/components/AddItemButton";
+import AddItemDashboardCard from "@/app/components/AddItemDashboardCard";
 
 export default function DashboardPage() {
   const [fullName, setFullName] = useState("");
   const [profileComplete, setProfileComplete] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   useEffect(() => {
     loadProfile();
+    loadUnreadNotifications();
   }, []);
+
+  async function loadUnreadNotifications() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) return;
+
+    const { count } = await supabase
+      .from("notifications")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", user.id)
+      .eq("is_read", false);
+
+    setUnreadNotifications(count || 0);
+  }
 
   async function loadProfile() {
     const {
@@ -54,18 +74,7 @@ export default function DashboardPage() {
             KOLUJ
           </Link>
 
-          {profileComplete ? (
-            <Link href="/items/new" className="koluj-button px-6 py-3">
-              + Přidat věc
-            </Link>
-          ) : (
-            <Link
-              href="/profile"
-              className="rounded-2xl border border-[var(--koluj-border)] bg-[var(--koluj-surface)] px-6 py-3 font-bold text-[var(--koluj-muted)] transition hover:bg-[var(--koluj-bg)]"
-            >
-              Dokončit profil
-            </Link>
-          )}
+        <AddItemButton className="koluj-button flex items-center gap-2 px-6 py-3" />
         </header>
 
         <section className="mt-16 px-8">
@@ -81,7 +90,7 @@ export default function DashboardPage() {
         </section>
 
         {!loadingProfile && !profileComplete && (
-          <section className="koluj-card mx-8 mt-10 px-8 py-6">
+          <section className="koluj-card mt-10 flex items-center justify-between px-8 py-6">
             <p className="text-lg text-[var(--koluj-muted)]">
               <span className="font-bold text-[var(--koluj-green)]">
                 Nejdřív dokonči profil:
@@ -101,18 +110,7 @@ export default function DashboardPage() {
             action="Otevřít"
           />
 
-          <DashboardCard
-            href={profileComplete ? "/items/new" : "/profile"}
-            title="Přidat věc"
-            icon={profileComplete ? <Plus size={32} /> : <Lock size={32} />}
-            text={
-              profileComplete
-                ? "Přidej novou věc, kterou chceš nabídnout ostatním."
-                : "Nejdřív dokonči profil, aby lidé věděli, s kým a kde si věc předávají."
-            }
-            action={profileComplete ? "Přidat" : "Dokončit profil"}
-            disabled={!profileComplete}
-          />
+          <AddItemDashboardCard />
 
           <DashboardCard
             href="/profile"
@@ -121,6 +119,27 @@ export default function DashboardPage() {
             text="Uprav údaje, lokalitu a kontaktní informace."
             action="Upravit"
           />
+
+          <DashboardCard
+            href="/dashboard/loans"
+            title="Půjčky"
+            icon={<Handshake size={32} />}
+            text="Spravuj půjčky, žádosti a vrácení věcí."
+            action="Otevřít"
+          />
+
+          <DashboardCard
+            href="/dashboard/notifications"
+            title={
+              unreadNotifications > 0
+                ? `Notifikace (${unreadNotifications})`
+                : "Notifikace"
+            }
+            icon={<Bell size={32} />}
+            text="Zobraz nové žádosti, zprávy a důležité události."
+            action="Zobrazit"
+          />
+          
         </section>
 
         <section className="koluj-card mt-10 flex items-center justify-between px-8 py-6">

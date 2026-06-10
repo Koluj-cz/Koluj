@@ -27,13 +27,15 @@ const ItemsMap = dynamic(() => import("@/app/components/ItemsMap"), {
 export default function HomePage() {
   const [items, setItems] = useState<ItemCardItem[]>([]);
   const [search, setSearch] = useState("");
-  const [totalItems, setTotalItems] = useState(0);
   const [userLocation, setUserLocation] = useState<{
     latitude: number;
     longitude: number;
   } | null>(null);
 
   const router = useRouter();
+
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [totalItems, setTotalItems] = useState(0);
 
   function submitSearch() {
     const params = new URLSearchParams();
@@ -42,12 +44,21 @@ export default function HomePage() {
       params.set("search", search.trim());
     }
 
-    router.push(`/veci?${params.toString()}`);
+    router.push(`/items?${params.toString()}`);
   }
 
   useEffect(() => {
     loadItems();
+    loadUser();
   }, []);
+
+  async function loadUser() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    setIsLoggedIn(!!user);
+  }
 
   async function loadItems() {
     const { data, count } = await supabase
@@ -134,16 +145,18 @@ export default function HomePage() {
           </Link>
 
           <div className="flex items-center gap-3">
-            <Link
-              href="/auth/login"
-              className="rounded-2xl border border-[var(--koluj-border)] bg-white px-6 py-3 font-bold"
-            >
-              Přihlásit se
-            </Link>
-
-            <Link href="/dashboard" className="koluj-button px-6 py-3">
-              Můj prostor
-            </Link>
+            {isLoggedIn ? (
+              <Link href="/dashboard" className="koluj-button px-6 py-3">
+                Můj prostor
+              </Link>
+            ) : (
+              <Link
+                href="/login"
+                className="koluj-button px-6 py-3"
+              >
+                Přihlášení / registrace
+              </Link>
+            )}
           </div>
         </header>
 
@@ -208,7 +221,7 @@ export default function HomePage() {
           </div>
         </section>
 
-      <section className="mt-4 flex gap-3 overflow-x-auto pb-2 lg:grid lg:grid-cols-4 xl:grid-cols-8">
+      <section className="koluj-categories-mobile mt-4 lg:grid lg:grid-cols-4 xl:grid-cols-8">
         <CategoryChip label="Vše" category="" />
         <CategoryChip icon={<Drill size={16} />} label="Nářadí" category="naradi" />
         <CategoryChip icon={<Bike size={16} />} label="Sport" category="sport" />
@@ -229,7 +242,7 @@ export default function HomePage() {
             </div>
 
             <Link
-              href="/veci"
+              href="/items"
               className="hidden items-center gap-2 font-black text-[var(--koluj-green)] md:flex"
             >
               Zobrazit všechny
@@ -245,7 +258,7 @@ export default function HomePage() {
 
           <div className="mt-10 flex justify-center">
             <Link
-              href="/veci"
+              href="/items"
               className="koluj-button inline-flex items-center gap-2 px-8 py-4"
             >
               Zobrazit všechny věci
@@ -296,7 +309,7 @@ function CategoryChip({
     <button
       type="button"
       onClick={() =>
-        router.push(category ? `/veci?category=${category}` : "/veci")
+        router.push(category ? `/items?category=${category}` : "/items")
       }
       className="koluj-category-chip"
     >

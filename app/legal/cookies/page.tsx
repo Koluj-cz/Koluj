@@ -1,0 +1,72 @@
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+
+export default function CookiesPage() {
+  return (
+    <main className="min-h-screen">
+      <div className="koluj-shell max-w-5xl py-12">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 font-bold text-[var(--koluj-green)]"
+        >
+          <ArrowLeft size={18} />
+          Zpět na hlavní stránku
+        </Link>
+
+        <section className="koluj-card mt-10 p-6 md:p-10">
+          <p className="text-sm font-black uppercase tracking-widest text-[var(--koluj-green)]">
+            Právní informace
+          </p>
+
+          <h1 className="koluj-heading mt-3">Cookies</h1>
+
+          <div className="mt-10 space-y-8 text-lg leading-relaxed text-[var(--koluj-muted)]">
+            <section>
+              <h2 className="text-2xl font-black text-[var(--koluj-text)]">
+                Co jsou cookies
+              </h2>
+              <p className="mt-3">
+                Cookies jsou malé soubory ukládané v prohlížeči. Pomáhají nám
+                zajistit správné fungování aplikace, přihlášení uživatele a
+                bezpečnost služby.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-black text-[var(--koluj-text)]">
+                Nezbytné cookies
+              </h2>
+              <p className="mt-3">
+                Tyto cookies jsou nutné pro fungování služby Koluj. Bez nich by
+                nebylo možné zajistit například přihlášení, zabezpečení nebo
+                základní funkce aplikace.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-black text-[var(--koluj-text)]">
+                Analytické cookies
+              </h2>
+              <p className="mt-3">
+                Analytické cookies můžeme používat pro anonymní statistiky a
+                zlepšování služby. Pokud je zapneme, budeme je používat pouze na
+                základě souhlasu uživatele.
+              </p>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-black text-[var(--koluj-text)]">
+                Nastavení cookies
+              </h2>
+              <p className="mt-3">
+                Nezbytné cookies nelze vypnout, protože jsou potřeba pro
+                fungování aplikace. Ostatní cookies můžete odmítnout v cookie
+                liště.
+              </p>
+            </section>
+          </div>
+        </section>
+      </div>
+    </main>
+  );
+}

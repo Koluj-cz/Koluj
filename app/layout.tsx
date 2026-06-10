@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import "./globals.css";
+import CookieBanner from "@/app/components/CookieBanner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -38,7 +39,33 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         {children}
+        <CookieBanner />
+        <footer className="mt-auto border-t border-[var(--koluj-border)]">
+          <div className="koluj-shell flex flex-col gap-4 py-8 text-sm text-[var(--koluj-muted)] md:flex-row md:items-center md:justify-between">
+            <p>© {new Date().getFullYear()} KOLUJ</p>
 
+            <div className="flex flex-wrap gap-6">
+              <a href="/legal/terms" className="hover:text-[var(--koluj-green)]">
+                Podmínky
+              </a>
+
+              <a href="/legal/privacy" className="hover:text-[var(--koluj-green)]">
+                Soukromí
+              </a>
+
+              <a href="/legal/cookies" className="hover:text-[var(--koluj-green)]">
+                Cookies
+              </a>
+
+              <a
+                href="mailto:info@koluj.cz"
+                className="hover:text-[var(--koluj-green)]"
+              >
+                Kontakt
+              </a>
+            </div>
+          </div>
+        </footer>
         <Toaster
           position="top-right"
           toastOptions={{

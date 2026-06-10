@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { ArrowLeft, Mail } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import toast from "react-hot-toast";
 
@@ -11,10 +12,17 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
 
   async function handleLogin() {
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      toast.error("Zadej e-mail");
+      return;
+    }
+
     setLoading(true);
 
     const { error } = await supabase.auth.signInWithOtp({
-      email,
+      email: normalizedEmail,
       options: {
         emailRedirectTo: `${window.location.origin}/auth/callback`,
       },
@@ -27,48 +35,108 @@ export default function LoginPage() {
       return;
     }
 
+    setEmail(normalizedEmail);
     setSent(true);
     toast.success("Přihlašovací odkaz byl odeslán.");
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center bg-[#f8f8f5] px-6">
-      <div className="absolute left-6 top-6">
-        <Link href="/" className="text-sm text-gray-600 hover:text-black">
-          ← Zpět na hlavní stránku
-        </Link>
-      </div>
+    <main className="min-h-screen">
+      <div className="koluj-shell">
+        <header className="mb-10 flex items-center justify-between">
+          <Link
+            href="/"
+            className="flex items-center gap-2 font-bold text-[var(--koluj-green)]"
+          >
+            <ArrowLeft size={20} />
+            Zpět na hlavní stránku
+          </Link>
 
-      <div className="w-full max-w-md rounded-3xl bg-white p-8 shadow-sm">
-        <h1 className="text-3xl font-bold">Přihlášení</h1>
+          <Link
+            href="/"
+            className="text-4xl font-black tracking-tight text-[var(--koluj-green)]"
+          >
+            KOLUJ
+          </Link>
+        </header>
 
-        <p className="mt-3 text-gray-600">
-          Zadej e-mail a pošleme ti odkaz pro přihlášení.
-        </p>
+        <section className="mx-auto max-w-2xl pt-12">
+          <div className="koluj-card p-8 md:p-10">
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-[var(--koluj-green)]">
+                <Mail size={28} />
+              </div>
 
-        {sent ? (
-          <div className="mt-6 rounded-2xl bg-green-50 p-4 text-green-800">
-            Hotovo. Zkontroluj e-mail a klikni na přihlašovací odkaz.
+              <div>
+                <h1 className="text-4xl font-black">
+                  Přihlášení
+                </h1>
+
+                <p className="mt-1 text-[var(--koluj-muted)]">
+                  Jednoduše pomocí e-mailu
+                </p>
+              </div>
+            </div>
+
+            {!sent ? (
+              <>
+                <p className="mt-8 text-lg leading-relaxed text-[var(--koluj-muted)]">
+                  Zadej svůj e-mail a pošleme ti bezpečný odkaz pro
+                  přihlášení. Pokud ještě účet nemáš, automaticky ho vytvoříme.
+                </p>
+
+                <div className="mt-8">
+                  <label className="mb-2 block text-sm font-bold">
+                    E-mail
+                  </label>
+
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(event) => setEmail(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        handleLogin();
+                      }
+                    }}
+                    className="koluj-input"
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={handleLogin}
+                  disabled={loading || !email.trim()}
+                  className="koluj-button mt-8 w-full py-4 disabled:opacity-50"
+                >
+                  {loading ? "Odesílám odkaz..." : "Pokračovat e-mailem"}
+                </button>
+              </>
+            ) : (
+              <div className="mt-8 rounded-3xl bg-[var(--koluj-bg)] p-6">
+                <h2 className="text-xl font-black text-[var(--koluj-green)]">
+                  E-mail odeslán
+                </h2>
+
+                <p className="mt-3 leading-relaxed text-[var(--koluj-muted)]">
+                  Zkontroluj svou schránku a klikni na přihlašovací odkaz.
+                </p>
+
+                <p className="mt-3 rounded-2xl bg-white px-4 py-3 text-sm font-black">
+                  {email}
+                </p>
+
+                <button
+                  type="button"
+                  onClick={() => setSent(false)}
+                  className="mt-5 font-bold text-[var(--koluj-green)]"
+                >
+                  Zadat jiný e-mail
+                </button>
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="mt-6 space-y-4">
-            <input
-              type="email"
-              placeholder="tvuj@email.cz"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-xl border border-gray-300 px-4 py-3 outline-none focus:border-black"
-            />
-
-            <button
-              onClick={handleLogin}
-              disabled={loading || !email}
-              className="w-full rounded-xl bg-black py-3 text-white transition hover:opacity-90 disabled:opacity-50"
-            >
-              {loading ? "Odesílám..." : "Pokračovat e-mailem"}
-            </button>
-          </div>
-        )}
+        </section>
       </div>
     </main>
   );

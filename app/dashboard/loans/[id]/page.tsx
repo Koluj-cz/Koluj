@@ -1,0 +1,900 @@
+"use client";
+
+import { useEffect, useRef, useState } from "react";
+import { useParams } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft, Send } from "lucide-react";
+import toast from "react-hot-toast";
+import { supabase } from "@/lib/supabase";
+import { notifyUser } from "@/lib/notifyUser";
+import { containsForbiddenText } from "@/lib/moderation";
+
+type Loan = {
+  id: string;
+  owner_id: string | null;
+  borrower_id: string | null;
+  status: string;
+  created_at: string;
+  approved_at?: string | null;
+  returned_at?: string | null;
+  handed_over_at?: string | null;
+  reviewed?: boolean;
+
+  owner: {
+    id: string;
+    full_name: string | null;
+    avatar_url: string | null;
+  } | null;
+
+  borrower: {
+    id: string;
+    full_name: string | null;
+    avatar_url: string | null;
+  } | null;
+
+  items: {
+    id: string;
+    title: string;
+    primary_image_url: string | null;
+    pickup_place: string;
+    price_amount: number | null;
+    price_unit: string | null;
+    deposit: number | null;
+  } | null;
+};
+
+type Message = {
+  id: string;
+  message: string;
+  sender_id: string | null;
+  is_system: boolean;
+  created_at: string;
+  profiles?: {
+    full_name: string | null;
+  } | null;
+};
+
+function translateStatus(status: string) {
+  switch (status) {
+    case "requested":
+      return "Čeká na schválení";
+    case "approved":
+      return "Schváleno";
+    case "active":
+      return "Probíhá";
+    case "returned":
+      return "Vráceno";
+    case "cancelled":
+      return "Zrušeno";
+    default:
+      return status;
+  }
+}
+
+function translatePriceUnit(unit: string | null) {
+  if (unit === "hour") return "hodinu";
+  if (unit === "day") return "den";
+  if (unit === "week") return "týden";
+  if (unit === "month") return "měsíc";
+  if (unit === "piece") return "půjčení";
+  return "";
+}
+
+function formatDateTime(date: string | null) {
+  if (!date) return "";
+
+  return new Date(date).toLocaleString("cs-CZ", {
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+export default function LoanDetailPage() {
+  const params = useParams();
+  const loanId = params.id as string;
+
+  const [loan, setLoan] = useState<Loan | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [message, setMessage] = useState("");
+  const [userId, setUserId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const [rating, setRating] = useState(0);
+  const [reviewText, setReviewText] = useState("");
+  const [reviewSent, setReviewSent] = useState(false);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    loadLoan();
+
+    const messagesChannel = supabase
+      .channel(`loan-messages-${loanId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "loan_messages",
+          filter: `loan_id=eq.${loanId}`,
+        },
+        async (payload) => {
+          const { data } = await supabase
+            .from("loan_messages")
+            .select(`
+              *,
+              profiles (
+                full_name
+              )
+            `)
+            .eq("id", payload.new.id)
+            .single();
+
+          if (!data) return;
+
+        setMessages((current) => {
+          const exists = current.some((message) => message.id === data.id);
+
+          if (exists) {
+            return current;
+          }
+
+          return [...current, data as Message];
+        });
+        }
+      )
+      .subscribe();
+
+    const loanChannel = supabase
+      .channel(`loan-status-${loanId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "loans",
+          filter: `id=eq.${loanId}`,
+        },
+        () => {
+          loadLoan();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(messagesChannel);
+      supabase.removeChannel(loanChannel);
+    };
+  }, [loanId]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+    });
+  }, [messages]);
+
+async function updatePresence() {
+  if (!userId) return;
+
+  await supabase.from("loan_participant_presence").upsert({
+    loan_id: loanId,
+    user_id: userId,
+    last_seen_at: new Date().toISOString(),
+  });
+}
+
+  useEffect(() => {
+    if (!userId) return;
+
+    updatePresence();
+
+    const interval = setInterval(() => {
+      updatePresence();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [userId, loanId]);
+
+  async function loadLoan() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
+    setUserId(user.id);
+
+    const { data: loanData, error: loanError } = await supabase
+      .from("loans")
+      .select(`
+        *,
+        items (
+          id,
+          title,
+          primary_image_url,
+          pickup_place,
+          price_amount,
+          price_unit,
+          deposit
+        ),
+        owner:profiles!loans_owner_id_fkey (
+          id,
+          full_name,
+          avatar_url
+        ),
+        borrower:profiles!loans_borrower_id_fkey (
+          id,
+          full_name,
+          avatar_url
+        )
+      `)
+      .eq("id", loanId)
+      .single();
+
+    if (loanError || !loanData) {
+      toast.error("Půjčku se nepodařilo načíst");
+      setLoading(false);
+      return;
+    }
+
+    const { data: existingReview } = await supabase
+      .from("reviews")
+      .select("id")
+      .eq("loan_id", loanId)
+      .eq("reviewer_id", user.id)
+      .maybeSingle();
+
+    setReviewSent(!!existingReview);
+
+    const { data: messagesData } = await supabase
+      .from("loan_messages")
+      .select(`
+        *,
+        profiles (
+          full_name
+        )
+      `)
+      .eq("loan_id", loanId)
+      .order("created_at");
+
+    setLoan(loanData as Loan);
+    setMessages((messagesData || []) as Message[]);
+    setLoading(false);
+  }
+
+  async function addSystemMessage(text: string) {
+    if (!userId) return;
+
+    await supabase.from("loan_messages").insert({
+      loan_id: loanId,
+      sender_id: userId,
+      is_system: true,
+      message: text,
+    });
+  }
+
+  async function approveLoan() {
+    if (!loan?.items?.id) return;
+
+    setSaving(true);
+
+    const approvedAt = new Date().toISOString();
+
+    const { error: loanError } = await supabase
+      .from("loans")
+      .update({
+        status: "approved",
+        approved_at: approvedAt,
+      })
+      .eq("id", loan.id);
+
+    if (loanError) {
+      toast.error(loanError.message);
+      setSaving(false);
+      return;
+    }
+
+    const recipientId =
+    loan.owner_id === userId ? loan.borrower_id : loan.owner_id;
+    
+    await notifyUser({
+      userId: recipientId,
+      actorId: userId,
+      itemId: loan.items?.id,
+      loanId: loan.id,
+      type: "loan_approved",
+      title: "Půjčka schválena",
+      message: `${loan.items?.title} byla schválena. Domluvte si předání.`,
+      emailSubject: "Půjčka schválena",
+    });
+
+    const { error: itemError } = await supabase
+      .from("items")
+      .update({ status: "reserved" })
+      .eq("id", loan.items.id);
+
+    if (itemError) {
+      toast.error(itemError.message);
+      setSaving(false);
+      return;
+    }
+
+    setLoan({ ...loan, status: "approved", approved_at: approvedAt });
+
+    await addSystemMessage(
+      "Žádost byla schválena.\n\nMůžete se domluvit na termínu předání."
+    );
+
+    toast.success("Žádost schválena");
+    setSaving(false);
+  }
+
+  async function rejectLoan() {
+    if (!loan) return;
+
+    setSaving(true);
+
+    const { error } = await supabase
+      .from("loans")
+      .update({ status: "cancelled" })
+      .eq("id", loan.id);
+
+    if (error) {
+      toast.error(error.message);
+      setSaving(false);
+      return;
+    }
+
+    setLoan({ ...loan, status: "cancelled" });
+
+    await addSystemMessage("Žádost byla odmítnuta.");
+
+    toast.success("Žádost odmítnuta");
+    setSaving(false);
+  }
+
+  async function markAsActive() {
+    if (!loan?.items?.id) return;
+
+    setSaving(true);
+
+    const handedOverAt = new Date().toISOString();
+
+    const { error: loanError } = await supabase
+      .from("loans")
+      .update({
+        status: "active",
+        handed_over_at: handedOverAt,
+      })
+      .eq("id", loan.id);
+
+    if (loanError) {
+      toast.error(loanError.message);
+      setSaving(false);
+      return;
+    }
+
+    const { error: itemError } = await supabase
+      .from("items")
+      .update({ status: "borrowed" })
+      .eq("id", loan.items.id);
+
+    if (itemError) {
+      toast.error(itemError.message);
+      setSaving(false);
+      return;
+    }
+
+    setLoan({
+      ...loan,
+      status: "active",
+      handed_over_at: handedOverAt,
+    });
+
+    await addSystemMessage("Věc byla předána. Půjčka právě probíhá.");
+
+    toast.success("Předání potvrzeno");
+    setSaving(false);
+  }
+
+  async function markAsReturned() {
+    if (!loan?.items?.id) return;
+
+    setSaving(true);
+
+    const returnedAt = new Date().toISOString();
+
+    const { error: loanError } = await supabase
+      .from("loans")
+      .update({
+        status: "returned",
+        returned_at: returnedAt,
+      })
+      .eq("id", loan.id);
+
+    if (loanError) {
+      toast.error(loanError.message);
+      setSaving(false);
+      return;
+    }
+
+    const { error: itemError } = await supabase
+      .from("items")
+      .update({ status: "available" })
+      .eq("id", loan.items.id);
+
+    if (itemError) {
+      toast.error(itemError.message);
+      setSaving(false);
+      return;
+    }
+
+    setLoan({
+      ...loan,
+      status: "returned",
+      returned_at: returnedAt,
+    });
+
+    await addSystemMessage("Věc byla vrácena. Půjčka byla ukončena.");
+
+    toast.success("Vrácení potvrzeno");
+    setSaving(false);
+
+    const recipientId =
+    loan.owner_id === userId ? loan.borrower_id : loan.owner_id;
+
+    if (recipientId) {
+      await notifyUser({
+        userId: recipientId,
+        actorId: userId,
+        itemId: loan.items?.id,
+        loanId: loan.id,
+        type: "loan_returned",
+        title: "Půjčka ukončena",
+        message: `${loan.items?.title} byla označena jako vrácená.`,
+        emailSubject: "Půjčka ukončena",
+      });
+    }
+  }
+
+  async function sendMessage() {
+    if (containsForbiddenText(message)) {
+      toast.error("Zpráva obsahuje nepovolený obsah.");
+      return;
+    }
+    if (
+      loan?.status === "returned" ||
+      loan?.status === "cancelled"
+    ) {
+      toast.error("Do ukončené půjčky už nelze psát.");
+      return;
+    }
+    if (!message.trim() || !userId || !loan) return;
+
+    const { error } = await supabase.from("loan_messages").insert({
+      loan_id: loanId,
+      sender_id: userId,
+      message: message.trim(),
+      is_system: false,
+    });
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    const recipientId =
+      loan.owner_id === userId ? loan.borrower_id : loan.owner_id;
+
+    let recipientIsActive = false;
+
+    if (recipientId) {
+      const { data: presence } = await supabase
+        .from("loan_participant_presence")
+        .select("last_seen_at")
+        .eq("loan_id", loan.id)
+        .eq("user_id", recipientId)
+        .maybeSingle();
+
+      recipientIsActive = Boolean(
+        presence?.last_seen_at &&
+          Date.now() - new Date(presence.last_seen_at).getTime() < 2 * 60 * 1000
+      );
+    }
+
+    if (recipientId) {
+      await notifyUser({
+        userId: recipientId,
+        actorId: userId,
+        itemId: loan.items?.id,
+        loanId: loan.id,
+        type: "new_message",
+        title: "Nová zpráva",
+        message: `poslal(a) zprávu k půjčce: ${loan.items?.title}`,
+        emailSubject: "Nová zpráva",
+        sendEmail: !recipientIsActive,
+      });
+    }
+
+    setMessage("");
+  }
+
+  async function submitReview() {
+    if (!loan || !userId || rating === 0) return;
+
+    const reviewedUserId =
+      loan.owner_id === userId ? loan.borrower_id : loan.owner_id;
+
+    const { error } = await supabase.from("reviews").insert({
+      loan_id: loan.id,
+      item_id: loan.items?.id,
+      reviewer_id: userId,
+      reviewed_user_id: reviewedUserId,
+      rating,
+      comment: reviewText,
+    });
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    await addSystemMessage("Hodnocení bylo odesláno.");
+
+    toast.success("Děkujeme za hodnocení");
+    setReviewSent(true);
+  }
+
+  if (loading) {
+    return (
+      <main className="min-h-screen">
+        <div className="koluj-shell">
+          <p>Načítám...</p>
+        </div>
+      </main>
+    );
+  }
+
+  if (!loan) {
+    return (
+      <main className="min-h-screen">
+        <div className="koluj-shell">
+          <p>Půjčka nebyla nalezena.</p>
+        </div>
+      </main>
+    );
+  }
+
+  const isOwner = loan.owner_id === userId;
+
+  const otherPersonLabel = isOwner ? "Zájemce" : "Vlastník";
+
+  const otherPersonName = isOwner
+    ? loan.borrower?.full_name || "Uživatel"
+    : loan.owner?.full_name || "Uživatel";
+  const otherPerson = isOwner
+    ? loan.borrower
+    : loan.owner;
+
+  return (
+    <main className="min-h-screen">
+      <div className="koluj-shell">
+        <header className="mb-10">
+          <Link
+            href="/dashboard/loans"
+            className="flex items-center gap-2 font-bold text-[var(--koluj-green)]"
+          >
+            <ArrowLeft size={18} />
+            Půjčky
+          </Link>
+        </header>
+
+        <div className="grid gap-8 lg:grid-cols-[360px_1fr]">
+          <aside className="space-y-6">
+            <div className="koluj-card p-6">
+              <div className="flex items-center gap-4">
+                {otherPerson?.avatar_url ? (
+                  <img
+                    src={otherPerson.avatar_url}
+                    alt={otherPerson.full_name || "Uživatel"}
+                    className="h-16 w-16 rounded-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--koluj-bg)] font-black">
+                    {(otherPerson?.full_name || "U")[0]}
+                  </div>
+                )}
+
+                <div>
+                  <p className="text-xl font-black">
+                    {otherPerson?.full_name || "Uživatel"}
+                  </p>
+
+                  <p className="text-sm text-[var(--koluj-muted)]">
+                    {isOwner ? "Zájemce o půjčení" : "Vlastník věci"}
+                  </p>
+                </div>
+              </div>
+
+              {otherPerson?.id && (
+                <Link
+                  href={`/users/${otherPerson.id}`}
+                  className="koluj-button mt-5 block text-center"
+                >
+                  Zobrazit profil
+                </Link>
+              )}
+            </div>
+            <div className="koluj-card p-6">
+              {loan.items?.primary_image_url && (
+                <img
+                  src={loan.items.primary_image_url}
+                  alt={loan.items.title}
+                  className="mb-5 h-56 w-full rounded-2xl object-cover"
+                />
+              )}
+
+              <h1 className="text-3xl font-black">{loan.items?.title}</h1>
+
+              <div className="mt-5 space-y-3 text-sm">
+                <p>
+                  <strong>Stav:</strong> {translateStatus(loan.status)}
+                </p>
+
+                <p>
+                  <strong>{otherPersonLabel}:</strong> {otherPersonName}
+                </p>
+
+                <p>
+                  <strong>Vytvořeno:</strong>{" "}
+                  {formatDateTime(loan.created_at)}
+                </p>
+
+                {loan.approved_at && (
+                  <p>
+                    <strong>Schváleno:</strong>{" "}
+                    {formatDateTime(loan.approved_at)}
+                  </p>
+                )}
+
+                {loan.handed_over_at && (
+                  <p>
+                    <strong>Předáno:</strong>{" "}
+                    {formatDateTime(loan.handed_over_at)}
+                  </p>
+                )}
+
+                {loan.returned_at && (
+                  <p>
+                    <strong>Vráceno:</strong>{" "}
+                    {formatDateTime(loan.returned_at)}
+                  </p>
+                )}
+
+                <p>
+                  <strong>Místo předání:</strong> {loan.items?.pickup_place}
+                </p>
+
+                <p>
+                  <strong>Cena:</strong> {loan.items?.price_amount || 0} Kč
+                  {loan.items?.price_unit
+                    ? ` / ${translatePriceUnit(loan.items.price_unit)}`
+                    : ""}
+                </p>
+
+                <p>
+                  <strong>Kauce:</strong> {loan.items?.deposit || 0} Kč
+                </p>
+              </div>
+            </div>
+          </aside>
+
+          <section className="koluj-card flex h-[740px] flex-col overflow-hidden">
+            <div className="border-b border-[var(--koluj-border)] p-5">
+              <h2 className="text-xl font-black">Domluva předání</h2>
+
+              <p className="mt-1 text-sm font-bold text-[var(--koluj-muted)]">
+                Stav: {translateStatus(loan.status)}
+              </p>
+            </div>
+
+            <div className="border-b border-[var(--koluj-border)] bg-[var(--koluj-bg)] p-5">
+              {isOwner && loan.status === "requested" && (
+                <div>
+                  <p className="mb-4 font-bold">
+                    Máš novou žádost o půjčení.
+                  </p>
+
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={approveLoan}
+                      disabled={saving}
+                      className="koluj-button py-3 disabled:opacity-60"
+                    >
+                      {saving ? "Ukládám..." : "Schválit žádost"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={rejectLoan}
+                      disabled={saving}
+                      className="rounded-2xl border border-red-200 bg-white py-3 font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-60"
+                    >
+                      Odmítnout žádost
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {isOwner && loan.status === "approved" && (
+                <div>
+                  <p className="mb-4 font-bold">
+                    Žádost je schválená. Po předání věci potvrď předání.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={markAsActive}
+                    disabled={saving}
+                    className="koluj-button w-full py-3 disabled:opacity-60"
+                  >
+                    {saving ? "Ukládám..." : "Potvrdit předání"}
+                  </button>
+                </div>
+              )}
+
+              {isOwner && loan.status === "active" && (
+                <div>
+                  <p className="mb-4 font-bold">
+                    Půjčka probíhá. Po vrácení věci potvrď vrácení.
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={markAsReturned}
+                    disabled={saving}
+                    className="koluj-button w-full py-3 disabled:opacity-60"
+                  >
+                    {saving ? "Ukládám..." : "Potvrdit vrácení"}
+                  </button>
+                </div>
+              )}
+
+              {loan.status === "returned" && !reviewSent && (
+                <div>
+                  <h3 className="font-black">Jak proběhla půjčka?</h3>
+
+                  <p className="mt-2 text-sm text-[var(--koluj-muted)]">
+                    1 hvězdička = špatná zkušenost, 5 hvězdiček = výborná
+                    zkušenost.
+                  </p>
+
+                  <div className="mt-4 flex gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setRating(star)}
+                        className={`text-3xl ${
+                          rating >= star ? "text-yellow-500" : "text-gray-300"
+                        }`}
+                      >
+                        ★
+                      </button>
+                    ))}
+                  </div>
+
+                  <textarea
+                    value={reviewText}
+                    onChange={(event) => setReviewText(event.target.value)}
+                    placeholder="Jak půjčka proběhla?"
+                    className="koluj-input mt-4 min-h-[100px] w-full"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={submitReview}
+                    className="koluj-button mt-4 w-full py-3"
+                  >
+                    Odeslat hodnocení
+                  </button>
+                </div>
+              )}
+
+              {loan.status === "returned" && reviewSent && (
+                <p className="font-bold text-[var(--koluj-green)]">
+                  Hodnocení už bylo odesláno.
+                </p>
+              )}
+
+              {loan.status === "cancelled" && (
+                <p className="font-bold text-[var(--koluj-muted)]">
+                  Tato žádost byla zrušena.
+                </p>
+              )}
+
+              {!isOwner &&
+                loan.status !== "returned" &&
+                loan.status !== "cancelled" && (
+                  <p className="font-bold text-[var(--koluj-muted)]">
+                    Další krok nyní potvrzuje vlastník věci.
+                  </p>
+                )}
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-5">
+              <div className="space-y-4">
+                {messages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={
+                      msg.is_system
+                        ? "rounded-2xl bg-[var(--koluj-bg)] p-4 text-sm whitespace-pre-line"
+                        : msg.sender_id === userId
+                        ? "ml-auto max-w-[75%] rounded-2xl bg-[var(--koluj-green)] p-4 text-white"
+                        : "max-w-[75%] rounded-2xl bg-[var(--koluj-bg)] p-4"
+                    }
+                  >
+                    {!msg.is_system && msg.sender_id !== userId && (
+                      <p className="mb-1 text-xs font-bold opacity-70">
+                        {msg.profiles?.full_name || "Uživatel"}
+                      </p>
+                    )}
+
+                    <p className="whitespace-pre-line">{msg.message}</p>
+
+                    <p className="mt-2 text-[11px] font-bold opacity-60">
+                      {formatDateTime(msg.created_at)}
+                    </p>
+                  </div>
+                ))}
+
+                <div ref={messagesEndRef} />
+              </div>
+            </div>
+
+            {loan.status === "returned" || loan.status === "cancelled" ? (
+              <div className="border-t border-[var(--koluj-border)] p-4">
+                <p className="text-center font-bold text-[var(--koluj-muted)]">
+                  Chat je po ukončení půjčky uzamčen.
+                </p>
+              </div>
+            ) : (
+              <div className="border-t border-[var(--koluj-border)] p-4">
+                <div className="flex gap-3">
+                  <input
+                    value={message}
+                    onChange={(event) => setMessage(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        sendMessage();
+                      }
+                    }}
+                    placeholder="Napiš zprávu..."
+                    className="koluj-input flex-1"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={sendMessage}
+                    className="koluj-button px-5"
+                  >
+                    <Send size={18} />
+                  </button>
+                </div>
+              </div>
+            )}
+          </section>
+        </div>
+      </div>
+    </main>
+  );
+}

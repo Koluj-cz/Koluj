@@ -32,6 +32,13 @@ body {
   padding: 16px 12px 56px;
 }
 
+.koluj-cookies {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 16px 12px 5px;
+}
+
 @media (min-width: 768px) {
   .koluj-shell {
     padding: 24px 32px 64px;

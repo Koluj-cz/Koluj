@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowLeft, Mail, MapPin, Phone, User } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 
 type PlaceSuggestion = {
   name: string;
@@ -17,8 +18,12 @@ type PlaceSuggestion = {
 };
 
 export default function ProfilePage() {
+  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [placeSuggestions, setPlaceSuggestions] = useState<PlaceSuggestion[]>([]);
+
+  const [showDeleteAccount, setShowDeleteAccount] = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
 
   const [profile, setProfile] = useState({
     full_name: "",
@@ -28,6 +33,7 @@ export default function ProfilePage() {
     email: "",
     latitude: null as number | null,
     longitude: null as number | null,
+    email_notifications_enabled: true,
   });
 
   useEffect(() => {
@@ -70,9 +76,11 @@ export default function ProfilePage() {
       city: data.city || "",
       phone: data.phone || "",
       bio: data.bio || "",
-      email: data.email || "",
+      email: data.email || user.email || "",
       latitude: data.latitude || null,
       longitude: data.longitude || null,
+      email_notifications_enabled:
+        data.email_notifications_enabled ?? true,
     });
 
     setLoading(false);
@@ -142,6 +150,8 @@ export default function ProfilePage() {
         bio: profile.bio,
         latitude: profile.latitude,
         longitude: profile.longitude,
+        email_notifications_enabled:
+          profile.email_notifications_enabled,
       })
       .eq("id", user.id);
 
@@ -151,6 +161,54 @@ export default function ProfilePage() {
     }
 
     toast.success("Profil uložen");
+  }
+
+  async function deleteAccount() {
+    setDeletingAccount(true);
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (!session) {
+        toast.error("Nejsi přihlášený");
+        return;
+      }
+
+      const response = await fetch("/api/delete-account", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        toast.error(result.error || "Nepodařilo se smazat účet");
+        return;
+      }
+
+      await supabase.auth.signOut();
+
+      toast.success("Účet byl smazán");
+
+      window.location.href = "/";
+    } catch (error) {
+      console.error(error);
+      toast.error("Nepodařilo se smazat účet");
+    } finally {
+      setDeletingAccount(false);
+    }
+  }
+
+  async function logout() {
+    await supabase.auth.signOut();
+
+    toast.success("Byl jsi odhlášen");
+
+    router.push("/");
   }
 
   if (loading) {
@@ -201,8 +259,62 @@ export default function ProfilePage() {
                 </p>
                 <p className="mt-1 text-lg font-bold">{profile.email}</p>
               </div>
+              <button
+                type="button"
+                onClick={logout}
+                className="mt-5 rounded-2xl border border-[var(--koluj-border)] px-5 py-3 font-black transition hover:bg-[var(--koluj-bg)]"
+              >
+                Odhlásit se
+              </button>
             </div>
+            <div className="koluj-card p-5 md:p-8">
+              <SectionTitle
+                icon={<Mail size={24} />}
+                title="Notifikace"
+              />
 
+              <button
+                type="button"
+                onClick={() =>
+                  setProfile({
+                    ...profile,
+                    email_notifications_enabled:
+                      !profile.email_notifications_enabled,
+                  })
+                }
+                className="mt-6 flex w-full items-center justify-between gap-6 rounded-3xl bg-[var(--koluj-bg)] px-5 py-4 text-left transition hover:opacity-90"
+              >
+                <div>
+                  <p className="font-bold">E-mailové notifikace</p>
+
+                  <p className="mt-1 text-sm text-[var(--koluj-muted)]">
+                    Žádosti o půjčení, nové zprávy a změny stavu půjček.
+                  </p>
+                </div>
+
+                <div className="flex rounded-2xl bg-white p-1">
+                  <span
+                    className={`rounded-xl px-4 py-2 text-sm font-black transition ${
+                      profile.email_notifications_enabled
+                        ? "bg-[var(--koluj-green)] text-white"
+                        : "text-[var(--koluj-muted)]"
+                    }`}
+                  >
+                    Zapnuto
+                  </span>
+
+                  <span
+                    className={`rounded-xl px-4 py-2 text-sm font-black transition ${
+                      !profile.email_notifications_enabled
+                        ? "bg-[var(--koluj-green)] text-white"
+                        : "text-[var(--koluj-muted)]"
+                    }`}
+                  >
+                    Vypnuto
+                  </span>
+                </div>
+              </button>
+            </div>
             <div className="koluj-card p-5 md:p-8">
               <SectionTitle icon={<User size={24} />} title="Osobní údaje" />
 
@@ -291,6 +403,50 @@ export default function ProfilePage() {
                 </div>
               </div>
             </div>
+            <div className="koluj-card border border-red-200 p-5 md:p-8">
+              <h2 className="text-2xl font-black text-red-600">
+                Odstranění účtu
+              </h2>
+
+              <p className="mt-3 text-[var(--koluj-muted)]">
+                Trvale smažeš svůj účet, profil, nabídky, zprávy,
+                notifikace a další osobní data.
+                Tato akce je nevratná.
+              </p>
+
+              <button
+                onClick={() => setShowDeleteAccount(true)}
+                className="mt-6 rounded-2xl bg-red-600 px-6 py-3 font-black text-white transition hover:bg-red-700"
+              >
+                Smazat účet
+              </button>
+              {showDeleteAccount && (
+                <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-5">
+                  <p className="font-bold text-red-700">
+                    Opravdu chceš smazat svůj účet?
+                  </p>
+
+                  <div className="mt-4 flex gap-3">
+                    <button
+                      onClick={() => setShowDeleteAccount(false)}
+                      className="rounded-xl border border-[var(--koluj-border)] px-4 py-2 font-bold"
+                    >
+                      Zrušit
+                    </button>
+
+                    <button
+                      onClick={deleteAccount}
+                      disabled={deletingAccount}
+                      className="rounded-xl bg-red-600 px-4 py-2 font-bold text-white disabled:opacity-50"
+                    >
+                      {deletingAccount
+                        ? "Mažu účet..."
+                        : "Ano, smazat účet"}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           <aside className="hidden lg:block">
@@ -298,9 +454,9 @@ export default function ProfilePage() {
               <h2 className="text-2xl font-black">Kontrola profilu</h2>
 
               <ul className="mt-6 space-y-4 text-[var(--koluj-muted)]">
+                <CheckLine done={!!profile.email} text="Přihlášený e-mail" />
                 <CheckLine done={!!profile.full_name} text="Vyplněné jméno" />
                 <CheckLine done={!!profile.latitude} text="Vybraná lokalita" />
-                <CheckLine done={!!profile.email} text="Přihlášený e-mail" />
               </ul>
 
               <button

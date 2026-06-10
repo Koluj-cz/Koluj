@@ -36,6 +36,7 @@ export default function EditItemPage() {
   const [newPhotos, setNewPhotos] = useState<File[]>([]);
   const [newPhotoPreviews, setNewPhotoPreviews] = useState<string[]>([]);
   const [primaryImageUrl, setPrimaryImageUrl] = useState("");
+  const today = new Date().toISOString().split("T")[0];
 
   const [form, setForm] = useState({
     title: "",
@@ -417,7 +418,7 @@ async function makePrimary(imageUrl: string) {
         </header>
 
         <section className="mt-16 px-8">
-          <h1 className="koluj-serif text-7xl font-bold leading-tight tracking-tight">
+          <h1 className="koluj-heading">
             Upravit věc
           </h1>
 
@@ -705,6 +706,7 @@ async function makePrimary(imageUrl: string) {
                 <div className="mt-4 grid gap-4 md:grid-cols-2">
                   <input
                     type="date"
+                    min={today}
                     value={form.available_from}
                     onChange={(e) =>
                       updateField("available_from", e.target.value)
@@ -714,6 +716,7 @@ async function makePrimary(imageUrl: string) {
 
                   <input
                     type="date"
+                    min={form.available_from || today}
                     value={form.available_to}
                     onChange={(e) =>
                       updateField("available_to", e.target.value)

@@ -5,59 +5,21 @@ import Link from "next/link";
 import {
   ArrowLeft,
   Box,
-  CalendarDays,
   Eye,
   EyeOff,
   Grid2X2,
-  MapPin,
   Pencil,
   Plus,
-  RefreshCcw,
-  Star,
   Trash2,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
-import { Banknote } from "lucide-react";
+import ItemCard, { type ItemCardItem } from "@/app/components/ItemCard";
+import AddItemButton from "@/app/components/AddItemButton";
 
-type Item = {
-  id: string;
-  title: string;
-  category: string;
-  condition: string | null;
-  status: string | null;
+type Item = ItemCardItem & {
   is_active: boolean;
-  borrow_count: number;
-  pickup_place: string;
-  primary_image_url: string | null;
-  created_at: string;
-  price_amount: number | null;
-  price_unit: string | null;
-};
-
-const categoryLabels: Record<string, string> = {
-  naradi: "Nářadí",
-  elektronika: "Elektronika",
-  sport: "Sport",
-  outdoor: "Outdoor",
-  dum_zahrada: "Dům a zahrada",
-  auto_moto: "Auto/Moto",
-  foto_video: "Foto a video",
-  party_akce: "Party a akce",
-  ostatni: "Ostatní",
-};
-
-const conditionLabels: Record<string, string> = {
-  new: "Nové",
-  like_new: "Jako nové",
-  good: "Dobrý stav",
-  used: "Běžně používané",
-};
-
-const statusLabels: Record<string, string> = {
-  available: "Volné",
-  reserved: "Rezervované",
-  borrowed: "Půjčené",
+  borrow_count: number | null;
 };
 
 const statusClasses: Record<string, string> = {
@@ -93,9 +55,26 @@ export default function MyItemsPage() {
       return;
     }
 
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name, city")
+      .eq("id", user.id)
+      .single();
+
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     const { data, error } = await supabase
       .from("items")
-      .select("*")
+      .select(`
+        *,
+        loans:loans!loans_item_id_fkey (
+          id,
+          owner_earnings
+        )
+      `)
       .eq("owner_id", user.id)
       .order("created_at", { ascending: false });
 
@@ -105,7 +84,7 @@ export default function MyItemsPage() {
       return;
     }
 
-    setItems(data || []);
+    setItems((data || []) as Item[]);
     setLoading(false);
   }
 
@@ -200,19 +179,6 @@ export default function MyItemsPage() {
     toast.success("Věc byla smazána");
   }
 
-  function formatDate(date: string) {
-    return new Date(date).toLocaleDateString("cs-CZ");
-  }
-
-  function translatePriceUnit(unit: string | null) {
-  if (unit === "hour") return "hodinu";
-  if (unit === "day") return "den";
-  if (unit === "week") return "týden";
-  if (unit === "month") return "měsíc";
-  if (unit === "piece") return "půjčení";
-  return "";
-}
-
   const counts = useMemo(() => {
     return {
       all: items.length,
@@ -282,7 +248,7 @@ export default function MyItemsPage() {
   return (
     <main className="min-h-screen">
       <div className="koluj-shell">
-        <header className="mb-8 flex items-center justify-between">
+        <header className="koluj-page-header">
           <Link
             href="/dashboard"
             className="flex items-center gap-2 font-bold text-[var(--koluj-green)]"
@@ -291,28 +257,26 @@ export default function MyItemsPage() {
             Dashboard
           </Link>
 
-          <Link href="/items/new" className="koluj-button px-6 py-3">
-            + Přidat věc
-          </Link>
+          <AddItemButton
+            className="koluj-button flex items-center gap-2 px-6 py-3"
+          />
         </header>
 
-        <section className="mt-16 px-8">
-          <h1 className="koluj-heading">
-            Moje věci
-          </h1>
+        <section className="mt-12">
+          <h1 className="koluj-heading">Moje věci</h1>
 
           <p className="mt-6 max-w-2xl text-2xl leading-relaxed text-[var(--koluj-muted)]">
             Spravuj své věci, měň jejich stav a sleduj půjčení.
           </p>
         </section>
 
-        <section className="mt-12 px-8">
+        <section className="mt-12">
           <div className="mb-6 grid gap-4 lg:grid-cols-[1fr_260px_220px]">
             <input
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Hledat věc..."
-            className="koluj-input"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Hledat věc..."
+              className="koluj-input"
             />
 
             <select
@@ -392,13 +356,6 @@ export default function MyItemsPage() {
                 Přidej první věc a začni půjčovat.
               </p>
 
-              <Link
-                href="/items/new"
-                className="koluj-button mt-8 inline-flex items-center gap-2 px-6 py-3"
-              >
-                <Plus size={18} />
-                Přidat věc
-              </Link>
             </div>
           ) : filteredItems.length === 0 ? (
             <div className="koluj-card p-10 text-center">
@@ -408,165 +365,96 @@ export default function MyItemsPage() {
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
               {visibleItems.map((item) => {
                 const status = item.status || "available";
 
                 return (
-                  <article
-                    key={item.id}
-                    className="koluj-card overflow-hidden p-0"
+              <ItemCard
+                key={item.id}
+                item={item}
+                variant="owner"
+              >
+                {!item.is_active && (
+                  <p className="mb-3 rounded-2xl bg-[var(--koluj-bg)] px-4 py-2 text-sm font-bold text-[var(--koluj-muted)]">
+                    Skryto pro ostatní
+                  </p>
+                )}
+
+                <select
+                  value={status}
+                  onChange={(e) => updateStatus(item, e.target.value)}
+                  className={`mb-3 w-full rounded-2xl border px-4 py-3 text-center text-sm font-black uppercase tracking-wide outline-none ${
+                    statusClasses[status] || "koluj-status-available"
+                  }`}
+                >
+                  <option value="available">Volné</option>
+                  <option value="reserved">Rezervované</option>
+                  <option value="borrowed">Půjčené</option>
+                </select>
+
+                <div className="grid gap-3">
+                  <Link
+                    href={`/items/${item.id}/edit`}
+                    className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--koluj-border)] px-5 py-3 font-bold transition hover:bg-[var(--koluj-bg)]"
                   >
-                    <div className="grid gap-0 lg:grid-cols-[240px_1fr]">
-                    <div className="bg-[var(--koluj-bg)] p-4">
-                    <div className="relative aspect-[7/8] overflow-hidden rounded-3xl bg-white">
-                        {item.primary_image_url ? (
-                        <img
-                            src={item.primary_image_url}
-                            alt={item.title}
-                            className="h-full w-full object-cover"
-                        />
-                        ) : (
-                        <div className="flex h-full items-center justify-center text-[var(--koluj-muted)]">
-                            Bez fotky
-                        </div>
-                        )}
+                    <Pencil size={18} />
+                    Upravit
+                  </Link>
 
-                        {item.price_amount && item.price_unit && (
-                        <div className="absolute bottom-4 left-4 rounded-2xl bg-[var(--koluj-green)] px-4 py-2 shadow-sm">
-                            <p className="font-black text-white">
-                            {item.price_amount} Kč / {translatePriceUnit(item.price_unit)}
-                            </p>
-                        </div>
-                        )}
-                    </div>
-                    </div>
-
-                      <div className="p-5">
-                        <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:justify-between">
-                          <div>
-                            <p className="text-sm font-black uppercase tracking-widest text-[var(--koluj-green)]">
-                              {categoryLabels[item.category] || item.category}
-                            </p>
-
-                            <h2 className="mt-2 text-3xl font-black tracking-tight">
-                              {item.title}
-                            </h2>
-
-                            {!item.is_active && (
-                              <p className="mt-3 inline-flex rounded-full bg-[var(--koluj-bg)] px-3 py-1 text-sm font-bold text-[var(--koluj-muted)]">
-                                Skryto pro ostatní
-                              </p>
-                            )}
-
-                            <div className="mt-5 grid gap-x-8 gap-y-3 text-[var(--koluj-muted)] md:grid-cols-2 xl:grid-cols-4">
-
-                            <p className="flex items-center gap-2">
-                            <MapPin size={18} />
-                            {item.pickup_place}
-                            </p>
-
-                              {item.condition && (
-                                <p className="flex items-center gap-2">
-                                  <Star size={18} />
-                                  {conditionLabels[item.condition] ||
-                                    item.condition}
-                                </p>
-                              )}
-
-
-
-                              <p className="flex items-center gap-2">
-                                <RefreshCcw size={18} />
-                                {item.borrow_count || 0} půjčení
-                              </p>
-
-                              <p className="flex items-center gap-2">
-                                <CalendarDays size={18} />
-                                Přidáno {formatDate(item.created_at)}
-                              </p>
-                            </div>
-                          </div>
-
-                          <select
-                            value={status}
-                            onChange={(e) =>
-                              updateStatus(item, e.target.value)
-                            }
-                              className={`min-w-40 rounded-2xl border px-4 py-3 text-center text-sm font-black uppercase tracking-wide outline-none ${
-                                statusClasses[status] || "koluj-status-available"
-                              }`}
-                          >
-                            <option value="available">Volné</option>
-                            <option value="reserved">Rezervované</option>
-                            <option value="borrowed">Půjčené</option>
-                          </select>
-                        </div>
-
-                        <div className="mt-6 grid gap-3 border-t border-[var(--koluj-border)] pt-5 sm:grid-cols-3">
-                          <Link
-                            href={`/items/${item.id}/edit`}
-                            className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--koluj-border)] px-5 py-3 font-bold transition hover:bg-[var(--koluj-bg)]"
-                          >
-                            <Pencil size={18} />
-                            Upravit
-                          </Link>
-
-                          <button
-                            type="button"
-                            onClick={() => toggleVisibility(item)}
-                            className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--koluj-border)] px-5 py-3 font-bold text-[var(--koluj-green)] transition hover:bg-[var(--koluj-bg)]"
-                          >
-                            {item.is_active ? (
-                              <>
-                                <EyeOff size={18} />
-                                Skrýt
-                              </>
-                            ) : (
-                              <>
-                                <Eye size={18} />
-                                Obnovit
-                              </>
-                            )}
-                          </button>
-
-                          <button
-                            type="button"
-                            onClick={() => deleteItem(item)}
-                            onMouseLeave={() => setPendingDeleteId(null)}
-                            className="flex items-center justify-center gap-2 rounded-2xl border border-red-200 px-5 py-3 font-bold text-red-600 transition hover:bg-red-50"
-                          >
-                            <Trash2 size={18} />
-                            {pendingDeleteId === item.id
-                              ? "Opravdu smazat?"
-                              : "Smazat"}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
-
-              {visibleCount < filteredItems.length && (
-                <div className="pt-6 text-center">
                   <button
-                    onClick={() => setVisibleCount((prev) => prev + 8)}
-                    className="rounded-2xl border border-[var(--koluj-border)] bg-[var(--koluj-surface)] px-8 py-4 font-bold transition hover:bg-[var(--koluj-bg)]"
+                    type="button"
+                    onClick={() => toggleVisibility(item)}
+                    className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--koluj-border)] px-5 py-3 font-bold text-[var(--koluj-green)] transition hover:bg-[var(--koluj-bg)]"
                   >
-                    Načíst další
+                    {item.is_active ? (
+                      <>
+                        <EyeOff size={18} />
+                        Skrýt
+                      </>
+                    ) : (
+                      <>
+                        <Eye size={18} />
+                        Obnovit
+                      </>
+                    )}
                   </button>
 
-                  <p className="mt-3 text-sm text-[var(--koluj-muted)]">
-                    Zobrazeno {visibleItems.length} z {filteredItems.length} věcí
-                  </p>
+                  <button
+                    type="button"
+                    onClick={() => deleteItem(item)}
+                    onMouseLeave={() => setPendingDeleteId(null)}
+                    className="flex items-center justify-center gap-2 rounded-2xl border border-red-200 px-5 py-3 font-bold text-red-600 transition hover:bg-red-50"
+                  >
+                    <Trash2 size={18} />
+                    {pendingDeleteId === item.id
+                      ? "Opravdu smazat?"
+                      : "Smazat"}
+                  </button>
                 </div>
-              )}
+              </ItemCard>
+                );
+              })}
+            </div>
+          )}
+
+          {visibleCount < filteredItems.length && (
+            <div className="pt-8 text-center">
+              <button
+                onClick={() => setVisibleCount((prev) => prev + 8)}
+                className="rounded-2xl border border-[var(--koluj-border)] bg-[var(--koluj-surface)] px-8 py-4 font-bold transition hover:bg-[var(--koluj-bg)]"
+              >
+                Načíst další
+              </button>
+
+              <p className="mt-3 text-sm text-[var(--koluj-muted)]">
+                Zobrazeno {visibleItems.length} z {filteredItems.length} věcí
+              </p>
             </div>
           )}
         </section>
 
-        <section className="koluj-card mx-8 mt-10 px-8 py-6">
+        <section className="koluj-card mt-10 px-8 py-6">
           <p className="text-[var(--koluj-muted)]">
             <span className="font-bold text-[var(--koluj-green)]">Tip:</span>{" "}
             Udržuj své věci aktuální. Zvyšuješ tím šanci, že si je někdo půjčí.

@@ -16,6 +16,10 @@ export type ItemCardItem = {
   created_at: string;
   status: string | null;
   owner_id: string | null;
+  loans?: {
+    id: string;
+    owner_earnings: number | null;
+  }[] | null;
   profiles?: {
     full_name: string | null;
     avatar_url: string | null;
@@ -30,6 +34,7 @@ export type ItemCardItem = {
 type ItemCardProps = {
   item: ItemCardItem;
   variant?: "public" | "owner";
+  children?: React.ReactNode;
 };
 
 const categoryLabels: Record<string, string> = {
@@ -75,6 +80,7 @@ function translatePriceUnit(unit: string | null) {
 export default function ItemCard({
   item,
   variant = "public",
+  children,
 }: ItemCardProps) {
   const status = item.status || "available";
   const statusLabel = statusLabels[status] || status;
@@ -91,11 +97,15 @@ export default function ItemCard({
   const ratingCountText =
     rating && rating.rating_count ? `(${rating.rating_count})` : "";
 
-  return (
-    <Link
-      href={`/items/${item.id}`}
-      className="koluj-card flex h-full flex-col overflow-hidden transition hover:-translate-y-1"
-    >
+  const loanCount = item.loans?.length || 0;
+
+  const ownerEarnings = (item.loans || []).reduce(
+    (sum, loan) => sum + Number(loan.owner_earnings || 0),
+    0
+  );
+
+  const cardContent = (
+    <>
       <div className="relative h-56 overflow-hidden bg-[var(--koluj-bg)]">
         {item.primary_image_url ? (
           <img
@@ -153,23 +163,77 @@ export default function ItemCard({
           <p className="mt-3 text-sm opacity-0">Bez popisu</p>
         )}
 
+        {variant === "owner" && 
+          <p className="mt-3 text-sm font-bold text-[var(--koluj-muted)]">
+            {loanCount} půjčení
+          </p>
+        }
+
         {variant === "public" && (
           <div className="mt-auto flex items-center justify-between border-t border-[var(--koluj-border)] pt-4">
-            <div>
-              <p className="font-black leading-tight">{ownerName}</p>
+            <button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
 
-              <p className="text-sm font-bold text-[var(--koluj-green)]">
-                {ratingText}
-                {ratingCountText && (
-                  <span className="ml-1 text-[var(--koluj-muted)]">
-                    {ratingCountText}
-                  </span>
-                )}
-              </p>
-            </div>
+                if (item.owner_id) {
+                  window.location.href = `/users/${item.owner_id}`;
+                }
+              }}
+              className="flex items-center gap-3 text-left transition hover:text-[var(--koluj-green)]"
+            >
+              {item.profiles?.avatar_url ? (
+                <img
+                  src={item.profiles.avatar_url}
+                  alt={ownerName}
+                  className="h-10 w-10 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-sm font-black text-[var(--koluj-green)]">
+                  {ownerName.charAt(0).toUpperCase()}
+                </div>
+              )}
+
+              <div>
+                <p className="font-black leading-tight">{ownerName}</p>
+
+                <p className="text-sm font-bold text-[var(--koluj-green)]">
+                  {ratingText}
+                  {ratingCountText && (
+                    <span className="ml-1 text-[var(--koluj-muted)]">
+                      {ratingCountText}
+                    </span>
+                  )}
+                </p>
+              </div>
+            </button>
           </div>
         )}
       </div>
+
+      {variant === "owner" && children && (
+        <div className="border-t border-[var(--koluj-border)] p-4">
+          {children}
+        </div>
+      )}
+    </>
+  );
+
+  if (variant === "owner") {
+    return (
+      <div className="koluj-card flex h-full flex-col overflow-hidden">
+        {cardContent}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={`/items/${item.id}`}
+      className="koluj-card flex h-full flex-col overflow-hidden transition hover:-translate-y-1"
+    >
+      {cardContent}
     </Link>
   );
 }
