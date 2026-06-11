@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
+import imageCompression from "browser-image-compression";
 
 type PlaceSuggestion = {
   name: string;
@@ -156,18 +157,49 @@ export default function EditItemPage() {
     setPlaceSuggestions([]);
   }
 
-  function handlePhotos(files: FileList | null) {
-  if (!files) return;
+  async function handlePhotos(files: FileList | null) {
+    if (!files) return;
 
-  const selected = Array.from(files);
+    const selected = Array.from(files);
 
-  setNewPhotos([...newPhotos, ...selected]);
+    if (images.length + newPhotos.length + selected.length > 8) {
+      toast.error("Můžeš mít maximálně 8 fotek");
+      return;
+    }
 
-  setNewPhotoPreviews([
-    ...newPhotoPreviews,
-    ...selected.map((f) => URL.createObjectURL(f)),
-  ]);
-}
+    const oversized = selected.find(
+      (file) => file.size > 15 * 1024 * 1024
+    );
+
+    if (oversized) {
+      toast.error("Jedna z fotek je větší než 15 MB");
+      return;
+    }
+
+    try {
+      const compressedFiles = await Promise.all(
+        selected.map((file) =>
+          imageCompression(file, {
+            maxSizeMB: 0.7,
+            maxWidthOrHeight: 1400,
+            useWebWorker: true,
+            fileType: "image/webp",
+          })
+        )
+      );
+
+      setNewPhotos((prev) => [...prev, ...compressedFiles]);
+
+      setNewPhotoPreviews((prev) => [
+        ...prev,
+        ...compressedFiles.map((file) =>
+          URL.createObjectURL(file)
+        ),
+      ]);
+    } catch {
+      toast.error("Fotku se nepodařilo zpracovat");
+    }
+  }
 
 async function deleteImage(imageId: string, imageUrl: string) {
   const { error: deleteDbError } = await supabase

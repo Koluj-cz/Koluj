@@ -136,7 +136,7 @@ export default function HomePage() {
         }
 
         if (error.code === error.TIMEOUT) {
-          message = "Zjištění polohy trvalo moc dlouho. Zkus to znovu.";
+          message = "Nepodařilo se získat polohu. Zkontroluj, zda má prohlížeč povolenou polohu a přesnou polohu.";
         }
 
         toast.error(message, {
