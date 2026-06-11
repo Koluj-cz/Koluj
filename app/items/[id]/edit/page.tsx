@@ -223,7 +223,8 @@ async function deleteImage(imageId: string, imageUrl: string) {
       .remove([storagePath]);
 
     if (storageError) {
-      console.error("Storage delete error:", storageError.message);
+      toast.error(storageError.message);
+      return;
     }
   }
 
