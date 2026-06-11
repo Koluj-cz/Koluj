@@ -311,8 +311,7 @@ export default function NewItemPage() {
 
     for (let index = 0; index < finalPhotos.length; index++) {
       const photo = finalPhotos[index];
-      const fileExt = photo.name.split(".").pop();
-      const filePath = `${user.id}/${item.id}/${index}.${fileExt}`;
+      const filePath = `${user.id}/${item.id}/${index}.webp`;
 
       const { error: uploadError } = await supabase.storage
         .from("items")

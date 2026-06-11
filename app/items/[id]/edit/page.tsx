@@ -371,8 +371,7 @@ async function makePrimary(imageUrl: string) {
 
         for (let index = 0; index < newPhotos.length; index++) {
             const photo = newPhotos[index];
-            const fileExt = photo.name.split(".").pop();
-            const filePath = `${user.id}/${itemId}/${Date.now()}-${index}.${fileExt}`;
+            const filePath = `${user.id}/${itemId}/${Date.now()}-${index}.webp`;
 
             const { error: uploadError } = await supabase.storage
             .from("items")
