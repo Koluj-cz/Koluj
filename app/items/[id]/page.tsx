@@ -395,7 +395,7 @@ export default function ItemDetailPage() {
                   <img
                     src={selectedImage}
                     alt={item.title}
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-contain"
                   />
                 ) : (
                   <div className="flex h-full items-center justify-center text-[var(--koluj-muted)]">
