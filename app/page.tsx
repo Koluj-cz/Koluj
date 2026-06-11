@@ -26,6 +26,7 @@ const ItemsMap = dynamic(() => import("@/app/components/ItemsMap"), {
 });
 
 export default function HomePage() {
+  const [showMap, setShowMap] = useState(false);
   const [items, setItems] = useState<ItemCardItem[]>([]);
   const [search, setSearch] = useState("");
   const [userLocation, setUserLocation] = useState<{
@@ -51,6 +52,18 @@ export default function HomePage() {
   useEffect(() => {
     loadItems();
     loadUser();
+
+    const media = window.matchMedia("(min-width: 1024px)");
+
+    setShowMap(media.matches);
+
+    const handleChange = (event: MediaQueryListEvent) => {
+      setShowMap(event.matches);
+    };
+
+    media.addEventListener("change", handleChange);
+
+    return () => media.removeEventListener("change", handleChange);
   }, []);
 
   async function loadUser() {
@@ -247,7 +260,8 @@ export default function HomePage() {
  
           </div>
 
-          <div className="relative hidden h-[430px] overflow-hidden rounded-[2rem] border border-[var(--koluj-border)] bg-white shadow-sm lg:block">
+        {showMap && (
+          <div className="relative h-[430px] overflow-hidden rounded-[2rem] border border-[var(--koluj-border)] bg-white shadow-sm">
             <ItemsMap items={items} userLocation={userLocation} />
 
             <button
@@ -259,6 +273,7 @@ export default function HomePage() {
               Moje poloha
             </button>
           </div>
+        )}
         </section>
 
       <section className="koluj-categories-mobile mt-4 lg:grid lg:grid-cols-4 xl:grid-cols-8">
