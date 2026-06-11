@@ -19,6 +19,7 @@ import {
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import ItemCard, { type ItemCardItem } from "@/app/components/ItemCard";
+import toast from "react-hot-toast";
 
 const ItemsMap = dynamic(() => import("@/app/components/ItemsMap"), {
   ssr: false,
@@ -88,14 +89,53 @@ export default function HomePage() {
   }
 
   function useMyLocation() {
-    if (!navigator.geolocation) return;
+    if (!navigator.geolocation) {
+      toast.error("Tvoje zařízení nepodporuje zjištění polohy.");
+      return;
+    }
 
-    navigator.geolocation.getCurrentPosition((position) => {
-      setUserLocation({
-        latitude: position.coords.latitude,
-        longitude: position.coords.longitude,
-      });
+    toast.loading("Zjišťuji polohu...", {
+      id: "location",
     });
+
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          latitude: position.coords.latitude,
+          longitude: position.coords.longitude,
+        });
+
+        toast.success("Poloha nalezena", {
+          id: "location",
+        });
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+
+        let message = "Nepodařilo se získat polohu.";
+
+        if (error.code === error.PERMISSION_DENIED) {
+          message = "Poloha není povolená. Povol ji v nastavení prohlížeče.";
+        }
+
+        if (error.code === error.POSITION_UNAVAILABLE) {
+          message = "Poloha není momentálně dostupná.";
+        }
+
+        if (error.code === error.TIMEOUT) {
+          message = "Zjištění polohy trvalo moc dlouho. Zkus to znovu.";
+        }
+
+        toast.error(message, {
+          id: "location",
+        });
+      },
+      {
+        enableHighAccuracy: false,
+        timeout: 15000,
+        maximumAge: 300000,
+      }
+    );
   }
 
   const filteredItems = useMemo(() => {
