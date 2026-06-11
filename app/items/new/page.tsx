@@ -16,6 +16,7 @@ import {
 import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
 import { useEffect } from "react";
+import imageCompression from "browser-image-compression";
 
 type PlaceSuggestion = {
   name: string;
@@ -101,7 +102,7 @@ export default function NewItemPage() {
     });
   }
 
-  function handlePhotos(files: FileList | null) {
+  async function handlePhotos(files: FileList | null) {
     if (!files) return;
 
     const selectedFiles = Array.from(files);
@@ -111,18 +112,36 @@ export default function NewItemPage() {
       return;
     }
 
-    const oversized = selectedFiles.find((file) => file.size > 15 * 1024 * 1024);
+    const oversized = selectedFiles.find(
+      (file) => file.size > 15 * 1024 * 1024
+    );
 
     if (oversized) {
       toast.error("Jedna z fotek je větší než 15 MB");
       return;
     }
 
-    setPhotos([...photos, ...selectedFiles]);
-    setPhotoPreviews([
-      ...photoPreviews,
-      ...selectedFiles.map((file) => URL.createObjectURL(file)),
-    ]);
+    try {
+    const compressedFiles = await Promise.all(
+      selectedFiles.map((file) =>
+        imageCompression(file, {
+          maxSizeMB: 0.7,
+          maxWidthOrHeight: 1400,
+          useWebWorker: true,
+          fileType: "image/webp",
+        })
+      )
+    );
+
+      setPhotos((prev) => [...prev, ...compressedFiles]);
+
+      setPhotoPreviews((prev) => [
+        ...prev,
+        ...compressedFiles.map((file) => URL.createObjectURL(file)),
+      ]);
+    } catch {
+      toast.error("Fotku se nepodařilo zpracovat");
+    }
   }
 
   function removePhoto(index: number) {
