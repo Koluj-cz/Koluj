@@ -111,7 +111,7 @@ export default function ItemCard({
           <img
             src={item.primary_image_url}
             alt={item.title}
-            className="h-full w-full object-cover"
+            className="h-full w-full object-contain"
           />
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-[var(--koluj-muted)]">
