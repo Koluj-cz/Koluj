@@ -390,7 +390,7 @@ export default function ItemDetailPage() {
         <section className="mt-10 grid gap-8 lg:grid-cols-[1fr_420px]">
           <div className="space-y-6">
             <div className="koluj-card overflow-hidden p-0">
-              <div className="relative h-[520px] bg-[var(--koluj-bg)]">
+              <div className="relative h-[360px] bg-[var(--koluj-bg)] md:h-[520px]">
                 {selectedImage ? (
                   <img
                     src={selectedImage}
@@ -418,13 +418,13 @@ export default function ItemDetailPage() {
               </div>
 
               {images.length > 1 && (
-                <div className="flex gap-3 overflow-x-auto p-4">
+                <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4 md:flex md:overflow-x-auto">
                   {images.map((image) => (
                     <button
                       key={image.id}
                       type="button"
                       onClick={() => setSelectedImage(image.image_url)}
-                      className={`h-24 w-32 shrink-0 overflow-hidden rounded-2xl border ${
+                      className={`h-24 w-full overflow-hidden rounded-2xl border md:w-32 md:shrink-0 ${
                         selectedImage === image.image_url
                           ? "border-[var(--koluj-green)]"
                           : "border-[var(--koluj-border)]"
