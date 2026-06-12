@@ -165,11 +165,31 @@ export default function LoanDetailPage() {
       )
       .subscribe();
 
-    return () => {
-      supabase.removeChannel(messagesChannel);
-      supabase.removeChannel(loanChannel);
-    };
+      const messagesInterval = setInterval(async () => {
+        const { data } = await supabase
+          .from("loan_messages")
+          .select(`
+            *,
+            profiles (
+              full_name
+            )
+          `)
+          .eq("loan_id", loanId)
+          .order("created_at");
+
+        if (data) {
+          setMessages(data as Message[]);
+        }
+      }, 5000);
+
+      return () => {
+        clearInterval(messagesInterval);
+
+        supabase.removeChannel(messagesChannel);
+        supabase.removeChannel(loanChannel);
+      };
   }, [loanId]);
+
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({
