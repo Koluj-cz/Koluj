@@ -222,7 +222,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen pb-24 lg:pb-0">
       <div className="koluj-shell">
         <header className="mb-8 flex items-center justify-between">
           <Link
@@ -233,7 +233,10 @@ export default function ProfilePage() {
             Dashboard
           </Link>
 
-          <button onClick={saveProfile} className="koluj-button px-6 py-3">
+          <button
+            onClick={saveProfile}
+            className="hidden lg:block koluj-button px-6 py-3"
+          >
             Uložit profil
           </button>
         </header>
@@ -468,6 +471,15 @@ export default function ProfilePage() {
             </div>
           </aside>
         </section>
+      </div>
+      <div className="fixed bottom-4 left-4 right-4 z-50 lg:hidden pb-safe">
+        <button
+          type="button"
+          onClick={saveProfile}
+          className="koluj-button w-full px-6 py-4 shadow-2xl backdrop-blur-sm"
+        >
+          Uložit profil
+        </button>
       </div>
     </main>
   );
