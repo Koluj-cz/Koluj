@@ -472,11 +472,11 @@ export default function ProfilePage() {
           </aside>
         </section>
       </div>
-      <div className="fixed bottom-4 left-4 right-4 z-50 lg:hidden pb-safe">
+      <div className="fixed right-4 top-24 z-50 lg:hidden">
         <button
           type="button"
           onClick={saveProfile}
-          className="koluj-button w-full px-6 py-4 shadow-2xl backdrop-blur-sm"
+          className="koluj-button px-6 py-3 shadow-2xl"
         >
           Uložit profil
         </button>
