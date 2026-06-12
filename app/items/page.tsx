@@ -7,6 +7,7 @@ import { ArrowLeft, LocateFixed, Map, Search, SlidersHorizontal } from "lucide-r
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import ItemCard, { type ItemCardItem } from "@/app/components/ItemCard";
+import AuthHeaderButton from "@/app/components/AuthHeaderButton";
 
 const ItemsMap = dynamic(() => import("@/app/components/ItemsMap"), {
   ssr: false,
@@ -219,9 +220,7 @@ function VeciPageContent() {
             Zpět na hlavní stránku
           </Link>
 
-          <Link href="/dashboard" className="koluj-button px-6 py-3">
-            Můj prostor
-          </Link>
+          <AuthHeaderButton />
         </header>
 
         <section className="mt-12">

@@ -6,6 +6,7 @@ import { ArrowLeft, MapPin, ShieldCheck, Star } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import ItemCard, { type ItemCardItem } from "@/app/components/ItemCard";
 import { useParams } from "next/navigation";
+import AuthHeaderButton from "@/app/components/AuthHeaderButton";
 
 type Profile = {
   id: string;
@@ -166,9 +167,7 @@ export default function UserProfilePage() {
             Zpět na věci
           </Link>
 
-          <Link href="/dashboard" className="koluj-button px-6 py-3">
-            Můj prostor
-          </Link>
+          <AuthHeaderButton />
         </header>
 
         <section className="mt-10 grid gap-8 lg:grid-cols-[360px_1fr]">
