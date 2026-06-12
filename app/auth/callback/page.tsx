@@ -1,47 +1,36 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 
 export const dynamic = "force-dynamic";
 
 export default function AuthCallbackPage() {
-  const router = useRouter();
-  const [debug, setDebug] = useState("Přihlašuji...");
-
   useEffect(() => {
     async function handleCallback() {
-      setDebug(`URL: ${window.location.href}`);
-
       const url = new URL(window.location.href);
       const code = url.searchParams.get("code");
+      const redirectTo = url.searchParams.get("redirectTo");
 
       if (code) {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
 
         if (error) {
-          setDebug(`Chyba exchangeCodeForSession: ${error.message}`);
+          window.location.href = "/login";
           return;
         }
       }
 
       const {
         data: { user },
-        error: userError,
       } = await supabase.auth.getUser();
 
-      if (userError) {
-        setDebug(`Chyba getUser: ${userError.message}`);
-        return;
-      }
-
       if (!user) {
-        setDebug("Uživatel nenalezen. Session se nevytvořila.");
+        window.location.href = "/login";
         return;
       }
 
-      const { error: profileError } = await supabase.from("profiles").upsert(
+      await supabase.from("profiles").upsert(
         {
           id: user.id,
           email: user.email,
@@ -50,11 +39,6 @@ export default function AuthCallbackPage() {
           onConflict: "id",
         }
       );
-
-      if (profileError) {
-        setDebug(`Chyba vytvoření profilu: ${profileError.message}`);
-        return;
-      }
 
       const { data: profile } = await supabase
         .from("profiles")
@@ -69,16 +53,27 @@ export default function AuthCallbackPage() {
           profile?.longitude
       );
 
-      router.replace(profileComplete ? "/dashboard" : "/profile");
+      if (redirectTo) {
+        window.location.href = redirectTo;
+        return;
+      }
+
+      window.location.href = profileComplete ? "/dashboard" : "/profile";
     }
 
     handleCallback();
-  }, [router]);
+  }, []);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[#f8f8f5] px-6">
-      <div className="max-w-xl rounded-3xl bg-white p-8 shadow-sm">
-        <p className="whitespace-pre-wrap text-sm">{debug}</p>
+    <main className="min-h-screen">
+      <div className="koluj-shell flex min-h-screen items-center justify-center">
+        <div className="koluj-card p-10 text-center">
+          <h1 className="text-3xl font-black">Přihlašuji...</h1>
+
+          <p className="mt-4 text-[var(--koluj-muted)]">
+            Chvilku strpení, ověřujeme přihlášení.
+          </p>
+        </div>
       </div>
     </main>
   );
