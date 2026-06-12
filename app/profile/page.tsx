@@ -472,7 +472,7 @@ export default function ProfilePage() {
           </aside>
         </section>
       </div>
-      <div className="fixed right-4 top-24 z-50 lg:hidden">
+      <div className="fixed right-4 top-3 z-50 lg:hidden">
         <button
           type="button"
           onClick={saveProfile}
