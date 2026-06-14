@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   const loanUrl = `${appUrl}/dashboard/loans/${loanId}`;
 
   const { data, error } = await resend.emails.send({
-    from: "Koluj <info@koluj.cz>",
+    from: "Koluj <noreply@koluj.cz>",
     to,
     subject,
     html: `
