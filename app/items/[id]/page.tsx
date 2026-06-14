@@ -16,6 +16,7 @@ import {
   ShieldCheck,
   Star,
   User,
+  Eye,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
@@ -53,6 +54,7 @@ type ItemDetail = {
   available_to: string | null;
   primary_image_url: string | null;
   created_at: string;
+  views_count: number | null;
   profiles: {
     full_name: string | null;
     avatar_url: string | null;
@@ -163,13 +165,19 @@ export default function ItemDetailPage() {
       return;
     }
 
+    await supabase.rpc("increment_item_views", {
+      item_id_input: itemId,
+    });
+
     const { data: imageData } = await supabase
       .from("item_images")
       .select("*")
       .eq("item_id", itemId)
       .order("sort_order", { ascending: true });
-
-    setItem(data as ItemDetail);
+    setItem({
+      ...(data as ItemDetail),
+      views_count: Number(data.views_count || 0) + 1,
+    });
     setImages(imageData || []);
     setSelectedImage(
       data.primary_image_url || imageData?.[0]?.image_url || ""
@@ -474,6 +482,10 @@ export default function ItemDetailPage() {
                 <span className="flex items-center gap-2">
                   <CalendarDays size={18} />
                   Přidáno {formatDate(item.created_at)}
+                </span>
+                <span className="flex items-center gap-2">
+                  <Eye size={18} />
+                  {item.views_count || 0} zobrazení
                 </span>
               </div>
 
