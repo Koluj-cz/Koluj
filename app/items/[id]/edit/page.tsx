@@ -419,7 +419,7 @@ async function makePrimary(imageUrl: string) {
 
   if (loading) {
     return (
-      <main className="min-h-screen">
+      <main className="min-h-screen pb-24 lg:pb-0">
         <div className="koluj-shell">
           <p>Načítám...</p>
         </div>
@@ -428,7 +428,7 @@ async function makePrimary(imageUrl: string) {
   }
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen pb-24 lg:pb-0">
       <div className="koluj-shell">
         <header className="mb-8 flex items-center justify-between">
           <Link
@@ -442,7 +442,7 @@ async function makePrimary(imageUrl: string) {
           <button
             onClick={saveItem}
             disabled={saving}
-            className="koluj-button flex items-center gap-2 px-6 py-3 disabled:opacity-60"
+            className="hidden lg:flex koluj-button items-center gap-2 px-6 py-3 disabled:opacity-60"
           >
             <Save size={18} />
             {saving ? "Ukládám..." : "Uložit změny"}
@@ -784,6 +784,17 @@ async function makePrimary(imageUrl: string) {
           </aside>
         </section>
       </div>
+    <div className="fixed right-4 top-4 z-50 lg:hidden">
+      <button
+        type="button"
+        onClick={saveItem}
+        disabled={saving}
+        className="koluj-button flex items-center gap-2 px-6 py-3 shadow-2xl disabled:opacity-60"
+      >
+        <Save size={18} />
+        {saving ? "Ukládám..." : "Uložit změny"}
+      </button>
+    </div>
     </main>
   );
 }

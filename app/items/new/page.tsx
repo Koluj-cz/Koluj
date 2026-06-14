@@ -353,7 +353,7 @@ export default function NewItemPage() {
   }
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen pb-24 lg:pb-0">
       <div className="koluj-shell">
         <header className="mb-8 flex items-center justify-between">
           <Link
@@ -364,13 +364,13 @@ export default function NewItemPage() {
             Dashboard
           </Link>
 
-          <button
-            onClick={handleSubmit}
-            disabled={loading}
-            className="koluj-button px-6 py-3 disabled:opacity-60"
-          >
-            {loading ? "Ukládám..." : "Přidat věc"}
-          </button>
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          className="hidden lg:block koluj-button px-6 py-3 disabled:opacity-60"
+        >
+          {loading ? "Ukládám..." : "Přidat věc"}
+        </button>
         </header>
 
         <section className="mt-16 px-8">
@@ -673,6 +673,16 @@ export default function NewItemPage() {
           </aside>
         </section>
       </div>
+    <div className="fixed right-4 top-4 z-50 lg:hidden">
+      <button
+        type="button"
+        onClick={handleSubmit}
+        disabled={loading}
+        className="koluj-button px-6 py-3 shadow-2xl disabled:opacity-60"
+      >
+        {loading ? "Ukládám..." : "Přidat věc"}
+      </button>
+    </div>
     </main>
   );
 }
