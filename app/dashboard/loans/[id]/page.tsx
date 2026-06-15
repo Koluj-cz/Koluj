@@ -190,13 +190,6 @@ export default function LoanDetailPage() {
       };
   }, [loanId]);
 
-
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: "smooth",
-    });
-  }, [messages]);
-
 async function updatePresence() {
   if (!userId) return;
 
@@ -284,9 +277,13 @@ async function updatePresence() {
       .eq("loan_id", loanId)
       .order("created_at");
 
-    setLoan(loanData as Loan);
-    setMessages((messagesData || []) as Message[]);
-    setLoading(false);
+      setLoan(loanData as Loan);
+      setMessages((messagesData || []) as Message[]);
+      setLoading(false);
+
+      setTimeout(() => {
+        messagesEndRef.current?.scrollIntoView();
+      }, 100);
   }
 
   async function addSystemMessage(text: string) {

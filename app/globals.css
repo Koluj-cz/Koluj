@@ -345,8 +345,9 @@ body {
   border: 1px solid var(--koluj-border);
   background: white;
   border-radius: 16px;
-  padding: 12px 16px;
+  padding: 12px 10px;
   font-weight: 700;
+  font-size: 0.95rem;
   color: var(--koluj-muted);
   line-height: 1;
   white-space: nowrap;

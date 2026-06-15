@@ -276,7 +276,7 @@ export default function HomePage() {
         )}
         </section>
 
-      <section className="koluj-categories-mobile mt-4 lg:grid lg:grid-cols-4 xl:grid-cols-8">
+      <section className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
         <CategoryChip label="Vše" category="" />
         <CategoryChip icon={<Drill size={16} />} label="Nářadí" category="naradi" />
         <CategoryChip icon={<Bike size={16} />} label="Sport" category="sport" />
