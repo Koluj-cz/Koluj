@@ -70,9 +70,16 @@ export default function LoansPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<LoanStatus>("all");
 
+  const PAGE_SIZE = 10;
+
+  const [borrowingPage, setBorrowingPage] = useState(1);
+  const [lendingPage, setLendingPage] = useState(1);
+  const [borrowingTotal, setBorrowingTotal] = useState(0);
+  const [lendingTotal, setLendingTotal] = useState(0);
+
   useEffect(() => {
     loadLoans();
-  }, []);
+  }, [borrowingPage, lendingPage]);
 
   async function loadLoans() {
     const {
@@ -99,20 +106,27 @@ export default function LoansPage() {
       )
     `;
 
-    const { data: borrowingData } = await supabase
+    const borrowingQuery = supabase
       .from("loans")
-      .select(selectQuery)
+      .select(selectQuery, { count: "exact" })
       .eq("borrower_id", user.id)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .range(0, borrowingPage * PAGE_SIZE - 1);
 
-    const { data: lendingData } = await supabase
+    const lendingQuery = supabase
       .from("loans")
-      .select(selectQuery)
+      .select(selectQuery, { count: "exact" })
       .eq("owner_id", user.id)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .range(0, lendingPage * PAGE_SIZE - 1);
+
+    const { data: borrowingData, count: borrowingCount } = await borrowingQuery;
+    const { data: lendingData, count: lendingCount } = await lendingQuery;
 
     setBorrowing((borrowingData || []) as Loan[]);
     setLending((lendingData || []) as Loan[]);
+    setBorrowingTotal(borrowingCount || 0);
+    setLendingTotal(lendingCount || 0);
     setLoading(false);
   }
 
@@ -126,7 +140,7 @@ export default function LoansPage() {
     return lending.filter((loan) => loan.status === filter);
   }, [lending, filter]);
 
-  const totalCount = borrowing.length + lending.length;
+  const totalCount = borrowingTotal + lendingTotal;
 
   return (
     <main className="min-h-screen">
@@ -203,6 +217,15 @@ export default function LoansPage() {
                     />
                   ))
                 )}
+                {borrowing.length < borrowingTotal && (
+                  <button
+                    type="button"
+                    onClick={() => setBorrowingPage((page) => page + 1)}
+                    className="koluj-button w-full px-6 py-3"
+                  >
+                    Načíst další
+                  </button>
+                )}
               </div>
             </section>
 
@@ -229,6 +252,15 @@ export default function LoansPage() {
                       mode="lending"
                     />
                   ))
+                )}
+                {lending.length < lendingTotal && (
+                  <button
+                    type="button"
+                    onClick={() => setLendingPage((page) => page + 1)}
+                    className="koluj-button w-full px-6 py-3"
+                  >
+                    Načíst další
+                  </button>
                 )}
               </div>
             </section>

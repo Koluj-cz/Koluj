@@ -31,12 +31,17 @@ function formatDate(date: string) {
 }
 
 export default function NotificationsPage() {
+  const PAGE_SIZE = 5;
+
+  const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
+
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadNotifications();
-  }, []);
+  }, [page]);
 
   async function loadNotifications() {
     const {
@@ -48,19 +53,24 @@ export default function NotificationsPage() {
       return;
     }
 
-    const { data } = await supabase
+    const { data, count } = await supabase
       .from("notifications")
-      .select(`
+      .select(
+        `
         *,
         actor:profiles!notifications_actor_id_fkey (
           full_name,
           avatar_url
         )
-      `)
+      `,
+        { count: "exact" }
+      )
       .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .range(0, page * PAGE_SIZE - 1);
 
     setNotifications((data || []) as unknown as Notification[]);
+    setTotalCount(count || 0);
 
     await supabase
       .from("notifications")
@@ -90,6 +100,10 @@ export default function NotificationsPage() {
           <Bell size={32} />
           <h1 className="koluj-heading">Notifikace</h1>
         </div>
+
+        <p className="mt-4 text-[var(--koluj-muted)]">
+          Zobrazeno {notifications.length} z {totalCount}
+        </p>
 
         {loading ? (
           <p className="mt-8">Načítám...</p>
@@ -174,6 +188,15 @@ export default function NotificationsPage() {
                 </div>
               );
             })}
+            {notifications.length < totalCount && (
+              <button
+                type="button"
+                onClick={() => setPage((currentPage) => currentPage + 1)}
+                className="koluj-button w-full px-6 py-3"
+              >
+                Načíst další
+              </button>
+            )}
           </div>
         )}
       </div>
