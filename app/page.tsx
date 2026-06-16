@@ -213,7 +213,7 @@ export default function HomePage() {
           </div>
         </header>
 
-        <section className="grid items-start gap-10 py-10 lg:grid-cols-[0.9fr_1.1fr]">
+        <section className="grid items-start gap-10 py-8 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="flex h-[430px] flex-col">
             <h1 className="koluj-heading">
               Půjčuj si věci od lidí ve svém okolí
@@ -276,7 +276,7 @@ export default function HomePage() {
         )}
         </section>
 
-      <section className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
+      <section className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
         <CategoryChip label="Vše" category="" />
         <CategoryChip icon={<Drill size={16} />} label="Nářadí" category="naradi" />
         <CategoryChip icon={<Bike size={16} />} label="Sport" category="sport" />
