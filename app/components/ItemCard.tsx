@@ -71,10 +71,17 @@ const statusClasses: Record<string, string> = {
 function translatePriceUnit(unit: string | null) {
   if (unit === "hour") return "hodinu";
   if (unit === "day") return "den";
+  if (unit === "weekend") return "víkend";
   if (unit === "week") return "týden";
   if (unit === "month") return "měsíc";
   if (unit === "piece") return "půjčení";
   return "";
+}
+
+function stripHtml(value: string | null) {
+  if (!value) return "";
+
+  return value.replace(/<[^>]*>/g, "").trim();
 }
 
 export default function ItemCard({
@@ -157,7 +164,7 @@ export default function ItemCard({
 
         {item.description ? (
           <p className="mt-3 line-clamp-2 text-sm text-[var(--koluj-muted)]">
-            {item.description}
+            {stripHtml(item.description)}
           </p>
         ) : (
           <p className="mt-3 text-sm opacity-0">Bez popisu</p>

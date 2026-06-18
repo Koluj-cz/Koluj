@@ -39,6 +39,31 @@ body {
   padding: 16px 12px 5px;
 }
 
+.koluj-rich-text p {
+  margin: 0 0 0.75rem;
+}
+
+.koluj-rich-text strong {
+  font-weight: 900;
+  color: var(--koluj-ink);
+}
+
+.koluj-rich-text em {
+  font-style: italic;
+}
+
+.koluj-rich-text ul {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+  list-style: disc;
+}
+
+.koluj-rich-text a {
+  color: var(--koluj-green);
+  font-weight: 800;
+  text-decoration: underline;
+}
+
 @media (min-width: 768px) {
   .koluj-shell {
     padding: 24px 32px 64px;

@@ -219,12 +219,12 @@ export default function HomePage() {
               Půjčuj si věci od lidí ve svém okolí
             </h1>
 
-            <p className="mt-8 max-w-xl text-xl leading-relaxed text-[var(--koluj-muted)]">
+            <p className="mt-4 max-w-xl text-xl leading-relaxed text-[var(--koluj-muted)]">
               Ušetři peníze, místo i planetu. Najdi věci, které zrovna
               potřebuješ, a půjč si je od lidí kolem sebe.
             </p>
             <div className="flex-1" />
-            <div className="mt-8 flex max-w-2xl flex-col gap-3 rounded-3xl border border-[var(--koluj-border)] bg-white p-3 shadow-sm md:flex-row">
+            <div className="mt-4 flex max-w-2xl flex-col gap-3 rounded-3xl border border-[var(--koluj-border)] bg-white p-3 shadow-sm md:flex-row">
               <div className="flex flex-1 items-center gap-3 px-3">
                 <Search size={20} className="text-[var(--koluj-muted)]" />
 
@@ -276,7 +276,7 @@ export default function HomePage() {
         )}
         </section>
 
-      <section className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
+      <section className="mt-8 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
         <CategoryChip label="Vše" category="" />
         <CategoryChip icon={<Drill size={16} />} label="Nářadí" category="naradi" />
         <CategoryChip icon={<Bike size={16} />} label="Sport" category="sport" />

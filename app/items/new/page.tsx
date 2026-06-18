@@ -17,6 +17,7 @@ import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
 import { useEffect } from "react";
 import imageCompression from "browser-image-compression";
+import RichTextEditor from "@/app/components/RichTextEditor";
 
 type PlaceSuggestion = {
   name: string;
@@ -489,12 +490,15 @@ export default function NewItemPage() {
                   </select>
                 </div>
 
-                <textarea
-                  value={form.description}
-                  onChange={(e) => updateField("description", e.target.value)}
-                  placeholder="Popis *"
-                  className="koluj-input min-h-32"
-                />
+              <RichTextEditor
+                value={form.description}
+                onChange={(value) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    description: value,
+                  }))
+                }
+              />
               </div>
             </div>
 
@@ -519,6 +523,7 @@ export default function NewItemPage() {
                   >
                     <option value="hour">za hodinu</option>
                     <option value="day">za den</option>
+                    <option value="weekend">za víkend</option>
                     <option value="week">za týden</option>
                     <option value="month">za měsíc</option>
                     <option value="piece">za půjčení</option>
