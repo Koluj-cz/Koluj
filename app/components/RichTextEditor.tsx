@@ -15,8 +15,18 @@ export default function RichTextEditor({
 }: Props) {
   const editor = useEditor({
     extensions: [
-      StarterKit,
-      Link,
+    StarterKit,
+    Link.configure({
+        openOnClick: false,
+        autolink: true,
+        defaultProtocol: "https",
+        protocols: ["http", "https"],
+        HTMLAttributes: {
+        target: "_blank",
+        rel: "noopener noreferrer nofollow",
+        class: "koluj-rich-link",
+        },
+    }),
     ],
     content: value,
     onUpdate: ({ editor }) => {
@@ -46,31 +56,30 @@ export default function RichTextEditor({
         </button>
 
         <button
-          type="button"
-          onClick={() => {
-            const url = prompt("Zadej odkaz");
+        type="button"
+        onClick={() => {
+            const url = window.prompt("Vlož odkaz ve tvaru https://...");
 
             if (!url) return;
 
             editor
-              .chain()
-              .focus()
-              .setLink({ href: url })
-              .run();
-          }}
-          className="rounded-lg px-3 py-1 hover:bg-[var(--koluj-bg)]"
+            .chain()
+            .focus()
+            .extendMarkRange("link")
+            .setLink({ href: url.startsWith("http") ? url : `https://${url}` })
+            .run();
+        }}
+        className="rounded-lg px-3 py-1 hover:bg-[var(--koluj-bg)]"
         >
-          🔗
+        🔗
         </button>
 
         <button
-          type="button"
-          onClick={() =>
-            editor.chain().focus().toggleBulletList().run()
-          }
-          className="rounded-lg px-3 py-1 hover:bg-[var(--koluj-bg)]"
+        type="button"
+        onClick={() => editor.chain().focus().toggleBulletList().run()}
+        className="rounded-lg px-3 py-1 hover:bg-[var(--koluj-bg)]"
         >
-          •
+        •
         </button>
       </div>
 

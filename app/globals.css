@@ -40,7 +40,7 @@ body {
 }
 
 .koluj-rich-text p {
-  margin: 0 0 0.75rem;
+  margin-bottom: 0.75rem;
 }
 
 .koluj-rich-text strong {
@@ -55,13 +55,42 @@ body {
 .koluj-rich-text ul {
   margin: 0.75rem 0;
   padding-left: 1.5rem;
-  list-style: disc;
+  list-style-type: disc;
+}
+
+.koluj-rich-text ol {
+  margin: 0.75rem 0;
+  padding-left: 1.5rem;
+  list-style-type: decimal;
+}
+
+.koluj-rich-text li {
+  margin-bottom: 0.25rem;
 }
 
 .koluj-rich-text a {
   color: var(--koluj-green);
   font-weight: 800;
   text-decoration: underline;
+}
+
+.ProseMirror {
+  min-height: 160px;
+  outline: none;
+}
+
+.ProseMirror ul {
+  padding-left: 1.5rem;
+  list-style-type: disc;
+}
+
+.ProseMirror ol {
+  padding-left: 1.5rem;
+  list-style-type: decimal;
+}
+
+.ProseMirror p {
+  margin-bottom: 0.75rem;
 }
 
 @media (min-width: 768px) {

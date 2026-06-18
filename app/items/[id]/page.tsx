@@ -490,14 +490,19 @@ export default function ItemDetailPage() {
                 </span>
               </div>
 
-              {item.description && (
-                <div className="mt-8">
-                  <h2 className="text-2xl font-black">Popis</h2>
-                  <p className="mt-3 whitespace-pre-line text-lg leading-relaxed text-[var(--koluj-muted)]">
-                    {item.description}
-                  </p>
-                </div>
-              )}
+            {item.description && (
+              <div className="mt-8">
+                <h2 className="text-2xl font-black">Popis</h2>
+
+                <div
+                  className="koluj-rich-text mt-3 text-lg leading-relaxed text-[var(--koluj-muted)]"
+                  
+                  dangerouslySetInnerHTML={{
+                    __html: item.description,
+                  }}
+                />
+              </div>
+            )}
             </div>
 
             <div className="koluj-card p-8">
