@@ -39,6 +39,8 @@ export default function EditItemPage() {
   const [newPhotoPreviews, setNewPhotoPreviews] = useState<string[]>([]);
   const [primaryImageUrl, setPrimaryImageUrl] = useState("");
   const today = new Date().toISOString().split("T")[0];
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const [form, setForm] = useState({
     title: "",
@@ -177,6 +179,9 @@ export default function EditItemPage() {
       return;
     }
 
+    setUploadingPhotos(true);
+    setUploadProgress(10);
+
     try {
       const compressedFiles = await Promise.all(
         selected.map((file) =>
@@ -188,6 +193,8 @@ export default function EditItemPage() {
           })
         )
       );
+      setUploadProgress(100);
+      setUploadingPhotos(false);
 
       setNewPhotos((prev) => [...prev, ...compressedFiles]);
 
@@ -199,6 +206,8 @@ export default function EditItemPage() {
       ]);
     } catch {
       toast.error("Fotku se nepodařilo zpracovat");
+      setUploadingPhotos(false);
+      setUploadProgress(0);
     }
   }
 
@@ -369,7 +378,9 @@ async function makePrimary(imageUrl: string) {
         }
 
         const currentCount = images.length;
-
+        
+        setUploadingPhotos(true);
+        setUploadProgress(0);
         for (let index = 0; index < newPhotos.length; index++) {
             const photo = newPhotos[index];
             const filePath = `${user.id}/${itemId}/${Date.now()}-${index}.webp`;
@@ -410,9 +421,10 @@ async function makePrimary(imageUrl: string) {
                 })
                 .eq("id", itemId);
             }
+            setUploadProgress(Math.round(((index + 1) / newPhotos.length) * 100));
         }
         }
-
+        setUploadingPhotos(false);
         setSaving(false);
         toast.success("Změny uloženy");
         router.push("/dashboard/my-items");
@@ -538,6 +550,21 @@ async function makePrimary(imageUrl: string) {
                 onChange={(e) => handlePhotos(e.target.files)}
             />
             </label>
+            {uploadingPhotos && (
+              <div className="mt-4">
+                <div className="mb-2 flex justify-between text-sm font-bold text-[var(--koluj-muted)]">
+                  <span>Zpracovávám fotky...</span>
+                  <span>{uploadProgress}%</span>
+                </div>
+
+                <div className="h-3 overflow-hidden rounded-full bg-[var(--koluj-bg)]">
+                  <div
+                    className="h-full rounded-full bg-[var(--koluj-green)] transition-all"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              </div>
+            )}
 
         </div>
         </div>

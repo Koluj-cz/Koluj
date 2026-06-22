@@ -65,6 +65,8 @@ export default function NewItemPage() {
   const [mainPhotoIndex, setMainPhotoIndex] = useState(0);
   const [placeSuggestions, setPlaceSuggestions] = useState<PlaceSuggestion[]>([]);
   const today = new Date().toISOString().split("T")[0];
+  const [uploadingPhotos, setUploadingPhotos] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const [form, setForm] = useState({
     title: "",
@@ -122,6 +124,9 @@ export default function NewItemPage() {
       return;
     }
 
+    setUploadingPhotos(true);
+    setUploadProgress(10);
+    
     try {
     const compressedFiles = await Promise.all(
       selectedFiles.map((file) =>
@@ -133,6 +138,8 @@ export default function NewItemPage() {
         })
       )
     );
+    setUploadProgress(100);
+    setUploadingPhotos(false);
 
       setPhotos((prev) => [...prev, ...compressedFiles]);
 
@@ -142,6 +149,8 @@ export default function NewItemPage() {
       ]);
     } catch {
       toast.error("Fotku se nepodařilo zpracovat");
+      setUploadingPhotos(false);
+      setUploadProgress(0);
     }
   }
 
@@ -310,7 +319,10 @@ export default function NewItemPage() {
 
     let primaryImageUrl = "";
 
+    setUploadingPhotos(true);
+    setUploadProgress(0);
     for (let index = 0; index < finalPhotos.length; index++) {
+      
       const photo = finalPhotos[index];
       const filePath = `${user.id}/${item.id}/${index}.webp`;
 
@@ -342,8 +354,9 @@ export default function NewItemPage() {
         image_url: publicUrl.publicUrl,
         sort_order: index,
       });
+      setUploadProgress(Math.round(((index + 1) / finalPhotos.length) * 100));
     }
-
+    setUploadingPhotos(false);
     await supabase
       .from("items")
       .update({ primary_image_url: primaryImageUrl })
@@ -446,6 +459,21 @@ export default function NewItemPage() {
               <p className="mt-4 text-sm text-[var(--koluj-muted)]">
                 Nahraj 1–8 fotek. Hvězdičkou označ hlavní fotku pro náhled.
               </p>
+              {uploadingPhotos && (
+                <div className="mt-4">
+                  <div className="mb-2 flex justify-between text-sm font-bold text-[var(--koluj-muted)]">
+                    <span>Zpracovávám fotky...</span>
+                    <span>{uploadProgress}%</span>
+                  </div>
+
+                  <div className="h-3 overflow-hidden rounded-full bg-[var(--koluj-bg)]">
+                    <div
+                      className="h-full rounded-full bg-[var(--koluj-green)] transition-all"
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="koluj-card p-8">
