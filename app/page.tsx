@@ -5,12 +5,16 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   ArrowRight,
-  Bike,
   Drill,
+  Bike,
+  Smartphone,
+  Tent,
+  Trees,
+  Camera,
+  Boxes,
   Leaf,
   LocateFixed,
   MapPin,
-  Package,
   Search,
   ShieldCheck,
   Sparkles,
@@ -280,11 +284,11 @@ export default function HomePage() {
         <CategoryChip label="Vše" category="" />
         <CategoryChip icon={<Drill size={16} />} label="Nářadí" category="naradi" />
         <CategoryChip icon={<Bike size={16} />} label="Sport" category="sport" />
-        <CategoryChip icon={<Package size={16} />} label="Elektronika" category="elektronika" />
+        <CategoryChip icon={<Smartphone size={16} />} label="Elektronika" category="elektronika" />
         <CategoryChip icon={<Sparkles size={16} />} label="Outdoor" category="outdoor" />
-        <CategoryChip icon={<Package size={16} />} label="Dům a zahrada" category="dum_zahrada" />
-        <CategoryChip icon={<Package size={16} />} label="Foto a video" category="foto_video" />
-        <CategoryChip icon={<Package size={16} />} label="Ostatní" category="ostatni" />
+        <CategoryChip icon={<Trees size={16} />} label="Dům a zahrada" category="dum_zahrada" />
+        <CategoryChip icon={<Camera size={16} />} label="Foto a video" category="foto_video" />
+        <CategoryChip icon={<Boxes size={16} />} label="Ostatní" category="ostatni" />
       </section>
 
         <section id="explore" className="mt-14">
