@@ -232,6 +232,10 @@ export default function ProfilePage() {
     );
   }
 
+  const isIOS =
+    typeof navigator !== "undefined" &&
+    /iPad|iPhone|iPod/.test(navigator.userAgent);
+
   return (
     <main className="min-h-screen pb-24 lg:pb-0">
       <div className="koluj-shell">
@@ -329,6 +333,12 @@ export default function ProfilePage() {
                 </div>
               </button>
               <PushNotificationButton />
+              {isIOS && (
+                <p className="mt-3 rounded-2xl bg-white px-4 py-3 text-sm font-bold text-[var(--koluj-muted)]">
+                  Na iPhonu nejdříve přidej Koluj na plochu přes Sdílet → Přidat na plochu.
+                  Push notifikace půjdou zapnout až po instalaci aplikace.
+                </p>
+              )}
             </div>
             <div className="koluj-card p-5 md:p-8">
               <SectionTitle icon={<User size={24} />} title="Osobní údaje" />
