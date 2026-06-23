@@ -110,7 +110,6 @@ export default function LoanDetailPage() {
   const [reviewSent, setReviewSent] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -149,6 +148,14 @@ export default function LoanDetailPage() {
 
           return [...current, data as Message];
         });
+        scrollMessagesToBottom();
+        setTimeout(() => {
+          const container = messagesContainerRef.current;
+
+          if (container) {
+            container.scrollTop = container.scrollHeight;
+          }
+        }, 50);
         }
       )
       .subscribe();
@@ -183,6 +190,7 @@ export default function LoanDetailPage() {
 
         if (data) {
           setMessages(data as Message[]);
+          scrollMessagesToBottom();
         }
       }, 5000);
 
@@ -194,15 +202,25 @@ export default function LoanDetailPage() {
       };
   }, [loanId]);
 
-async function updatePresence() {
-  if (!userId) return;
+  async function updatePresence() {
+    if (!userId) return;
 
-  await supabase.from("loan_participant_presence").upsert({
-    loan_id: loanId,
-    user_id: userId,
-    last_seen_at: new Date().toISOString(),
-  });
-}
+    await supabase.from("loan_participant_presence").upsert({
+      loan_id: loanId,
+      user_id: userId,
+      last_seen_at: new Date().toISOString(),
+    });
+  }
+
+  function scrollMessagesToBottom() {
+    setTimeout(() => {
+      const container = messagesContainerRef.current;
+
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }, 80);
+  }
 
   useEffect(() => {
     if (!userId) return;
@@ -217,11 +235,14 @@ async function updatePresence() {
   }, [userId, loanId]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "end",
+    const container = messagesContainerRef.current;
+
+    if (!container) return;
+
+    requestAnimationFrame(() => {
+      container.scrollTop = container.scrollHeight;
     });
-  }, [messages]);
+  }, [messages.length]);
 
   async function loadLoan() {
     const {
@@ -552,6 +573,14 @@ async function updatePresence() {
     }
 
     setMessage("");
+    scrollMessagesToBottom();
+    setTimeout(() => {
+      const container = messagesContainerRef.current;
+
+      if (container) {
+        container.scrollTop = container.scrollHeight;
+      }
+    }, 50);
   }
 
   async function submitReview() {
