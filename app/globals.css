@@ -531,3 +531,16 @@ body {
     margin-bottom: 14px;
   }
 }
+
+.koluj-map-popup .leaflet-popup-content {
+  margin: 12px;
+}
+
+.koluj-map-popup .leaflet-popup-content-wrapper {
+  border-radius: 18px;
+}
+
+.koluj-map-popup .leaflet-popup-close-button {
+  top: 8px;
+  right: 8px;
+}

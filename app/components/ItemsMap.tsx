@@ -162,22 +162,46 @@ export default function ItemsMap({
             {group.items.length}
           </Tooltip>
 
-          <Popup>
-            <div className="space-y-3">
-              {group.items.map((item) => (
-                <div key={item.id} className="border-b pb-2 last:border-b-0">
-                  <p className="font-bold">{item.title}</p>
-                  <p>{item.pickup_place}</p>
+          <Popup className="koluj-map-popup">
+            <div className="w-[240px]">
+              <div className="mb-3">
+                <p className="text-sm font-black">
+                  {group.items.length === 1
+                    ? "1 věc v místě"
+                    : `${group.items.length} věci v místě`}
+                </p>
+                <p className="truncate text-xs text-[var(--koluj-muted)]">
+                  {group.items[0]?.pickup_place}
+                </p>
+              </div>
 
-                  {item.price_amount && item.price_unit && (
-                    <p>
-                      {item.price_amount} Kč / {priceUnit(item.price_unit)}
-                    </p>
-                  )}
+              <div className="max-h-[220px] space-y-2 overflow-y-auto pr-1">
+                {group.items.map((item) => (
+                  <Link
+                    key={item.id}
+                    href={`/items/${item.id}`}
+                    className="block rounded-xl border border-[var(--koluj-border)] bg-white px-3 py-2 transition hover:bg-[var(--koluj-bg)]"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="line-clamp-2 text-sm font-black leading-tight">
+                        {item.title}
+                      </p>
 
-                  <Link href={`/items/${item.id}`}>Zobrazit detail</Link>
-                </div>
-              ))}
+                      {item.price_amount && item.price_unit && (
+                        <p className="shrink-0 rounded-full bg-[var(--koluj-green)] px-2 py-1 text-[11px] font-black text-white">
+                          {item.price_amount} Kč
+                        </p>
+                      )}
+                    </div>
+
+                    {item.price_amount && item.price_unit && (
+                      <p className="mt-1 text-xs text-[var(--koluj-muted)]">
+                        za {priceUnit(item.price_unit)}
+                      </p>
+                    )}
+                  </Link>
+                ))}
+              </div>
             </div>
           </Popup>
         </CircleMarker>
