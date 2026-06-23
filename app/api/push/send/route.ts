@@ -7,15 +7,25 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-webpush.setVapidDetails(
-  process.env.VAPID_EMAIL!,
-  process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY!,
-  process.env.VAPID_PRIVATE_KEY!
-);
-
 export async function POST(request: Request) {
-  const body = await request.json();
+  const vapidEmail = process.env.VAPID_EMAIL;
+  const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
 
+  if (!vapidEmail || !vapidPublicKey || !vapidPrivateKey) {
+    return NextResponse.json(
+      { error: "Missing VAPID configuration" },
+      { status: 500 }
+    );
+  }
+
+  webpush.setVapidDetails(
+    vapidEmail,
+    vapidPublicKey,
+    vapidPrivateKey
+  );
+
+  const body = await request.json();
   const { userId, title, message, url } = body;
 
   if (!userId || !title || !message) {
