@@ -121,7 +121,7 @@ export default function ItemCard({
 
   const cardContent = (
     <>
-      <div className="relative h-36 overflow-hidden bg-[var(--koluj-bg)] sm:h-44">
+      <div className="relative h-32 overflow-hidden bg-[var(--koluj-bg)] sm:h-44">
         {item.primary_image_url ? (
           <img
             src={item.primary_image_url}
