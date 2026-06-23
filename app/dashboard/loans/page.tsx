@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, CalendarDays } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import PageLoader from "@/app/components/PageLoader";
+
 
 type LoanStatus =
   | "all"
@@ -190,7 +192,7 @@ export default function LoansPage() {
         </section>
 
         {loading ? (
-          <p className="mt-8">Načítám...</p>
+          <PageLoader />
         ) : (
           <div className="mt-10 grid gap-8 lg:grid-cols-2">
             <section>

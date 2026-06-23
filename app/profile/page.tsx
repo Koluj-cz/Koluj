@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import PageLoader from "@/app/components/PageLoader";
+import PushNotificationButton from "@/app/components/PushNotificationButton";
 
 type PlaceSuggestion = {
   name: string;
@@ -316,6 +317,7 @@ export default function ProfilePage() {
                   </span>
                 </div>
               </button>
+              <PushNotificationButton />
             </div>
             <div className="koluj-card p-5 md:p-8">
               <SectionTitle icon={<User size={24} />} title="Osobní údaje" />
