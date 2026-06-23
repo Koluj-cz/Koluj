@@ -22,6 +22,7 @@ import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
 import ItemCard, { type ItemCardItem } from "@/app/components/ItemCard";
 import toast from "react-hot-toast";
+import InstallAppButton from "@/app/components/InstallAppButton";
 
 const ItemsMap = dynamic(() => import("@/app/components/ItemsMap"), {
   ssr: false,
@@ -200,6 +201,7 @@ export default function HomePage() {
           </Link>
 
           <div className="flex items-center gap-3">
+            <InstallAppButton />
             {isLoggedIn ? (
               <Link href="/dashboard" className="koluj-button px-5 py-3 md:px-6">
                 Můj prostor
