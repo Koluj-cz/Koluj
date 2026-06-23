@@ -10,6 +10,7 @@ type NotifyUserParams = {
   message: string;
   emailSubject?: string;
   sendEmail?: boolean;
+  sendPush?: boolean;
 };
 
 export async function notifyUser({
@@ -22,6 +23,7 @@ export async function notifyUser({
   message,
   emailSubject,
   sendEmail = true,
+  sendPush = true,
 }: NotifyUserParams) {
   if (!userId) return;
 
@@ -35,21 +37,22 @@ export async function notifyUser({
     message,
   });
 
-
-  await fetch("/api/push/send", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      userId,
-      title,
-      message,
-      url: loanId
-        ? `/dashboard/loans/${loanId}`
-        : "/dashboard/notifications",
-    }),
-  });
+  if (sendPush) {
+    await fetch("/api/push/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId,
+        title,
+        message,
+        url: loanId
+          ? `/dashboard/loans/${loanId}`
+          : "/dashboard/notifications",
+      }),
+    });
+  }
 
   if (!sendEmail) return;
 

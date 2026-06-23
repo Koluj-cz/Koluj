@@ -20,19 +20,8 @@ type Loan = {
   returned_at?: string | null;
   handed_over_at?: string | null;
   reviewed?: boolean;
-
-  owner: {
-    id: string;
-    full_name: string | null;
-    avatar_url: string | null;
-  } | null;
-
-  borrower: {
-    id: string;
-    full_name: string | null;
-    avatar_url: string | null;
-  } | null;
-
+  owner: { id: string; full_name: string | null; avatar_url: string | null } | null;
+  borrower: { id: string; full_name: string | null; avatar_url: string | null } | null;
   items: {
     id: string;
     title: string;
@@ -50,9 +39,7 @@ type Message = {
   sender_id: string | null;
   is_system: boolean;
   created_at: string;
-  profiles?: {
-    full_name: string | null;
-  } | null;
+  profiles?: { full_name: string | null } | null;
 };
 
 function translateStatus(status: string) {
@@ -109,8 +96,29 @@ export default function LoanDetailPage() {
   const [reviewText, setReviewText] = useState("");
   const [reviewSent, setReviewSent] = useState(false);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+  function isNearBottom() {
+    const container = messagesContainerRef.current;
+    if (!container) return true;
+
+    const distanceFromBottom =
+      container.scrollHeight - container.scrollTop - container.clientHeight;
+
+    return distanceFromBottom < 140;
+  }
+
+  function scrollMessagesToBottom(behavior: ScrollBehavior = "auto") {
+    requestAnimationFrame(() => {
+      const container = messagesContainerRef.current;
+      if (!container) return;
+
+      container.scrollTo({
+        top: container.scrollHeight,
+        behavior,
+      });
+    });
+  }
 
   useEffect(() => {
     loadLoan();
@@ -126,6 +134,8 @@ export default function LoanDetailPage() {
           filter: `loan_id=eq.${loanId}`,
         },
         async (payload) => {
+          const shouldScroll = isNearBottom();
+
           const { data } = await supabase
             .from("loan_messages")
             .select(`
@@ -139,23 +149,19 @@ export default function LoanDetailPage() {
 
           if (!data) return;
 
-        setMessages((current) => {
-          const exists = current.some((message) => message.id === data.id);
+          setMessages((current) => {
+            const exists = current.some((msg) => msg.id === data.id);
 
-          if (exists) {
-            return current;
+            if (exists) {
+              return current;
+            }
+
+            return [...current, data as Message];
+          });
+
+          if (shouldScroll) {
+            scrollMessagesToBottom("smooth");
           }
-
-          return [...current, data as Message];
-        });
-        scrollMessagesToBottom();
-        setTimeout(() => {
-          const container = messagesContainerRef.current;
-
-          if (container) {
-            container.scrollTop = container.scrollHeight;
-          }
-        }, 50);
         }
       )
       .subscribe();
@@ -171,35 +177,48 @@ export default function LoanDetailPage() {
           filter: `id=eq.${loanId}`,
         },
         () => {
-          loadLoan();
+          loadLoan(false);
         }
       )
       .subscribe();
 
-      const messagesInterval = setInterval(async () => {
-        const { data } = await supabase
-          .from("loan_messages")
-          .select(`
-            *,
-            profiles (
-              full_name
-            )
-          `)
-          .eq("loan_id", loanId)
-          .order("created_at");
+    const messagesInterval = setInterval(async () => {
+      const shouldScroll = isNearBottom();
 
-        if (data) {
-          setMessages(data as Message[]);
-          scrollMessagesToBottom();
+      const { data } = await supabase
+        .from("loan_messages")
+        .select(`
+          *,
+          profiles (
+            full_name
+          )
+        `)
+        .eq("loan_id", loanId)
+        .order("created_at");
+
+      if (!data) return;
+
+      setMessages((current) => {
+        const currentIds = current.map((msg) => msg.id).join(",");
+        const nextIds = data.map((msg) => msg.id).join(",");
+
+        if (currentIds === nextIds) {
+          return current;
         }
-      }, 5000);
 
-      return () => {
-        clearInterval(messagesInterval);
+        return data as Message[];
+      });
 
-        supabase.removeChannel(messagesChannel);
-        supabase.removeChannel(loanChannel);
-      };
+      if (shouldScroll) {
+        scrollMessagesToBottom("smooth");
+      }
+    }, 5000);
+
+    return () => {
+      clearInterval(messagesInterval);
+      supabase.removeChannel(messagesChannel);
+      supabase.removeChannel(loanChannel);
+    };
   }, [loanId]);
 
   async function updatePresence() {
@@ -210,16 +229,6 @@ export default function LoanDetailPage() {
       user_id: userId,
       last_seen_at: new Date().toISOString(),
     });
-  }
-
-  function scrollMessagesToBottom() {
-    setTimeout(() => {
-      const container = messagesContainerRef.current;
-
-      if (container) {
-        container.scrollTop = container.scrollHeight;
-      }
-    }, 80);
   }
 
   useEffect(() => {
@@ -234,17 +243,7 @@ export default function LoanDetailPage() {
     return () => clearInterval(interval);
   }, [userId, loanId]);
 
-  useEffect(() => {
-    const container = messagesContainerRef.current;
-
-    if (!container) return;
-
-    requestAnimationFrame(() => {
-      container.scrollTop = container.scrollHeight;
-    });
-  }, [messages.length]);
-
-  async function loadLoan() {
+  async function loadLoan(shouldScrollToBottom = true) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -296,8 +295,6 @@ export default function LoanDetailPage() {
       .eq("reviewer_id", user.id)
       .maybeSingle();
 
-    setReviewSent(!!existingReview);
-
     const { data: messagesData } = await supabase
       .from("loan_messages")
       .select(`
@@ -309,13 +306,14 @@ export default function LoanDetailPage() {
       .eq("loan_id", loanId)
       .order("created_at");
 
-      setLoan(loanData as Loan);
-      setMessages((messagesData || []) as Message[]);
-      setLoading(false);
+    setReviewSent(!!existingReview);
+    setLoan(loanData as Loan);
+    setMessages((messagesData || []) as Message[]);
+    setLoading(false);
 
-      setTimeout(() => {
-        messagesEndRef.current?.scrollIntoView();
-      }, 100);
+    if (shouldScrollToBottom) {
+      setTimeout(() => scrollMessagesToBottom("auto"), 100);
+    }
   }
 
   async function addSystemMessage(text: string) {
@@ -338,10 +336,7 @@ export default function LoanDetailPage() {
 
     const { error: loanError } = await supabase
       .from("loans")
-      .update({
-        status: "approved",
-        approved_at: approvedAt,
-      })
+      .update({ status: "approved", approved_at: approvedAt })
       .eq("id", loan.id);
 
     if (loanError) {
@@ -351,8 +346,8 @@ export default function LoanDetailPage() {
     }
 
     const recipientId =
-    loan.owner_id === userId ? loan.borrower_id : loan.owner_id;
-    
+      loan.owner_id === userId ? loan.borrower_id : loan.owner_id;
+
     await notifyUser({
       userId: recipientId,
       actorId: userId,
@@ -383,6 +378,7 @@ export default function LoanDetailPage() {
 
     toast.success("Žádost schválena");
     setSaving(false);
+    scrollMessagesToBottom("smooth");
   }
 
   async function rejectLoan() {
@@ -407,6 +403,7 @@ export default function LoanDetailPage() {
 
     toast.success("Žádost odmítnuta");
     setSaving(false);
+    scrollMessagesToBottom("smooth");
   }
 
   async function markAsActive() {
@@ -418,10 +415,7 @@ export default function LoanDetailPage() {
 
     const { error: loanError } = await supabase
       .from("loans")
-      .update({
-        status: "active",
-        handed_over_at: handedOverAt,
-      })
+      .update({ status: "active", handed_over_at: handedOverAt })
       .eq("id", loan.id);
 
     if (loanError) {
@@ -451,6 +445,7 @@ export default function LoanDetailPage() {
 
     toast.success("Předání potvrzeno");
     setSaving(false);
+    scrollMessagesToBottom("smooth");
   }
 
   async function markAsReturned() {
@@ -462,10 +457,7 @@ export default function LoanDetailPage() {
 
     const { error: loanError } = await supabase
       .from("loans")
-      .update({
-        status: "returned",
-        returned_at: returnedAt,
-      })
+      .update({ status: "returned", returned_at: returnedAt })
       .eq("id", loan.id);
 
     if (loanError) {
@@ -495,9 +487,10 @@ export default function LoanDetailPage() {
 
     toast.success("Vrácení potvrzeno");
     setSaving(false);
+    scrollMessagesToBottom("smooth");
 
     const recipientId =
-    loan.owner_id === userId ? loan.borrower_id : loan.owner_id;
+      loan.owner_id === userId ? loan.borrower_id : loan.owner_id;
 
     if (recipientId) {
       await notifyUser({
@@ -518,19 +511,20 @@ export default function LoanDetailPage() {
       toast.error("Zpráva obsahuje nepovolený obsah.");
       return;
     }
-    if (
-      loan?.status === "returned" ||
-      loan?.status === "cancelled"
-    ) {
+
+    if (loan?.status === "returned" || loan?.status === "cancelled") {
       toast.error("Do ukončené půjčky už nelze psát.");
       return;
     }
+
     if (!message.trim() || !userId || !loan) return;
+
+    const trimmedMessage = message.trim();
 
     const { error } = await supabase.from("loan_messages").insert({
       loan_id: loanId,
       sender_id: userId,
-      message: message.trim(),
+      message: trimmedMessage,
       is_system: false,
     });
 
@@ -538,6 +532,9 @@ export default function LoanDetailPage() {
       toast.error(error.message);
       return;
     }
+
+    setMessage("");
+    scrollMessagesToBottom("smooth");
 
     const recipientId =
       loan.owner_id === userId ? loan.borrower_id : loan.owner_id;
@@ -554,7 +551,8 @@ export default function LoanDetailPage() {
 
       recipientIsActive = Boolean(
         presence?.last_seen_at &&
-          Date.now() - new Date(presence.last_seen_at).getTime() < 2 * 60 * 1000
+          Date.now() - new Date(presence.last_seen_at).getTime() <
+            2 * 60 * 1000
       );
     }
 
@@ -569,18 +567,9 @@ export default function LoanDetailPage() {
         message: `poslal(a) zprávu k půjčce: ${loan.items?.title}`,
         emailSubject: "Nová zpráva",
         sendEmail: !recipientIsActive,
+        sendPush: !recipientIsActive,
       });
     }
-
-    setMessage("");
-    scrollMessagesToBottom();
-    setTimeout(() => {
-      const container = messagesContainerRef.current;
-
-      if (container) {
-        container.scrollTop = container.scrollHeight;
-      }
-    }, 50);
   }
 
   async function submitReview() {
@@ -607,6 +596,7 @@ export default function LoanDetailPage() {
 
     toast.success("Děkujeme za hodnocení");
     setReviewSent(true);
+    scrollMessagesToBottom("smooth");
   }
 
   if (loading) {
@@ -628,15 +618,11 @@ export default function LoanDetailPage() {
   }
 
   const isOwner = loan.owner_id === userId;
-
   const otherPersonLabel = isOwner ? "Zájemce" : "Vlastník";
-
   const otherPersonName = isOwner
     ? loan.borrower?.full_name || "Uživatel"
     : loan.owner?.full_name || "Uživatel";
-  const otherPerson = isOwner
-    ? loan.borrower
-    : loan.owner;
+  const otherPerson = isOwner ? loan.borrower : loan.owner;
 
   return (
     <main className="min-h-screen">
@@ -671,7 +657,6 @@ export default function LoanDetailPage() {
                   <p className="text-xl font-black">
                     {otherPerson?.full_name || "Uživatel"}
                   </p>
-
                   <p className="text-sm text-[var(--koluj-muted)]">
                     {isOwner ? "Zájemce o půjčení" : "Vlastník věci"}
                   </p>
@@ -687,6 +672,7 @@ export default function LoanDetailPage() {
                 </Link>
               )}
             </div>
+
             <div className="koluj-card p-6">
               {loan.items?.primary_image_url && (
                 <img
@@ -699,54 +685,28 @@ export default function LoanDetailPage() {
               <h1 className="text-3xl font-black">{loan.items?.title}</h1>
 
               <div className="mt-5 space-y-3 text-sm">
-                <p>
-                  <strong>Stav:</strong> {translateStatus(loan.status)}
-                </p>
-
-                <p>
-                  <strong>{otherPersonLabel}:</strong> {otherPersonName}
-                </p>
-
-                <p>
-                  <strong>Vytvořeno:</strong>{" "}
-                  {formatDateTime(loan.created_at)}
-                </p>
+                <p><strong>Stav:</strong> {translateStatus(loan.status)}</p>
+                <p><strong>{otherPersonLabel}:</strong> {otherPersonName}</p>
+                <p><strong>Vytvořeno:</strong> {formatDateTime(loan.created_at)}</p>
 
                 {loan.approved_at && (
-                  <p>
-                    <strong>Schváleno:</strong>{" "}
-                    {formatDateTime(loan.approved_at)}
-                  </p>
+                  <p><strong>Schváleno:</strong> {formatDateTime(loan.approved_at)}</p>
                 )}
-
                 {loan.handed_over_at && (
-                  <p>
-                    <strong>Předáno:</strong>{" "}
-                    {formatDateTime(loan.handed_over_at)}
-                  </p>
+                  <p><strong>Předáno:</strong> {formatDateTime(loan.handed_over_at)}</p>
                 )}
-
                 {loan.returned_at && (
-                  <p>
-                    <strong>Vráceno:</strong>{" "}
-                    {formatDateTime(loan.returned_at)}
-                  </p>
+                  <p><strong>Vráceno:</strong> {formatDateTime(loan.returned_at)}</p>
                 )}
 
-                <p>
-                  <strong>Místo předání:</strong> {loan.items?.pickup_place}
-                </p>
-
+                <p><strong>Místo předání:</strong> {loan.items?.pickup_place}</p>
                 <p>
                   <strong>Cena:</strong> {loan.items?.price_amount || 0} Kč
                   {loan.items?.price_unit
                     ? ` / ${translatePriceUnit(loan.items.price_unit)}`
                     : ""}
                 </p>
-
-                <p>
-                  <strong>Kauce:</strong> {loan.items?.deposit || 0} Kč
-                </p>
+                <p><strong>Kauce:</strong> {loan.items?.deposit || 0} Kč</p>
               </div>
             </div>
           </aside>
@@ -754,7 +714,6 @@ export default function LoanDetailPage() {
           <section className="koluj-card flex h-[740px] flex-col overflow-hidden">
             <div className="border-b border-[var(--koluj-border)] p-5">
               <h2 className="text-xl font-black">Domluva předání</h2>
-
               <p className="mt-1 text-sm font-bold text-[var(--koluj-muted)]">
                 Stav: {translateStatus(loan.status)}
               </p>
@@ -763,26 +722,12 @@ export default function LoanDetailPage() {
             <div className="border-b border-[var(--koluj-border)] bg-[var(--koluj-bg)] p-5">
               {isOwner && loan.status === "requested" && (
                 <div>
-                  <p className="mb-4 font-bold">
-                    Máš novou žádost o půjčení.
-                  </p>
-
+                  <p className="mb-4 font-bold">Máš novou žádost o půjčení.</p>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <button
-                      type="button"
-                      onClick={approveLoan}
-                      disabled={saving}
-                      className="koluj-button py-3 disabled:opacity-60"
-                    >
+                    <button type="button" onClick={approveLoan} disabled={saving} className="koluj-button py-3 disabled:opacity-60">
                       {saving ? "Ukládám..." : "Schválit žádost"}
                     </button>
-
-                    <button
-                      type="button"
-                      onClick={rejectLoan}
-                      disabled={saving}
-                      className="rounded-2xl border border-red-200 bg-white py-3 font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-60"
-                    >
+                    <button type="button" onClick={rejectLoan} disabled={saving} className="rounded-2xl border border-red-200 bg-white py-3 font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-60">
                       Odmítnout žádost
                     </button>
                   </div>
@@ -791,16 +736,8 @@ export default function LoanDetailPage() {
 
               {isOwner && loan.status === "approved" && (
                 <div>
-                  <p className="mb-4 font-bold">
-                    Žádost je schválená. Po předání věci potvrď předání.
-                  </p>
-
-                  <button
-                    type="button"
-                    onClick={markAsActive}
-                    disabled={saving}
-                    className="koluj-button w-full py-3 disabled:opacity-60"
-                  >
+                  <p className="mb-4 font-bold">Žádost je schválená. Po předání věci potvrď předání.</p>
+                  <button type="button" onClick={markAsActive} disabled={saving} className="koluj-button w-full py-3 disabled:opacity-60">
                     {saving ? "Ukládám..." : "Potvrdit předání"}
                   </button>
                 </div>
@@ -808,16 +745,8 @@ export default function LoanDetailPage() {
 
               {isOwner && loan.status === "active" && (
                 <div>
-                  <p className="mb-4 font-bold">
-                    Půjčka probíhá. Po vrácení věci potvrď vrácení.
-                  </p>
-
-                  <button
-                    type="button"
-                    onClick={markAsReturned}
-                    disabled={saving}
-                    className="koluj-button w-full py-3 disabled:opacity-60"
-                  >
+                  <p className="mb-4 font-bold">Půjčka probíhá. Po vrácení věci potvrď vrácení.</p>
+                  <button type="button" onClick={markAsReturned} disabled={saving} className="koluj-button w-full py-3 disabled:opacity-60">
                     {saving ? "Ukládám..." : "Potvrdit vrácení"}
                   </button>
                 </div>
@@ -826,10 +755,8 @@ export default function LoanDetailPage() {
               {loan.status === "returned" && !reviewSent && (
                 <div>
                   <h3 className="font-black">Jak proběhla půjčka?</h3>
-
                   <p className="mt-2 text-sm text-[var(--koluj-muted)]">
-                    1 hvězdička = špatná zkušenost, 5 hvězdiček = výborná
-                    zkušenost.
+                    1 hvězdička = špatná zkušenost, 5 hvězdiček = výborná zkušenost.
                   </p>
 
                   <div className="mt-4 flex gap-2">
@@ -854,11 +781,7 @@ export default function LoanDetailPage() {
                     className="koluj-input mt-4 min-h-[100px] w-full"
                   />
 
-                  <button
-                    type="button"
-                    onClick={submitReview}
-                    className="koluj-button mt-4 w-full py-3"
-                  >
+                  <button type="button" onClick={submitReview} className="koluj-button mt-4 w-full py-3">
                     Odeslat hodnocení
                   </button>
                 </div>
@@ -911,8 +834,6 @@ export default function LoanDetailPage() {
                     </p>
                   </div>
                 ))}
-
-                <div ref={messagesEndRef} />
               </div>
             </div>
 
@@ -937,11 +858,7 @@ export default function LoanDetailPage() {
                     className="koluj-input flex-1"
                   />
 
-                  <button
-                    type="button"
-                    onClick={sendMessage}
-                    className="koluj-button px-5"
-                  >
+                  <button type="button" onClick={sendMessage} className="koluj-button px-5">
                     <Send size={18} />
                   </button>
                 </div>
