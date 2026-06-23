@@ -35,6 +35,22 @@ export async function notifyUser({
     message,
   });
 
+
+  await fetch("/api/push/send", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      userId,
+      title,
+      message,
+      url: loanId
+        ? `/dashboard/loans/${loanId}`
+        : "/dashboard/notifications",
+    }),
+  });
+
   if (!sendEmail) return;
 
   const { data: recipientProfile } = await supabase
