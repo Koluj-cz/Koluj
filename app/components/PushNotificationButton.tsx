@@ -102,11 +102,21 @@ export default function PushNotificationButton() {
 
       setEnabled(true);
       toast.success("Push notifikace jsou zapnuté.");
-    } catch (error) {
-      console.error(error);
-      setEnabled(false);
-      toast.error("Notifikace se nepodařilo zapnout. Zkontroluj VAPID klíč.");
-    } finally {
+      } catch (error) {
+        console.error(error);
+
+        try {
+          const registration = await navigator.serviceWorker.getRegistration("/sw.js");
+          const subscription = await registration?.pushManager.getSubscription();
+
+          if (subscription) {
+            await subscription.unsubscribe();
+          }
+        } catch {}
+
+        setEnabled(false);
+        toast.error("Notifikace se nepodařilo zapnout. Zkus to prosím znovu.");
+      } finally {
       setSaving(false);
     }
   }
