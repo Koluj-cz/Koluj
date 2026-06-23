@@ -6,6 +6,7 @@ export default function manifest(): MetadataRoute.Manifest {
     short_name: "KOLUJ",
     description: "Půjčuj si věci od lidí ve svém okolí",
     start_url: "/",
+    scope: "/",
     display: "standalone",
     background_color: "#efebdd",
     theme_color: "#6b7f32",

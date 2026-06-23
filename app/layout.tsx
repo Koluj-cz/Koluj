@@ -26,6 +26,13 @@ export const metadata = {
     template: "%s | KOLUJ",
   },
   description: "Půjčuj si věci od lidí ve svém okolí",
+  manifest: "/manifest.webmanifest",
+  themeColor: "#6b7f32",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "KOLUJ",
+  },
 };
 
 export default function RootLayout({
@@ -35,7 +42,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="en"
+      lang="cs"
       className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
