@@ -4,6 +4,7 @@ import { Toaster } from "react-hot-toast";
 import "./globals.css";
 import CookieBanner from "@/app/components/CookieBanner";
 import { Analytics } from "@vercel/analytics/next";
+import UserPresence from "@/app/components/UserPresence";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -46,6 +47,7 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <UserPresence />
         {children}
         <CookieBanner />
         <footer className="mt-auto border-t border-[var(--koluj-border)]">
