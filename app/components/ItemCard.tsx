@@ -84,6 +84,14 @@ function stripHtml(value: string | null) {
   return value.replace(/<[^>]*>/g, "").trim();
 }
 
+function shortPlace(place: string) {
+  return place
+    .split(",")
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .slice(-2, -1)[0] || place;
+}
+
 export default function ItemCard({
   item,
   variant = "public",
@@ -151,7 +159,7 @@ export default function ItemCard({
         <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm text-[var(--koluj-muted)]">
           <span className="flex items-center gap-1.5">
             <MapPin size={15} />
-            {item.pickup_place}
+            {shortPlace(item.pickup_place)}
           </span>
 
           {item.condition && (
