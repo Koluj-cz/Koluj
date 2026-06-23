@@ -3,7 +3,13 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowLeft, LocateFixed, Map, Search, SlidersHorizontal } from "lucide-react";
+import {
+  ArrowLeft,
+  LocateFixed,
+  Map,
+  Search,
+  SlidersHorizontal,
+} from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import ItemCard, { type ItemCardItem } from "@/app/components/ItemCard";
@@ -33,15 +39,15 @@ const statusLabels: Record<string, string> = {
   all: "Všechny stavy",
 };
 
-export default function VeciPage() {
+export default function ItemsPage() {
   return (
     <Suspense fallback={<div className="koluj-shell">Načítám...</div>}>
-      <VeciPageContent />
+      <ItemsPageContent />
     </Suspense>
   );
 }
 
-function VeciPageContent() {
+function ItemsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -51,9 +57,9 @@ function VeciPageContent() {
   const [search, setSearch] = useState(searchParams.get("search") || "");
   const [category, setCategory] = useState(searchParams.get("category") || "all");
   const [status, setStatus] = useState(searchParams.get("status") || "available");
-  const [sortBy, setSortBy] = useState("newest");
+  const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest");
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
-  const [visibleCount, setVisibleCount] = useState(12);
+  const [visibleCount, setVisibleCount] = useState(15);
 
   const [userLocation, setUserLocation] = useState<{
     latitude: number;
@@ -65,7 +71,7 @@ function VeciPageContent() {
   }, []);
 
   useEffect(() => {
-    setVisibleCount(12);
+    setVisibleCount(15);
   }, [search, category, status, sortBy, userLocation]);
 
   async function loadItems() {
@@ -102,16 +108,19 @@ function VeciPageContent() {
     search?: string;
     category?: string;
     status?: string;
+    sortBy?: string;
   }) {
     const params = new URLSearchParams();
 
     const nextSearch = next?.search ?? search;
     const nextCategory = next?.category ?? category;
     const nextStatus = next?.status ?? status;
+    const nextSortBy = next?.sortBy ?? sortBy;
 
     if (nextSearch.trim()) params.set("search", nextSearch.trim());
     if (nextCategory !== "all") params.set("category", nextCategory);
     if (nextStatus !== "available") params.set("status", nextStatus);
+    if (nextSortBy !== "newest") params.set("sort", nextSortBy);
 
     router.replace(`/items${params.toString() ? `?${params.toString()}` : ""}`);
   }
@@ -138,7 +147,9 @@ function VeciPageContent() {
       const query = search.toLowerCase();
 
       result = result.filter((item) =>
-        `${item.title} ${item.category} ${item.pickup_place} ${item.description || ""}`
+        `${item.title} ${item.category} ${item.pickup_place} ${
+          item.description || ""
+        }`
           .toLowerCase()
           .includes(query)
       );
@@ -153,7 +164,7 @@ function VeciPageContent() {
     }
 
     if (userLocation) {
-      result = result
+      return result
         .filter((item) => item.pickup_latitude && item.pickup_longitude)
         .sort((a, b) => {
           const distanceA = getDistanceKm(
@@ -172,8 +183,6 @@ function VeciPageContent() {
 
           return distanceA - distanceB;
         });
-
-      return result;
     }
 
     if (sortBy === "newest") {
@@ -215,7 +224,10 @@ function VeciPageContent() {
     <main className="min-h-screen">
       <div className="koluj-shell-wide">
         <header className="koluj-page-header">
-          <Link href="/" className="flex items-center gap-2 font-bold text-[var(--koluj-green)]">
+          <Link
+            href="/"
+            className="flex items-center gap-2 font-bold text-[var(--koluj-green)]"
+          >
             <ArrowLeft size={20} />
             Zpět na hlavní stránku
           </Link>
@@ -223,15 +235,25 @@ function VeciPageContent() {
           <AuthHeaderButton />
         </header>
 
-        <section className="mt-12">
+        <section className="mt-10 md:mt-12">
           <h1 className="koluj-heading">Všechny věci</h1>
 
-          <p className="mt-6 max-w-2xl text-xl leading-relaxed text-[var(--koluj-muted)]">
-            Procházej věci k půjčení, filtruj podle kategorií, stavu nebo hledej konkrétní věc.
+          <p className="mt-5 max-w-2xl text-lg leading-relaxed text-[var(--koluj-muted)] md:text-xl">
+            Procházej věci k půjčení, filtruj podle kategorií, stavu nebo hledej
+            konkrétní věc.
           </p>
+
+          <div className="mt-5 flex flex-wrap gap-2 text-sm font-bold text-[var(--koluj-green)]">
+            <span className="rounded-full bg-white px-4 py-2 shadow-sm">
+              {filteredItems.length} výsledků
+            </span>
+            <span className="rounded-full bg-white px-4 py-2 shadow-sm">
+              Výchozí zobrazení: volné věci
+            </span>
+          </div>
         </section>
 
-        <section className="koluj-card mt-10 p-4">
+        <section className="koluj-card mt-8 p-3 md:mt-10 md:p-4">
           <div className="grid gap-3 lg:grid-cols-[1fr_220px_220px_200px]">
             <div className="flex items-center gap-3 rounded-2xl border border-[var(--koluj-border)] bg-white px-4">
               <Search size={20} className="text-[var(--koluj-muted)]" />
@@ -279,7 +301,10 @@ function VeciPageContent() {
 
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
+              onChange={(e) => {
+                setSortBy(e.target.value);
+                updateUrl({ sortBy: e.target.value });
+              }}
               className="koluj-input"
             >
               <option value="newest">Nejnovější</option>
@@ -289,11 +314,11 @@ function VeciPageContent() {
             </select>
           </div>
 
-          <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <button
               type="button"
               onClick={useMyLocation}
-              className="flex items-center gap-2 rounded-2xl border border-[var(--koluj-border)] bg-white px-5 py-3 font-bold text-[var(--koluj-muted)]"
+              className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--koluj-border)] bg-white px-5 py-3 font-bold text-[var(--koluj-muted)] transition hover:bg-[var(--koluj-bg)]"
             >
               <LocateFixed size={18} />
               Okolo mě
@@ -318,15 +343,17 @@ function VeciPageContent() {
               </h2>
 
               <p className="mt-2 text-[var(--koluj-muted)]">
-                Výchozí zobrazení ukazuje volné věci.
+                {userLocation
+                  ? "Seřazeno podle vzdálenosti od tvé polohy."
+                  : "Vyber si věc a otevři detail půjčení."}
               </p>
             </div>
 
-            <div className="flex rounded-2xl border border-[var(--koluj-border)] bg-white p-1">
+            <div className="flex w-full rounded-2xl border border-[var(--koluj-border)] bg-white p-1 md:w-auto">
               <button
                 type="button"
                 onClick={() => setViewMode("list")}
-                className={`flex items-center gap-2 rounded-xl px-5 py-3 font-bold ${
+                className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-5 py-3 font-bold md:flex-none ${
                   viewMode === "list"
                     ? "bg-[var(--koluj-bg)] text-[var(--koluj-green)]"
                     : "text-[var(--koluj-muted)]"
@@ -339,7 +366,7 @@ function VeciPageContent() {
               <button
                 type="button"
                 onClick={() => setViewMode("map")}
-                className={`flex items-center gap-2 rounded-xl px-5 py-3 font-bold ${
+                className={`flex flex-1 items-center justify-center gap-2 rounded-xl px-5 py-3 font-bold md:flex-none ${
                   viewMode === "map"
                     ? "bg-[var(--koluj-bg)] text-[var(--koluj-green)]"
                     : "text-[var(--koluj-muted)]"
@@ -352,7 +379,7 @@ function VeciPageContent() {
           </div>
 
           {viewMode === "map" ? (
-            <div className="koluj-card h-[720px] overflow-hidden p-4">
+            <div className="koluj-card h-[560px] overflow-hidden p-3 md:h-[720px] md:p-4">
               <div className="relative h-full overflow-hidden rounded-[2rem]">
                 <ItemsMap items={filteredItems} userLocation={userLocation} />
 
@@ -367,7 +394,7 @@ function VeciPageContent() {
               </div>
             </div>
           ) : filteredItems.length === 0 ? (
-            <div className="koluj-card p-12 text-center">
+            <div className="koluj-card p-10 text-center md:p-12">
               <h3 className="text-2xl font-black">Nic nenalezeno</h3>
               <p className="mt-2 text-[var(--koluj-muted)]">
                 Zkus změnit hledání nebo filtr.
@@ -375,7 +402,7 @@ function VeciPageContent() {
             </div>
           ) : (
             <>
-              <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
                 {visibleItems.map((item) => (
                   <ItemCard key={item.id} item={item} />
                 ))}
@@ -385,7 +412,7 @@ function VeciPageContent() {
                 <div className="mt-10 text-center">
                   <button
                     type="button"
-                    onClick={() => setVisibleCount((prev) => prev + 12)}
+                    onClick={() => setVisibleCount((prev) => prev + 15)}
                     className="rounded-2xl border border-[var(--koluj-border)] bg-white px-8 py-4 font-bold transition hover:bg-[var(--koluj-bg)]"
                   >
                     Načíst další
