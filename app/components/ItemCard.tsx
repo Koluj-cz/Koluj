@@ -121,7 +121,7 @@ export default function ItemCard({
 
   const cardContent = (
     <>
-      <div className="relative h-44 overflow-hidden bg-[var(--koluj-bg)]">
+      <div className="relative h-36 overflow-hidden bg-[var(--koluj-bg)] sm:h-44">
         {item.primary_image_url ? (
           <img
             src={item.primary_image_url}
@@ -147,9 +147,9 @@ export default function ItemCard({
         )}
       </div>
 
-      <div className="flex flex-1 flex-col p-4">
+      <div className="flex flex-1 flex-col p-3 sm:p-4">
         <div>
-          <h3 className="truncate text-xl font-black">{item.title}</h3>
+          <h3 className="truncate text-lg font-black sm:text-xl">{item.title}</h3>
 
           <p className="mt-1 text-sm font-bold text-[var(--koluj-green)]">
             {categoryLabels[item.category] || item.category}
@@ -194,7 +194,7 @@ export default function ItemCard({
                 <img
                   src={item.profiles.avatar_url}
                   alt={ownerName}
-                  className="h-10 w-10 rounded-full object-cover"
+                  className="h-9 w-9 rounded-full object-cover sm:h-10 sm:w-10"
                 />
               ) : (
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-sm font-black text-[var(--koluj-green)]">

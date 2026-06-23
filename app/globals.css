@@ -194,6 +194,7 @@ body {
     width: 100%;
     padding-left: 12px;
     padding-right: 12px;
+    padding-top: 12px;
   }
 
   .koluj-card {
@@ -365,8 +366,9 @@ body {
   }
 
   .koluj-heading {
-    max-width: 11ch;
-    font-size: 3.25rem;
+    max-width: 12ch;
+    font-size: 2.85rem;
+    line-height: 1;
   }
 
   .koluj-title {
@@ -499,5 +501,33 @@ body {
 @media (min-width: 1024px) {
   .koluj-categories-mobile {
     display: grid;
+  }
+}
+
+@media (max-width: 767px) {
+  .koluj-heading {
+    max-width: 12ch;
+    font-size: 2.85rem;
+    line-height: 1;
+  }
+
+  .koluj-title {
+    font-size: 2.15rem;
+  }
+
+  .koluj-category-chip {
+    min-width: 155px;
+    padding: 14px 16px;
+    font-size: 0.95rem;
+  }
+
+  .koluj-feature-card {
+    padding: 18px;
+  }
+
+  .koluj-feature-icon {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 14px;
   }
 }

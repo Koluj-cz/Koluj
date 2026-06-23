@@ -8,11 +8,9 @@ import {
   Drill,
   Bike,
   Smartphone,
-  Tent,
   Trees,
   Camera,
   Boxes,
-  Leaf,
   LocateFixed,
   MapPin,
   Search,
@@ -58,7 +56,6 @@ export default function HomePage() {
     loadUser();
 
     const media = window.matchMedia("(min-width: 1024px)");
-
     setShowMap(media.matches);
 
     const handleChange = (event: MediaQueryListEvent) => {
@@ -140,7 +137,8 @@ export default function HomePage() {
         }
 
         if (error.code === error.TIMEOUT) {
-          message = "Nepodařilo se získat polohu. Zkontroluj, zda má prohlížeč povolenou polohu a přesnou polohu.";
+          message =
+            "Nepodařilo se získat polohu. Zkontroluj, zda má prohlížeč povolenou polohu a přesnou polohu.";
         }
 
         toast.error(message, {
@@ -203,32 +201,41 @@ export default function HomePage() {
 
           <div className="flex items-center gap-3">
             {isLoggedIn ? (
-              <Link href="/dashboard" className="koluj-button px-6 py-3">
+              <Link href="/dashboard" className="koluj-button px-5 py-3 md:px-6">
                 Můj prostor
               </Link>
             ) : (
-              <Link
-                href="/login"
-                className="koluj-button px-6 py-3"
-              >
+              <Link href="/login" className="koluj-button px-5 py-3 md:px-6">
                 Přihlášení / registrace
               </Link>
             )}
           </div>
         </header>
 
-        <section className="grid items-start gap-10 py-8 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="flex h-[430px] flex-col">
+        <section className="grid items-start gap-8 py-6 md:py-8 lg:grid-cols-[0.9fr_1.1fr]">
+          <div className="flex flex-col lg:h-[430px]">
             <h1 className="koluj-heading">
               Půjčuj si věci od lidí ve svém okolí
             </h1>
 
-            <p className="mt-4 max-w-xl text-xl leading-relaxed text-[var(--koluj-muted)]">
+            <p className="mt-4 max-w-xl text-lg leading-relaxed text-[var(--koluj-muted)] md:text-xl">
               Ušetři peníze, místo i planetu. Najdi věci, které zrovna
               potřebuješ, a půjč si je od lidí kolem sebe.
             </p>
-            <div className="flex-1" />
-            <div className="mt-4 flex max-w-2xl flex-col gap-3 rounded-3xl border border-[var(--koluj-border)] bg-white p-3 shadow-sm md:flex-row">
+
+            <div className="mt-5 flex flex-wrap gap-2 text-sm font-bold text-[var(--koluj-green)]">
+              <span className="rounded-full bg-white px-4 py-2 shadow-sm">
+                {totalItems} věcí k půjčení
+              </span>
+              <span className="rounded-full bg-white px-4 py-2 shadow-sm">
+                Půjčení ve tvém okolí
+              </span>
+              <span className="rounded-full bg-white px-4 py-2 shadow-sm">
+                Domluva přímo s majitelem
+              </span>
+            </div>
+
+            <div className="mt-6 flex max-w-2xl flex-col gap-3 rounded-3xl border border-[var(--koluj-border)] bg-white p-3 shadow-sm md:mt-auto md:flex-row">
               <div className="flex flex-1 items-center gap-3 px-3">
                 <Search size={20} className="text-[var(--koluj-muted)]" />
 
@@ -260,38 +267,36 @@ export default function HomePage() {
                 Hledat
               </button>
             </div>
-
- 
           </div>
 
-        {showMap && (
-          <div className="relative h-[430px] overflow-hidden rounded-[2rem] border border-[var(--koluj-border)] bg-white shadow-sm">
-            <ItemsMap items={items} userLocation={userLocation} />
+          {showMap && (
+            <div className="relative h-[430px] overflow-hidden rounded-[2rem] border border-[var(--koluj-border)] bg-white shadow-sm">
+              <ItemsMap items={items} userLocation={userLocation} />
 
-            <button
-              type="button"
-              onClick={useMyLocation}
-              className="absolute bottom-5 right-5 z-[500] flex items-center gap-2 rounded-2xl bg-white px-5 py-3 font-bold shadow-sm"
-            >
-              <LocateFixed size={18} />
-              Moje poloha
-            </button>
-          </div>
-        )}
+              <button
+                type="button"
+                onClick={useMyLocation}
+                className="absolute bottom-5 right-5 z-[500] flex items-center gap-2 rounded-2xl bg-white px-5 py-3 font-bold shadow-sm"
+              >
+                <LocateFixed size={18} />
+                Moje poloha
+              </button>
+            </div>
+          )}
         </section>
 
-      <section className="mt-8 grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-8">
-        <CategoryChip label="Vše" category="" />
-        <CategoryChip icon={<Drill size={16} />} label="Nářadí" category="naradi" />
-        <CategoryChip icon={<Bike size={16} />} label="Sport" category="sport" />
-        <CategoryChip icon={<Smartphone size={16} />} label="Elektronika" category="elektronika" />
-        <CategoryChip icon={<Sparkles size={16} />} label="Outdoor" category="outdoor" />
-        <CategoryChip icon={<Trees size={16} />} label="Dům a zahrada" category="dum_zahrada" />
-        <CategoryChip icon={<Camera size={16} />} label="Foto a video" category="foto_video" />
-        <CategoryChip icon={<Boxes size={16} />} label="Ostatní" category="ostatni" />
-      </section>
+        <section className="koluj-categories-mobile mt-8 lg:grid lg:grid-cols-8 lg:gap-2">
+          <CategoryChip label="Vše" category="" />
+          <CategoryChip icon={<Drill size={16} />} label="Nářadí" category="naradi" />
+          <CategoryChip icon={<Bike size={16} />} label="Sport" category="sport" />
+          <CategoryChip icon={<Smartphone size={16} />} label="Elektronika" category="elektronika" />
+          <CategoryChip icon={<Sparkles size={16} />} label="Outdoor" category="outdoor" />
+          <CategoryChip icon={<Trees size={16} />} label="Dům a zahrada" category="dum_zahrada" />
+          <CategoryChip icon={<Camera size={16} />} label="Foto a video" category="foto_video" />
+          <CategoryChip icon={<Boxes size={16} />} label="Ostatní" category="ostatni" />
+        </section>
 
-        <section id="explore" className="mt-14">
+        <section id="explore" className="mt-12 md:mt-14">
           <div className="mb-6 flex items-end justify-between gap-4">
             <div>
               <h2 className="koluj-title">Věci ve tvém okolí</h2>
@@ -309,13 +314,13 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
+          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-5">
             {filteredItems.map((item) => (
               <ItemCard key={item.id} item={item} />
             ))}
           </div>
 
-          <div className="mt-10 flex justify-center">
+          <div className="mt-8 flex justify-center md:mt-10">
             <Link
               href="/items"
               className="koluj-button inline-flex items-center gap-2 px-8 py-4"
@@ -326,27 +331,36 @@ export default function HomePage() {
           </div>
         </section>
 
-        <section id="how" className="mt-16 grid gap-6 md:grid-cols-4">
-          <Feature
-            icon={<Users size={28} />}
-            title="Místní komunita"
-            text="Půjčuj si od lidí ve svém okolí."
-          />
-          <Feature
-            icon={<Leaf size={28} />}
-            title="Udržitelně"
-            text="Dáváme věcem druhou šanci."
-          />
-          <Feature
-            icon={<ShieldCheck size={28} />}
-            title="Bezpečně"
-            text="Profil a domluva před předáním."
-          />
-          <Feature
-            icon={<MapPin size={28} />}
-            title="Blízko"
-            text="Najdi věci kolem sebe."
-          />
+        <section id="how" className="mt-16">
+          <div className="mb-6">
+            <h2 className="koluj-title">Jak to funguje</h2>
+            <p className="mt-2 text-[var(--koluj-muted)]">
+              Vyber věc, domluv termín a půjč si ji od člověka poblíž.
+            </p>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-4">
+            <Feature
+              icon={<Search size={28} />}
+              title="1. Najdi věc"
+              text="Vyhledej, co zrovna potřebuješ."
+            />
+            <Feature
+              icon={<Users size={28} />}
+              title="2. Domluv termín"
+              text="Napiš majiteli a potvrďte si předání."
+            />
+            <Feature
+              icon={<MapPin size={28} />}
+              title="3. Půjč si"
+              text="Vyzvedni věc ve svém okolí."
+            />
+            <Feature
+              icon={<ShieldCheck size={28} />}
+              title="4. Vrať a ohodnoť"
+              text="Vrať věc a pomoz budovat důvěru."
+            />
+          </div>
         </section>
       </div>
     </main>
