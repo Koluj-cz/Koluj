@@ -113,7 +113,7 @@ export default function ItemCard({
 
   const cardContent = (
     <>
-      <div className="relative h-56 overflow-hidden bg-[var(--koluj-bg)]">
+      <div className="relative h-44 overflow-hidden bg-[var(--koluj-bg)]">
         {item.primary_image_url ? (
           <img
             src={item.primary_image_url}
@@ -139,9 +139,9 @@ export default function ItemCard({
         )}
       </div>
 
-      <div className="flex flex-1 flex-col p-5">
+      <div className="flex flex-1 flex-col p-4">
         <div>
-          <h3 className="truncate text-2xl font-black">{item.title}</h3>
+          <h3 className="truncate text-xl font-black">{item.title}</h3>
 
           <p className="mt-1 text-sm font-bold text-[var(--koluj-green)]">
             {categoryLabels[item.category] || item.category}
@@ -161,14 +161,6 @@ export default function ItemCard({
             </span>
           )}
         </div>
-
-        {item.description ? (
-          <p className="mt-3 line-clamp-2 text-sm text-[var(--koluj-muted)]">
-            {stripHtml(item.description)}
-          </p>
-        ) : (
-          <p className="mt-3 text-sm opacity-0">Bez popisu</p>
-        )}
 
         {variant === "owner" && 
           <p className="mt-3 text-sm font-bold text-[var(--koluj-muted)]">
