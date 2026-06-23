@@ -100,6 +100,13 @@ export default function PushNotificationButton() {
         return;
       }
 
+      await supabase
+        .from("profiles")
+        .update({
+          push_notifications_enabled: true,
+        })
+        .eq("id", user.id);
+
       setEnabled(true);
       toast.success("Push notifikace jsou zapnuté.");
       } catch (error) {
@@ -111,6 +118,18 @@ export default function PushNotificationButton() {
 
           if (subscription) {
             await subscription.unsubscribe();
+          }
+          const {
+            data: { user },
+          } = await supabase.auth.getUser();
+
+          if (user) {
+            await supabase
+              .from("profiles")
+              .update({
+                push_notifications_enabled: false,
+              })
+              .eq("id", user.id);
           }
         } catch {}
 

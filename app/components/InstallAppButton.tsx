@@ -43,10 +43,14 @@ export default function InstallAppButton() {
   return (
     <button
       onClick={installApp}
-      className="flex items-center gap-2 rounded-2xl border border-[var(--koluj-border)] bg-white px-5 py-3 font-bold text-[var(--koluj-green)] shadow-sm transition hover:bg-[var(--koluj-bg)]"
+      title="Instalovat aplikaci"
+      className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--koluj-border)] bg-white px-4 py-3 font-bold text-[var(--koluj-green)] shadow-sm transition hover:bg-[var(--koluj-bg)]"
     >
       <Download size={18} />
-      Instalovat aplikaci
+
+      <span className="hidden md:inline">
+        Instalovat aplikaci
+      </span>
     </button>
   );
 }
