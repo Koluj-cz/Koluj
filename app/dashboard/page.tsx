@@ -142,16 +142,21 @@ export default function DashboardPage() {
           
         </section>
 
-        <section className="koluj-card mt-10 flex items-center justify-between px-8 py-6">
-          <p className="text-lg text-[var(--koluj-muted)]">
-            <span className="font-bold text-[var(--koluj-green)]">Tip:</span>{" "}
-            Čím lépe popíšeš věc a podmínky předání, tím snadněji najde
-            správného zájemce.
-          </p>
+        <section className="mt-10 rounded-3xl border border-[var(--koluj-border)] bg-white/70 p-5 md:flex md:items-center md:justify-between md:px-8 md:py-6">
+          <div>
+            <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
+              Tip
+            </p>
+
+            <p className="mt-1 text-base leading-relaxed text-[var(--koluj-muted)] md:text-lg">
+              Čím lépe popíšeš věc a podmínky předání, tím snadněji najde správného
+              zájemce.
+            </p>
+          </div>
 
           <Heart
             size={28}
-            className="hidden text-[var(--koluj-green)] md:block"
+            className="mt-4 hidden text-[var(--koluj-green)] md:block"
           />
         </section>
       </div>

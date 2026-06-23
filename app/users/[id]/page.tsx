@@ -48,6 +48,7 @@ export default function UserProfilePage() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [rating, setRating] = useState<Rating | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [visibleReviewsCount, setVisibleReviewsCount] = useState(5);
   const [items, setItems] = useState<ItemCardItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -156,6 +157,9 @@ export default function UserProfilePage() {
     .charAt(0)
     .toUpperCase();
 
+  const visibleReviews = reviews.slice(0, visibleReviewsCount);
+  const hasMoreReviews = visibleReviewsCount < reviews.length;
+
   return (
     <main className="min-h-screen">
       <div className="koluj-shell-wide">
@@ -254,7 +258,7 @@ export default function UserProfilePage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  {reviews.map((review) => (
+                  {visibleReviews.map((review) => (
                     <div key={review.id} className="koluj-card p-6">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex items-center gap-3">
@@ -301,6 +305,15 @@ export default function UserProfilePage() {
                       )}
                     </div>
                   ))}
+                    {hasMoreReviews && (
+                      <button
+                        type="button"
+                        onClick={() => setVisibleReviewsCount((count) => count + 5)}
+                        className="koluj-button w-full px-6 py-3"
+                      >
+                        Zobrazit další recenze
+                      </button>
+                    )}
                 </div>
               )}
             </section>

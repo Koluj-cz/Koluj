@@ -111,6 +111,8 @@ export default function LoanDetailPage() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+
   useEffect(() => {
     loadLoan();
 
@@ -213,6 +215,13 @@ async function updatePresence() {
 
     return () => clearInterval(interval);
   }, [userId, loanId]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "end",
+    });
+  }, [messages]);
 
   async function loadLoan() {
     const {
@@ -847,7 +856,7 @@ async function updatePresence() {
                 )}
             </div>
 
-            <div className="flex-1 overflow-y-auto p-5">
+            <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-5">
               <div className="space-y-4">
                 {messages.map((msg) => (
                   <div
