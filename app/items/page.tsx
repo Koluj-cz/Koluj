@@ -14,6 +14,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import ItemCard, { type ItemCardItem } from "@/app/components/ItemCard";
 import AuthHeaderButton from "@/app/components/AuthHeaderButton";
+import PageLoader from "@/app/components/PageLoader";
 
 const ItemsMap = dynamic(() => import("@/app/components/ItemsMap"), {
   ssr: false,
@@ -41,7 +42,7 @@ const statusLabels: Record<string, string> = {
 
 export default function ItemsPage() {
   return (
-    <Suspense fallback={<div className="koluj-shell">Načítám...</div>}>
+    <Suspense fallback={<PageLoader />}>
       <ItemsPageContent />
     </Suspense>
   );
@@ -215,7 +216,7 @@ function ItemsPageContent() {
   if (loading) {
     return (
       <main className="min-h-screen">
-        <div className="koluj-shell">Načítám...</div>
+        <PageLoader />
       </main>
     );
   }

@@ -6,6 +6,7 @@ import { ArrowLeft, Mail, MapPin, Phone, User } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import PageLoader from "@/app/components/PageLoader";
 
 type PlaceSuggestion = {
   name: string;
@@ -214,9 +215,7 @@ export default function ProfilePage() {
   if (loading) {
     return (
       <main className="min-h-screen">
-        <div className="koluj-shell">
-          <p>Načítám...</p>
-        </div>
+        <PageLoader />
       </main>
     );
   }

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Bell } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import PageLoader from "@/app/components/PageLoader";
 
 type Notification = {
   id: string;
@@ -106,7 +107,7 @@ export default function NotificationsPage() {
         </p>
 
         {loading ? (
-          <p className="mt-8">Načítám...</p>
+          <PageLoader />
         ) : notifications.length === 0 ? (
           <div className="koluj-card mt-8 p-8">
             Zatím nemáš žádné notifikace.

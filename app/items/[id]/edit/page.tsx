@@ -18,6 +18,7 @@ import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
 import imageCompression from "browser-image-compression";
 import RichTextEditor from "@/app/components/RichTextEditor";
+import PageLoader from "@/app/components/PageLoader";
 
 type PlaceSuggestion = {
   name: string;
@@ -432,10 +433,8 @@ async function makePrimary(imageUrl: string) {
 
   if (loading) {
     return (
-      <main className="min-h-screen pb-24 lg:pb-0">
-        <div className="koluj-shell">
-          <p>Načítám...</p>
-        </div>
+      <main className="min-h-screen">
+        <PageLoader />
       </main>
     );
   }
@@ -550,6 +549,7 @@ async function makePrimary(imageUrl: string) {
                 onChange={(e) => handlePhotos(e.target.files)}
             />
             </label>
+        </div>
             {uploadingPhotos && (
               <div className="mt-4">
                 <div className="mb-2 flex justify-between text-sm font-bold text-[var(--koluj-muted)]">
@@ -565,8 +565,6 @@ async function makePrimary(imageUrl: string) {
                 </div>
               </div>
             )}
-
-        </div>
         </div>
             <div className="koluj-card p-8">
               <SectionTitle icon={<Package size={24} />} title="O věci" />

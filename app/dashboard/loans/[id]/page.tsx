@@ -8,6 +8,7 @@ import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
 import { notifyUser } from "@/lib/notifyUser";
 import { containsForbiddenText } from "@/lib/moderation";
+import PageLoader from "@/app/components/PageLoader";
 
 type Loan = {
   id: string;
@@ -573,9 +574,7 @@ async function updatePresence() {
   if (loading) {
     return (
       <main className="min-h-screen">
-        <div className="koluj-shell">
-          <p>Načítám...</p>
-        </div>
+        <PageLoader />
       </main>
     );
   }

@@ -16,6 +16,7 @@ import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
 import ItemCard, { type ItemCardItem } from "@/app/components/ItemCard";
 import AddItemButton from "@/app/components/AddItemButton";
+import PageLoader from "@/app/components/PageLoader";
 
 type Item = ItemCardItem & {
   is_active: boolean;
@@ -238,9 +239,7 @@ export default function MyItemsPage() {
   if (loading) {
     return (
       <main className="min-h-screen">
-        <div className="koluj-shell">
-          <p>Načítám...</p>
-        </div>
+        <PageLoader />
       </main>
     );
   }

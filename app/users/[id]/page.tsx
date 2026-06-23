@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabase";
 import ItemCard, { type ItemCardItem } from "@/app/components/ItemCard";
 import { useParams } from "next/navigation";
 import AuthHeaderButton from "@/app/components/AuthHeaderButton";
+import PageLoader from "@/app/components/PageLoader";
 
 type Profile = {
   id: string;
@@ -118,7 +119,7 @@ export default function UserProfilePage() {
   if (loading) {
     return (
       <main className="min-h-screen">
-        <div className="koluj-shell">Načítám...</div>
+        <PageLoader />
       </main>
     );
   }

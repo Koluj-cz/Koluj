@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { notifyUser } from "@/lib/notifyUser";
+import PageLoader from "@/app/components/PageLoader";
 
 import {
   ArrowLeft,
@@ -351,9 +352,7 @@ export default function ItemDetailPage() {
   if (loading) {
     return (
       <main className="min-h-screen">
-        <div className="koluj-shell">
-          <p>Načítám...</p>
-        </div>
+        <PageLoader />
       </main>
     );
   }
