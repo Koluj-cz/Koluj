@@ -198,6 +198,7 @@ export default function LoanDetailPage() {
 
       if (!data) return;
 
+      
       setMessages((current) => {
         const currentIds = current.map((msg) => msg.id).join(",");
         const nextIds = data.map((msg) => msg.id).join(",");
