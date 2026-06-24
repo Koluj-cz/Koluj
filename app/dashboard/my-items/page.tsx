@@ -364,7 +364,7 @@ export default function MyItemsPage() {
               </p>
             </div>
           ) : (
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
               {visibleItems.map((item) => {
                 const status = item.status || "available";
 

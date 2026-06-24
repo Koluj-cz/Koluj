@@ -163,7 +163,7 @@ export default function ItemCard({
           </span>
 
           {item.condition && (
-            <span className="flex items-center gap-1.5">
+            <span className="hidden items-center gap-1.5 sm:flex">
               <Star size={15} />
               {conditionLabels[item.condition] || item.condition}
             </span>
