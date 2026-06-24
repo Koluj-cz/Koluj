@@ -6,7 +6,6 @@ import { ArrowLeft, CalendarDays } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import PageLoader from "@/app/components/PageLoader";
 
-
 type LoanStatus =
   | "all"
   | "requested"
@@ -14,6 +13,8 @@ type LoanStatus =
   | "active"
   | "returned"
   | "cancelled";
+
+type MobileMode = "borrowing" | "lending";
 
 type Loan = {
   id: string;
@@ -24,12 +25,8 @@ type Loan = {
   returned_at: string | null;
   owner_id: string | null;
   borrower_id: string | null;
-  owner: {
-    full_name: string | null;
-  } | null;
-  borrower: {
-    full_name: string | null;
-  } | null;
+  owner: { full_name: string | null } | null;
+  borrower: { full_name: string | null } | null;
   items: {
     id: string;
     title: string;
@@ -39,7 +36,7 @@ type Loan = {
 
 const statusLabels: Record<string, string> = {
   all: "Všechny",
-  requested: "Čeká na schválení",
+  requested: "Čeká",
   approved: "Schváleno",
   active: "Probíhá",
   returned: "Vráceno",
@@ -71,6 +68,7 @@ export default function LoansPage() {
   const [lending, setLending] = useState<Loan[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<LoanStatus>("all");
+  const [mobileMode, setMobileMode] = useState<MobileMode>("borrowing");
 
   const PAGE_SIZE = 10;
 
@@ -142,8 +140,6 @@ export default function LoansPage() {
     return lending.filter((loan) => loan.status === filter);
   }, [lending, filter]);
 
-  const totalCount = borrowingTotal + lendingTotal;
-
   return (
     <main className="min-h-screen">
       <div className="koluj-shell">
@@ -157,19 +153,12 @@ export default function LoansPage() {
           </Link>
         </header>
 
-        <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h1 className="koluj-heading">Půjčky</h1>
+        <div>
+          <h1 className="koluj-heading">Půjčky</h1>
 
-            <p className="mt-4 text-lg text-[var(--koluj-muted)]">
-              Přehled věcí, které si půjčuješ nebo půjčuješ ostatním.
-            </p>
-          </div>
-
-          <div className="koluj-card p-4 text-sm font-bold text-[var(--koluj-muted)]">
-            Celkem půjček:{" "}
-            <span className="text-[var(--koluj-green)]">{totalCount}</span>
-          </div>
+          <p className="mt-4 text-lg text-[var(--koluj-muted)]">
+            Přehled věcí, které si půjčuješ nebo půjčuješ ostatním.
+          </p>
         </div>
 
         <section className="koluj-card mt-10 p-4">
@@ -191,19 +180,44 @@ export default function LoansPage() {
           </div>
         </section>
 
+        {!loading && (
+          <div className="mt-8 grid grid-cols-2 gap-2 lg:hidden">
+            <button
+              type="button"
+              onClick={() => setMobileMode("borrowing")}
+              className={`rounded-2xl px-4 py-3 font-black transition ${
+                mobileMode === "borrowing"
+                  ? "bg-[var(--koluj-green)] text-white"
+                  : "bg-white text-[var(--koluj-muted)]"
+              }`}
+            >
+              Půjčuji si
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setMobileMode("lending")}
+              className={`rounded-2xl px-4 py-3 font-black transition ${
+                mobileMode === "lending"
+                  ? "bg-[var(--koluj-green)] text-white"
+                  : "bg-white text-[var(--koluj-muted)]"
+              }`}
+            >
+              Půjčuji ostatním
+            </button>
+          </div>
+        )}
+
         {loading ? (
           <PageLoader />
         ) : (
-          <div className="mt-10 grid gap-8 lg:grid-cols-2">
-            <section>
-              <div className="mb-5 flex items-end justify-between gap-4">
-                <div>
-                  <h2 className="text-2xl font-black">Půjčuji si</h2>
-                  <p className="mt-1 text-sm text-[var(--koluj-muted)]">
-                    {filteredBorrowing.length} záznamů
-                  </p>
-                </div>
-              </div>
+          <div className="mt-8 grid gap-8 lg:mt-10 lg:grid-cols-2">
+            <section
+              className={
+                mobileMode === "borrowing" ? "block" : "hidden lg:block"
+              }
+            >
+              <SectionHeader title="Půjčuji si" count={filteredBorrowing.length} />
 
               <div className="space-y-4">
                 {filteredBorrowing.length === 0 ? (
@@ -212,13 +226,10 @@ export default function LoansPage() {
                   </div>
                 ) : (
                   filteredBorrowing.map((loan) => (
-                    <LoanCard
-                      key={loan.id}
-                      loan={loan}
-                      mode="borrowing"
-                    />
+                    <LoanCard key={loan.id} loan={loan} mode="borrowing" />
                   ))
                 )}
+
                 {borrowing.length < borrowingTotal && (
                   <button
                     type="button"
@@ -231,15 +242,15 @@ export default function LoansPage() {
               </div>
             </section>
 
-            <section>
-              <div className="mb-5 flex items-end justify-between gap-4">
-                <div>
-                  <h2 className="text-2xl font-black">Půjčuji ostatním</h2>
-                  <p className="mt-1 text-sm text-[var(--koluj-muted)]">
-                    {filteredLending.length} záznamů
-                  </p>
-                </div>
-              </div>
+            <section
+              className={
+                mobileMode === "lending" ? "block" : "hidden lg:block"
+              }
+            >
+              <SectionHeader
+                title="Půjčuji ostatním"
+                count={filteredLending.length}
+              />
 
               <div className="space-y-4">
                 {filteredLending.length === 0 ? (
@@ -248,13 +259,10 @@ export default function LoansPage() {
                   </div>
                 ) : (
                   filteredLending.map((loan) => (
-                    <LoanCard
-                      key={loan.id}
-                      loan={loan}
-                      mode="lending"
-                    />
+                    <LoanCard key={loan.id} loan={loan} mode="lending" />
                   ))
                 )}
+
                 {lending.length < lendingTotal && (
                   <button
                     type="button"
@@ -273,6 +281,19 @@ export default function LoansPage() {
   );
 }
 
+function SectionHeader({ title, count }: { title: string; count: number }) {
+  return (
+    <div className="mb-5 flex items-end justify-between gap-4">
+      <div>
+        <h2 className="text-2xl font-black">{title}</h2>
+        <p className="mt-1 text-sm text-[var(--koluj-muted)]">
+          {count} {count === 1 ? "záznam" : "záznamů"}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 function LoanCard({
   loan,
   mode,
@@ -288,7 +309,8 @@ function LoanCard({
       : loan.borrower?.full_name || "Uživatel";
 
   const statusClass =
-    statusClasses[loan.status] || "bg-[var(--koluj-bg)] text-[var(--koluj-muted)]";
+    statusClasses[loan.status] ||
+    "bg-[var(--koluj-bg)] text-[var(--koluj-muted)]";
 
   return (
     <Link
@@ -325,33 +347,39 @@ function LoanCard({
             </span>
           </div>
 
-          <div className="mt-4 grid gap-2 text-sm text-[var(--koluj-muted)] sm:grid-cols-2">
-            <p className="flex items-center gap-2">
-              <CalendarDays size={15} />
-              Vytvořeno: {formatDateTime(loan.created_at)}
-            </p>
+          <div className="mt-4 text-sm text-[var(--koluj-muted)]">
+            {loan.status === "requested" && (
+              <p className="flex items-center gap-2">
+                <CalendarDays size={15} />
+                Vytvořeno: {formatDateTime(loan.created_at)}
+              </p>
+            )}
 
-            {loan.approved_at && (
+            {loan.status === "approved" && loan.approved_at && (
               <p className="flex items-center gap-2">
                 <CalendarDays size={15} />
                 Schváleno: {formatDateTime(loan.approved_at)}
               </p>
             )}
 
-            {loan.handed_over_at && (
+            {loan.status === "active" && loan.handed_over_at && (
               <p className="flex items-center gap-2">
                 <CalendarDays size={15} />
                 Předáno: {formatDateTime(loan.handed_over_at)}
               </p>
             )}
 
-            {loan.returned_at && (
+            {loan.status === "returned" && loan.returned_at && (
               <p className="flex items-center gap-2">
                 <CalendarDays size={15} />
                 Vráceno: {formatDateTime(loan.returned_at)}
               </p>
             )}
           </div>
+
+          <p className="mt-4 font-black text-[var(--koluj-green)]">
+            Otevřít →
+          </p>
         </div>
       </div>
     </Link>
