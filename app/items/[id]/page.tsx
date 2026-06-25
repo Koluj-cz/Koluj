@@ -134,7 +134,8 @@ export default function ItemDetailPage() {
   const [borrowFrom, setBorrowFrom] = useState("");
   const [borrowTo, setBorrowTo] = useState("");
   const [borrowNote, setBorrowNote] = useState("");
-  const [interestNote, setInterestNote] = useState("");
+  const [isWatchingAvailability, setIsWatchingAvailability] = useState(false);
+  const [savingAvailabilityWatch, setSavingAvailabilityWatch] = useState(false);
 
   useEffect(() => {
     loadPage();
@@ -190,6 +191,19 @@ export default function ItemDetailPage() {
     setSelectedImage(
       data.primary_image_url || imageData?.[0]?.image_url || ""
     );
+
+    if (user?.id) {
+      const { data: watcherData } = await supabase
+        .from("item_availability_watchers")
+        .select("id")
+        .eq("item_id", itemId)
+        .eq("user_id", user.id)
+        .is("notified_at", null)
+        .maybeSingle();
+
+      setIsWatchingAvailability(Boolean(watcherData));
+    }
+
     setLoading(false);
   }
 
@@ -354,7 +368,7 @@ Kauce: ${item.deposit || 0} Kč${
     router.push(`/dashboard/loans/${createdLoan.id}`);
   }
 
-  async function handleInterestClick() {
+  async function handleWatchAvailabilityClick() {
     if (!item) return;
 
     if (!currentUserId) {
@@ -363,7 +377,12 @@ Kauce: ${item.deposit || 0} Kč${
     }
 
     if (currentUserId === item.owner_id) {
-      toast.error("Vlastní věc si nemůžeš poptávat");
+      toast.error("Vlastní věc si nemusíš hlídat.");
+      return;
+    }
+
+    if (item.status === "available") {
+      toast.success("Věc je právě dostupná.");
       return;
     }
 
@@ -374,22 +393,30 @@ Kauce: ${item.deposit || 0} Kč${
       return;
     }
 
-    const trimmedNote = interestNote.trim();
+    setSavingAvailabilityWatch(true);
 
-    await notifyUser({
-      userId: item.owner_id,
-      actorId: currentUserId,
-      itemId: item.id,
-      type: "item_interest",
-      title: "Zájem o půjčení",
-      message: `má zájem o věc: ${item.title}${
-        trimmedNote ? ` — ${trimmedNote}` : ""
-      }`,
-      emailSubject: "Zájem o půjčení",
-    });
+    const { error } = await supabase
+      .from("item_availability_watchers")
+      .upsert(
+        {
+          item_id: item.id,
+          user_id: currentUserId,
+          notified_at: null,
+        },
+        {
+          onConflict: "item_id,user_id",
+        }
+      );
 
-    setInterestNote("");
-    toast.success("Zpráva vlastníkovi byla odeslána");
+    setSavingAvailabilityWatch(false);
+
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+
+    setIsWatchingAvailability(true);
+    toast.success("Dáme ti vědět, jakmile bude věc znovu volná.");
   }
 
   const isOwner = item?.owner_id && currentUserId === item.owner_id;
@@ -713,7 +740,7 @@ Kauce: ${item.deposit || 0} Kč${
                         value={borrowNote}
                         maxLength={500}
                         onChange={(e) => setBorrowNote(e.target.value)}
-                        placeholder="Ahoj, potřeboval bych věc půjčit od pátku do neděle. Hodilo by se ti předání večer?"
+                        placeholder="Dobrý den, potřeboval bych věc půjčit od pátku do neděle. Hodilo by se Vám předání večer?"
                         className="koluj-input min-h-[100px]"
                       />
                     </label>
@@ -736,29 +763,29 @@ Kauce: ${item.deposit || 0} Kč${
               {!isOwner && status !== "available" && (
                 <div className="mt-6 rounded-3xl bg-[var(--koluj-bg)] p-5">
                   <p className="font-black">Věc je momentálně nedostupná</p>
+
                   <p className="mt-2 text-sm text-[var(--koluj-muted)]">
-                    Můžeš vlastníkovi poslat zprávu, že máš o půjčení zájem.
-                  </p>
-
-                  <textarea
-                    value={interestNote}
-                    maxLength={500}
-                    onChange={(e) => setInterestNote(e.target.value)}
-                    placeholder="Ahoj, měl bych o věc zájem, až bude znovu dostupná."
-                    className="koluj-input mt-4 min-h-[100px]"
-                  />
-
-                  <p className="mt-2 text-right text-xs text-[var(--koluj-muted)]">
-                    {interestNote.length}/500
+                    Jakmile bude znovu volná, můžeme ti poslat upozornění.
                   </p>
 
                   <button
                     type="button"
-                    onClick={handleInterestClick}
-                    className="koluj-button mt-4 w-full px-6 py-4"
+                    onClick={handleWatchAvailabilityClick}
+                    disabled={isWatchingAvailability || savingAvailabilityWatch}
+                    className="koluj-button mt-4 w-full px-6 py-4 disabled:cursor-default disabled:opacity-70"
                   >
-                    Mám zájem
+                    {savingAvailabilityWatch
+                      ? "Ukládám..."
+                      : isWatchingAvailability
+                      ? "✓ Hlídáš dostupnost"
+                      : "🔔 Hlídat dostupnost"}
                   </button>
+
+                  {isWatchingAvailability && (
+                    <p className="mt-3 text-center text-sm font-bold text-[var(--koluj-green)]">
+                      Dáme ti vědět, jakmile bude věc opět volná.
+                    </p>
+                  )}
                 </div>
               )}
 
