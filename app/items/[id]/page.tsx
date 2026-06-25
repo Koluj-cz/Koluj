@@ -60,6 +60,7 @@ type ItemDetail = {
     full_name: string | null;
     avatar_url: string | null;
     is_verified: boolean | null;
+    is_seed_user: boolean | null;
     profile_ratings?: {
       rating_avg: number | null;
       rating_count: number | null;
@@ -151,6 +152,7 @@ export default function ItemDetailPage() {
           full_name,
           avatar_url,
           is_verified,
+          is_seed_user,
           profile_ratings (
             rating_avg,
             rating_count
@@ -202,6 +204,16 @@ export default function ItemDetailPage() {
 
     if (item.status !== "available") {
       toast.error("Tahle věc není momentálně dostupná");
+      return;
+    }
+
+    if (item.profiles?.is_seed_user) {
+      toast(
+        "💚 Tato nabídka je ukázková. Přidej svou první věc a pomoz rozšířit Koluj ve svém okolí.",
+        {
+          icon: "ℹ️",
+        }
+      );
       return;
     }
 

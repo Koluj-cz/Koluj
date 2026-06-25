@@ -58,13 +58,21 @@ export async function notifyUser({
 
   const { data: recipientProfile } = await supabase
     .from("profiles")
-    .select("email, email_notifications_enabled")
+    .select(`
+      email,
+      email_notifications_enabled,
+      is_seed_user
+    `)
     .eq("id", userId)
     .single();
 
+  const recipientEmail = recipientProfile?.is_seed_user
+    ? "info@koluj.cz"
+    : recipientProfile?.email;
+
   if (
-    !recipientProfile?.email ||
-    !recipientProfile.email_notifications_enabled
+    !recipientEmail ||
+    !recipientProfile?.email_notifications_enabled
   ) {
     return;
   }
@@ -87,7 +95,7 @@ export async function notifyUser({
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      to: recipientProfile.email,
+      to: recipientEmail,
       subject: emailSubject || title,
       actorName,
       message,

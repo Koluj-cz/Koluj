@@ -28,9 +28,13 @@ const ItemsMap = dynamic(() => import("@/app/components/ItemsMap"), {
   ssr: false,
 });
 
+const DISPLAYED_ITEMS_COUNT = 10;
+const ROTATION_INTERVAL_MS = 12000;
+
 export default function HomePage() {
   const [showMap, setShowMap] = useState(false);
   const [items, setItems] = useState<ItemCardItem[]>([]);
+  const [displayedItems, setDisplayedItems] = useState<ItemCardItem[]>([]);
   const [search, setSearch] = useState("");
   const [userLocation, setUserLocation] = useState<{
     latitude: number;
@@ -97,7 +101,7 @@ export default function HomePage() {
       .eq("is_active", true)
       .eq("status", "available")
       .order("created_at", { ascending: false })
-      .limit(8);
+      .limit(40);
 
     setItems(data || []);
     setTotalItems(count || 0);
@@ -191,6 +195,43 @@ export default function HomePage() {
 
     return result;
   }, [items, search, userLocation]);
+
+  useEffect(() => {
+    setDisplayedItems(filteredItems.slice(0, DISPLAYED_ITEMS_COUNT));
+  }, [filteredItems]);
+
+  useEffect(() => {
+    if (filteredItems.length <= DISPLAYED_ITEMS_COUNT) return;
+
+    const interval = setInterval(() => {
+      setDisplayedItems((currentItems) => {
+        if (currentItems.length === 0) {
+          return filteredItems.slice(0, DISPLAYED_ITEMS_COUNT);
+        }
+
+        const currentIds = new Set(currentItems.map((item) => item.id));
+        const candidates = filteredItems.filter(
+          (item) => !currentIds.has(item.id)
+        );
+
+        if (candidates.length === 0) {
+          return filteredItems.slice(0, DISPLAYED_ITEMS_COUNT);
+        }
+
+        const replacement =
+          candidates[Math.floor(Math.random() * candidates.length)];
+
+        const replaceIndex = Math.floor(Math.random() * currentItems.length);
+
+        const nextItems = [...currentItems];
+        nextItems[replaceIndex] = replacement;
+
+        return nextItems;
+      });
+    }, ROTATION_INTERVAL_MS);
+
+    return () => clearInterval(interval);
+  }, [filteredItems]);
 
   return (
     <main className="min-h-screen">
@@ -317,8 +358,10 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 2xl:grid-cols-5">
-            {filteredItems.map((item) => (
-              <ItemCard key={item.id} item={item} />
+            {displayedItems.map((item) => (
+              <div key={item.id} className="transition duration-300">
+                <ItemCard item={item} />
+              </div>
             ))}
           </div>
 
