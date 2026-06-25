@@ -100,6 +100,8 @@ export async function notifyUser({
       actorName,
       message,
       loanId,
+      itemId,
+      buttonText: itemId && !loanId ? "Otevřít věc" : undefined,
     }),
   });
 }

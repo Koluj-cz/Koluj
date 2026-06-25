@@ -36,7 +36,6 @@ export default function ProfilePage() {
     latitude: null as number | null,
     longitude: null as number | null,
     email_notifications_enabled: true,
-    push_notifications_enabled: false,
     marketing_notifications_enabled: false,
   });
 
@@ -85,8 +84,6 @@ export default function ProfilePage() {
       longitude: data.longitude || null,
       email_notifications_enabled:
         data.email_notifications_enabled ?? true,
-      push_notifications_enabled:
-        data.push_notifications_enabled ?? false,
       marketing_notifications_enabled:
         data.marketing_notifications_enabled ?? false,
     });
@@ -160,8 +157,6 @@ export default function ProfilePage() {
         longitude: profile.longitude,
         email_notifications_enabled:
           profile.email_notifications_enabled,
-        push_notifications_enabled:
-          profile.push_notifications_enabled,
 
         marketing_notifications_enabled:
           profile.marketing_notifications_enabled,
