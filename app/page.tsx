@@ -29,7 +29,7 @@ const ItemsMap = dynamic(() => import("@/app/components/ItemsMap"), {
 });
 
 const DISPLAYED_ITEMS_COUNT = 10;
-const ROTATION_INTERVAL_MS = 5000;
+const ROTATION_INTERVAL_MS = 3000;
 
 export default function HomePage() {
   const [showMap, setShowMap] = useState(false);

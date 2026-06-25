@@ -16,7 +16,6 @@ import {
   MapPin,
   ShieldCheck,
   Star,
-  User,
   Eye,
 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -132,6 +131,11 @@ export default function ItemDetailPage() {
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const [borrowFrom, setBorrowFrom] = useState("");
+  const [borrowTo, setBorrowTo] = useState("");
+  const [borrowNote, setBorrowNote] = useState("");
+  const [interestNote, setInterestNote] = useState("");
+
   useEffect(() => {
     loadPage();
   }, []);
@@ -209,11 +213,29 @@ export default function ItemDetailPage() {
 
     if (item.profiles?.is_seed_user) {
       toast(
-        "💚 Tato nabídka je ukázková. Přidej svou první věc a pomoz rozšířit Koluj ve svém okolí.",
-        {
-          icon: "ℹ️",
-        }
+        "💚 Tato nabídka je ukázková. Přidej svou první věc a pomoz rozšířit Koluj ve svém okolí."
       );
+      return;
+    }
+
+    if (!borrowFrom || !borrowTo) {
+      toast.error("Vyber termín půjčení.");
+      return;
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const fromDate = new Date(borrowFrom);
+    const toDate = new Date(borrowTo);
+
+    if (fromDate < today) {
+      toast.error("Datum půjčení nemůže být v minulosti.");
+      return;
+    }
+
+    if (toDate < fromDate) {
+      toast.error("Datum vrácení nemůže být dřív než datum půjčení.");
       return;
     }
 
@@ -237,7 +259,7 @@ export default function ItemDetailPage() {
       );
       router.push("/profile");
       return;
-    } 
+    }
 
     const { data: existingLoans, error: existingLoanError } = await supabase
       .from("loans")
@@ -264,8 +286,8 @@ export default function ItemDetailPage() {
         owner_id: item.owner_id,
         borrower_id: currentUserId,
         status: "requested",
-        date_from: item.available_from,
-        date_to: item.available_to,
+        date_from: borrowFrom,
+        date_to: borrowTo,
         price_amount: item.price_amount,
         deposit_amount: item.deposit,
         total_price: item.price_amount,
@@ -299,10 +321,13 @@ export default function ItemDetailPage() {
         is_system: true,
         message: `Žádost o půjčení vytvořena.
 
-    Věc: ${item.title}
-    Místo předání: ${item.pickup_place}
-    Cena: ${item.price_amount || 0} Kč
-    Kauce: ${item.deposit || 0} Kč`,
+Věc: ${item.title}
+Termín: ${formatDate(borrowFrom)} – ${formatDate(borrowTo)}
+Místo předání: ${item.pickup_place}
+Cena: ${item.price_amount || 0} Kč
+Kauce: ${item.deposit || 0} Kč${
+          borrowNote.trim() ? `\n\nPoznámka: ${borrowNote.trim()}` : ""
+        }`,
       });
 
     if (messageError) {
@@ -329,6 +354,44 @@ export default function ItemDetailPage() {
     router.push(`/dashboard/loans/${createdLoan.id}`);
   }
 
+  async function handleInterestClick() {
+    if (!item) return;
+
+    if (!currentUserId) {
+      router.push("/login");
+      return;
+    }
+
+    if (currentUserId === item.owner_id) {
+      toast.error("Vlastní věc si nemůžeš poptávat");
+      return;
+    }
+
+    if (item.profiles?.is_seed_user) {
+      toast(
+        "💚 Tato nabídka je ukázková. Přidej svou první věc a pomoz rozšířit Koluj ve svém okolí."
+      );
+      return;
+    }
+
+    const trimmedNote = interestNote.trim();
+
+    await notifyUser({
+      userId: item.owner_id,
+      actorId: currentUserId,
+      itemId: item.id,
+      type: "item_interest",
+      title: "Zájem o půjčení",
+      message: `má zájem o věc: ${item.title}${
+        trimmedNote ? ` — ${trimmedNote}` : ""
+      }`,
+      emailSubject: "Zájem o půjčení",
+    });
+
+    setInterestNote("");
+    toast.success("Zpráva vlastníkovi byla odeslána");
+  }
+
   const isOwner = item?.owner_id && currentUserId === item.owner_id;
 
   const rating = item?.profiles?.profile_ratings?.[0];
@@ -344,6 +407,8 @@ export default function ItemDetailPage() {
   const status = item?.status || "available";
   const statusLabel = statusLabels[status] || status;
   const statusClass = statusClasses[status] || statusClasses.available;
+  const todayIso = new Date().toISOString().split("T")[0];
+  const isSingleDateRequest = item?.price_unit === "piece";
 
   const mapItems = useMemo(() => {
     if (!item) return [];
@@ -593,7 +658,7 @@ export default function ItemDetailPage() {
                 </p>
               )}
 
-              {isOwner ? (
+              {isOwner && (
                 <Link
                   href={`/items/${item.id}/edit`}
                   className="koluj-button mt-6 flex w-full items-center justify-center gap-2 px-6 py-4"
@@ -601,17 +666,100 @@ export default function ItemDetailPage() {
                   <Edit size={18} />
                   Upravit vlastní věc
                 </Link>
-              ) : (
-                <button
-                  type="button"
-                  onClick={handleBorrowClick}
-                  disabled={status !== "available"}
-                  className="koluj-button mt-6 w-full px-6 py-4 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  {status === "available"
-                    ? "Půjčit si"
-                    : "Momentálně nedostupné"}
-                </button>
+              )}
+
+              {!isOwner && status === "available" && (
+                <>
+                  <div className="mt-6 grid gap-3">
+                    <div
+                      className={`grid gap-3 ${
+                        isSingleDateRequest ? "" : "sm:grid-cols-2"
+                      }`}
+                    >
+                      <label className="grid gap-2 text-sm font-bold text-[var(--koluj-muted)]">
+                        {isSingleDateRequest ? "Datum převzetí" : "Od kdy"}
+                        <input
+                          type="date"
+                          value={borrowFrom}
+                          min={todayIso}
+                          onChange={(e) => {
+                            setBorrowFrom(e.target.value);
+
+                            if (!borrowTo || isSingleDateRequest) {
+                              setBorrowTo(e.target.value);
+                            }
+                          }}
+                          className="koluj-input"
+                        />
+                      </label>
+
+                      {!isSingleDateRequest && (
+                        <label className="grid gap-2 text-sm font-bold text-[var(--koluj-muted)]">
+                          Do kdy
+                          <input
+                            type="date"
+                            value={borrowTo}
+                            min={borrowFrom || todayIso}
+                            onChange={(e) => setBorrowTo(e.target.value)}
+                            className="koluj-input"
+                          />
+                        </label>
+                      )}
+                    </div>
+
+                    <label className="grid gap-2 text-sm font-bold text-[var(--koluj-muted)]">
+                      Zpráva pro vlastníka
+                      <textarea
+                        value={borrowNote}
+                        maxLength={500}
+                        onChange={(e) => setBorrowNote(e.target.value)}
+                        placeholder="Ahoj, potřeboval bych věc půjčit od pátku do neděle. Hodilo by se ti předání večer?"
+                        className="koluj-input min-h-[100px]"
+                      />
+                    </label>
+
+                    <p className="text-right text-xs text-[var(--koluj-muted)]">
+                      {borrowNote.length}/500
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={handleBorrowClick}
+                    className="koluj-button mt-6 w-full px-6 py-4"
+                  >
+                    Půjčit si
+                  </button>
+                </>
+              )}
+
+              {!isOwner && status !== "available" && (
+                <div className="mt-6 rounded-3xl bg-[var(--koluj-bg)] p-5">
+                  <p className="font-black">Věc je momentálně nedostupná</p>
+                  <p className="mt-2 text-sm text-[var(--koluj-muted)]">
+                    Můžeš vlastníkovi poslat zprávu, že máš o půjčení zájem.
+                  </p>
+
+                  <textarea
+                    value={interestNote}
+                    maxLength={500}
+                    onChange={(e) => setInterestNote(e.target.value)}
+                    placeholder="Ahoj, měl bych o věc zájem, až bude znovu dostupná."
+                    className="koluj-input mt-4 min-h-[100px]"
+                  />
+
+                  <p className="mt-2 text-right text-xs text-[var(--koluj-muted)]">
+                    {interestNote.length}/500
+                  </p>
+
+                  <button
+                    type="button"
+                    onClick={handleInterestClick}
+                    className="koluj-button mt-4 w-full px-6 py-4"
+                  >
+                    Mám zájem
+                  </button>
+                </div>
               )}
 
               <div className="mt-6 flex gap-3 rounded-2xl bg-[var(--koluj-bg)] p-4 text-sm font-bold text-[var(--koluj-muted)]">
