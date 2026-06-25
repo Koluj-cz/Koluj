@@ -51,6 +51,7 @@ export async function notifyUserServer({
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "x-internal-secret": process.env.INTERNAL_API_SECRET || "",
       },
       body: JSON.stringify({
         userId,
@@ -99,6 +100,7 @@ export async function notifyUserServer({
     method: "POST",
     headers: {
       "Content-Type": "application/json",
+      "x-internal-secret": process.env.INTERNAL_API_SECRET || "",
     },
     body: JSON.stringify({
       to: recipientEmail,
@@ -106,6 +108,8 @@ export async function notifyUserServer({
       actorName,
       message,
       loanId,
+      itemId,
+      buttonText: itemId && !loanId ? "Otevřít věc" : undefined,
     }),
   });
 }

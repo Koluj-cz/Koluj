@@ -1,5 +1,3 @@
-import { supabase } from "@/lib/supabase";
-
 type NotifyUserParams = {
   userId: string | null;
   actorId: string | null;
@@ -11,6 +9,7 @@ type NotifyUserParams = {
   emailSubject?: string;
   sendEmail?: boolean;
   sendPush?: boolean;
+  url?: string;
 };
 
 export async function notifyUser({
@@ -24,84 +23,38 @@ export async function notifyUser({
   emailSubject,
   sendEmail = true,
   sendPush = true,
+  url,
 }: NotifyUserParams) {
   if (!userId) return;
 
-  await supabase.from("notifications").insert({
-    user_id: userId,
-    actor_id: actorId,
-    loan_id: loanId,
-    item_id: itemId,
-    type,
-    title,
-    message,
-  });
-
-  if (sendPush) {
-    await fetch("/api/push/send", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        userId,
-        title,
-        message,
-        url: loanId
-          ? `/dashboard/loans/${loanId}`
-          : "/dashboard/notifications",
-      }),
-    });
-  }
-
-  if (!sendEmail) return;
-
-  const { data: recipientProfile } = await supabase
-    .from("profiles")
-    .select(`
-      email,
-      email_notifications_enabled,
-      is_seed_user
-    `)
-    .eq("id", userId)
-    .single();
-
-  const recipientEmail = recipientProfile?.is_seed_user
-    ? "info@koluj.cz"
-    : recipientProfile?.email;
-
-  if (
-    !recipientEmail ||
-    !recipientProfile?.email_notifications_enabled
-  ) {
-    return;
-  }
-
-  let actorName = "Uživatel";
-
-  if (actorId) {
-    const { data: actorProfile } = await supabase
-      .from("profiles")
-      .select("full_name")
-      .eq("id", actorId)
-      .single();
-
-    actorName = actorProfile?.full_name || "Uživatel";
-  }
-
-  await fetch("/api/send-notification-email", {
+  const response = await fetch("/api/notifications/create", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      to: recipientEmail,
-      subject: emailSubject || title,
-      actorName,
-      message,
+      userId,
+      actorId,
       loanId,
       itemId,
-      buttonText: itemId && !loanId ? "Otevřít věc" : undefined,
+      type,
+      title,
+      message,
+      emailSubject,
+      sendEmail,
+      sendPush,
+      url:
+        url ||
+        (loanId
+          ? `/dashboard/loans/${loanId}`
+          : itemId
+          ? `/items/${itemId}`
+          : "/dashboard/notifications"),
     }),
   });
+
+  if (!response.ok) {
+    const result = await response.json().catch(() => null);
+    throw new Error(result?.error || "Notifikaci se nepodařilo odeslat");
+  }
 }

@@ -8,6 +8,14 @@ const supabaseAdmin = createClient(
 );
 
 export async function POST(request: Request) {
+  const internalSecret = request.headers.get("x-internal-secret");
+
+  if (
+    !process.env.INTERNAL_API_SECRET ||
+    internalSecret !== process.env.INTERNAL_API_SECRET
+  ) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   const vapidEmail = process.env.VAPID_EMAIL;
   const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
