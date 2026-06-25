@@ -653,8 +653,8 @@ Kauce: ${item.deposit || 0} Kč${
             </div>
           </div>
 
-          <aside className="space-y-6">
-            <div className="koluj-card sticky top-8 p-8">
+          <aside className="min-w-0 space-y-6">
+            <div className="koluj-card p-5 md:p-8 lg:sticky lg:top-8">
               <div className="rounded-3xl bg-[var(--koluj-bg)] p-5">
                 <p className="text-sm font-bold text-[var(--koluj-muted)]">
                   Cena
@@ -699,7 +699,7 @@ Kauce: ${item.deposit || 0} Kč${
                 <>
                   <div className="mt-6 grid gap-3">
                     <div
-                      className={`grid gap-3 ${
+                      className={`grid min-w-0 gap-3 ${
                         isSingleDateRequest ? "" : "sm:grid-cols-2"
                       }`}
                     >
@@ -710,13 +710,15 @@ Kauce: ${item.deposit || 0} Kč${
                           value={borrowFrom}
                           min={todayIso}
                           onChange={(e) => {
-                            setBorrowFrom(e.target.value);
+                            const value = e.target.value;
 
-                            if (!borrowTo || isSingleDateRequest) {
-                              setBorrowTo(e.target.value);
+                            setBorrowFrom(value);
+
+                            if (!borrowTo || borrowTo < value || isSingleDateRequest) {
+                              setBorrowTo(value);
                             }
                           }}
-                          className="koluj-input"
+                          className="koluj-input w-full min-w-0 max-w-full appearance-none"
                         />
                       </label>
 
@@ -727,8 +729,17 @@ Kauce: ${item.deposit || 0} Kč${
                             type="date"
                             value={borrowTo}
                             min={borrowFrom || todayIso}
-                            onChange={(e) => setBorrowTo(e.target.value)}
-                            className="koluj-input"
+                            onChange={(e) => {
+                              const value = e.target.value;
+
+                              if (borrowFrom && value < borrowFrom) {
+                                setBorrowTo(borrowFrom);
+                                return;
+                              }
+
+                              setBorrowTo(value);
+                            }}
+                            className="koluj-input w-full min-w-0 max-w-full appearance-none"
                           />
                         </label>
                       )}
