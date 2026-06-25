@@ -478,6 +478,34 @@ export default function LoanDetailPage() {
       return;
     }
 
+    const { data: watchers } = await supabase
+      .from("item_availability_watchers")
+      .select("user_id")
+      .eq("item_id", loan.items.id)
+      .is("notified_at", null);
+
+    if (watchers && watchers.length > 0) {
+      for (const watcher of watchers) {
+        await notifyUser({
+          userId: watcher.user_id,
+          actorId: loan.owner_id,
+          itemId: loan.items.id,
+          type: "item_available",
+          title: "Věc je znovu dostupná",
+          message: `${loan.items.title} je opět k půjčení.`,
+          emailSubject: "Věc je znovu dostupná",
+        });
+      }
+
+      await supabase
+        .from("item_availability_watchers")
+        .update({
+          notified_at: new Date().toISOString(),
+        })
+        .eq("item_id", loan.items.id)
+        .is("notified_at", null);
+    }
+
     setLoan({
       ...loan,
       status: "returned",
