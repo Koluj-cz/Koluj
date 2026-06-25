@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
@@ -61,6 +61,7 @@ function ItemsPageContent() {
   const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest");
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
   const [visibleCount, setVisibleCount] = useState(15);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
 
   const [userLocation, setUserLocation] = useState<{
     latitude: number;
@@ -212,6 +213,35 @@ function ItemsPageContent() {
   }, [items, search, category, status, sortBy, userLocation]);
 
   const visibleItems = filteredItems.slice(0, visibleCount);
+
+  useEffect(() => {
+    if (viewMode !== "list") return;
+    if (visibleCount >= filteredItems.length) return;
+
+    const target = loadMoreRef.current;
+    if (!target) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const firstEntry = entries[0];
+
+        if (firstEntry.isIntersecting) {
+          setVisibleCount((current) =>
+            Math.min(current + 15, filteredItems.length)
+          );
+        }
+      },
+      {
+        root: null,
+        rootMargin: "500px",
+        threshold: 0,
+      }
+    );
+
+    observer.observe(target);
+
+    return () => observer.disconnect();
+  }, [filteredItems.length, visibleCount, viewMode]);
 
   if (loading) {
     return (
@@ -409,20 +439,16 @@ function ItemsPageContent() {
                 ))}
               </div>
 
-              {visibleCount < filteredItems.length && (
-                <div className="mt-10 text-center">
-                  <button
-                    type="button"
-                    onClick={() => setVisibleCount((prev) => prev + 15)}
-                    className="rounded-2xl border border-[var(--koluj-border)] bg-white px-8 py-4 font-bold transition hover:bg-[var(--koluj-bg)]"
-                  >
-                    Načíst další
-                  </button>
+              <div ref={loadMoreRef} className="h-8" />
 
-                  <p className="mt-3 text-sm text-[var(--koluj-muted)]">
-                    Zobrazeno {visibleItems.length} z {filteredItems.length} věcí
-                  </p>
-                </div>
+              {visibleItems.length < filteredItems.length ? (
+                <p className="mt-3 text-center text-sm font-bold text-[var(--koluj-muted)]">
+                  Načítám další věci...
+                </p>
+              ) : (
+                <p className="mt-8 text-center text-sm text-[var(--koluj-muted)]">
+                  Zobrazeno všech {filteredItems.length} věcí
+                </p>
               )}
             </>
           )}
