@@ -16,13 +16,10 @@ import { supabase } from "@/lib/supabase";
 import ItemCard, { type ItemCardItem } from "@/app/components/ItemCard";
 import AddItemButton from "@/app/components/AddItemButton";
 import PageLoader from "@/app/components/PageLoader";
-import {
-  itemStatusClasses,
-  itemStatusLabels,
-} from "@/lib/constants";
 
 type Item = ItemCardItem & {
   is_active: boolean;
+  deleted_at: string | null;
   borrow_count: number | null;
 };
 
@@ -63,6 +60,7 @@ export default function MyItemsPage() {
         )
       `)
       .eq("owner_id", user.id)
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -99,51 +97,35 @@ export default function MyItemsPage() {
     toast.success(nextValue ? "Věc je znovu viditelná" : "Věc je skrytá");
   }
 
-  async function deleteItem(item: Item) {
+  async function archiveItem(item: Item) {
     if (pendingDeleteId !== item.id) {
       setPendingDeleteId(item.id);
       return;
     }
 
-    const { data: images } = await supabase
-      .from("item_images")
-      .select("image_url")
-      .eq("item_id", item.id);
+    const response = await fetch("/api/items/archive", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        itemId: item.id,
+      }),
+    });
 
-    const storagePaths =
-      images
-        ?.map((image) => {
-          const marker = "/storage/v1/object/public/items/";
-          return image.image_url?.includes(marker)
-            ? image.image_url.split(marker)[1]
-            : null;
-        })
-        .filter(Boolean) || [];
+    const result = await response.json().catch(() => null);
 
-    if (storagePaths.length > 0) {
-      await supabase.storage.from("items").remove(storagePaths as string[]);
-    }
-
-    const { error: imageError } = await supabase
-      .from("item_images")
-      .delete()
-      .eq("item_id", item.id);
-
-    if (imageError) {
-      toast.error(imageError.message);
+    if (!response.ok) {
+      toast.error(result?.error || "Věc se nepodařilo archivovat");
       return;
     }
 
-    const { error } = await supabase.from("items").delete().eq("id", item.id);
+    setItems((current) =>
+      current.filter((i) => i.id !== item.id)
+    );
 
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-
-    setItems((prev) => prev.filter((current) => current.id !== item.id));
     setPendingDeleteId(null);
-    toast.success("Věc byla smazána");
+    toast.success("Věc byla archivována");
   }
 
   const counts = useMemo(() => {
@@ -332,7 +314,6 @@ export default function MyItemsPage() {
           ) : (
             <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
               {visibleItems.map((item) => {
-                const status = item.status || "available";
 
                 return (
               <ItemCard
@@ -346,13 +327,6 @@ export default function MyItemsPage() {
                   </p>
                 )}
 
-                <div
-                  className={`mb-3 w-full rounded-2xl border px-4 py-3 text-center text-sm font-black uppercase tracking-wide ${
-                    itemStatusClasses[status] || itemStatusClasses.available
-                  }`}
-                >
-                  {itemStatusLabels[status] || status}
-                </div>
 
                 <div className="grid gap-3">
                   <Link
@@ -383,14 +357,14 @@ export default function MyItemsPage() {
 
                   <button
                     type="button"
-                    onClick={() => deleteItem(item)}
+                    onClick={() => archiveItem(item)}
                     onMouseLeave={() => setPendingDeleteId(null)}
-                    className="flex items-center justify-center gap-2 rounded-2xl border border-red-200 px-5 py-3 font-bold text-red-600 transition hover:bg-red-50"
+                    className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--koluj-border)] px-5 py-3 font-bold text-[var(--koluj-muted)] transition hover:bg-[var(--koluj-bg)]"
                   >
                     <Trash2 size={18} />
                     {pendingDeleteId === item.id
-                      ? "Opravdu smazat?"
-                      : "Smazat"}
+                      ? "Opravdu archivovat?"
+                      : "Archivovat"}
                   </button>
                 </div>
               </ItemCard>
