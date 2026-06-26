@@ -203,10 +203,10 @@ export default function ItemCard({
   }
 
   return (
-    <Link
-      href={`/items/${item.id}`}
-      className="koluj-card flex h-full flex-col overflow-hidden transition hover:-translate-y-1"
-    >
+      <Link
+        href={`/items/${item.id}`}
+        className="koluj-card koluj-mobile-item-card flex h-full flex-col overflow-hidden transition hover:-translate-y-1"
+      >
       {cardContent}
     </Link>
   );

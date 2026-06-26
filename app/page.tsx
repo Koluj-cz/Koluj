@@ -257,10 +257,13 @@ export default function HomePage() {
           </div>
         </header>
 
-        <section className="grid items-start gap-8 py-6 md:py-8 lg:grid-cols-[0.9fr_1.1fr]">
+        <section className="grid items-start gap-6 py-4 md:py-8 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="flex flex-col lg:h-[430px]">
             <h1 className="koluj-heading">
-              Půjčuj si věci od lidí ve svém okolí
+              <span className="md:hidden">Půjč si věc poblíž</span>
+              <span className="hidden md:block">
+                Půjčuj si věci od lidí ve svém okolí
+              </span>
             </h1>
 
             <p className="mt-4 max-w-xl text-lg leading-relaxed text-[var(--koluj-muted)] md:text-xl">
@@ -268,7 +271,7 @@ export default function HomePage() {
               potřebuješ, a půjč si je od lidí kolem sebe.
             </p>
 
-            <div className="mt-5 flex flex-wrap gap-2 text-sm font-bold text-[var(--koluj-green)]">
+            <div className="mt-5 hidden flex-wrap gap-2 text-sm font-bold text-[var(--koluj-green)] md:flex">
               <span className="rounded-full bg-white px-4 py-2 shadow-sm">
                 {totalItems} věcí k půjčení
               </span>
@@ -330,7 +333,7 @@ export default function HomePage() {
           )}
         </section>
 
-        <section className="koluj-categories-mobile mt-8 lg:grid lg:grid-cols-8 lg:gap-2">
+        <section className="koluj-categories-mobile mt-6 lg:grid lg:grid-cols-8 lg:gap-2">
           <CategoryChip label="Vše" category="" />
           <CategoryChip icon={<Drill size={16} />} label="Nářadí" category="naradi" />
           <CategoryChip icon={<Bike size={16} />} label="Sport" category="sport" />
@@ -359,7 +362,7 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 2xl:grid-cols-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3 2xl:grid-cols-5">
             {displayedItems.map((item) => (
               <div key={item.id} className="transition duration-300">
                 <ItemCard item={item} />
