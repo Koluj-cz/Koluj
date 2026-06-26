@@ -9,7 +9,6 @@ import {
   EyeOff,
   Grid2X2,
   Pencil,
-  Plus,
   Trash2,
 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -19,6 +18,7 @@ import AddItemButton from "@/app/components/AddItemButton";
 import PageLoader from "@/app/components/PageLoader";
 import {
   itemStatusClasses,
+  itemStatusLabels,
 } from "@/lib/constants";
 
 type Item = ItemCardItem & {
@@ -73,26 +73,6 @@ export default function MyItemsPage() {
 
     setItems((data || []) as Item[]);
     setLoading(false);
-  }
-
-  async function updateStatus(item: Item, status: string) {
-    const { error } = await supabase
-      .from("items")
-      .update({ status })
-      .eq("id", item.id);
-
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-
-    setItems((prev) =>
-      prev.map((current) =>
-        current.id === item.id ? { ...current, status } : current
-      )
-    );
-
-    toast.success("Stav věci změněn");
   }
 
   async function toggleVisibility(item: Item) {
@@ -251,7 +231,7 @@ export default function MyItemsPage() {
           <h1 className="koluj-heading">Moje věci</h1>
 
           <p className="mt-6 max-w-2xl text-2xl leading-relaxed text-[var(--koluj-muted)]">
-            Spravuj své věci, měň jejich stav a sleduj půjčení.
+            Spravuj své věci, sleduj jejich stav a půjčení.
           </p>
         </section>
 
@@ -366,17 +346,13 @@ export default function MyItemsPage() {
                   </p>
                 )}
 
-                <select
-                  value={status}
-                  onChange={(e) => updateStatus(item, e.target.value)}
-                  className={`mb-3 w-full rounded-2xl border px-4 py-3 text-center text-sm font-black uppercase tracking-wide outline-none ${
-                    itemStatusClasses[status] || "koluj-status-available"
+                <div
+                  className={`mb-3 w-full rounded-2xl border px-4 py-3 text-center text-sm font-black uppercase tracking-wide ${
+                    itemStatusClasses[status] || itemStatusClasses.available
                   }`}
                 >
-                  <option value="available">Volné</option>
-                  <option value="reserved">Rezervované</option>
-                  <option value="borrowed">Půjčené</option>
-                </select>
+                  {itemStatusLabels[status] || status}
+                </div>
 
                 <div className="grid gap-3">
                   <Link
