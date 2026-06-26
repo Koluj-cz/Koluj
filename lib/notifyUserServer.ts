@@ -1,9 +1,13 @@
 import { createClient } from "@supabase/supabase-js";
+import { Resend } from "resend";
+import webpush from "web-push";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 type NotifyUserServerParams = {
   userId: string | null;
@@ -44,31 +48,80 @@ export async function notifyUserServer({
     message,
   });
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
-  if (sendPush && appUrl) {
-    await fetch(`${appUrl}/api/push/send`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-internal-secret": process.env.INTERNAL_API_SECRET || "",
-      },
-      body: JSON.stringify({
-        userId,
-        title,
-        message,
-        url:
-          url ||
-          (loanId
-            ? `/dashboard/loans/${loanId}`
-            : itemId
-            ? `/items/${itemId}`
-            : "/dashboard/notifications"),
-      }),
-    });
+  const targetUrl =
+    url ||
+    (loanId
+      ? `/dashboard/loans/${loanId}`
+      : itemId
+      ? `/items/${itemId}`
+      : "/dashboard/notifications");
+
+  const fullUrl = `${appUrl}${targetUrl}`;
+
+  let actorName = "Koluj";
+
+  if (actorId) {
+    const { data: actorProfile } = await supabaseAdmin
+      .from("profiles")
+      .select("full_name")
+      .eq("id", actorId)
+      .single();
+
+    actorName = actorProfile?.full_name || "Uživatel";
   }
 
-  if (!sendEmail || !appUrl) return;
+  if (sendPush) {
+    const vapidEmail = process.env.VAPID_EMAIL;
+    const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+    const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+
+    if (vapidEmail && vapidPublicKey && vapidPrivateKey) {
+      webpush.setVapidDetails(
+        vapidEmail,
+        vapidPublicKey,
+        vapidPrivateKey
+      );
+
+      const { data: subscriptions } = await supabaseAdmin
+        .from("push_subscriptions")
+        .select("id, endpoint, p256dh, auth")
+        .eq("user_id", userId);
+
+      await Promise.all(
+        (subscriptions || []).map(async (subscription) => {
+          try {
+            await webpush.sendNotification(
+              {
+                endpoint: subscription.endpoint,
+                keys: {
+                  p256dh: subscription.p256dh,
+                  auth: subscription.auth,
+                },
+              },
+              JSON.stringify({
+                title,
+                body: message,
+                url: targetUrl,
+              })
+            );
+          } catch (error: any) {
+            if (error?.statusCode === 404 || error?.statusCode === 410) {
+              await supabaseAdmin
+                .from("push_subscriptions")
+                .delete()
+                .eq("id", subscription.id);
+            }
+
+            console.error("Push send error:", error);
+          }
+        })
+      );
+    }
+  }
+
+  if (!sendEmail) return;
 
   const { data: recipientProfile } = await supabaseAdmin
     .from("profiles")
@@ -84,32 +137,26 @@ export async function notifyUserServer({
     return;
   }
 
-  let actorName = "Koluj";
+  const buttonText = loanId
+    ? "Otevřít půjčku"
+    : itemId
+    ? "Otevřít věc"
+    : "Otevřít notifikace";
 
-  if (actorId) {
-    const { data: actorProfile } = await supabaseAdmin
-      .from("profiles")
-      .select("full_name")
-      .eq("id", actorId)
-      .single();
-
-    actorName = actorProfile?.full_name || "Uživatel";
-  }
-
-  await fetch(`${appUrl}/api/send-notification-email`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-internal-secret": process.env.INTERNAL_API_SECRET || "",
-    },
-    body: JSON.stringify({
-      to: recipientEmail,
-      subject: emailSubject || title,
-      actorName,
-      message,
-      loanId,
-      itemId,
-      buttonText: itemId && !loanId ? "Otevřít věc" : undefined,
-    }),
+  await resend.emails.send({
+    from: "Koluj <noreply@koluj.cz>",
+    to: recipientEmail,
+    subject: emailSubject || title,
+    html: `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+        <h1 style="color:#6b842c;">Koluj</h1>
+        <p><strong>${actorName}</strong> ${message}</p>
+        <p>
+          <a href="${fullUrl}" style="display:inline-block;background:#6b842c;color:white;padding:12px 18px;border-radius:12px;text-decoration:none;font-weight:bold;">
+            ${buttonText}
+          </a>
+        </p>
+      </div>
+    `,
   });
 }
