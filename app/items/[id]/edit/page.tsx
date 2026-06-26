@@ -19,6 +19,16 @@ import { supabase } from "@/lib/supabase";
 import imageCompression from "browser-image-compression";
 import RichTextEditor from "@/app/components/RichTextEditor";
 import PageLoader from "@/app/components/PageLoader";
+import {
+  categories,
+  categoryLabels,
+  conditions,
+  conditionLabels,
+  handoverLabels,
+  handoverOptions,
+  itemStatuses,
+  itemStatusLabels,
+} from "@/lib/constants";
 
 type PlaceSuggestion = {
   name: string;
@@ -584,15 +594,11 @@ async function makePrimary(imageUrl: string) {
                     className="koluj-input"
                   >
                     <option value="">Kategorie *</option>
-                    <option value="naradi">Nářadí</option>
-                    <option value="elektronika">Elektronika</option>
-                    <option value="sport">Sport</option>
-                    <option value="outdoor">Outdoor</option>
-                    <option value="dum_zahrada">Dům a zahrada</option>
-                    <option value="auto_moto">Auto/Moto</option>
-                    <option value="foto_video">Foto a video</option>
-                    <option value="party_akce">Party a akce</option>
-                    <option value="ostatni">Ostatní</option>
+                    {categories.map((category) => (
+                      <option key={category} value={category}>
+                        {categoryLabels[category]}
+                      </option>
+                    ))}
                   </select>
 
                   <select
@@ -601,10 +607,11 @@ async function makePrimary(imageUrl: string) {
                     className="koluj-input"
                   >
                     <option value="">Stav věci *</option>
-                    <option value="new">Nové</option>
-                    <option value="like_new">Jako nové</option>
-                    <option value="good">Dobrý stav</option>
-                    <option value="used">Běžně používané</option>
+                    {conditions.map((condition) => (
+                      <option key={condition} value={condition}>
+                        {conditionLabels[condition]}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
@@ -697,12 +704,7 @@ async function makePrimary(imageUrl: string) {
               </div>
 
               <div className="mt-5 grid gap-3 md:grid-cols-2">
-                {[
-                  ["pracovni_dny", "Pracovní dny"],
-                  ["vecer_po_praci", "Večer po práci"],
-                  ["vikendy", "Víkendy"],
-                  ["kdykoliv", "Kdykoliv"],
-                ].map(([value, label]) => (
+                {handoverOptions.map((value) => (
                   <button
                     key={value}
                     type="button"
@@ -714,7 +716,7 @@ async function makePrimary(imageUrl: string) {
                     }`}
                   >
                     {form.handover_options.includes(value) && <Check size={18} />}
-                    {label}
+                    {handoverLabels[value]}
                   </button>
                 ))}
               </div>
@@ -736,9 +738,11 @@ async function makePrimary(imageUrl: string) {
                   onChange={(e) => updateField("status", e.target.value)}
                   className="koluj-input"
                 >
-                  <option value="available">Volné</option>
-                  <option value="reserved">Rezervované</option>
-                  <option value="borrowed">Půjčené</option>
+                  {itemStatuses.map((status) => (
+                    <option key={status} value={status}>
+                      {itemStatusLabels[status]}
+                    </option>
+                  ))}
                 </select>
 
                 <select

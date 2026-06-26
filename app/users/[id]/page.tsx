@@ -8,6 +8,7 @@ import ItemCard, { type ItemCardItem } from "@/app/components/ItemCard";
 import { useParams } from "next/navigation";
 import AuthHeaderButton from "@/app/components/AuthHeaderButton";
 import PageLoader from "@/app/components/PageLoader";
+import { formatDate, translatePriceUnit } from "@/lib/format";
 
 type Profile = {
   id: string;
@@ -37,10 +38,6 @@ type Review = {
     title: string | null;
   } | null;
 };
-
-function formatDate(date: string) {
-  return new Date(date).toLocaleDateString("cs-CZ");
-}
 
 export default function UserProfilePage() {
   const params = useParams();

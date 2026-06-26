@@ -9,6 +9,11 @@ import { supabase } from "@/lib/supabase";
 import { notifyUser } from "@/lib/notifyUser";
 import { containsForbiddenText } from "@/lib/moderation";
 import PageLoader from "@/app/components/PageLoader";
+import {
+  translatePriceUnit,
+  formatDateTime,
+  translateLoanStatus,
+} from "@/lib/format";
 
 type Loan = {
   id: string;
@@ -41,45 +46,6 @@ type Message = {
   created_at: string;
   profiles?: { full_name: string | null } | null;
 };
-
-function translateStatus(status: string) {
-  switch (status) {
-    case "requested":
-      return "Čeká na schválení";
-    case "approved":
-      return "Schváleno";
-    case "active":
-      return "Probíhá";
-    case "returned":
-      return "Vráceno";
-    case "cancelled":
-      return "Zrušeno";
-    default:
-      return status;
-  }
-}
-
-function translatePriceUnit(unit: string | null) {
-  if (unit === "hour") return "hodinu";
-  if (unit === "day") return "den";
-  if (unit === "weekend") return "víkend";
-  if (unit === "week") return "týden";
-  if (unit === "month") return "měsíc";
-  if (unit === "piece") return "půjčení";
-  return "";
-}
-
-function formatDateTime(date: string | null) {
-  if (!date) return "";
-
-  return new Date(date).toLocaleString("cs-CZ", {
-    day: "numeric",
-    month: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
 
 export default function LoanDetailPage() {
   const params = useParams();
@@ -697,7 +663,7 @@ export default function LoanDetailPage() {
               <h1 className="text-3xl font-black">{loan.items?.title}</h1>
 
               <div className="mt-5 space-y-3 text-sm">
-                <p><strong>Stav:</strong> {translateStatus(loan.status)}</p>
+                <p><strong>Stav:</strong> {translateLoanStatus(loan.status)}</p>
                 <p><strong>{otherPersonLabel}:</strong> {otherPersonName}</p>
                 <p><strong>Vytvořeno:</strong> {formatDateTime(loan.created_at)}</p>
 
@@ -727,7 +693,7 @@ export default function LoanDetailPage() {
             <div className="border-b border-[var(--koluj-border)] p-5">
               <h2 className="text-xl font-black">Domluva předání</h2>
               <p className="mt-1 text-sm font-bold text-[var(--koluj-muted)]">
-                Stav: {translateStatus(loan.status)}
+                Stav: {translateLoanStatus(loan.status)}
               </p>
             </div>
 

@@ -15,28 +15,27 @@ import { supabase } from "@/lib/supabase";
 import ItemCard, { type ItemCardItem } from "@/app/components/ItemCard";
 import AuthHeaderButton from "@/app/components/AuthHeaderButton";
 import PageLoader from "@/app/components/PageLoader";
+import {
+  categories,
+  categoryLabels,
+  itemStatuses,
+  itemStatusLabels,
+} from "@/lib/constants";
+import { getDistanceKm } from "@/lib/location";
 
 const ItemsMap = dynamic(() => import("@/app/components/ItemsMap"), {
   ssr: false,
 });
 
-const categoryLabels: Record<string, string> = {
+const categoryOptions = {
   all: "Všechny kategorie",
-  naradi: "Nářadí",
-  elektronika: "Elektronika",
-  sport: "Sport",
-  outdoor: "Outdoor",
-  dum_zahrada: "Dům a zahrada",
-  auto_moto: "Auto/Moto",
-  foto_video: "Foto a video",
-  party_akce: "Party a akce",
-  ostatni: "Ostatní",
+  ...Object.fromEntries(categories.map(c => [c, categoryLabels[c]])),
 };
 
-const statusLabels: Record<string, string> = {
-  available: "Volné",
-  reserved: "Rezervované",
-  borrowed: "Půjčené",
+const statusOptions = {
+  available: itemStatusLabels.available,
+  reserved: itemStatusLabels.reserved,
+  borrowed: itemStatusLabels.borrowed,
   all: "Všechny stavy",
 };
 
@@ -308,7 +307,7 @@ function ItemsPageContent() {
               }}
               className="koluj-input"
             >
-              {Object.entries(categoryLabels).map(([value, label]) => (
+              {Object.entries(categoryOptions).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
                 </option>
@@ -323,7 +322,7 @@ function ItemsPageContent() {
               }}
               className="koluj-input"
             >
-              {Object.entries(statusLabels).map(([value, label]) => (
+              {Object.entries(statusOptions).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
                 </option>
@@ -456,24 +455,4 @@ function ItemsPageContent() {
       </div>
     </main>
   );
-}
-
-function getDistanceKm(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-) {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2);
-
-  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }

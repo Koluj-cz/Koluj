@@ -14,25 +14,17 @@ type Notification = {
   is_read: boolean;
   created_at: string;
   loan_id: string | null;
+  item_id: string | null;
   actor_id: string | null;
   actor: {
     full_name: string | null;
     avatar_url: string | null;
   } | null;
 };
+import { formatDateTime } from "@/lib/format";
 
-function formatDate(date: string) {
-  return new Date(date).toLocaleString("cs-CZ", {
-    day: "numeric",
-    month: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
-
+const PAGE_SIZE = 5;
 export default function NotificationsPage() {
-  const PAGE_SIZE = 5;
 
   const [page, setPage] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
@@ -168,7 +160,7 @@ export default function NotificationsPage() {
                         </p>
 
                         <p className="mt-3 text-sm text-[var(--koluj-muted)]">
-                          {formatDate(notification.created_at)}
+                          {formatDateTime(notification.created_at)}
                         </p>
 
                         {notification.loan_id && (
@@ -177,6 +169,14 @@ export default function NotificationsPage() {
                             className="koluj-link mt-3 inline-block"
                           >
                             Otevřít půjčku →
+                          </Link>
+                        )}
+                        {!notification.loan_id && notification.item_id && (
+                          <Link
+                            href={`/items/${notification.item_id}`}
+                            className="koluj-link mt-3 inline-block"
+                          >
+                            Otevřít věc →
                           </Link>
                         )}
                       </div>

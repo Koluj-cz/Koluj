@@ -17,16 +17,13 @@ import { supabase } from "@/lib/supabase";
 import ItemCard, { type ItemCardItem } from "@/app/components/ItemCard";
 import AddItemButton from "@/app/components/AddItemButton";
 import PageLoader from "@/app/components/PageLoader";
+import {
+  itemStatusClasses,
+} from "@/lib/constants";
 
 type Item = ItemCardItem & {
   is_active: boolean;
   borrow_count: number | null;
-};
-
-const statusClasses: Record<string, string> = {
-  available: "koluj-status-available",
-  reserved: "koluj-status-reserved",
-  borrowed: "koluj-status-borrowed",
 };
 
 export default function MyItemsPage() {
@@ -50,17 +47,6 @@ export default function MyItemsPage() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("full_name, city")
-      .eq("id", user.id)
-      .single();
 
     if (!user) {
       setLoading(false);
@@ -384,7 +370,7 @@ export default function MyItemsPage() {
                   value={status}
                   onChange={(e) => updateStatus(item, e.target.value)}
                   className={`mb-3 w-full rounded-2xl border px-4 py-3 text-center text-sm font-black uppercase tracking-wide outline-none ${
-                    statusClasses[status] || "koluj-status-available"
+                    itemStatusClasses[status] || "koluj-status-available"
                   }`}
                 >
                   <option value="available">Volné</option>

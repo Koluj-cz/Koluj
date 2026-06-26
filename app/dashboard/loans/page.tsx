@@ -5,6 +5,14 @@ import Link from "next/link";
 import { ArrowLeft, CalendarDays } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import PageLoader from "@/app/components/PageLoader";
+import {
+  loanStatusLabels,
+  loanStatusClasses,
+} from "@/lib/constants";
+
+import {
+  formatDateTime,
+} from "@/lib/format";
 
 type LoanStatus =
   | "all"
@@ -34,34 +42,7 @@ type Loan = {
   } | null;
 };
 
-const statusLabels: Record<string, string> = {
-  all: "Všechny",
-  requested: "Čeká",
-  approved: "Schváleno",
-  active: "Probíhá",
-  returned: "Vráceno",
-  cancelled: "Zrušeno",
-};
-
-const statusClasses: Record<string, string> = {
-  requested: "bg-yellow-100 text-yellow-800",
-  approved: "bg-blue-100 text-blue-800",
-  active: "bg-[var(--koluj-green)] text-white",
-  returned: "bg-green-100 text-green-800",
-  cancelled: "bg-red-100 text-red-700",
-};
-
-function formatDateTime(date: string | null) {
-  if (!date) return "—";
-
-  return new Date(date).toLocaleString("cs-CZ", {
-    day: "numeric",
-    month: "numeric",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
-}
+const PAGE_SIZE = 10;
 
 export default function LoansPage() {
   const [borrowing, setBorrowing] = useState<Loan[]>([]);
@@ -69,8 +50,6 @@ export default function LoansPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<LoanStatus>("all");
   const [mobileMode, setMobileMode] = useState<MobileMode>("borrowing");
-
-  const PAGE_SIZE = 10;
 
   const [borrowingPage, setBorrowingPage] = useState(1);
   const [lendingPage, setLendingPage] = useState(1);
@@ -163,7 +142,7 @@ export default function LoansPage() {
 
         <section className="koluj-card mt-10 p-4">
           <div className="flex flex-wrap gap-2">
-            {(Object.keys(statusLabels) as LoanStatus[]).map((status) => (
+            {(Object.keys(loanStatusLabels) as LoanStatus[]).map((status) => (
               <button
                 key={status}
                 type="button"
@@ -174,7 +153,7 @@ export default function LoansPage() {
                     : "bg-[var(--koluj-bg)] text-[var(--koluj-muted)] hover:text-[var(--koluj-green)]"
                 }`}
               >
-                {statusLabels[status]}
+                {loanStatusLabels[status]}
               </button>
             ))}
           </div>
@@ -309,7 +288,7 @@ function LoanCard({
       : loan.borrower?.full_name || "Uživatel";
 
   const statusClass =
-    statusClasses[loan.status] ||
+    loanStatusClasses[loan.status] ||
     "bg-[var(--koluj-bg)] text-[var(--koluj-muted)]";
 
   return (
@@ -343,7 +322,7 @@ function LoanCard({
             <span
               className={`shrink-0 rounded-full px-3 py-1 text-xs font-black ${statusClass}`}
             >
-              {statusLabels[loan.status] || loan.status}
+              {loanStatusLabels[loan.status] || loan.status}
             </span>
           </div>
 

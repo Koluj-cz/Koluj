@@ -6,6 +6,14 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { notifyUser } from "@/lib/notifyUser";
 import PageLoader from "@/app/components/PageLoader";
+import {
+  categoryLabels,
+  conditionLabels,
+  handoverLabels,
+  itemStatusClasses,
+  itemStatusLabels,
+} from "@/lib/constants";
+import { formatDate, translatePriceUnit } from "@/lib/format";
 
 import {
   ArrowLeft,
@@ -66,59 +74,6 @@ type ItemDetail = {
     }[] | null;
   } | null;
 };
-
-const categoryLabels: Record<string, string> = {
-  naradi: "Nářadí",
-  elektronika: "Elektronika",
-  sport: "Sport",
-  outdoor: "Outdoor",
-  dum_zahrada: "Dům a zahrada",
-  auto_moto: "Auto/Moto",
-  foto_video: "Foto a video",
-  party_akce: "Party a akce",
-  ostatni: "Ostatní",
-};
-
-const conditionLabels: Record<string, string> = {
-  new: "Nové",
-  like_new: "Jako nové",
-  good: "Dobrý stav",
-  used: "Běžně používané",
-};
-
-const statusLabels: Record<string, string> = {
-  available: "Volné",
-  reserved: "Rezervované",
-  borrowed: "Půjčené",
-};
-
-const statusClasses: Record<string, string> = {
-  available: "koluj-status-available",
-  reserved: "koluj-status-reserved",
-  borrowed: "koluj-status-borrowed",
-};
-
-const handoverLabels: Record<string, string> = {
-  pracovni_dny: "Pracovní dny",
-  vecer_po_praci: "Večer po práci",
-  vikendy: "Víkendy",
-  kdykoliv: "Kdykoliv",
-};
-
-function translatePriceUnit(unit: string | null) {
-  if (unit === "hour") return "hodinu";
-  if (unit === "day") return "den";
-  if (unit === "weekend") return "víkend";
-  if (unit === "week") return "týden";
-  if (unit === "month") return "měsíc";
-  if (unit === "piece") return "půjčení";
-  return "";
-}
-
-function formatDate(date: string | null) {
-  if (!date) return "";
-  return new Date(date).toLocaleDateString("cs-CZ");
-}
 
 export default function ItemDetailPage() {
   const params = useParams();
@@ -432,8 +387,8 @@ Kauce: ${item.deposit || 0} Kč${
     rating && rating.rating_count ? `(${rating.rating_count})` : "";
 
   const status = item?.status || "available";
-  const statusLabel = statusLabels[status] || status;
-  const statusClass = statusClasses[status] || statusClasses.available;
+  const statusLabel = itemStatusLabels[status] || status;
+  const statusClass = itemStatusClasses[status] || itemStatusClasses.available;
   const todayIso = new Date().toISOString().split("T")[0];
   const isSingleDateRequest = item?.price_unit === "piece";
 

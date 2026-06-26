@@ -1,5 +1,13 @@
 import Link from "next/link";
 import { MapPin, Star } from "lucide-react";
+import {
+  categoryLabels,
+  conditionLabels,
+  itemStatusClasses,
+  itemStatusLabels,
+} from "@/lib/constants";
+
+import { translatePriceUnit } from "@/lib/format";
 
 export type ItemCardItem = {
   id: string;
@@ -37,47 +45,6 @@ type ItemCardProps = {
   children?: React.ReactNode;
 };
 
-const categoryLabels: Record<string, string> = {
-  naradi: "Nářadí",
-  elektronika: "Elektronika",
-  sport: "Sport",
-  outdoor: "Outdoor",
-  dum_zahrada: "Dům a zahrada",
-  auto_moto: "Auto/Moto",
-  foto_video: "Foto a video",
-  party_akce: "Party a akce",
-  ostatni: "Ostatní",
-};
-
-const conditionLabels: Record<string, string> = {
-  new: "Nové",
-  like_new: "Jako nové",
-  good: "Dobrý stav",
-  used: "Běžně používané",
-};
-
-const statusLabels: Record<string, string> = {
-  available: "Volné",
-  reserved: "Rezervované",
-  borrowed: "Půjčené",
-};
-
-const statusClasses: Record<string, string> = {
-  available: "koluj-status-available",
-  reserved: "koluj-status-reserved",
-  borrowed: "koluj-status-borrowed",
-};
-
-function translatePriceUnit(unit: string | null) {
-  if (unit === "hour") return "hodinu";
-  if (unit === "day") return "den";
-  if (unit === "weekend") return "víkend";
-  if (unit === "week") return "týden";
-  if (unit === "month") return "měsíc";
-  if (unit === "piece") return "půjčení";
-  return "";
-}
-
 function stripHtml(value: string | null) {
   if (!value) return "";
 
@@ -98,8 +65,8 @@ export default function ItemCard({
   children,
 }: ItemCardProps) {
   const status = item.status || "available";
-  const statusLabel = statusLabels[status] || status;
-  const statusClass = statusClasses[status] || statusClasses.available;
+  const statusLabel = itemStatusLabels[status] || status;
+  const statusClass = itemStatusClasses[status] || itemStatusClasses.available;
 
   const ownerName = item.profiles?.full_name || "Uživatel";
   const rating = item.profiles?.profile_ratings?.[0];
