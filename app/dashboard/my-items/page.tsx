@@ -363,8 +363,8 @@ export default function MyItemsPage() {
                   >
                     <Trash2 size={18} />
                     {pendingDeleteId === item.id
-                      ? "Opravdu archivovat?"
-                      : "Archivovat"}
+                      ? "Opravdu odstranit?"
+                      : "Odstranit"}
                   </button>
                 </div>
               </ItemCard>

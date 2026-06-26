@@ -5,6 +5,18 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+function getStoragePathFromPublicUrl(url: string | null) {
+  if (!url) return null;
+
+  const marker = "/storage/v1/object/public/items/";
+
+  if (!url.includes(marker)) {
+    return null;
+  }
+
+  return url.split(marker)[1] || null;
+}
+
 export async function archiveItemServer({
   itemId,
   actorId,
@@ -23,11 +35,75 @@ export async function archiveItemServer({
   }
 
   if (item.owner_id !== actorId) {
-    throw new Error("Tuhle věc může archivovat pouze vlastník");
+    throw new Error("Tuhle věc může odstranit pouze vlastník");
   }
 
   if (item.deleted_at) {
-    return { ok: true };
+    return {
+      ok: true,
+      mode: "archived",
+    };
+  }
+
+  const { count: loanCount, error: loanCountError } = await supabaseAdmin
+    .from("loans")
+    .select("id", {
+      count: "exact",
+      head: true,
+    })
+    .eq("item_id", itemId);
+
+  if (loanCountError) {
+    throw new Error(loanCountError.message);
+  }
+
+  if ((loanCount || 0) === 0) {
+    const { data: images, error: imagesError } = await supabaseAdmin
+      .from("item_images")
+      .select("image_url")
+      .eq("item_id", itemId);
+
+    if (imagesError) {
+      throw new Error(imagesError.message);
+    }
+
+    const storagePaths =
+      images
+        ?.map((image) => getStoragePathFromPublicUrl(image.image_url))
+        .filter(Boolean) || [];
+
+    if (storagePaths.length > 0) {
+      const { error: storageError } = await supabaseAdmin.storage
+        .from("items")
+        .remove(storagePaths as string[]);
+
+      if (storageError) {
+        throw new Error(storageError.message);
+      }
+    }
+
+    const { error: imageDeleteError } = await supabaseAdmin
+      .from("item_images")
+      .delete()
+      .eq("item_id", itemId);
+
+    if (imageDeleteError) {
+      throw new Error(imageDeleteError.message);
+    }
+
+    const { error: itemDeleteError } = await supabaseAdmin
+      .from("items")
+      .delete()
+      .eq("id", itemId);
+
+    if (itemDeleteError) {
+      throw new Error(itemDeleteError.message);
+    }
+
+    return {
+      ok: true,
+      mode: "deleted",
+    };
   }
 
   const { error } = await supabaseAdmin
@@ -42,5 +118,8 @@ export async function archiveItemServer({
     throw new Error(error.message);
   }
 
-  return { ok: true };
+  return {
+    ok: true,
+    mode: "archived",
+  };
 }
