@@ -53,16 +53,6 @@ export default function ProfilePage() {
       return;
     }
 
-    const restoreResponse = await fetch("/api/account/restore", {
-      method: "POST",
-    });
-
-    const restoreResult = await restoreResponse.json().catch(() => null);
-
-    if (restoreResult?.restored) {
-      toast.success("Účet byl znovu aktivován");
-    }
-
     let { data } = await supabase
       .from("profiles")
       .select("*")

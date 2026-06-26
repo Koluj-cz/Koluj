@@ -17,10 +17,6 @@ export async function deactivateAccountServer({
     .update({
       is_deactivated: true,
       deactivated_at: deactivatedAt,
-      full_name: "Deaktivovaný účet",
-      phone: null,
-      bio: null,
-      avatar_url: null,
       email_notifications_enabled: false,
       marketing_notifications_enabled: false,
     })

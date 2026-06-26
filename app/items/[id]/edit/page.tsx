@@ -67,7 +67,6 @@ export default function EditItemPage() {
     pickup_longitude: null as number | null,
     handover_options: [] as string[],
     contact_note: "",
-    status: "available",
     availability_type: "long_term",
     available_from: "",
     available_to: "",
@@ -122,7 +121,6 @@ export default function EditItemPage() {
       pickup_longitude: data.pickup_longitude || null,
       handover_options: data.handover_options || [],
       contact_note: data.contact_note || "",
-      status: data.status || "available",
       availability_type: data.availability_type || "long_term",
       available_from: data.available_from || "",
       available_to: data.available_to || "",
@@ -359,7 +357,6 @@ async function makePrimary(imageUrl: string) {
         pickup_longitude: form.pickup_longitude,
         handover_options: form.handover_options,
         contact_note: form.contact_note,
-        status: form.status,
         availability_type: form.availability_type,
         available_from:
           form.availability_type === "period" ? form.available_from : null,
@@ -368,8 +365,6 @@ async function makePrimary(imageUrl: string) {
         is_active: form.is_active,
       })
       .eq("id", itemId);
-
-    setSaving(false);
 
         if (error) {
         toast.error(error.message);
@@ -552,11 +547,14 @@ async function makePrimary(imageUrl: string) {
             </span>
 
             <input
-                type="file"
-                multiple
-                accept="image/*"
-                className="hidden"
-                onChange={(e) => handlePhotos(e.target.files)}
+              type="file"
+              multiple
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                handlePhotos(e.target.files);
+                e.currentTarget.value = "";
+              }}
             />
             </label>
         </div>
@@ -733,18 +731,6 @@ async function makePrimary(imageUrl: string) {
               <SectionTitle title="Dostupnost a viditelnost" />
 
               <div className="mt-6 grid gap-4 md:grid-cols-2">
-                <select
-                  value={form.status}
-                  onChange={(e) => updateField("status", e.target.value)}
-                  className="koluj-input"
-                >
-                  {itemStatuses.map((status) => (
-                    <option key={status} value={status}>
-                      {itemStatusLabels[status]}
-                    </option>
-                  ))}
-                </select>
-
                 <select
                   value={form.is_active ? "true" : "false"}
                   onChange={(e) =>

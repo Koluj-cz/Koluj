@@ -105,6 +105,7 @@ export default function UserProfilePage() {
       `)
       .eq("owner_id", userId)
       .eq("is_active", true)
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
 
     setProfile(profileData as Profile);

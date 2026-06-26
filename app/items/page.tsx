@@ -93,6 +93,7 @@ function ItemsPageContent() {
         `
       )
       .eq("is_active", true)
+      .is("deleted_at", null)
       .order("created_at", { ascending: false });
 
     if (error) {

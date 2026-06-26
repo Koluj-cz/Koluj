@@ -323,8 +323,20 @@ export default function NewItemPage() {
       return;
     }
 
+    const safeMainPhotoIndex =
+      mainPhotoIndex >= 0 && mainPhotoIndex < photos.length
+        ? mainPhotoIndex
+        : 0;
+
     const orderedPhotos = [...photos];
-    const [mainPhoto] = orderedPhotos.splice(mainPhotoIndex, 1);
+    const [mainPhoto] = orderedPhotos.splice(safeMainPhotoIndex, 1);
+
+    if (!mainPhoto) {
+      toast.error("Fotku se nepodařilo načíst. Zkus ji vybrat znovu.");
+      setLoading(false);
+      return;
+    }
+
     const finalPhotos = [mainPhoto, ...orderedPhotos];
 
     let primaryImageUrl = "";
@@ -458,8 +470,11 @@ export default function NewItemPage() {
                     <input
                       type="file"
                       multiple
-                      accept="image/png,image/jpeg,image/webp"
-                      onChange={(e) => handlePhotos(e.target.files)}
+                      accept="image/*"
+                      onChange={(e) => {
+                        handlePhotos(e.target.files);
+                        e.currentTarget.value = "";
+                      }}
                       className="hidden"
                     />
                   </label>

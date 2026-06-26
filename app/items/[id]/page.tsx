@@ -120,6 +120,7 @@ export default function ItemDetailPage() {
         `
       )
       .eq("id", itemId)
+      .is("deleted_at", null)
       .single();
 
     if (error || !data) {

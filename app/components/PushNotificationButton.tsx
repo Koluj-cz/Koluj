@@ -87,7 +87,6 @@ export default function PushNotificationButton() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          userId: user.id,
           subscription,
           userAgent: navigator.userAgent,
         }),

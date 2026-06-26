@@ -100,6 +100,7 @@ export default function HomePage() {
         { count: "exact" }
       )
       .eq("is_active", true)
+      .is("deleted_at", null)
       .eq("status", "available")
       .order("created_at", { ascending: false })
       .limit(40);

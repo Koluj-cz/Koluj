@@ -67,7 +67,7 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen">
-      < RestoreAccountOnLogin />
+      <RestoreAccountOnLogin />
       <div className="koluj-shell">
         <header className="mb-8 flex items-center justify-between">
           <Link
