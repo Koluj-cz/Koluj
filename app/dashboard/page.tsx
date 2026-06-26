@@ -6,8 +6,10 @@ import { Heart, Package, User, Handshake, Bell } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import AddItemButton from "@/app/components/AddItemButton";
 import AddItemDashboardCard from "@/app/components/AddItemDashboardCard";
+import RestoreAccountOnLogin from "@/app/components/RestoreAccountOnLogin";
 
 export default function DashboardPage() {
+  
   const [fullName, setFullName] = useState("");
   const [profileComplete, setProfileComplete] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
@@ -65,6 +67,7 @@ export default function DashboardPage() {
 
   return (
     <main className="min-h-screen">
+      < RestoreAccountOnLogin />
       <div className="koluj-shell">
         <header className="mb-8 flex items-center justify-between">
           <Link

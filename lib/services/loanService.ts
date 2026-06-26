@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { notifyUserServer } from "@/lib/notifyUserServer";
+import { containsForbiddenText } from "@/lib/moderation";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -488,4 +489,89 @@ export async function returnLoanServer({
   });
 
   return { ok: true, returnedAt, watchersNotified };
+}
+
+export async function sendLoanMessageServer({
+  loanId,
+  actorId,
+  message,
+}: {
+  loanId: string;
+  actorId: string;
+  message: string;
+}) {
+  const trimmedMessage = message.trim();
+
+  if (!trimmedMessage) {
+    throw new Error("Zpráva je prázdná");
+  }
+
+  if (containsForbiddenText(trimmedMessage)) {
+    throw new Error("Zpráva obsahuje nepovolený obsah.");
+  }
+
+  const { loan, item } = await loadLoanWithItem(loanId);
+
+  if (loan.owner_id !== actorId && loan.borrower_id !== actorId) {
+    throw new Error("Nemáš přístup k této půjčce");
+  }
+
+  if (loan.status === "returned" || loan.status === "cancelled") {
+    throw new Error("Do ukončené půjčky už nelze psát.");
+  }
+
+  const { data: createdMessage, error: messageError } = await supabaseAdmin
+    .from("loan_messages")
+    .insert({
+      loan_id: loan.id,
+      sender_id: actorId,
+      message: trimmedMessage,
+      is_system: false,
+    })
+    .select("id")
+    .single();
+
+  if (messageError || !createdMessage) {
+    throw new Error(messageError?.message || "Zprávu se nepodařilo odeslat");
+  }
+
+  const recipientId =
+    loan.owner_id === actorId ? loan.borrower_id : loan.owner_id;
+
+  let recipientIsActive = false;
+
+  if (recipientId) {
+    const { data: presence } = await supabaseAdmin
+      .from("loan_participant_presence")
+      .select("last_seen_at")
+      .eq("loan_id", loan.id)
+      .eq("user_id", recipientId)
+      .maybeSingle();
+
+    recipientIsActive = Boolean(
+      presence?.last_seen_at &&
+        Date.now() - new Date(presence.last_seen_at).getTime() <
+          2 * 60 * 1000
+    );
+  }
+
+  if (recipientId) {
+    await notifyUserServer({
+      userId: recipientId,
+      actorId,
+      itemId: item.id,
+      loanId: loan.id,
+      type: "new_message",
+      title: "Nová zpráva",
+      message: `poslal(a) zprávu k půjčce: ${item.title}`,
+      emailSubject: "Nová zpráva",
+      sendEmail: !recipientIsActive,
+      sendPush: !recipientIsActive,
+    });
+  }
+
+  return {
+    ok: true,
+    messageId: createdMessage.id,
+  };
 }

@@ -6,8 +6,6 @@ import Link from "next/link";
 import { ArrowLeft, Send } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
-import { notifyUser } from "@/lib/notifyUser";
-import { containsForbiddenText } from "@/lib/moderation";
 import PageLoader from "@/app/components/PageLoader";
 import {
   translatePriceUnit,
@@ -399,69 +397,30 @@ export default function LoanDetailPage() {
 
 
   async function sendMessage() {
-    if (containsForbiddenText(message)) {
-      toast.error("Zpráva obsahuje nepovolený obsah.");
-      return;
-    }
-
-    if (loan?.status === "returned" || loan?.status === "cancelled") {
-      toast.error("Do ukončené půjčky už nelze psát.");
-      return;
-    }
-
-    if (!message.trim() || !userId || !loan) return;
+    if (!message.trim() || !loan) return;
 
     const trimmedMessage = message.trim();
 
-    const { error } = await supabase.from("loan_messages").insert({
-      loan_id: loanId,
-      sender_id: userId,
-      message: trimmedMessage,
-      is_system: false,
+    const response = await fetch("/api/loans/message", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        loanId: loan.id,
+        message: trimmedMessage,
+      }),
     });
 
-    if (error) {
-      toast.error(error.message);
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      toast.error(result?.error || "Zprávu se nepodařilo odeslat");
       return;
     }
 
     setMessage("");
     scrollMessagesToBottom("smooth");
-
-    const recipientId =
-      loan.owner_id === userId ? loan.borrower_id : loan.owner_id;
-
-    let recipientIsActive = false;
-
-    if (recipientId) {
-      const { data: presence } = await supabase
-        .from("loan_participant_presence")
-        .select("last_seen_at")
-        .eq("loan_id", loan.id)
-        .eq("user_id", recipientId)
-        .maybeSingle();
-
-      recipientIsActive = Boolean(
-        presence?.last_seen_at &&
-          Date.now() - new Date(presence.last_seen_at).getTime() <
-            2 * 60 * 1000
-      );
-    }
-
-    if (recipientId) {
-      await notifyUser({
-        userId: recipientId,
-        actorId: userId,
-        itemId: loan.items?.id,
-        loanId: loan.id,
-        type: "new_message",
-        title: "Nová zpráva",
-        message: `poslal(a) zprávu k půjčce: ${loan.items?.title}`,
-        emailSubject: "Nová zpráva",
-        sendEmail: !recipientIsActive,
-        sendPush: !recipientIsActive,
-      });
-    }
   }
 
   async function submitReview() {
