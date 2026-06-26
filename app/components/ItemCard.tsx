@@ -2,11 +2,9 @@ import Link from "next/link";
 import { MapPin, Star } from "lucide-react";
 import {
   categoryLabels,
-  conditionLabels,
   itemStatusClasses,
   itemStatusLabels,
 } from "@/lib/constants";
-
 import { translatePriceUnit } from "@/lib/format";
 
 export type ItemCardItem = {
@@ -24,10 +22,7 @@ export type ItemCardItem = {
   created_at: string;
   status: string | null;
   owner_id: string | null;
-  loans?: {
-    id: string;
-    owner_earnings: number | null;
-  }[] | null;
+  loans?: { id: string; owner_earnings: number | null }[] | null;
   profiles?: {
     full_name: string | null;
     avatar_url: string | null;
@@ -45,18 +40,14 @@ type ItemCardProps = {
   children?: React.ReactNode;
 };
 
-function stripHtml(value: string | null) {
-  if (!value) return "";
-
-  return value.replace(/<[^>]*>/g, "").trim();
-}
-
 function shortPlace(place: string) {
-  return place
-    .split(",")
-    .map((part) => part.trim())
-    .filter(Boolean)
-    .slice(-2, -1)[0] || place;
+  return (
+    place
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .slice(-2, -1)[0] || place
+  );
 }
 
 export default function ItemCard({
@@ -76,114 +67,96 @@ export default function ItemCard({
       ? `★ ${Number(rating.rating_avg).toFixed(1)}`
       : "★ Nový";
 
-  const ratingCountText =
-    rating && rating.rating_count ? `(${rating.rating_count})` : "";
-
   const loanCount = item.loans?.length || 0;
-
-  const ownerEarnings = (item.loans || []).reduce(
-    (sum, loan) => sum + Number(loan.owner_earnings || 0),
-    0
-  );
 
   const cardContent = (
     <>
-      <div className="relative h-32 overflow-hidden bg-[var(--koluj-bg)] sm:h-44">
+      <div className="relative min-h-[280px] overflow-hidden rounded-[28px] bg-[var(--koluj-bg)] sm:min-h-[360px]">
         {item.primary_image_url ? (
           <img
             src={item.primary_image_url}
             alt={item.title}
-            className="h-full w-full object-contain"
+            className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
           />
         ) : (
-          <div className="flex h-full items-center justify-center text-sm text-[var(--koluj-muted)]">
+          <div className="absolute inset-0 flex items-center justify-center bg-[var(--koluj-bg)] text-sm text-[var(--koluj-muted)]">
             Bez fotky
           </div>
         )}
 
+        <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/12 to-black/55" />
+
         <span
-          className={`koluj-status-badge absolute right-3 top-3 ${statusClass}`}
+          className={`koluj-status-badge absolute right-4 top-4 ${statusClass}`}
         >
           {statusLabel}
         </span>
 
-        {item.price_amount && item.price_unit && (
-          <div className="absolute bottom-3 left-3 rounded-xl bg-[var(--koluj-green)] px-3 py-1.5 text-xs font-black text-white">
-            {item.price_amount} Kč / {translatePriceUnit(item.price_unit)}
+        <div className="relative z-10 flex min-h-[280px] flex-col justify-between p-4 text-white sm:min-h-[360px] sm:p-5">
+          <div>
+            <h3 className="line-clamp-2 max-w-[75%] text-2xl font-black leading-none tracking-tight drop-shadow-sm">
+              {item.title}
+            </h3>
+
+            <p className="mt-2 text-sm font-black text-[#cfe8a4]">
+              {categoryLabels[item.category] || item.category}
+            </p>
+
+            <p className="mt-3 flex items-center gap-1.5 text-sm font-bold text-white/90">
+              <MapPin size={16} />
+              {shortPlace(item.pickup_place)}
+            </p>
+
+            {variant === "public" && (
+              <button
+                type="button"
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+
+                  if (item.owner_id) {
+                    window.location.href = `/users/${item.owner_id}`;
+                  }
+                }}
+                className="mt-4 flex items-center gap-3 text-left"
+              >
+                {item.profiles?.avatar_url ? (
+                  <img
+                    src={item.profiles.avatar_url}
+                    alt={ownerName}
+                    className="h-9 w-9 rounded-full object-cover ring-2 ring-white/50"
+                  />
+                ) : (
+                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-sm font-black text-[var(--koluj-green)]">
+                    {ownerName.charAt(0).toUpperCase()}
+                  </div>
+                )}
+
+                <div>
+                  <p className="font-black leading-tight text-white">
+                    {ownerName}
+                  </p>
+
+                  <p className="text-sm font-black text-[#cfe8a4]">
+                    {ratingText}
+                  </p>
+                </div>
+              </button>
+            )}
+
+            {variant === "owner" && (
+              <p className="mt-4 text-sm font-black text-white/90">
+                {loanCount} půjčení
+              </p>
+            )}
           </div>
-        )}
-      </div>
 
-      <div className="flex flex-1 flex-col p-3 sm:p-4">
-        <div>
-          <h3 className="truncate text-lg font-black sm:text-xl">{item.title}</h3>
-
-          <p className="mt-1 text-sm font-bold text-[var(--koluj-green)]">
-            {categoryLabels[item.category] || item.category}
-          </p>
-        </div>
-
-        <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-sm text-[var(--koluj-muted)]">
-          <span className="flex items-center gap-1.5">
-            <MapPin size={15} />
-            {shortPlace(item.pickup_place)}
-          </span>
-
-          {item.condition && (
-            <span className="hidden items-center gap-1.5 sm:flex">
-              <Star size={15} />
-              {conditionLabels[item.condition] || item.condition}
-            </span>
+          {item.price_amount && item.price_unit && (
+            <div className="w-fit rounded-2xl bg-[var(--koluj-green)] px-4 py-2 text-sm font-black text-white shadow-lg">
+              {item.price_amount} Kč / {translatePriceUnit(item.price_unit)}
+            </div>
           )}
         </div>
-
-        {variant === "owner" && 
-          <p className="mt-3 text-sm font-bold text-[var(--koluj-muted)]">
-            {loanCount} půjčení
-          </p>
-        }
-
-        {variant === "public" && (
-          <div className="mt-auto flex items-center justify-between border-t border-[var(--koluj-border)] pt-4">
-            <button
-              type="button"
-              onClick={(event) => {
-                event.preventDefault();
-                event.stopPropagation();
-
-                if (item.owner_id) {
-                  window.location.href = `/users/${item.owner_id}`;
-                }
-              }}
-              className="flex items-center gap-3 text-left transition hover:text-[var(--koluj-green)]"
-            >
-              {item.profiles?.avatar_url ? (
-                <img
-                  src={item.profiles.avatar_url}
-                  alt={ownerName}
-                  className="h-9 w-9 rounded-full object-cover sm:h-10 sm:w-10"
-                />
-              ) : (
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-sm font-black text-[var(--koluj-green)]">
-                  {ownerName.charAt(0).toUpperCase()}
-                </div>
-              )}
-
-              <div>
-                <p className="font-black leading-tight">{ownerName}</p>
-
-                <p className="text-sm font-bold text-[var(--koluj-green)]">
-                  {ratingText}
-                  {ratingCountText && (
-                    <span className="ml-1 text-[var(--koluj-muted)]">
-                      {ratingCountText}
-                    </span>
-                  )}
-                </p>
-              </div>
-            </button>
-          </div>
-        )}
       </div>
 
       {variant === "owner" && children && (
@@ -196,17 +169,17 @@ export default function ItemCard({
 
   if (variant === "owner") {
     return (
-      <div className="koluj-card flex h-full flex-col overflow-hidden">
+      <div className="koluj-card group flex h-full flex-col overflow-hidden p-1">
         {cardContent}
       </div>
     );
   }
 
   return (
-      <Link
-        href={`/items/${item.id}`}
-        className="koluj-card koluj-mobile-item-card flex h-full flex-col overflow-hidden transition hover:-translate-y-1"
-      >
+    <Link
+      href={`/items/${item.id}`}
+      className="koluj-card group block overflow-hidden p-1 transition hover:-translate-y-1"
+    >
       {cardContent}
     </Link>
   );

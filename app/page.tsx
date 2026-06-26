@@ -267,8 +267,7 @@ export default function HomePage() {
             </h1>
 
             <p className="mt-4 max-w-xl text-lg leading-relaxed text-[var(--koluj-muted)] md:text-xl">
-              Ušetři peníze, místo i planetu. Najdi věci, které zrovna
-              potřebuješ, a půjč si je od lidí kolem sebe.
+              Najdi věc poblíž a domluv půjčení přímo s majitelem.
             </p>
 
             <div className="mt-5 hidden flex-wrap gap-2 text-sm font-bold text-[var(--koluj-green)] md:flex">
@@ -283,9 +282,9 @@ export default function HomePage() {
               </span>
             </div>
 
-            <div className="mt-6 flex max-w-2xl flex-col gap-3 rounded-3xl border border-[var(--koluj-border)] bg-white p-3 shadow-sm md:mt-auto md:flex-row">
-              <div className="flex flex-1 items-center gap-3 px-3">
-                <Search size={20} className="text-[var(--koluj-muted)]" />
+            <div className="mt-6 flex max-w-2xl items-center gap-2 rounded-[1.75rem] border border-[var(--koluj-border)] bg-white p-2 shadow-sm md:mt-auto">
+              <div className="flex min-w-0 flex-1 items-center gap-3 px-3">
+                <Search size={20} className="shrink-0 text-[var(--koluj-muted)]" />
 
                 <input
                   value={search}
@@ -293,26 +292,27 @@ export default function HomePage() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter") submitSearch();
                   }}
-                  placeholder="Co hledáš? Např. stan, vrtačka..."
-                  className="w-full bg-transparent py-3 outline-none"
+                  placeholder="Co hledáš?"
+                  className="w-full bg-transparent py-3 text-base font-bold outline-none placeholder:font-medium"
                 />
               </div>
 
               <button
                 type="button"
                 onClick={useMyLocation}
-                className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--koluj-border)] px-5 py-3 font-bold text-[var(--koluj-muted)] transition hover:bg-[var(--koluj-bg)]"
+                aria-label="Moje poloha"
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--koluj-bg)] text-[var(--koluj-green)]"
               >
-                <LocateFixed size={18} />
-                Moje poloha
+                <LocateFixed size={20} />
               </button>
 
               <button
                 type="button"
                 onClick={submitSearch}
-                className="koluj-button px-6 py-3"
+                aria-label="Hledat"
+                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--koluj-green)] text-white"
               >
-                Hledat
+                <ArrowRight size={20} />
               </button>
             </div>
           </div>
