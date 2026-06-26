@@ -257,7 +257,7 @@ export default function HomePage() {
           </div>
         </header>
 
-        <section className="grid items-start gap-6 py-4 md:py-8 lg:grid-cols-[0.9fr_1.1fr]">
+        <section className="grid items-start gap-3 pt-2 pb-0 md:py-8 lg:grid-cols-[0.9fr_1.1fr]">
           <div className="flex flex-col lg:h-[430px]">
             <h1 className="koluj-heading">
               <span className="md:hidden">Půjč si věc poblíž</span>
@@ -266,7 +266,7 @@ export default function HomePage() {
               </span>
             </h1>
 
-            <p className="mt-4 max-w-xl text-lg leading-relaxed text-[var(--koluj-muted)] md:text-xl">
+            <p className="mt-3 max-w-xl text-base leading-snug text-[var(--koluj-muted)] md:text-xl md:leading-relaxed">
               Najdi věc poblíž a domluv půjčení přímo s majitelem.
             </p>
 
@@ -282,7 +282,7 @@ export default function HomePage() {
               </span>
             </div>
 
-            <div className="mt-6 flex max-w-2xl items-center gap-2 rounded-[1.75rem] border border-[var(--koluj-border)] bg-white p-2 shadow-sm md:mt-auto">
+            <div className="mt-4 flex max-w-2xl items-center gap-2 rounded-[1.75rem] border border-[var(--koluj-border)] bg-white p-2 shadow-sm md:mt-auto">
               <div className="flex min-w-0 flex-1 items-center gap-3 px-3">
                 <Search size={20} className="shrink-0 text-[var(--koluj-muted)]" />
 
@@ -333,7 +333,7 @@ export default function HomePage() {
           )}
         </section>
 
-        <section className="koluj-categories-mobile mt-6 lg:grid lg:grid-cols-8 lg:gap-2">
+        <section className="koluj-categories-mobile mt-3 lg:grid lg:grid-cols-8 lg:gap-2">
           <CategoryChip label="Vše" category="" />
           <CategoryChip icon={<Drill size={16} />} label="Nářadí" category="naradi" />
           <CategoryChip icon={<Bike size={16} />} label="Sport" category="sport" />
@@ -344,7 +344,7 @@ export default function HomePage() {
           <CategoryChip icon={<Boxes size={16} />} label="Ostatní" category="ostatni" />
         </section>
 
-        <section id="explore" className="mt-12 md:mt-14">
+        <section id="explore" className="mt-5 md:mt-14">
           <div className="mb-6 flex items-end justify-between gap-4">
             <div>
               <h2 className="koluj-title">Věci ve tvém okolí</h2>

@@ -142,13 +142,10 @@ body {
 .koluj-hero-illustration {
   width: 420px;
   height: 260px;
-
   display: flex;
   align-items: center;
   justify-content: center;
-
   border-radius: 48px;
-
   background:
     radial-gradient(
       circle at center,
@@ -156,7 +153,6 @@ body {
       #efe9db 60%,
       transparent 100%
     );
-
   font-size: 90px;
 }
 
@@ -185,65 +181,6 @@ body {
   box-shadow: none !important;
   color: white !important;
   font-weight: 900 !important;
-} 
-
-@media (max-width: 767px) {
-  .koluj-shell,
-  .koluj-shell-wide {
-    max-width: none;
-    width: 100%;
-    padding-left: 12px;
-    padding-right: 12px;
-    padding-top: 12px;
-  }
-
-  .koluj-card {
-    border-radius: 22px;
-  }
-
-  .koluj-card.p-8 {
-    padding: 20px;
-  }
-
-  section.px-8,
-  section.md\:px-8 {
-    padding-left: 0;
-    padding-right: 0;
-  }
-
-  .text-7xl {
-    font-size: 3.25rem;
-    line-height: 1;
-  }
-
-  .text-6xl {
-    font-size: 2.75rem;
-    line-height: 1.05;
-  }
-
-  .text-2xl {
-    font-size: 1.15rem;
-    line-height: 1.6;
-  }
-
-  .grid {
-    min-width: 0;
-  }
-
-  input,
-  textarea,
-  select,
-  button {
-    max-width: 100%;
-  }
-}
-
-.koluj-map-count {
-  background: transparent !important;
-  border: 0 !important;
-  box-shadow: none !important;
-  color: white !important;
-  font-weight: 900 !important;
 }
 
 .leaflet-container {
@@ -256,7 +193,7 @@ body {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 0px;
+  margin-bottom: 0;
 }
 
 .koluj-logo {
@@ -326,7 +263,7 @@ body {
   display: grid;
   overflow: hidden;
   padding: 0;
-  min-height: 170px; 
+  min-height: 170px;
   transition: 0.2s ease;
 }
 
@@ -341,55 +278,6 @@ body {
 
   .koluj-item-row {
     grid-template-columns: 160px 1fr;
-  }
-}
-
-@media (max-width: 767px) {
-  .koluj-shell,
-  .koluj-shell-wide {
-    max-width: none;
-    width: 100%;
-    padding-left: 12px;
-    padding-right: 12px;
-  }
-
-  .koluj-page-header {
-    margin-bottom: 0px;
-  }
-
-  .koluj-logo {
-    font-size: 2rem;
-  }
-
-  .koluj-card {
-    border-radius: 22px;
-  }
-
-  .koluj-heading {
-    max-width: 12ch;
-    font-size: 2.85rem;
-    line-height: 1;
-  }
-
-  .koluj-title {
-    font-size: 2.25rem;
-  }
-
-  .koluj-searchbar {
-    max-width: none;
-  }
-
-  section.px-8,
-  section.md\:px-8 {
-    padding-left: 0;
-    padding-right: 0;
-  }
-
-  input,
-  textarea,
-  select,
-  button {
-    max-width: 100%;
   }
 }
 
@@ -446,17 +334,6 @@ body {
   height: 720px;
 }
 
-@media (max-width: 767px) {
-  .koluj-feature-card {
-    padding: 20px;
-  }
-
-  .koluj-map-panel-small,
-  .koluj-map-panel-large {
-    height: 520px;
-  }
-}
-
 .koluj-status-badge {
   display: inline-flex;
   align-items: center;
@@ -489,7 +366,6 @@ body {
   gap: 0.75rem;
   overflow-x: auto;
   padding-bottom: 0.25rem;
-
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
@@ -501,34 +377,6 @@ body {
 @media (min-width: 1024px) {
   .koluj-categories-mobile {
     display: grid;
-  }
-}
-
-@media (max-width: 767px) {
-  .koluj-heading {
-    max-width: 12ch;
-    font-size: 2.85rem;
-    line-height: 1;
-  }
-
-  .koluj-title {
-    font-size: 2.15rem;
-  }
-
-  .koluj-category-chip {
-    min-width: 155px;
-    padding: 14px 16px;
-    font-size: 0.95rem;
-  }
-
-  .koluj-feature-card {
-    padding: 18px;
-  }
-
-  .koluj-feature-icon {
-    width: 44px;
-    height: 44px;
-    margin-bottom: 14px;
   }
 }
 
@@ -552,20 +400,104 @@ body {
   overflow: hidden;
 }
 
+/* Final mobile overrides must stay at the end of this file. */
 @media (max-width: 767px) {
-  .koluj-heading {
-    font-size: 2.7rem;
-    line-height: 0.95;
-    letter-spacing: -0.06em;
+  .koluj-shell,
+  .koluj-shell-wide {
+    max-width: none;
+    width: 100%;
+    padding: 10px 12px 56px;
   }
 
-  .koluj-searchbar,
+  .koluj-page-header {
+    margin-bottom: 0;
+  }
+
+  .koluj-logo {
+    font-size: 1.9rem;
+  }
+
   .koluj-card {
+    border-radius: 22px;
     box-shadow: 0 10px 30px rgba(31, 31, 26, 0.07);
+  }
+
+  .koluj-card.p-8 {
+    padding: 20px;
+  }
+
+  .koluj-heading {
+    max-width: 12ch;
+    font-size: 2.45rem;
+    line-height: 0.92;
+    letter-spacing: -0.065em;
+  }
+
+  .koluj-title {
+    font-size: 1.95rem;
+    line-height: 1;
+  }
+
+  .koluj-category-chip {
+    min-width: 132px;
+    padding: 10px 14px;
+    border-radius: 18px;
+    font-size: 0.9rem;
+  }
+
+  .koluj-categories-mobile {
+    gap: 0.6rem;
+  }
+
+  .koluj-feature-card {
+    padding: 18px;
+  }
+
+  .koluj-feature-icon {
+    width: 44px;
+    height: 44px;
+    margin-bottom: 14px;
+  }
+
+  .koluj-map-panel-small,
+  .koluj-map-panel-large {
+    height: 520px;
   }
 
   .koluj-status-badge {
     padding: 7px 11px;
     font-size: 0.68rem;
+  }
+
+  section.px-8,
+  section.md\:px-8 {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .text-7xl {
+    font-size: 3.25rem;
+    line-height: 1;
+  }
+
+  .text-6xl {
+    font-size: 2.75rem;
+    line-height: 1.05;
+  }
+
+  .text-2xl {
+    font-size: 1.15rem;
+    line-height: 1.6;
+  }
+
+  .grid {
+    min-width: 0;
+  }
+
+  input,
+  textarea,
+  select,
+  button {
+    max-width: 100%;
   }
 }
