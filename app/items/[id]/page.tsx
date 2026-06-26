@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { notifyUser } from "@/lib/notifyUser";
 import PageLoader from "@/app/components/PageLoader";
 import {
   categoryLabels,
@@ -170,147 +169,31 @@ export default function ItemDetailPage() {
       return;
     }
 
-    if (currentUserId === item.owner_id) {
-      toast.error("Vlastní věc si nemůžeš půjčit");
-      return;
-    }
-
-    if (item.status !== "available") {
-      toast.error("Tahle věc není momentálně dostupná");
-      return;
-    }
-
-    if (item.profiles?.is_seed_user) {
-      toast(
-        "💚 Tato nabídka je ukázková. Přidej svou první věc a pomoz rozšířit Koluj ve svém okolí."
-      );
-      return;
-    }
-
-    if (!borrowFrom || !borrowTo) {
-      toast.error("Vyber termín půjčení.");
-      return;
-    }
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const fromDate = new Date(borrowFrom);
-    const toDate = new Date(borrowTo);
-
-    if (fromDate < today) {
-      toast.error("Datum půjčení nemůže být v minulosti.");
-      return;
-    }
-
-    if (toDate < fromDate) {
-      toast.error("Datum vrácení nemůže být dřív než datum půjčení.");
-      return;
-    }
-
-    const { data: borrowerProfile } = await supabase
-      .from("profiles")
-      .select("id, full_name, city, latitude, longitude")
-      .eq("id", currentUserId)
-      .maybeSingle();
-
-    const profileComplete = Boolean(
-      borrowerProfile?.id &&
-        borrowerProfile.full_name &&
-        borrowerProfile.city &&
-        borrowerProfile.latitude &&
-        borrowerProfile.longitude
-    );
-
-    if (!profileComplete) {
-      toast.error(
-        "Nejdřív dokonči profil, aby bylo jasné, s kým a kde se věc předává."
-      );
-      router.push("/profile");
-      return;
-    }
-
-    const { data: existingLoans, error: existingLoanError } = await supabase
-      .from("loans")
-      .select("id")
-      .eq("item_id", item.id)
-      .eq("borrower_id", currentUserId)
-      .in("status", ["requested", "approved", "active"])
-      .limit(1);
-
-    if (existingLoanError) {
-      toast.error(existingLoanError.message);
-      return;
-    }
-
-    if (existingLoans && existingLoans.length > 0) {
-      toast.error("O tuhle věc už máš aktivní žádost");
-      return;
-    }
-
-    const { data: createdLoan, error: loanError } = await supabase
-      .from("loans")
-      .insert({
-        item_id: item.id,
-        owner_id: item.owner_id,
-        borrower_id: currentUserId,
-        status: "requested",
-        date_from: borrowFrom,
-        date_to: borrowTo,
-        price_amount: item.price_amount,
-        deposit_amount: item.deposit,
-        total_price: item.price_amount,
-        platform_fee: 0,
-        owner_earnings: item.price_amount,
-      })
-      .select()
-      .single();
-
-    if (loanError || !createdLoan) {
-      toast.error(loanError?.message || "Žádost se nepodařilo vytvořit");
-      return;
-    }
-
-    await notifyUser({
-      userId: item.owner_id,
-      actorId: currentUserId,
-      itemId: item.id,
-      loanId: createdLoan.id,
-      type: "loan_requested",
-      title: "Nová žádost o půjčení",
-      message: `si chce půjčit: ${item.title}`,
-      emailSubject: "Nová žádost o půjčení",
+    const response = await fetch("/api/loans/request", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        itemId: item.id,
+        dateFrom: borrowFrom,
+        dateTo: borrowTo,
+        note: borrowNote,
+      }),
     });
 
-    const { error: messageError } = await supabase
-      .from("loan_messages")
-      .insert({
-        loan_id: createdLoan.id,
-        sender_id: currentUserId,
-        is_system: true,
-        message: `Žádost o půjčení vytvořena.
+    const result = await response.json().catch(() => null);
 
-Věc: ${item.title}
-Termín: ${formatDate(borrowFrom)} – ${formatDate(borrowTo)}
-Místo předání: ${item.pickup_place}
-Cena: ${item.price_amount || 0} Kč
-Kauce: ${item.deposit || 0} Kč${
-          borrowNote.trim() ? `\n\nPoznámka: ${borrowNote.trim()}` : ""
-        }`,
-      });
+    if (!response.ok) {
+      toast.error(result?.error || "Žádost se nepodařilo vytvořit");
 
-    if (messageError) {
-      toast.error(messageError.message);
-      return;
-    }
+      if (
+        result?.error ===
+        "Nejdřív dokonči profil, aby bylo jasné, s kým a kde se věc předává."
+      ) {
+        router.push("/profile");
+      }
 
-    const { error: itemError } = await supabase
-      .from("items")
-      .update({ status: "reserved" })
-      .eq("id", item.id);
-
-    if (itemError) {
-      toast.error(itemError.message);
       return;
     }
 
@@ -320,7 +203,7 @@ Kauce: ${item.deposit || 0} Kč${
     });
 
     toast.success("Žádost o půjčení byla odeslána");
-    router.push(`/dashboard/loans/${createdLoan.id}`);
+    router.push(`/dashboard/loans/${result.loanId}`);
   }
 
   async function handleWatchAvailabilityClick() {

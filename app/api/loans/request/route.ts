@@ -1,0 +1,52 @@
+import { NextResponse } from "next/server";
+import { cookies } from "next/headers";
+import { createServerClient } from "@supabase/ssr";
+import { requestLoanServer } from "@/lib/services/loanService";
+
+export async function POST(request: Request) {
+  const cookieStore = await cookies();
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll() {},
+      },
+    }
+  );
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const { itemId, dateFrom, dateTo, note } = await request.json();
+
+  if (!itemId) {
+    return NextResponse.json({ error: "Missing itemId" }, { status: 400 });
+  }
+
+  try {
+    const result = await requestLoanServer({
+      itemId,
+      borrowerId: user.id,
+      dateFrom,
+      dateTo,
+      note,
+    });
+
+    return NextResponse.json(result);
+  } catch (error: any) {
+    return NextResponse.json(
+      { error: error.message || "Žádost se nepodařilo vytvořit" },
+      { status: 400 }
+    );
+  }
+}
