@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
-import { approveLoanServer } from "@/lib/services/loanService";
+import { startLoanServer } from "@/lib/services/loanService";
 
 export async function POST(request: Request) {
   const cookieStore = await cookies();
@@ -34,7 +34,7 @@ export async function POST(request: Request) {
   }
 
   try {
-    const result = await approveLoanServer({
+    const result = await startLoanServer({
       loanId,
       actorId: user.id,
     });
@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     return NextResponse.json(result);
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || "Půjčku se nepodařilo schválit" },
+      { error: error.message || "Předání se nepodařilo potvrdit" },
       { status: 400 }
     );
   }

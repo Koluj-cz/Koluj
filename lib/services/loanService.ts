@@ -11,6 +11,106 @@ function formatDate(date: string | null) {
   return new Date(date).toLocaleDateString("cs-CZ");
 }
 
+async function addSystemMessage({
+  loanId,
+  actorId,
+  message,
+}: {
+  loanId: string;
+  actorId: string;
+  message: string;
+}) {
+  const { error } = await supabaseAdmin.from("loan_messages").insert({
+    loan_id: loanId,
+    sender_id: actorId,
+    is_system: true,
+    message,
+  });
+
+  if (error) {
+    throw new Error(error.message);
+  }
+}
+
+async function loadLoanWithItem(loanId: string) {
+  const { data: loan, error: loanError } = await supabaseAdmin
+    .from("loans")
+    .select("id, owner_id, borrower_id, item_id, status")
+    .eq("id", loanId)
+    .single();
+
+  if (loanError || !loan) {
+    throw new Error("Půjčka nebyla nalezena");
+  }
+
+  const { data: item, error: itemError } = await supabaseAdmin
+    .from("items")
+    .select("id, title, status")
+    .eq("id", loan.item_id)
+    .single();
+
+  if (itemError || !item) {
+    throw new Error("Věc nebyla nalezena");
+  }
+
+  return { loan, item };
+}
+
+async function notifyAvailabilityWatchers({
+  itemId,
+  actorId,
+}: {
+  itemId: string;
+  actorId: string;
+}) {
+  const { data: item, error: itemError } = await supabaseAdmin
+    .from("items")
+    .select("id, title, owner_id")
+    .eq("id", itemId)
+    .single();
+
+  if (itemError || !item) {
+    throw new Error("Věc nebyla nalezena");
+  }
+
+  const { data: watchers, error: watchersError } = await supabaseAdmin
+    .from("item_availability_watchers")
+    .select("user_id")
+    .eq("item_id", itemId)
+    .is("notified_at", null);
+
+  if (watchersError) {
+    throw new Error(watchersError.message);
+  }
+
+  const recipients = (watchers || []).filter(
+    (watcher) => watcher.user_id !== item.owner_id
+  );
+
+  for (const watcher of recipients) {
+    await notifyUserServer({
+      userId: watcher.user_id,
+      actorId,
+      itemId: item.id,
+      type: "item_available",
+      title: "Věc je znovu dostupná",
+      message: `${item.title} je opět k půjčení.`,
+      emailSubject: "Věc je znovu dostupná",
+      url: `/items/${item.id}`,
+    });
+  }
+
+  if (recipients.length > 0) {
+    await supabaseAdmin
+      .from("item_availability_watchers")
+      .update({ notified_at: new Date().toISOString() })
+      .eq("item_id", itemId)
+      .is("notified_at", null);
+  }
+
+  return recipients.length;
+}
+
 export async function requestLoanServer({
   itemId,
   borrowerId,
@@ -139,25 +239,26 @@ export async function requestLoanServer({
     throw new Error(loanError?.message || "Žádost se nepodařilo vytvořit");
   }
 
-  await supabaseAdmin.from("loan_messages").insert({
-    loan_id: createdLoan.id,
-    sender_id: borrowerId,
-    is_system: true,
+  await addSystemMessage({
+    loanId: createdLoan.id,
+    actorId: borrowerId,
     message: `Žádost o půjčení vytvořena.
 
-    Věc: ${item.title}
-    Termín: ${formatDate(dateFrom)} – ${formatDate(dateTo)}
-    Místo předání: ${item.pickup_place}
-    Cena: ${item.price_amount || 0} Kč
-    Kauce: ${item.deposit || 0} Kč${
-      note?.trim() ? `\n\nPoznámka: ${note.trim()}` : ""
-    }`,
+Věc: ${item.title}
+Termín: ${formatDate(dateFrom)} – ${formatDate(dateTo)}
+Místo předání: ${item.pickup_place}
+Cena: ${item.price_amount || 0} Kč
+Kauce: ${item.deposit || 0} Kč${note?.trim() ? `\n\nPoznámka: ${note.trim()}` : ""}`,
   });
 
-  await supabaseAdmin
+  const { error: itemUpdateError } = await supabaseAdmin
     .from("items")
     .update({ status: "reserved" })
     .eq("id", item.id);
+
+  if (itemUpdateError) {
+    throw new Error(itemUpdateError.message);
+  }
 
   await notifyUserServer({
     userId: item.owner_id,
@@ -184,16 +285,7 @@ export async function approveLoanServer({
   actorId: string;
 }) {
   const approvedAt = new Date().toISOString();
-
-  const { data: loan, error: loanError } = await supabaseAdmin
-    .from("loans")
-    .select("id, owner_id, borrower_id, item_id, status")
-    .eq("id", loanId)
-    .single();
-
-  if (loanError || !loan) {
-    throw new Error("Půjčka nebyla nalezena");
-  }
+  const { loan, item } = await loadLoanWithItem(loanId);
 
   if (loan.owner_id !== actorId) {
     throw new Error("Tuto půjčku může schválit pouze vlastník");
@@ -203,41 +295,23 @@ export async function approveLoanServer({
     throw new Error("Schválit lze pouze novou žádost");
   }
 
-  const { data: item, error: itemError } = await supabaseAdmin
-    .from("items")
-    .select("id, title")
-    .eq("id", loan.item_id)
-    .single();
-
-  if (itemError || !item) {
-    throw new Error("Věc nebyla nalezena");
-  }
-
   const { error: updateLoanError } = await supabaseAdmin
     .from("loans")
-    .update({
-      status: "approved",
-      approved_at: approvedAt,
-    })
+    .update({ status: "approved", approved_at: approvedAt })
     .eq("id", loan.id);
 
-  if (updateLoanError) {
-    throw new Error(updateLoanError.message);
-  }
+  if (updateLoanError) throw new Error(updateLoanError.message);
 
   const { error: updateItemError } = await supabaseAdmin
     .from("items")
     .update({ status: "reserved" })
     .eq("id", item.id);
 
-  if (updateItemError) {
-    throw new Error(updateItemError.message);
-  }
+  if (updateItemError) throw new Error(updateItemError.message);
 
-  await supabaseAdmin.from("loan_messages").insert({
-    loan_id: loan.id,
-    sender_id: actorId,
-    is_system: true,
+  await addSystemMessage({
+    loanId: loan.id,
+    actorId,
     message:
       "Žádost byla schválena.\n\nMůžete se domluvit na termínu předání.",
   });
@@ -253,8 +327,165 @@ export async function approveLoanServer({
     emailSubject: "Půjčka schválena",
   });
 
-  return {
-    ok: true,
-    approvedAt,
-  };
+  return { ok: true, approvedAt };
+}
+
+export async function rejectLoanServer({
+  loanId,
+  actorId,
+}: {
+  loanId: string;
+  actorId: string;
+}) {
+  const { loan, item } = await loadLoanWithItem(loanId);
+
+  if (loan.owner_id !== actorId) {
+    throw new Error("Tuto půjčku může odmítnout pouze vlastník");
+  }
+
+  if (loan.status !== "requested") {
+    throw new Error("Odmítnout lze pouze novou žádost");
+  }
+
+  const { error: loanError } = await supabaseAdmin
+    .from("loans")
+    .update({ status: "cancelled" })
+    .eq("id", loan.id);
+
+  if (loanError) throw new Error(loanError.message);
+
+  const { error: itemError } = await supabaseAdmin
+    .from("items")
+    .update({ status: "available" })
+    .eq("id", item.id);
+
+  if (itemError) throw new Error(itemError.message);
+
+  await addSystemMessage({
+    loanId: loan.id,
+    actorId,
+    message: "Žádost byla odmítnuta.",
+  });
+
+  await notifyUserServer({
+    userId: loan.borrower_id,
+    actorId,
+    itemId: item.id,
+    loanId: loan.id,
+    type: "loan_rejected",
+    title: "Žádost byla odmítnuta",
+    message: `${item.title} nebyla schválena k půjčení.`,
+    emailSubject: "Žádost byla odmítnuta",
+  });
+
+  return { ok: true };
+}
+
+export async function startLoanServer({
+  loanId,
+  actorId,
+}: {
+  loanId: string;
+  actorId: string;
+}) {
+  const handedOverAt = new Date().toISOString();
+  const { loan, item } = await loadLoanWithItem(loanId);
+
+  if (loan.owner_id !== actorId) {
+    throw new Error("Předání může potvrdit pouze vlastník");
+  }
+
+  if (loan.status !== "approved") {
+    throw new Error("Předání lze potvrdit pouze u schválené půjčky");
+  }
+
+  const { error: loanError } = await supabaseAdmin
+    .from("loans")
+    .update({ status: "active", handed_over_at: handedOverAt })
+    .eq("id", loan.id);
+
+  if (loanError) throw new Error(loanError.message);
+
+  const { error: itemError } = await supabaseAdmin
+    .from("items")
+    .update({ status: "borrowed" })
+    .eq("id", item.id);
+
+  if (itemError) throw new Error(itemError.message);
+
+  await addSystemMessage({
+    loanId: loan.id,
+    actorId,
+    message: "Věc byla předána. Půjčka právě probíhá.",
+  });
+
+  await notifyUserServer({
+    userId: loan.borrower_id,
+    actorId,
+    itemId: item.id,
+    loanId: loan.id,
+    type: "loan_started",
+    title: "Půjčka začala",
+    message: `${item.title} byla označena jako předaná.`,
+    emailSubject: "Půjčka začala",
+  });
+
+  return { ok: true, handedOverAt };
+}
+
+export async function returnLoanServer({
+  loanId,
+  actorId,
+}: {
+  loanId: string;
+  actorId: string;
+}) {
+  const returnedAt = new Date().toISOString();
+  const { loan, item } = await loadLoanWithItem(loanId);
+
+  if (loan.owner_id !== actorId) {
+    throw new Error("Vrácení může potvrdit pouze vlastník");
+  }
+
+  if (loan.status !== "active") {
+    throw new Error("Vrácení lze potvrdit pouze u probíhající půjčky");
+  }
+
+  const { error: loanError } = await supabaseAdmin
+    .from("loans")
+    .update({ status: "returned", returned_at: returnedAt })
+    .eq("id", loan.id);
+
+  if (loanError) throw new Error(loanError.message);
+
+  const { error: itemError } = await supabaseAdmin
+    .from("items")
+    .update({ status: "available" })
+    .eq("id", item.id);
+
+  if (itemError) throw new Error(itemError.message);
+
+  await addSystemMessage({
+    loanId: loan.id,
+    actorId,
+    message: "Věc byla vrácena. Půjčka byla ukončena.",
+  });
+
+  await notifyUserServer({
+    userId: loan.borrower_id,
+    actorId,
+    itemId: item.id,
+    loanId: loan.id,
+    type: "loan_returned",
+    title: "Půjčka ukončena",
+    message: `${item.title} byla označena jako vrácená.`,
+    emailSubject: "Půjčka ukončena",
+  });
+
+  const watchersNotified = await notifyAvailabilityWatchers({
+    itemId: item.id,
+    actorId,
+  });
+
+  return { ok: true, returnedAt, watchersNotified };
 }

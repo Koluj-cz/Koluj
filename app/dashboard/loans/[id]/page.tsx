@@ -301,12 +301,8 @@ export default function LoanDetailPage() {
 
     const response = await fetch("/api/loans/approve", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        loanId: loan.id,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ loanId: loan.id }),
     });
 
     const result = await response.json().catch(() => null);
@@ -317,152 +313,90 @@ export default function LoanDetailPage() {
       return;
     }
 
-    setLoan({
-      ...loan,
-      status: "approved",
-      approved_at: result.approvedAt,
-    });
-
+    setLoan({ ...loan, status: "approved", approved_at: result.approvedAt });
     toast.success("Žádost schválena");
     setSaving(false);
     scrollMessagesToBottom("smooth");
   }
+
 
   async function rejectLoan() {
     if (!loan) return;
 
     setSaving(true);
 
-    const { error } = await supabase
-      .from("loans")
-      .update({ status: "cancelled" })
-      .eq("id", loan.id);
+    const response = await fetch("/api/loans/reject", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ loanId: loan.id }),
+    });
 
-    if (error) {
-      toast.error(error.message);
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      toast.error(result?.error || "Půjčku se nepodařilo odmítnout");
       setSaving(false);
       return;
     }
 
     setLoan({ ...loan, status: "cancelled" });
-
-    await addSystemMessage("Žádost byla odmítnuta.");
-
     toast.success("Žádost odmítnuta");
     setSaving(false);
     scrollMessagesToBottom("smooth");
   }
 
+
   async function markAsActive() {
-    if (!loan?.items?.id) return;
+    if (!loan) return;
 
     setSaving(true);
 
-    const handedOverAt = new Date().toISOString();
-
-    const { error: loanError } = await supabase
-      .from("loans")
-      .update({ status: "active", handed_over_at: handedOverAt })
-      .eq("id", loan.id);
-
-    if (loanError) {
-      toast.error(loanError.message);
-      setSaving(false);
-      return;
-    }
-
-    const { error: itemError } = await supabase
-      .from("items")
-      .update({ status: "borrowed" })
-      .eq("id", loan.items.id);
-
-    if (itemError) {
-      toast.error(itemError.message);
-      setSaving(false);
-      return;
-    }
-
-    setLoan({
-      ...loan,
-      status: "active",
-      handed_over_at: handedOverAt,
+    const response = await fetch("/api/loans/start", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ loanId: loan.id }),
     });
 
-    await addSystemMessage("Věc byla předána. Půjčka právě probíhá.");
+    const result = await response.json().catch(() => null);
 
+    if (!response.ok) {
+      toast.error(result?.error || "Předání se nepodařilo potvrdit");
+      setSaving(false);
+      return;
+    }
+
+    setLoan({ ...loan, status: "active", handed_over_at: result.handedOverAt });
     toast.success("Předání potvrzeno");
     setSaving(false);
     scrollMessagesToBottom("smooth");
   }
 
+
   async function markAsReturned() {
-    if (!loan?.items?.id) return;
+    if (!loan) return;
 
     setSaving(true);
 
-    const returnedAt = new Date().toISOString();
-
-    const { error: loanError } = await supabase
-      .from("loans")
-      .update({ status: "returned", returned_at: returnedAt })
-      .eq("id", loan.id);
-
-    if (loanError) {
-      toast.error(loanError.message);
-      setSaving(false);
-      return;
-    }
-
-    const { error: itemError } = await supabase
-      .from("items")
-      .update({ status: "available" })
-      .eq("id", loan.items.id);
-
-    if (itemError) {
-      toast.error(itemError.message);
-      setSaving(false);
-      return;
-    }
-
-    await fetch("/api/items/notify-available", {
+    const response = await fetch("/api/loans/return", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        itemId: loan.items.id,
-        actorId: userId,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ loanId: loan.id }),
     });
 
-    setLoan({
-      ...loan,
-      status: "returned",
-      returned_at: returnedAt,
-    });
+    const result = await response.json().catch(() => null);
 
-    await addSystemMessage("Věc byla vrácena. Půjčka byla ukončena.");
+    if (!response.ok) {
+      toast.error(result?.error || "Vrácení se nepodařilo potvrdit");
+      setSaving(false);
+      return;
+    }
 
+    setLoan({ ...loan, status: "returned", returned_at: result.returnedAt });
     toast.success("Vrácení potvrzeno");
     setSaving(false);
     scrollMessagesToBottom("smooth");
-
-    const recipientId =
-      loan.owner_id === userId ? loan.borrower_id : loan.owner_id;
-
-    if (recipientId) {
-      await notifyUser({
-        userId: recipientId,
-        actorId: userId,
-        itemId: loan.items?.id,
-        loanId: loan.id,
-        type: "loan_returned",
-        title: "Půjčka ukončena",
-        message: `${loan.items?.title} byla označena jako vrácená.`,
-        emailSubject: "Půjčka ukončena",
-      });
-    }
   }
+
 
   async function sendMessage() {
     if (containsForbiddenText(message)) {
