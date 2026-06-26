@@ -25,8 +25,6 @@ import {
   conditionLabels,
   handoverLabels,
   handoverOptions,
-  itemStatuses,
-  itemStatusLabels,
 } from "@/lib/constants";
 
 type PlaceSuggestion = {
@@ -92,7 +90,6 @@ export default function NewItemPage() {
     pickup_longitude: null as number | null,
     handover_options: [] as string[],
     contact_note: "",
-    status: "available",
     availability_type: "long_term",
     available_from: "",
     available_to: "",
@@ -306,7 +303,6 @@ export default function NewItemPage() {
         pickup_longitude: form.pickup_longitude,
         handover_options: form.handover_options,
         contact_note: form.contact_note,
-        status: form.status,
         availability_type: form.availability_type,
         available_from:
           form.availability_type === "period" ? form.available_from : null,
@@ -657,17 +653,6 @@ export default function NewItemPage() {
               <SectionTitle title="Dostupnost" />
 
               <div className="mt-6 grid gap-4 md:grid-cols-2">
-                <select
-                  value={form.status}
-                  onChange={(e) => updateField("status", e.target.value)}
-                  className="koluj-input"
-                >
-                  {itemStatuses.map((status) => (
-                    <option key={status} value={status}>
-                      {itemStatusLabels[status]}
-                    </option>
-                  ))}
-                </select>
 
                 <select
                   value={form.availability_type}
