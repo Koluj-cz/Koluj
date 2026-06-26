@@ -295,53 +295,33 @@ export default function LoanDetailPage() {
   }
 
   async function approveLoan() {
-    if (!loan?.items?.id) return;
+    if (!loan) return;
 
     setSaving(true);
 
-    const approvedAt = new Date().toISOString();
-
-    const { error: loanError } = await supabase
-      .from("loans")
-      .update({ status: "approved", approved_at: approvedAt })
-      .eq("id", loan.id);
-
-    if (loanError) {
-      toast.error(loanError.message);
-      setSaving(false);
-      return;
-    }
-
-    const recipientId =
-      loan.owner_id === userId ? loan.borrower_id : loan.owner_id;
-
-    await notifyUser({
-      userId: recipientId,
-      actorId: userId,
-      itemId: loan.items?.id,
-      loanId: loan.id,
-      type: "loan_approved",
-      title: "Půjčka schválena",
-      message: `${loan.items?.title} byla schválena. Domluvte si předání.`,
-      emailSubject: "Půjčka schválena",
+    const response = await fetch("/api/loans/approve", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        loanId: loan.id,
+      }),
     });
 
-    const { error: itemError } = await supabase
-      .from("items")
-      .update({ status: "reserved" })
-      .eq("id", loan.items.id);
+    const result = await response.json().catch(() => null);
 
-    if (itemError) {
-      toast.error(itemError.message);
+    if (!response.ok) {
+      toast.error(result?.error || "Půjčku se nepodařilo schválit");
       setSaving(false);
       return;
     }
 
-    setLoan({ ...loan, status: "approved", approved_at: approvedAt });
-
-    await addSystemMessage(
-      "Žádost byla schválena.\n\nMůžete se domluvit na termínu předání."
-    );
+    setLoan({
+      ...loan,
+      status: "approved",
+      approved_at: result.approvedAt,
+    });
 
     toast.success("Žádost schválena");
     setSaving(false);

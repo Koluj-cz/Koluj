@@ -145,11 +145,11 @@ export async function requestLoanServer({
     is_system: true,
     message: `Žádost o půjčení vytvořena.
 
-Věc: ${item.title}
-Termín: ${formatDate(dateFrom)} – ${formatDate(dateTo)}
-Místo předání: ${item.pickup_place}
-Cena: ${item.price_amount || 0} Kč
-Kauce: ${item.deposit || 0} Kč${
+    Věc: ${item.title}
+    Termín: ${formatDate(dateFrom)} – ${formatDate(dateTo)}
+    Místo předání: ${item.pickup_place}
+    Cena: ${item.price_amount || 0} Kč
+    Kauce: ${item.deposit || 0} Kč${
       note?.trim() ? `\n\nPoznámka: ${note.trim()}` : ""
     }`,
   });
@@ -173,5 +173,88 @@ Kauce: ${item.deposit || 0} Kč${
   return {
     ok: true,
     loanId: createdLoan.id,
+  };
+}
+
+export async function approveLoanServer({
+  loanId,
+  actorId,
+}: {
+  loanId: string;
+  actorId: string;
+}) {
+  const approvedAt = new Date().toISOString();
+
+  const { data: loan, error: loanError } = await supabaseAdmin
+    .from("loans")
+    .select("id, owner_id, borrower_id, item_id, status")
+    .eq("id", loanId)
+    .single();
+
+  if (loanError || !loan) {
+    throw new Error("Půjčka nebyla nalezena");
+  }
+
+  if (loan.owner_id !== actorId) {
+    throw new Error("Tuto půjčku může schválit pouze vlastník");
+  }
+
+  if (loan.status !== "requested") {
+    throw new Error("Schválit lze pouze novou žádost");
+  }
+
+  const { data: item, error: itemError } = await supabaseAdmin
+    .from("items")
+    .select("id, title")
+    .eq("id", loan.item_id)
+    .single();
+
+  if (itemError || !item) {
+    throw new Error("Věc nebyla nalezena");
+  }
+
+  const { error: updateLoanError } = await supabaseAdmin
+    .from("loans")
+    .update({
+      status: "approved",
+      approved_at: approvedAt,
+    })
+    .eq("id", loan.id);
+
+  if (updateLoanError) {
+    throw new Error(updateLoanError.message);
+  }
+
+  const { error: updateItemError } = await supabaseAdmin
+    .from("items")
+    .update({ status: "reserved" })
+    .eq("id", item.id);
+
+  if (updateItemError) {
+    throw new Error(updateItemError.message);
+  }
+
+  await supabaseAdmin.from("loan_messages").insert({
+    loan_id: loan.id,
+    sender_id: actorId,
+    is_system: true,
+    message:
+      "Žádost byla schválena.\n\nMůžete se domluvit na termínu předání.",
+  });
+
+  await notifyUserServer({
+    userId: loan.borrower_id,
+    actorId,
+    itemId: item.id,
+    loanId: loan.id,
+    type: "loan_approved",
+    title: "Půjčka schválena",
+    message: `${item.title} byla schválena. Domluvte si předání.`,
+    emailSubject: "Půjčka schválena",
+  });
+
+  return {
+    ok: true,
+    approvedAt,
   };
 }
