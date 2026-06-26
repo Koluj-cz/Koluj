@@ -47,10 +47,20 @@ export default function ProfilePage() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-
+    
     if (!user) {
       setLoading(false);
       return;
+    }
+
+    const restoreResponse = await fetch("/api/account/restore", {
+      method: "POST",
+    });
+
+    const restoreResult = await restoreResponse.json().catch(() => null);
+
+    if (restoreResult?.restored) {
+      toast.success("Účet byl znovu aktivován");
     }
 
     let { data } = await supabase
@@ -171,41 +181,28 @@ export default function ProfilePage() {
     toast.success("Profil uložen");
   }
 
-  async function deleteAccount() {
+  async function deactivateAccount() {
     setDeletingAccount(true);
 
     try {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
-
-      if (!session) {
-        toast.error("Nejsi přihlášený");
-        return;
-      }
-
-      const response = await fetch("/api/delete-account", {
+      const response = await fetch("/api/account/deactivate", {
         method: "POST",
-        headers: {
-          Authorization: `Bearer ${session.access_token}`,
-        },
       });
 
       const result = await response.json();
 
       if (!response.ok) {
-        toast.error(result.error || "Nepodařilo se smazat účet");
+        toast.error(result.error || "Nepodařilo se deaktivovat účet");
         return;
       }
 
       await supabase.auth.signOut();
 
-      toast.success("Účet byl smazán");
-
+      toast.success("Účet byl deaktivován");
       window.location.href = "/";
     } catch (error) {
       console.error(error);
-      toast.error("Nepodařilo se smazat účet");
+      toast.error("Nepodařilo se deaktivovat účet");
     } finally {
       setDeletingAccount(false);
     }
@@ -425,25 +422,25 @@ export default function ProfilePage() {
             </div>
             <div className="koluj-card border border-red-200 p-5 md:p-8">
               <h2 className="text-2xl font-black text-red-600">
-                Odstranění účtu
+                Deaktivace účtu
               </h2>
 
               <p className="mt-3 text-[var(--koluj-muted)]">
-                Trvale smažeš svůj účet, profil, nabídky, zprávy,
-                notifikace a další osobní data.
-                Tato akce je nevratná.
+                Deaktivací účtu se skryje tvůj profil i všechny tvoje nabídky.
+                Historie půjček zůstane zachována kvůli ostatním uživatelům.
+                Kdykoliv se můžeš znovu přihlásit a účet se automaticky obnoví.
               </p>
 
               <button
                 onClick={() => setShowDeleteAccount(true)}
                 className="mt-6 rounded-2xl bg-red-600 px-6 py-3 font-black text-white transition hover:bg-red-700"
               >
-                Smazat účet
+                Deaktivovat účet
               </button>
               {showDeleteAccount && (
                 <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 p-5">
                   <p className="font-bold text-red-700">
-                    Opravdu chceš smazat svůj účet?
+                    Opravdu chceš deaktivovat svůj účet?
                   </p>
 
                   <div className="mt-4 flex gap-3">
@@ -455,13 +452,13 @@ export default function ProfilePage() {
                     </button>
 
                     <button
-                      onClick={deleteAccount}
+                      onClick={deactivateAccount}
                       disabled={deletingAccount}
                       className="rounded-xl bg-red-600 px-4 py-2 font-bold text-white disabled:opacity-50"
                     >
                       {deletingAccount
-                        ? "Mažu účet..."
-                        : "Ano, smazat účet"}
+                        ? "Deaktivuji účet..."
+                        : "Ano, deaktivovat účet"}
                     </button>
                   </div>
                 </div>
