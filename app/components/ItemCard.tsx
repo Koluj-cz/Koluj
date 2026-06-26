@@ -71,7 +71,7 @@ export default function ItemCard({
 
   const cardContent = (
     <>
-      <div className="relative min-h-[280px] overflow-hidden rounded-[28px] bg-[var(--koluj-bg)] sm:min-h-[360px]">
+      <div className="relative min-h-[300px] overflow-hidden rounded-[30px] bg-[var(--koluj-bg)] shadow-[0_16px_40px_rgba(31,31,26,0.16)] sm:min-h-[360px]">
         {item.primary_image_url ? (
           <img
             src={item.primary_image_url}
@@ -84,7 +84,7 @@ export default function ItemCard({
           </div>
         )}
 
-        <div className="absolute inset-0 bg-gradient-to-b from-black/55 via-black/12 to-black/55" />
+        <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/10 to-black/45" />
 
         <span
           className={`koluj-status-badge absolute right-4 top-4 ${statusClass}`}
@@ -94,15 +94,15 @@ export default function ItemCard({
 
         <div className="relative z-10 flex min-h-[280px] flex-col justify-between p-4 text-white sm:min-h-[360px] sm:p-5">
           <div>
-            <h3 className="line-clamp-2 max-w-[75%] text-2xl font-black leading-none tracking-tight drop-shadow-sm">
+            <h3 className="line-clamp-2 max-w-[72%] text-xl font-black leading-none tracking-tight text-white drop-shadow-sm">
               {item.title}
             </h3>
 
-            <p className="mt-2 text-sm font-black text-[#cfe8a4]">
+            <p className="mt-2 text-sm font-black text-[#cfe8a4] drop-shadow-sm">
               {categoryLabels[item.category] || item.category}
             </p>
 
-            <p className="mt-3 flex items-center gap-1.5 text-sm font-bold text-white/90">
+            <p className="mt-3 flex items-center gap-1.5 text-sm font-black text-white/90 drop-shadow-sm">
               <MapPin size={16} />
               {shortPlace(item.pickup_place)}
             </p>
@@ -118,16 +118,16 @@ export default function ItemCard({
                     window.location.href = `/users/${item.owner_id}`;
                   }
                 }}
-                className="mt-4 flex items-center gap-3 text-left"
+                className="mt-4 flex items-center gap-2 text-left"
               >
                 {item.profiles?.avatar_url ? (
                   <img
                     src={item.profiles.avatar_url}
                     alt={ownerName}
-                    className="h-9 w-9 rounded-full object-cover ring-2 ring-white/50"
+                    className="h-8 w-8 rounded-full object-cover ring-2 ring-white/50"
                   />
                 ) : (
-                  <div className="flex h-9 w-9 items-center justify-center rounded-full bg-white/90 text-sm font-black text-[var(--koluj-green)]">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-xs font-black text-[var(--koluj-green)]">
                     {ownerName.charAt(0).toUpperCase()}
                   </div>
                 )}
@@ -169,7 +169,7 @@ export default function ItemCard({
 
   if (variant === "owner") {
     return (
-      <div className="koluj-card group flex h-full flex-col overflow-hidden p-1">
+      <div className="group flex h-full flex-col overflow-hidden rounded-[30px]">
         {cardContent}
       </div>
     );
@@ -178,7 +178,7 @@ export default function ItemCard({
   return (
     <Link
       href={`/items/${item.id}`}
-      className="koluj-card group block overflow-hidden p-1 transition hover:-translate-y-1"
+      className="group block overflow-hidden rounded-[30px] transition hover:-translate-y-1"
     >
       {cardContent}
     </Link>
