@@ -328,15 +328,11 @@ export default function MyItemsPage() {
                 )}
 
 
-                <div className="rounded-[26px] border border-[var(--koluj-border)] bg-white/65 p-3 shadow-sm">
-                  <p className="mb-3 px-2 text-xs font-black uppercase tracking-wide text-[var(--koluj-muted)]">
-                    Správa věci
-                  </p>
-
-                  <div className="grid gap-2.5">
+                <div className="-mt-1 rounded-b-[30px] rounded-t-none border-x border-b border-[var(--koluj-border)] bg-[var(--koluj-surface)] px-3 pb-3 pt-4 shadow-[0_16px_35px_rgba(31,31,26,0.08)]">
+                  <div className="grid grid-cols-3 gap-2">
                     <Link
                       href={`/items/${item.id}/edit`}
-                      className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--koluj-border)] bg-white px-5 py-3 font-black transition hover:bg-[var(--koluj-bg)]"
+                      className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border border-[var(--koluj-border)] bg-white px-2 py-3 text-center text-sm font-black transition hover:bg-[var(--koluj-bg)] sm:flex-row sm:text-base"
                     >
                       <Pencil size={18} />
                       Upravit
@@ -345,7 +341,7 @@ export default function MyItemsPage() {
                     <button
                       type="button"
                       onClick={() => toggleVisibility(item)}
-                      className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--koluj-border)] bg-white px-5 py-3 font-black text-[var(--koluj-green)] transition hover:bg-[var(--koluj-bg)]"
+                      className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border border-[var(--koluj-border)] bg-white px-2 py-3 text-center text-sm font-black text-[var(--koluj-green)] transition hover:bg-[var(--koluj-bg)] sm:flex-row sm:text-base"
                     >
                       {item.is_active ? (
                         <>
@@ -364,7 +360,7 @@ export default function MyItemsPage() {
                       type="button"
                       onClick={() => archiveItem(item)}
                       onMouseLeave={() => setPendingDeleteId(null)}
-                      className={`flex items-center justify-center gap-2 rounded-2xl border px-5 py-3 font-black transition ${
+                      className={`flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl border px-2 py-3 text-center text-sm font-black transition sm:flex-row sm:text-base ${
                         pendingDeleteId === item.id
                           ? "border-red-200 bg-red-50 text-red-600"
                           : "border-[var(--koluj-border)] bg-white text-[var(--koluj-muted)] hover:bg-[var(--koluj-bg)]"
@@ -372,7 +368,7 @@ export default function MyItemsPage() {
                     >
                       <Trash2 size={18} />
                       {pendingDeleteId === item.id
-                        ? "Opravdu odstranit?"
+                        ? "Opravdu?"
                         : "Odstranit"}
                     </button>
                   </div>
