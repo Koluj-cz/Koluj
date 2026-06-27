@@ -312,7 +312,7 @@ export default function MyItemsPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-3 xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
               {visibleItems.map((item) => {
 
                 return (
@@ -328,44 +328,54 @@ export default function MyItemsPage() {
                 )}
 
 
-                <div className="grid gap-3">
-                  <Link
-                    href={`/items/${item.id}/edit`}
-                    className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--koluj-border)] px-5 py-3 font-bold transition hover:bg-[var(--koluj-bg)]"
-                  >
-                    <Pencil size={18} />
-                    Upravit
-                  </Link>
+                <div className="rounded-[26px] border border-[var(--koluj-border)] bg-white/65 p-3 shadow-sm">
+                  <p className="mb-3 px-2 text-xs font-black uppercase tracking-wide text-[var(--koluj-muted)]">
+                    Správa věci
+                  </p>
 
-                  <button
-                    type="button"
-                    onClick={() => toggleVisibility(item)}
-                    className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--koluj-border)] px-5 py-3 font-bold text-[var(--koluj-green)] transition hover:bg-[var(--koluj-bg)]"
-                  >
-                    {item.is_active ? (
-                      <>
-                        <EyeOff size={18} />
-                        Skrýt
-                      </>
-                    ) : (
-                      <>
-                        <Eye size={18} />
-                        Obnovit
-                      </>
-                    )}
-                  </button>
+                  <div className="grid gap-2.5">
+                    <Link
+                      href={`/items/${item.id}/edit`}
+                      className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--koluj-border)] bg-white px-5 py-3 font-black transition hover:bg-[var(--koluj-bg)]"
+                    >
+                      <Pencil size={18} />
+                      Upravit
+                    </Link>
 
-                  <button
-                    type="button"
-                    onClick={() => archiveItem(item)}
-                    onMouseLeave={() => setPendingDeleteId(null)}
-                    className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--koluj-border)] px-5 py-3 font-bold text-[var(--koluj-muted)] transition hover:bg-[var(--koluj-bg)]"
-                  >
-                    <Trash2 size={18} />
-                    {pendingDeleteId === item.id
-                      ? "Opravdu odstranit?"
-                      : "Odstranit"}
-                  </button>
+                    <button
+                      type="button"
+                      onClick={() => toggleVisibility(item)}
+                      className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--koluj-border)] bg-white px-5 py-3 font-black text-[var(--koluj-green)] transition hover:bg-[var(--koluj-bg)]"
+                    >
+                      {item.is_active ? (
+                        <>
+                          <EyeOff size={18} />
+                          Skrýt
+                        </>
+                      ) : (
+                        <>
+                          <Eye size={18} />
+                          Obnovit
+                        </>
+                      )}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => archiveItem(item)}
+                      onMouseLeave={() => setPendingDeleteId(null)}
+                      className={`flex items-center justify-center gap-2 rounded-2xl border px-5 py-3 font-black transition ${
+                        pendingDeleteId === item.id
+                          ? "border-red-200 bg-red-50 text-red-600"
+                          : "border-[var(--koluj-border)] bg-white text-[var(--koluj-muted)] hover:bg-[var(--koluj-bg)]"
+                      }`}
+                    >
+                      <Trash2 size={18} />
+                      {pendingDeleteId === item.id
+                        ? "Opravdu odstranit?"
+                        : "Odstranit"}
+                    </button>
+                  </div>
                 </div>
               </ItemCard>
                 );
