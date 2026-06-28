@@ -338,47 +338,79 @@ export default function ItemDetailPage() {
         )}
         </header>
 
-        <section className="mt-10 grid gap-8 lg:grid-cols-[1fr_420px]">
+        <section className="mt-6 grid gap-8 md:mt-10 lg:grid-cols-[1fr_420px]">
           <div className="space-y-6">
-            <div className="koluj-card overflow-hidden p-0">
-              <div className="relative h-[360px] bg-[var(--koluj-bg)] md:h-[520px]">
+            <div className="overflow-hidden rounded-[34px] shadow-[0_18px_55px_rgba(31,31,26,0.16)]">
+              <div className="relative min-h-[430px] overflow-hidden bg-[var(--koluj-bg)] md:min-h-[620px]">
                 {selectedImage ? (
                   <img
                     src={selectedImage}
                     alt={item.title}
-                    className="h-full w-full object-contain"
+                    className="absolute inset-0 h-full w-full object-cover"
                   />
                 ) : (
-                  <div className="flex h-full items-center justify-center text-[var(--koluj-muted)]">
+                  <div className="absolute inset-0 flex items-center justify-center bg-[var(--koluj-bg)] text-[var(--koluj-muted)]">
                     Bez fotky
                   </div>
                 )}
 
+                <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/10 to-black/60" />
+
                 <span
-                  className={`koluj-status-badge absolute right-5 top-5 ${statusClass}`}
+                  className={`koluj-status-badge absolute right-5 top-5 z-20 ${statusClass}`}
                 >
                   {statusLabel}
                 </span>
 
-                {item.price_amount && item.price_unit && (
-                  <div className="absolute bottom-5 left-5 rounded-2xl bg-[var(--koluj-green)] px-5 py-3 text-lg font-black text-white shadow-sm">
-                    {item.price_amount} Kč /{" "}
-                    {translatePriceUnit(item.price_unit)}
+                <div className="relative z-10 flex min-h-[430px] flex-col justify-between p-5 text-white md:min-h-[620px] md:p-8">
+                  <div>
+                    <p className="text-sm font-black uppercase tracking-wide text-[#cfe8a4] drop-shadow-sm">
+                      {categoryLabels[item.category] || item.category}
+                    </p>
+
+                    <h1 className="mt-2 max-w-3xl text-4xl font-black leading-none tracking-tight drop-shadow-sm md:text-6xl">
+                      {item.title}
+                    </h1>
+
+                    <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm font-black text-white/90 md:text-base">
+                      <span className="flex items-center gap-2">
+                        <MapPin size={18} />
+                        {item.pickup_place}
+                      </span>
+
+                      {item.condition && (
+                        <span className="flex items-center gap-2">
+                          <Star size={18} />
+                          {conditionLabels[item.condition] || item.condition}
+                        </span>
+                      )}
+
+                      <span className="flex items-center gap-2">
+                        <Eye size={18} />
+                        {item.views_count || 0} zobrazení
+                      </span>
+                    </div>
                   </div>
-                )}
+
+                  {item.price_amount && item.price_unit && (
+                    <div className="w-fit rounded-2xl bg-[var(--koluj-green)] px-5 py-3 text-lg font-black text-white shadow-lg">
+                      {item.price_amount} Kč / {translatePriceUnit(item.price_unit)}
+                    </div>
+                  )}
+                </div>
               </div>
 
               {images.length > 1 && (
-                <div className="grid grid-cols-2 gap-3 p-4 sm:grid-cols-4 md:flex md:overflow-x-auto">
+                <div className="flex gap-3 overflow-x-auto bg-[var(--koluj-surface)] p-4">
                   {images.map((image) => (
                     <button
                       key={image.id}
                       type="button"
                       onClick={() => setSelectedImage(image.image_url)}
-                      className={`h-24 w-full overflow-hidden rounded-2xl border md:w-32 md:shrink-0 ${
+                      className={`h-20 w-24 shrink-0 overflow-hidden rounded-2xl border-2 transition ${
                         selectedImage === image.image_url
                           ? "border-[var(--koluj-green)]"
-                          : "border-[var(--koluj-border)]"
+                          : "border-transparent opacity-75 hover:opacity-100"
                       }`}
                     >
                       <img
@@ -392,59 +424,31 @@ export default function ItemDetailPage() {
               )}
             </div>
 
-            <div className="koluj-card p-8">
-              <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                <div>
-                  <p className="text-sm font-black uppercase tracking-widest text-[var(--koluj-green)]">
-                    {categoryLabels[item.category] || item.category}
-                  </p>
-
-                  <h1 className="mt-2 text-5xl font-black tracking-tight">
-                    {item.title}
-                  </h1>
-                </div>
-
-                <span className={`koluj-status-badge ${statusClass}`}>
-                  {statusLabel}
-                </span>
-              </div>
-
-              <div className="mt-6 flex flex-wrap gap-x-6 gap-y-3 text-[var(--koluj-muted)]">
-                <span className="flex items-center gap-2">
-                  <MapPin size={18} />
-                  {item.pickup_place}
-                </span>
-
-                {item.condition && (
-                  <span className="flex items-center gap-2">
-                    <Star size={18} />
-                    {conditionLabels[item.condition] || item.condition}
-                  </span>
-                )}
-
-                <span className="flex items-center gap-2">
-                  <CalendarDays size={18} />
+            <div className="koluj-card p-6 md:p-8">
+              <div className="flex flex-wrap gap-3 text-sm font-bold text-[var(--koluj-muted)]">
+                <span className="flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-4 py-2">
+                  <CalendarDays size={16} />
                   Přidáno {formatDate(item.created_at)}
                 </span>
-                <span className="flex items-center gap-2">
-                  <Eye size={18} />
+
+                <span className="flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-4 py-2">
+                  <Eye size={16} />
                   {item.views_count || 0} zobrazení
                 </span>
               </div>
 
-            {item.description && (
-              <div className="mt-8">
-                <h2 className="text-2xl font-black">Popis</h2>
+              {item.description && (
+                <div className="mt-6">
+                  <h2 className="text-2xl font-black">Popis</h2>
 
-                <div
-                  className="koluj-rich-text mt-3 text-lg leading-relaxed text-[var(--koluj-muted)]"
-                  
-                  dangerouslySetInnerHTML={{
-                    __html: item.description,
-                  }}
-                />
-              </div>
-            )}
+                  <div
+                    className="koluj-rich-text mt-3 text-lg leading-relaxed text-[var(--koluj-muted)]"
+                    dangerouslySetInnerHTML={{
+                      __html: item.description,
+                    }}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="koluj-card p-8">
@@ -492,7 +496,7 @@ export default function ItemDetailPage() {
             </div>
           </div>
 
-          <aside className="min-w-0 space-y-6">
+          <aside className="min-w-0 space-y-5 md:space-y-6">
             <div className="koluj-card p-5 md:p-8 lg:sticky lg:top-8">
               <div className="rounded-3xl bg-[var(--koluj-bg)] p-5">
                 <p className="text-sm font-bold text-[var(--koluj-muted)]">
