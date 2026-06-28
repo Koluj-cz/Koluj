@@ -257,9 +257,9 @@ export default function HomePage() {
           </div>
         </header>
 
-        <section className="grid items-start gap-3 pt-2 pb-0 md:py-8 lg:grid-cols-[0.9fr_1.1fr]">
-          <div className="flex flex-col lg:h-[430px]">
-            <h1 className="koluj-heading">
+        <section className="grid items-start gap-8 pt-2 pb-0 md:py-10 lg:grid-cols-[0.95fr_1.05fr]">
+          <div className="flex flex-col lg:h-[460px] xl:h-[500px]">
+            <h1 className="koluj-heading max-w-[16ch] xl:max-w-[18ch]">
               <span className="md:hidden">Půjč si věc poblíž</span>
               <span className="hidden md:block">
                 Půjčuj si věci od lidí ve svém okolí
@@ -270,7 +270,7 @@ export default function HomePage() {
               Najdi věc poblíž a domluv půjčení přímo s majitelem.
             </p>
 
-            <div className="mt-5 hidden flex-wrap gap-2 text-sm font-bold text-[var(--koluj-green)] md:flex">
+            <div className="mt-6 hidden flex-wrap gap-3 pb-5 md:flex">
               <span className="rounded-full bg-white px-4 py-2 shadow-sm">
                 {totalItems} věcí k půjčení
               </span>
@@ -282,7 +282,7 @@ export default function HomePage() {
               </span>
             </div>
 
-            <div className="mt-4 flex max-w-2xl items-center gap-2 rounded-[1.75rem] border border-[var(--koluj-border)] bg-white p-2 shadow-sm md:mt-auto">
+            <div className="mt-8 lg:mt-auto flex max-w-2xl items-center gap-2 rounded-[1.75rem] border border-[var(--koluj-border)] bg-white p-2 shadow-sm">
               <div className="flex min-w-0 flex-1 items-center gap-3 px-3">
                 <Search size={20} className="shrink-0 text-[var(--koluj-muted)]" />
 
