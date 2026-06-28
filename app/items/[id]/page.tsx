@@ -364,10 +364,6 @@ export default function ItemDetailPage() {
                         </span>
                       )}
 
-                      <span className="flex items-center gap-2">
-                        <Eye size={18} />
-                        {item.views_count || 0} zobrazení
-                      </span>
                     </div>
                   </div>
 
@@ -376,11 +372,6 @@ export default function ItemDetailPage() {
                       {statusLabel}
                     </span>
 
-                    {item.price_amount && item.price_unit && (
-                      <div className="rounded-2xl bg-[var(--koluj-green)] px-5 py-3 text-lg font-black text-white shadow-sm">
-                        {item.price_amount} Kč / {translatePriceUnit(item.price_unit)}
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>

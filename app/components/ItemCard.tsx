@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { MapPin, Star } from "lucide-react";
+import { MapPin } from "lucide-react";
 import {
   categoryLabels,
   itemStatusClasses,
@@ -71,41 +71,21 @@ export default function ItemCard({
 
   const cardContent = (
     <>
-      <div className="relative min-h-[300px] overflow-hidden rounded-[30px] bg-[var(--koluj-bg)] shadow-[0_16px_40px_rgba(31,31,26,0.16)] sm:min-h-[360px]">
-        {item.primary_image_url ? (
-          <img
-            src={item.primary_image_url}
-            alt={item.title}
-            className="absolute inset-0 h-full w-full object-cover transition duration-700 group-hover:scale-105"
-          />
-        ) : (
-          <div className="absolute inset-0 flex items-center justify-center bg-[var(--koluj-bg)] text-sm text-[var(--koluj-muted)]">
-            Bez fotky
-          </div>
-        )}
+      <div className="overflow-hidden rounded-[30px] bg-[var(--koluj-surface)] shadow-[0_16px_40px_rgba(31,31,26,0.12)]">
+        <div className="p-4 sm:p-5">
+          <p className="text-sm font-black text-[var(--koluj-green)]">
+            {categoryLabels[item.category] || item.category}
+          </p>
 
-        <div className="absolute inset-0 bg-gradient-to-br from-black/60 via-black/10 to-black/45" />
+          <h3 className="mt-1 line-clamp-2 text-2xl font-black leading-none tracking-tight">
+            {item.title}
+          </h3>
 
-        <span
-          className={`koluj-status-badge absolute right-4 top-4 ${statusClass}`}
-        >
-          {statusLabel}
-        </span>
-
-        <div className="relative z-10 flex min-h-[280px] flex-col justify-between p-4 text-white sm:min-h-[360px] sm:p-5">
-          <div>
-            <h3 className="line-clamp-2 max-w-[72%] text-xl font-black leading-none tracking-tight text-white drop-shadow-sm">
-              {item.title}
-            </h3>
-
-            <p className="mt-2 text-sm font-black text-[#cfe8a4] drop-shadow-sm">
-              {categoryLabels[item.category] || item.category}
-            </p>
-
-            <p className="mt-3 flex items-center gap-1.5 text-sm font-black text-white/90 drop-shadow-sm">
+          <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-3 text-sm font-bold text-[var(--koluj-muted)]">
+            <span className="flex items-center gap-1.5">
               <MapPin size={16} />
               {shortPlace(item.pickup_place)}
-            </p>
+            </span>
 
             {variant === "public" && (
               <button
@@ -118,44 +98,60 @@ export default function ItemCard({
                     window.location.href = `/users/${item.owner_id}`;
                   }
                 }}
-                className="mt-4 flex items-center gap-2 text-left"
+                className="flex items-center gap-2 text-left transition hover:text-[var(--koluj-green)]"
               >
                 {item.profiles?.avatar_url ? (
                   <img
                     src={item.profiles.avatar_url}
                     alt={ownerName}
-                    className="h-8 w-8 rounded-full object-cover ring-2 ring-white/50"
+                    className="h-8 w-8 rounded-full object-cover"
                   />
                 ) : (
-                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-xs font-black text-[var(--koluj-green)]">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-xs font-black text-[var(--koluj-green)]">
                     {ownerName.charAt(0).toUpperCase()}
                   </div>
                 )}
 
-                <div>
-                  <p className="font-black leading-tight text-white">
-                    {ownerName}
-                  </p>
+                <span className="font-black text-[var(--koluj-text)]">
+                  {ownerName}
+                </span>
 
-                  <p className="text-sm font-black text-[#cfe8a4]">
-                    {ratingText}
-                  </p>
-                </div>
+                <span className="font-black text-[var(--koluj-green)]">
+                  {ratingText}
+                </span>
               </button>
             )}
 
             {variant === "owner" && (
-              <p className="mt-4 text-sm font-black text-white/90">
-                {loanCount} půjčení
-              </p>
+              <span className="font-black">{loanCount} půjčení</span>
             )}
           </div>
+        </div>
+
+        <div className="relative h-[260px] overflow-hidden bg-[var(--koluj-bg)] sm:h-[320px]">
+          {item.primary_image_url ? (
+            <img
+              src={item.primary_image_url}
+              alt={item.title}
+              className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex h-full items-center justify-center text-sm text-[var(--koluj-muted)]">
+              Bez fotky
+            </div>
+          )}
 
           {item.price_amount && item.price_unit && (
-            <div className="w-fit rounded-2xl bg-[var(--koluj-green)] px-4 py-2 text-sm font-black text-white shadow-lg">
+            <div className="absolute bottom-4 left-4 rounded-2xl bg-[var(--koluj-green)] px-4 py-2 text-sm font-black text-white shadow-lg">
               {item.price_amount} Kč / {translatePriceUnit(item.price_unit)}
             </div>
           )}
+
+          <span
+            className={`koluj-status-badge absolute bottom-4 right-4 ${statusClass}`}
+          >
+            {statusLabel}
+          </span>
         </div>
       </div>
 
