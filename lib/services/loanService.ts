@@ -551,7 +551,7 @@ export async function sendLoanMessageServer({
     recipientIsActive = Boolean(
       presence?.last_seen_at &&
         Date.now() - new Date(presence.last_seen_at).getTime() <
-          2 * 60 * 1000
+          1000
     );
   }
 

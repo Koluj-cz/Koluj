@@ -343,18 +343,27 @@ export default function ItemDetailPage() {
             <div className="overflow-hidden rounded-[34px] shadow-[0_18px_55px_rgba(31,31,26,0.16)]">
               <div className="relative min-h-[430px] overflow-hidden bg-[var(--koluj-bg)] md:min-h-[620px]">
                 {selectedImage ? (
-                  <img
-                    src={selectedImage}
-                    alt={item.title}
-                    className="absolute inset-0 h-full w-full object-cover"
-                  />
+                  <>
+                    <img
+                      src={selectedImage}
+                      alt=""
+                      aria-hidden="true"
+                      className="absolute inset-0 h-full w-full scale-110 object-cover blur-2xl opacity-45"
+                    />
+
+                    <img
+                      src={selectedImage}
+                      alt={item.title}
+                      className="absolute inset-0 h-full w-full object-contain p-8 md:p-12"
+                    />
+                  </>
                 ) : (
                   <div className="absolute inset-0 flex items-center justify-center bg-[var(--koluj-bg)] text-[var(--koluj-muted)]">
                     Bez fotky
                   </div>
                 )}
 
-                <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/10 to-black/60" />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/5 to-black/45" />
 
                 <span
                   className={`koluj-status-badge absolute right-5 top-5 z-20 ${statusClass}`}
