@@ -340,48 +340,19 @@ export default function ItemDetailPage() {
 
         <section className="mt-6 grid gap-8 md:mt-10 lg:grid-cols-[1fr_420px]">
           <div className="space-y-6">
-            <div className="overflow-hidden rounded-[34px] shadow-[0_18px_55px_rgba(31,31,26,0.16)]">
-              <div className="relative min-h-[430px] overflow-hidden bg-[var(--koluj-bg)] md:min-h-[620px]">
-                {selectedImage ? (
-                  <>
-                    <img
-                      src={selectedImage}
-                      alt=""
-                      aria-hidden="true"
-                      className="absolute inset-0 h-full w-full scale-110 object-cover blur-2xl opacity-45"
-                    />
-
-                    <img
-                      src={selectedImage}
-                      alt={item.title}
-                      className="absolute inset-0 h-full w-full object-contain p-8 md:p-12"
-                    />
-                  </>
-                ) : (
-                  <div className="absolute inset-0 flex items-center justify-center bg-[var(--koluj-bg)] text-[var(--koluj-muted)]">
-                    Bez fotky
-                  </div>
-                )}
-
-                <div className="absolute inset-0 bg-gradient-to-b from-black/45 via-black/5 to-black/45" />
-
-                <span
-                  className={`koluj-status-badge absolute right-5 top-5 z-20 ${statusClass}`}
-                >
-                  {statusLabel}
-                </span>
-
-                <div className="relative z-10 flex min-h-[430px] flex-col justify-between p-5 text-white md:min-h-[620px] md:p-8">
-                  <div>
-                    <p className="text-sm font-black uppercase tracking-wide text-[#cfe8a4] drop-shadow-sm">
+            <div className="overflow-hidden rounded-[34px] bg-[var(--koluj-surface)] shadow-[0_18px_55px_rgba(31,31,26,0.12)]">
+              <div className="border-b border-[var(--koluj-border)] px-5 py-6 md:px-8 md:py-7">
+                <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
                       {categoryLabels[item.category] || item.category}
                     </p>
 
-                    <h1 className="mt-2 max-w-3xl text-4xl font-black leading-none tracking-tight drop-shadow-sm md:text-6xl">
+                    <h1 className="mt-2 max-w-4xl text-4xl font-black leading-none tracking-tight md:text-6xl">
                       {item.title}
                     </h1>
 
-                    <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm font-black text-white/90 md:text-base">
+                    <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm font-bold text-[var(--koluj-muted)] md:text-base">
                       <span className="flex items-center gap-2">
                         <MapPin size={18} />
                         {item.pickup_place}
@@ -401,16 +372,36 @@ export default function ItemDetailPage() {
                     </div>
                   </div>
 
-                  {item.price_amount && item.price_unit && (
-                    <div className="w-fit rounded-2xl bg-[var(--koluj-green)] px-5 py-3 text-lg font-black text-white shadow-lg">
-                      {item.price_amount} Kč / {translatePriceUnit(item.price_unit)}
-                    </div>
-                  )}
+                  <div className="flex shrink-0 flex-row items-center gap-3 md:flex-col md:items-end">
+                    <span className={`koluj-status-badge ${statusClass}`}>
+                      {statusLabel}
+                    </span>
+
+                    {item.price_amount && item.price_unit && (
+                      <div className="rounded-2xl bg-[var(--koluj-green)] px-5 py-3 text-lg font-black text-white shadow-sm">
+                        {item.price_amount} Kč / {translatePriceUnit(item.price_unit)}
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
 
+              <div className="relative flex min-h-[360px] items-center justify-center overflow-hidden bg-[var(--koluj-bg)] md:min-h-[560px]">
+                {selectedImage ? (
+                  <img
+                    src={selectedImage}
+                    alt={item.title}
+                    className="h-full max-h-[360px] w-full object-contain p-5 md:max-h-[560px] md:p-8"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-[var(--koluj-muted)]">
+                    Bez fotky
+                  </div>
+                )}
+              </div>
+
               {images.length > 1 && (
-                <div className="flex gap-3 overflow-x-auto bg-[var(--koluj-surface)] p-4">
+                <div className="flex gap-3 overflow-x-auto border-t border-[var(--koluj-border)] bg-[var(--koluj-surface)] p-4">
                   {images.map((image) => (
                     <button
                       key={image.id}
@@ -460,7 +451,7 @@ export default function ItemDetailPage() {
               )}
             </div>
 
-            <div className="koluj-card p-8">
+            <div className="koluj-card p-6 md:p-8">
               <h2 className="text-2xl font-black">Předání</h2>
 
               <div className="mt-5 grid gap-4 md:grid-cols-2">
