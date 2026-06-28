@@ -77,7 +77,7 @@ export default function ItemCard({
             {categoryLabels[item.category] || item.category}
           </p>
 
-          <h3 className="mt-1 line-clamp-2 text-2xl font-black leading-none tracking-tight">
+          <h3 className="mt-1 overflow-hidden whitespace-nowrap text-ellipsis text-[1.75rem] font-extrabold leading-none tracking-[-0.03em]">
             {item.title}
           </h3>
 

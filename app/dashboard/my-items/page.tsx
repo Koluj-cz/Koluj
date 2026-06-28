@@ -328,7 +328,7 @@ export default function MyItemsPage() {
                 )}
 
 
-                <div className="-mx-4 -mb-4 -mt-1 rounded-b-[30px] rounded-t-none border-x border-b border-[var(--koluj-border)] bg-[var(--koluj-surface)] p-3 shadow-[0_16px_35px_rgba(31,31,26,0.08)]">
+                <div className="-mx-4 -mb-4 -mt-1 rounded-b-[30px] rounded-t-none border-x border-b border-[var(--koluj-border)] bg-[var(--koluj-bg)] p-3">
                   <div className="grid grid-cols-3 gap-2">
                     <Link
                       href={`/items/${item.id}/edit`}
