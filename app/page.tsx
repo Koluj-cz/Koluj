@@ -258,8 +258,8 @@ export default function HomePage() {
         </header>
 
         <section className="grid items-start gap-8 pt-2 pb-0 md:py-10 lg:grid-cols-[0.95fr_1.05fr]">
-          <div className="flex flex-col lg:h-[460px] xl:h-[500px]">
-            <h1 className="koluj-heading max-w-[16ch] xl:max-w-[18ch]">
+          <div className="flex flex-col lg:h-[430px]">
+            <h1 className="koluj-heading">
               <span className="md:hidden">Půjč si věc poblíž</span>
               <span className="hidden md:block">
                 Půjčuj si věci od lidí ve svém okolí
@@ -270,7 +270,7 @@ export default function HomePage() {
               Najdi věc poblíž a domluv půjčení přímo s majitelem.
             </p>
 
-            <div className="mt-6 hidden flex-wrap gap-3 pb-5 md:flex">
+            <div className="mt-5 hidden flex-wrap gap-2 text-sm font-bold text-[var(--koluj-green)] md:flex">
               <span className="rounded-full bg-white px-4 py-2 shadow-sm">
                 {totalItems} věcí k půjčení
               </span>
