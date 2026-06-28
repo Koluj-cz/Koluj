@@ -90,6 +90,7 @@ export default function ItemDetailPage() {
   const [borrowNote, setBorrowNote] = useState("");
   const [isWatchingAvailability, setIsWatchingAvailability] = useState(false);
   const [savingAvailabilityWatch, setSavingAvailabilityWatch] = useState(false);
+  const [submittingBorrowRequest, setSubmittingBorrowRequest] = useState(false);
 
   useEffect(() => {
     loadPage();
@@ -163,12 +164,14 @@ export default function ItemDetailPage() {
   }
 
   async function handleBorrowClick() {
-    if (!item) return;
+    if (!item || submittingBorrowRequest) return;
 
     if (!currentUserId) {
       router.push("/login");
       return;
     }
+
+    setSubmittingBorrowRequest(true);
 
     const response = await fetch("/api/loans/request", {
       method: "POST",
@@ -186,6 +189,7 @@ export default function ItemDetailPage() {
     const result = await response.json().catch(() => null);
 
     if (!response.ok) {
+      setSubmittingBorrowRequest(false);
       toast.error(result?.error || "Žádost se nepodařilo vytvořit");
 
       if (
@@ -353,11 +357,6 @@ export default function ItemDetailPage() {
                     </h1>
 
                     <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm font-bold text-[var(--koluj-muted)] md:text-base">
-                      <span className="flex items-center gap-2">
-                        <MapPin size={18} />
-                        {item.pickup_place}
-                      </span>
-
                       {item.condition && (
                         <span className="flex items-center gap-2">
                           <Star size={18} />
@@ -388,11 +387,22 @@ export default function ItemDetailPage() {
 
               <div className="relative flex min-h-[360px] items-center justify-center overflow-hidden bg-[var(--koluj-bg)] md:min-h-[560px]">
                 {selectedImage ? (
-                  <img
-                    src={selectedImage}
-                    alt={item.title}
-                    className="h-full max-h-[360px] w-full object-contain p-5 md:max-h-[560px] md:p-8"
-                  />
+                  <>
+                    <img
+                      src={selectedImage}
+                      alt=""
+                      aria-hidden="true"
+                      className="absolute inset-0 h-full w-full scale-110 object-cover opacity-35 blur-2xl"
+                    />
+
+                    <div className="absolute inset-0 bg-white/20" />
+
+                    <img
+                      src={selectedImage}
+                      alt={item.title}
+                      className="relative z-10 h-full max-h-[360px] w-full object-contain p-5 md:max-h-[560px] md:p-8"
+                    />
+                  </>
                 ) : (
                   <div className="flex h-full items-center justify-center text-[var(--koluj-muted)]">
                     Bez fotky
@@ -497,7 +507,7 @@ export default function ItemDetailPage() {
           </div>
 
           <aside className="min-w-0 space-y-5 md:space-y-6">
-            <div className="koluj-card p-5 md:p-8 lg:sticky lg:top-8">
+            <div className="koluj-card p-5 md:p-8">
               <div className="rounded-3xl bg-[var(--koluj-bg)] p-5">
                 <p className="text-sm font-bold text-[var(--koluj-muted)]">
                   Cena
@@ -552,6 +562,7 @@ export default function ItemDetailPage() {
                           type="date"
                           value={borrowFrom}
                           min={todayIso}
+                          disabled={submittingBorrowRequest}
                           onChange={(e) => {
                             const value = e.target.value;
 
@@ -572,6 +583,7 @@ export default function ItemDetailPage() {
                             type="date"
                             value={borrowTo}
                             min={borrowFrom || todayIso}
+                            disabled={submittingBorrowRequest}
                             onChange={(e) => {
                               const value = e.target.value;
 
@@ -593,9 +605,10 @@ export default function ItemDetailPage() {
                       <textarea
                         value={borrowNote}
                         maxLength={500}
+                        disabled={submittingBorrowRequest}
                         onChange={(e) => setBorrowNote(e.target.value)}
                         placeholder="Dobrý den, potřeboval bych věc půjčit od pátku do neděle. Hodilo by se Vám předání večer?"
-                        className="koluj-input min-h-[100px]"
+                        className="koluj-input min-h-[100px] disabled:opacity-70"
                       />
                     </label>
 
@@ -607,9 +620,10 @@ export default function ItemDetailPage() {
                   <button
                     type="button"
                     onClick={handleBorrowClick}
-                    className="koluj-button mt-6 w-full px-6 py-4"
+                    disabled={submittingBorrowRequest}
+                    className="koluj-button mt-6 w-full px-6 py-4 disabled:cursor-wait disabled:opacity-70"
                   >
-                    Půjčit si
+                    {submittingBorrowRequest ? "Odesílám žádost..." : "Půjčit si"}
                   </button>
                 </>
               )}
