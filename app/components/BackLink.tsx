@@ -18,12 +18,12 @@ export default function BackLink({
       className={`
         group
         inline-flex
-        h-14
         items-center
         gap-3
         rounded-2xl
         bg-white
-        pl-3
+        px-3
+        py-3
         pr-5
         text-base
         font-black
@@ -35,11 +35,13 @@ export default function BackLink({
         ${className}
       `}
     >
-      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-[var(--koluj-green)] transition group-hover:bg-[var(--koluj-green)] group-hover:text-white">
+      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-[var(--koluj-green)] transition-colors group-hover:bg-[var(--koluj-green)] group-hover:text-white">
         <ArrowLeft size={18} />
       </span>
 
-      <span className="whitespace-nowrap leading-none">{children}</span>
+      <span className="whitespace-nowrap leading-none">
+        {children}
+      </span>
     </Link>
   );
 }

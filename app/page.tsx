@@ -257,7 +257,7 @@ export default function HomePage() {
           </div>
         </header>
 
-        <section className="grid items-start gap-8 pt-2 pb-0 md:py-10 lg:grid-cols-[0.95fr_1.05fr]">
+        <section className="grid items-start gap-8 pt-6 pb-0 md:py-10 lg:grid-cols-[0.95fr_1.05fr]">
           <div className="flex flex-col lg:h-[430px]">
             <h1 className="koluj-heading">
               <span className="md:hidden">Půjč si věc poblíž</span>
