@@ -254,7 +254,7 @@ function ItemsPageContent() {
     <main className="min-h-screen">
       <div className="koluj-shell-wide">
         <header className="koluj-page-header">
-          <BackLink href="/">Zpět na hlavní stránku</BackLink>
+          <BackLink href="/">Zpět na hlavní</BackLink>
 
           <AuthHeaderButton />
         </header>

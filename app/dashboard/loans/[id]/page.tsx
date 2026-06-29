@@ -211,75 +211,87 @@ export default function LoanDetailPage() {
   }, [userId, loanId]);
 
   async function loadLoan(shouldScrollToBottom = true) {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    if (!user) {
+      if (!user) {
+        setLoan(null);
+        return;
+      }
+
+      setUserId(user.id);
+
+      const { data: loanData, error: loanError } = await supabase
+        .from("loans")
+        .select(`
+          *,
+          items (
+            id,
+            title,
+            primary_image_url,
+            pickup_place,
+            price_amount,
+            price_unit,
+            deposit
+          ),
+          owner:profiles!loans_owner_id_fkey (
+            id,
+            full_name,
+            avatar_url
+          ),
+          borrower:profiles!loans_borrower_id_fkey (
+            id,
+            full_name,
+            avatar_url
+          )
+        `)
+        .eq("id", loanId)
+        .single();
+
+      if (loanError || !loanData) {
+        console.error("Loan load error:", loanError);
+        toast.error("Půjčku se nepodařilo načíst");
+        setLoan(null);
+        return;
+      }
+
+      const { data: existingReview } = await supabase
+        .from("reviews")
+        .select("id")
+        .eq("loan_id", loanId)
+        .eq("reviewer_id", user.id)
+        .maybeSingle();
+
+      const { data: messagesData, error: messagesError } = await supabase
+        .from("loan_messages")
+        .select(`
+          *,
+          profiles (
+            full_name
+          )
+        `)
+        .eq("loan_id", loanId)
+        .order("created_at");
+
+      if (messagesError) {
+        console.error("Messages load error:", messagesError);
+      }
+
+      setReviewSent(!!existingReview);
+      setLoan(loanData as Loan);
+      setMessages((messagesData || []) as Message[]);
+
+      if (shouldScrollToBottom) {
+        setTimeout(() => scrollMessagesToBottom("auto"), 100);
+      }
+    } catch (error) {
+      console.error("Unexpected loan page error:", error);
+      toast.error("Stránku půjčky se nepodařilo načíst");
+      setLoan(null);
+    } finally {
       setLoading(false);
-      return;
-    }
-
-    setUserId(user.id);
-
-    const { data: loanData, error: loanError } = await supabase
-      .from("loans")
-      .select(`
-        *,
-        items (
-          id,
-          title,
-          primary_image_url,
-          pickup_place,
-          price_amount,
-          price_unit,
-          deposit
-        ),
-        owner:profiles!loans_owner_id_fkey (
-          id,
-          full_name,
-          avatar_url
-        ),
-        borrower:profiles!loans_borrower_id_fkey (
-          id,
-          full_name,
-          avatar_url
-        )
-      `)
-      .eq("id", loanId)
-      .single();
-
-    if (loanError || !loanData) {
-      toast.error("Půjčku se nepodařilo načíst");
-      setLoading(false);
-      return;
-    }
-
-    const { data: existingReview } = await supabase
-      .from("reviews")
-      .select("id")
-      .eq("loan_id", loanId)
-      .eq("reviewer_id", user.id)
-      .maybeSingle();
-
-    const { data: messagesData } = await supabase
-      .from("loan_messages")
-      .select(`
-        *,
-        profiles (
-          full_name
-        )
-      `)
-      .eq("loan_id", loanId)
-      .order("created_at");
-
-    setReviewSent(!!existingReview);
-    setLoan(loanData as Loan);
-    setMessages((messagesData || []) as Message[]);
-    setLoading(false);
-
-    if (shouldScrollToBottom) {
-      setTimeout(() => scrollMessagesToBottom("auto"), 100);
     }
   }
 
