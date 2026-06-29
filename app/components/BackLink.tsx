@@ -18,32 +18,28 @@ export default function BackLink({
       className={`
         group
         inline-flex
-        h-16
+        h-14
         items-center
-        gap-4
-        rounded-[32px]
+        gap-3
+        rounded-2xl
         bg-white
-        px-4
-        pr-8
-        text-xl
+        pl-3
+        pr-5
+        text-base
         font-black
         text-[var(--koluj-text)]
-        shadow-[0_8px_24px_rgba(31,31,26,0.10)]
-        transition-all
-        duration-200
+        shadow-sm
+        transition
         hover:-translate-y-0.5
-        hover:shadow-[0_12px_30px_rgba(31,31,26,0.14)]
+        hover:shadow-md
         ${className}
       `}
     >
-      <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--koluj-bg)] transition group-hover:bg-[var(--koluj-green)]">
-        <ArrowLeft
-          size={24}
-          className="text-[var(--koluj-green)] transition group-hover:text-white"
-        />
+      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-[var(--koluj-green)] transition group-hover:bg-[var(--koluj-green)] group-hover:text-white">
+        <ArrowLeft size={18} />
       </span>
 
-      <span>{children}</span>
+      <span className="whitespace-nowrap leading-none">{children}</span>
     </Link>
   );
 }
