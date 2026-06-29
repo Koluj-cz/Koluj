@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import PageLoader from "@/app/components/PageLoader";
+import BackLink from "@/app/components/BackLink";
 import {
   categoryLabels,
   conditionLabels,
@@ -15,7 +16,6 @@ import {
 import { formatDate, translatePriceUnit } from "@/lib/format";
 
 import {
-  ArrowLeft,
   CalendarDays,
   Check,
   Edit,
@@ -313,13 +313,7 @@ export default function ItemDetailPage() {
     <main className="min-h-screen">
       <div className="koluj-shell-wide">
         <header className="koluj-page-header">
-          <Link
-            href="/items"
-            className="flex items-center gap-2 font-bold text-[var(--koluj-green)]"
-          >
-            <ArrowLeft size={20} />
-            Zpět na věci
-          </Link>
+          <BackLink href="/items">Zpět na věci</BackLink>
 
         {currentUserId ? (
           isOwner ? (

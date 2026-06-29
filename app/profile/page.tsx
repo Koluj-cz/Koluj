@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft, Mail, MapPin, Phone, User } from "lucide-react";
+import { Mail, MapPin, Phone, User } from "lucide-react";
+import BackLink from "@/app/components/BackLink";
 import { supabase } from "@/lib/supabase";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
@@ -222,13 +222,7 @@ export default function ProfilePage() {
     <main className="min-h-screen pb-24 lg:pb-0">
       <div className="koluj-shell">
         <header className="mb-8 flex items-center justify-between">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 font-bold text-[var(--koluj-green)]"
-          >
-            <ArrowLeft size={20} />
-            Dashboard
-          </Link>
+          <BackLink href="/dashboard">Dashboard</BackLink>
 
           <button
             onClick={saveProfile}

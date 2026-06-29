@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  ArrowLeft,
   Box,
   Eye,
   EyeOff,
@@ -15,6 +14,7 @@ import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
 import ItemCard, { type ItemCardItem } from "@/app/components/ItemCard";
 import AddItemButton from "@/app/components/AddItemButton";
+import BackLink from "@/app/components/BackLink";
 import PageLoader from "@/app/components/PageLoader";
 
 type Item = ItemCardItem & {
@@ -196,13 +196,7 @@ export default function MyItemsPage() {
     <main className="min-h-screen">
       <div className="koluj-shell">
         <header className="koluj-page-header">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 font-bold text-[var(--koluj-green)]"
-          >
-            <ArrowLeft size={20} />
-            Dashboard
-          </Link>
+          <BackLink href="/dashboard">Dashboard</BackLink>
 
           <AddItemButton
             className="koluj-button flex items-center gap-2 px-6 py-3"

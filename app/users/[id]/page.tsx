@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
-import { ArrowLeft, MapPin, ShieldCheck, Star } from "lucide-react";
+import { MapPin, ShieldCheck, Star } from "lucide-react";
+import BackLink from "@/app/components/BackLink";
 import { supabase } from "@/lib/supabase";
 import ItemCard, { type ItemCardItem } from "@/app/components/ItemCard";
 import { useParams } from "next/navigation";
@@ -127,13 +127,7 @@ export default function UserProfilePage() {
     return (
       <main className="min-h-screen">
         <div className="koluj-shell">
-          <Link
-            href="/"
-            className="flex items-center gap-2 font-bold text-[var(--koluj-green)]"
-          >
-            <ArrowLeft size={18} />
-            Zpět
-          </Link>
+          <BackLink href="/">Zpět</BackLink>
 
           <div className="koluj-card mt-10 p-8">
             Uživatel nebyl nalezen.
@@ -162,13 +156,7 @@ export default function UserProfilePage() {
     <main className="min-h-screen">
       <div className="koluj-shell-wide">
         <header className="koluj-page-header">
-          <Link
-            href="/items"
-            className="flex items-center gap-2 font-bold text-[var(--koluj-green)]"
-          >
-            <ArrowLeft size={18} />
-            Zpět na věci
-          </Link>
+          <BackLink href="/items">Zpět na věci</BackLink>
 
           <AuthHeaderButton />
         </header>

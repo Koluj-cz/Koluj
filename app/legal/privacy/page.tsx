@@ -1,17 +1,10 @@
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import BackLink from "@/app/components/BackLink";
 
 export default function PrivacyPage() {
   return (
     <main className="min-h-screen">
       <div className="koluj-shell max-w-5xl py-12">
-        <Link
-          href="/"
-          className="inline-flex items-center gap-2 font-bold text-[var(--koluj-green)]"
-        >
-          <ArrowLeft size={18} />
-          Zpět na hlavní stránku
-        </Link>
+        <BackLink href="/">Zpět na hlavní stránku</BackLink>
 
         <section className="koluj-card mt-10 p-6 md:p-10">
           <p className="text-sm font-black uppercase tracking-widest text-[var(--koluj-green)]">

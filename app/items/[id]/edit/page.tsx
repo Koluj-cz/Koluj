@@ -2,9 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import {
-  ArrowLeft,
   Check,
   MapPin,
   Package,
@@ -19,6 +17,7 @@ import { supabase } from "@/lib/supabase";
 import imageCompression from "browser-image-compression";
 import RichTextEditor from "@/app/components/RichTextEditor";
 import PageLoader from "@/app/components/PageLoader";
+import BackLink from "@/app/components/BackLink";
 import {
   categories,
   categoryLabels,
@@ -448,13 +447,7 @@ async function makePrimary(imageUrl: string) {
     <main className="min-h-screen pb-24 lg:pb-0">
       <div className="koluj-shell">
         <header className="mb-8 flex items-center justify-between">
-          <Link
-            href="/dashboard/my-items"
-            className="flex items-center gap-2 font-bold text-[var(--koluj-green)]"
-          >
-            <ArrowLeft size={20} />
-            Moje věci
-          </Link>
+          <BackLink href="/dashboard/my-items">Moje věci</BackLink>
 
           <button
             onClick={saveItem}

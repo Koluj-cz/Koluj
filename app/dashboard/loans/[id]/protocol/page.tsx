@@ -1,10 +1,10 @@
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { createServerClient } from "@supabase/ssr";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import BackLink from "@/app/components/BackLink";
 import PrintButton from "@/app/components/PrintButton";
 import { categoryLabels } from "@/lib/constants";
+import { translatePriceUnit } from "@/lib/format";
 
 type Profile = {
   id: string;
@@ -38,7 +38,7 @@ type PageProps = {
 };
 
 function valueOrLine(value?: string | number | null) {
-  if (value === null || value === undefined || value === "") return "_______________________";
+  if (value === null || value === undefined || value === "") return "—";
   return value;
 }
 
@@ -120,7 +120,7 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
     notFound();
   }
 
-  const loan = data as unknown as Loan;
+  const loan = data as Loan;
 
   if (loan.owner_id !== user.id) {
     redirect(`/dashboard/loans/${loan.id}`);
@@ -130,23 +130,21 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
     ? categoryLabels[loan.items.category] || loan.items.category
     : "—";
 
+  const priceLabel = `${loan.items?.price_amount || 0} Kč${
+    loan.items?.price_unit ? ` / ${translatePriceUnit(loan.items.price_unit)}` : ""
+  }`;
+
   return (
     <main className="min-h-screen bg-[#efebdd] print:bg-white">
       <div className="mx-auto max-w-[980px] px-4 py-8 print:hidden">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <Link
-            href={`/dashboard/loans/${loan.id}`}
-            className="flex items-center gap-2 font-bold text-[var(--koluj-green)]"
-          >
-            <ArrowLeft size={18} />
-            Zpět na půjčku
-          </Link>
+          <BackLink href={`/dashboard/loans/${loan.id}`}>Zpět na půjčku</BackLink>
 
-<PrintButton />
+          <PrintButton />
         </div>
       </div>
 
-      <article className="mx-auto mb-10 max-w-[794px] bg-white p-8 text-[10px] leading-tight text-black shadow-sm print:mb-0 print:max-w-none print:p-0 print:text-[9.5px] print:shadow-none">
+      <article className="mx-auto mb-10 max-w-[794px] bg-white p-10 text-[11px] leading-tight text-black shadow-sm print:mb-0 print:max-w-none print:p-0 print:shadow-none">
         <header className="mb-6 flex items-start justify-between border-b border-black pb-4">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.28em]">KOLUJ</p>
@@ -170,7 +168,7 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
             <p><strong>ID půjčky:</strong> {loan.id}</p>
             <p><strong>Název věci:</strong> {valueOrLine(loan.items?.title)}</p>
             <p><strong>Kategorie:</strong> {categoryLabel}</p>
-            <p><strong>Celková cena půjčení:</strong> _______________________ Kč</p>
+            <p><strong>Cena půjčení:</strong> {priceLabel}</p>
             <p><strong>Kauce:</strong> {loan.items?.deposit || 0} Kč</p>
             <p><strong>Místo předání:</strong> {valueOrLine(loan.items?.pickup_place)}</p>
           </div>
@@ -180,7 +178,7 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
           <div>
             <h2 className="mb-2 text-sm font-black uppercase">2. Vlastník</h2>
             <div className="space-y-1">
-              <p><strong>Jméno:</strong> _______________________</p>
+              <p><strong>Jméno:</strong> {valueOrLine(loan.owner?.full_name)}</p>
               <p><strong>Telefon:</strong> {valueOrLine(loan.owner?.phone)}</p>
               <p><strong>E-mail:</strong> {valueOrLine(loan.owner?.email)}</p>
             </div>
@@ -189,7 +187,7 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
           <div>
             <h2 className="mb-2 text-sm font-black uppercase">3. Půjčující</h2>
             <div className="space-y-1">
-              <p><strong>Jméno:</strong> _______________________</p>
+              <p><strong>Jméno:</strong> {valueOrLine(loan.borrower?.full_name)}</p>
               <p><strong>Telefon:</strong> {valueOrLine(loan.borrower?.phone)}</p>
               <p><strong>E-mail:</strong> {valueOrLine(loan.borrower?.email)}</p>
             </div>
@@ -218,9 +216,24 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
           </div>
         </section>
 
+        <section className="mb-5">
+          <h2 className="mb-2 text-sm font-black uppercase">6. Předané příslušenství</h2>
+          <div className="grid grid-cols-3 gap-2">
+            <Checkbox label="Nabíječka" />
+            <Checkbox label="Klíče" />
+            <Checkbox label="Kufr / obal" />
+            <Checkbox label="Manuál" />
+            <Checkbox label="Baterie" />
+            <Checkbox label="Jiné" />
+          </div>
+          <div className="mt-2">
+            <WriteBox label="Upřesnění příslušenství:" height="h-12" />
+          </div>
+        </section>
+
         <section className="mb-5 grid grid-cols-2 gap-8">
           <div>
-            <h2 className="mb-2 text-sm font-black uppercase">6. Fotodokumentace</h2>
+            <h2 className="mb-2 text-sm font-black uppercase">7. Fotodokumentace</h2>
             <div className="space-y-2">
               <Checkbox label="Fotografie byly pořízeny při předání" />
               <Checkbox label="Fotografie nebyly pořízeny" />
@@ -228,7 +241,7 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
           </div>
 
           <div>
-            <h2 className="mb-2 text-sm font-black uppercase">7. Kauce</h2>
+            <h2 className="mb-2 text-sm font-black uppercase">8. Kauce</h2>
             <div className="space-y-2">
               <Checkbox label="Kauce převzata v hotovosti" />
               <Checkbox label="Kauce uhrazena převodem" />
@@ -238,7 +251,7 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
         </section>
 
         <section className="mb-5">
-          <h2 className="mb-2 text-sm font-black uppercase">8. Prohlášení půjčujícího</h2>
+          <h2 className="mb-2 text-sm font-black uppercase">9. Prohlášení půjčujícího</h2>
           <p className="leading-relaxed">
             Potvrzuji, že jsem převzal/a uvedenou věc ve stavu popsaném v tomto
             protokolu. Byl/a jsem seznámen/a s jejím používáním a zavazuji se ji vrátit
@@ -248,11 +261,11 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
         </section>
 
         <section className="mb-8">
-          <h2 className="mb-2 text-sm font-black uppercase">9. Poznámky</h2>
+          <h2 className="mb-2 text-sm font-black uppercase">10. Poznámky</h2>
           <WriteBox label="Další ujednání / poznámky:" height="h-16" />
         </section>
 
-        <section className="mt-6 grid grid-cols-2 gap-14 text-xs">
+        <section className="mt-10 grid grid-cols-2 gap-14 text-sm">
           <div>
             <div className="border-t border-black pt-3">Podpis vlastníka</div>
           </div>
@@ -261,9 +274,10 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
           </div>
         </section>
 
-        <footer className="mt-5 border-t border-black pt-2 text-[8px] leading-tight">
-          Tento protokol byl vytvořen prostřednictvím platformy KOLUJ a potvrzuje fyzické
-          předání předmětu půjčky mezi oběma stranami.
+        <footer className="mt-8 border-t border-black pt-3 text-[9px] leading-relaxed">
+          Tento protokol byl vytvořen prostřednictvím platformy KOLUJ.cz a potvrzuje
+          fyzické předání předmětu půjčky mezi oběma stranami. Protokol nenahrazuje
+          zákonné povinnosti stran ani případná další individuální ujednání.
         </footer>
       </article>
     </main>

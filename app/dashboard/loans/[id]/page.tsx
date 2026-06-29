@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Printer, Send } from "lucide-react";
+import { Printer, Send } from "lucide-react";
+import BackLink from "@/app/components/BackLink";
 import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
 import PageLoader from "@/app/components/PageLoader";
@@ -479,13 +480,7 @@ export default function LoanDetailPage() {
     <main className="min-h-screen">
       <div className="koluj-shell">
         <header className="mb-10">
-          <Link
-            href="/dashboard/loans"
-            className="flex items-center gap-2 font-bold text-[var(--koluj-green)]"
-          >
-            <ArrowLeft size={18} />
-            Půjčky
-          </Link>
+          <BackLink href="/dashboard/loans">Půjčky</BackLink>
         </header>
 
         <div className="grid gap-8 lg:grid-cols-[360px_1fr]">

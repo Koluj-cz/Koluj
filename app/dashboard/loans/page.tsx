@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, CalendarDays } from "lucide-react";
+import { CalendarDays } from "lucide-react";
+import BackLink from "@/app/components/BackLink";
 import { supabase } from "@/lib/supabase";
 import PageLoader from "@/app/components/PageLoader";
 import {
@@ -123,13 +124,7 @@ export default function LoansPage() {
     <main className="min-h-screen">
       <div className="koluj-shell">
         <header className="mb-10">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 font-bold text-[var(--koluj-green)]"
-          >
-            <ArrowLeft size={18} />
-            Dashboard
-          </Link>
+          <BackLink href="/dashboard">Dashboard</BackLink>
         </header>
 
         <div>

@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Bell } from "lucide-react";
+import { Bell } from "lucide-react";
+import BackLink from "@/app/components/BackLink";
 import { supabase } from "@/lib/supabase";
 import PageLoader from "@/app/components/PageLoader";
 
@@ -80,13 +81,7 @@ export default function NotificationsPage() {
     <main className="min-h-screen">
       <div className="koluj-shell">
         <header className="mb-10">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 font-bold text-[var(--koluj-green)]"
-          >
-            <ArrowLeft size={18} />
-            Dashboard
-          </Link>
+          <BackLink href="/dashboard">Dashboard</BackLink>
         </header>
 
         <div className="flex items-center gap-3">

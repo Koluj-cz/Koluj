@@ -2,9 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
-  ArrowLeft,
   Camera,
   Check,
   MapPin,
@@ -18,6 +16,7 @@ import { supabase } from "@/lib/supabase";
 import { useEffect } from "react";
 import imageCompression from "browser-image-compression";
 import RichTextEditor from "@/app/components/RichTextEditor";
+import BackLink from "@/app/components/BackLink";
 import {
   categories,
   categoryLabels,
@@ -388,13 +387,7 @@ export default function NewItemPage() {
     <main className="min-h-screen pb-24 lg:pb-0">
       <div className="koluj-shell">
         <header className="mb-8 flex items-center justify-between">
-          <Link
-            href="/dashboard"
-            className="flex items-center gap-2 font-bold text-[var(--koluj-green)]"
-          >
-            <ArrowLeft size={20} />
-            Dashboard
-          </Link>
+          <BackLink href="/dashboard">Dashboard</BackLink>
 
         <button
           onClick={handleSubmit}

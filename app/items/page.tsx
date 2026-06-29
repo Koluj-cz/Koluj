@@ -2,9 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
 import {
-  ArrowLeft,
   LocateFixed,
   Map,
   Search,
@@ -15,6 +13,7 @@ import { supabase } from "@/lib/supabase";
 import ItemCard, { type ItemCardItem } from "@/app/components/ItemCard";
 import AuthHeaderButton from "@/app/components/AuthHeaderButton";
 import PageLoader from "@/app/components/PageLoader";
+import BackLink from "@/app/components/BackLink";
 import {
   categories,
   categoryLabels,
@@ -255,13 +254,7 @@ function ItemsPageContent() {
     <main className="min-h-screen">
       <div className="koluj-shell-wide">
         <header className="koluj-page-header">
-          <Link
-            href="/"
-            className="flex items-center gap-2 font-bold text-[var(--koluj-green)]"
-          >
-            <ArrowLeft size={20} />
-            Zpět na hlavní stránku
-          </Link>
+          <BackLink href="/">Zpět na hlavní stránku</BackLink>
 
           <AuthHeaderButton />
         </header>

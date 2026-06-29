@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
+import BackLink from "@/app/components/BackLink";
 import { supabase } from "@/lib/supabase";
 import toast from "react-hot-toast";
 
@@ -44,13 +45,7 @@ export default function LoginPage() {
     <main className="min-h-screen">
       <div className="koluj-shell">
         <header className="mb-10 flex items-center justify-between">
-          <Link
-            href="/"
-            className="flex items-center gap-2 font-bold text-[var(--koluj-green)]"
-          >
-            <ArrowLeft size={20} />
-            Zpět na hlavní stránku
-          </Link>
+          <BackLink href="/">Zpět na hlavní stránku</BackLink>
 
           <Link
             href="/"
