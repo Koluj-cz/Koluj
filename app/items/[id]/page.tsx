@@ -495,9 +495,11 @@ export default function ItemDetailPage() {
             </div>
 
             {item.pickup_latitude && item.pickup_longitude && (
-              <div className="koluj-card overflow-hidden p-0">
-                <div className="relative h-[420px]">
-                  <ItemsMap items={mapItems} userLocation={null} />
+              <div className="hidden lg:block">
+                <div className="koluj-card overflow-hidden p-0">
+                  <div className="relative h-[420px]">
+                    <ItemsMap items={mapItems} userLocation={null} />
+                  </div>
                 </div>
               </div>
             )}
@@ -706,6 +708,16 @@ export default function ItemDetailPage() {
             </div>
           </aside>
         </section>
+
+        {item.pickup_latitude && item.pickup_longitude && (
+          <div className="mt-8 lg:hidden">
+            <div className="koluj-card overflow-hidden p-0">
+              <div className="relative h-[320px]">
+                <ItemsMap items={mapItems} userLocation={null} />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </main>
   );
