@@ -97,67 +97,83 @@ export default function ItemDetailPage() {
   }, []);
 
   async function loadPage() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
 
-    setCurrentUserId(user?.id || null);
+      setCurrentUserId(user?.id || null);
 
-    const { data, error } = await supabase
-      .from("items")
-      .select(
-        `
-        *,
-        profiles:profiles!items_owner_id_fkey (
-          full_name,
-          avatar_url,
-          is_verified,
-          is_seed_user,
-          profile_ratings (
-            rating_avg,
-            rating_count
+      const { data, error } = await supabase
+        .from("items")
+        .select(
+          `
+          *,
+          profiles:profiles!items_owner_id_fkey (
+            full_name,
+            avatar_url,
+            is_verified,
+            is_seed_user,
+            profile_ratings (
+              rating_avg,
+              rating_count
+            )
           )
+          `
         )
-        `
-      )
-      .eq("id", itemId)
-      .is("deleted_at", null)
-      .single();
+        .eq("id", itemId)
+        .is("deleted_at", null)
+        .single();
 
-    if (error || !data) {
-      toast.error("Věc se nepodařilo načíst");
-      router.push("/items");
-      return;
-    }
+      if (error || !data) {
+        console.error("Item load error:", error);
+        toast.error("Věc se nepodařilo načíst");
+        router.push("/items");
+        return;
+      }
 
-    await supabase.rpc("increment_item_views", {
-      item_id_input: itemId,
-    });
+      await supabase.rpc("increment_item_views", {
+        item_id_input: itemId,
+      });
 
-    const { data: imageData } = await supabase
-      .from("item_images")
-      .select("*")
-      .eq("item_id", itemId)
-      .order("sort_order", { ascending: true });
+      setItem({
+        ...(data as ItemDetail),
+        views_count: Number(data.views_count || 0) + 1,
+      });
 
-    setImages(imageData || []);
-    setSelectedImage(
-      data.primary_image_url || imageData?.[0]?.image_url || ""
-    );
-
-    if (user?.id) {
-      const { data: watcherData } = await supabase
-        .from("item_availability_watchers")
-        .select("id")
+      const { data: imageData, error: imageError } = await supabase
+        .from("item_images")
+        .select("*")
         .eq("item_id", itemId)
-        .eq("user_id", user.id)
-        .is("notified_at", null)
-        .maybeSingle();
+        .order("sort_order", { ascending: true });
 
-      setIsWatchingAvailability(Boolean(watcherData));
+      if (imageError) {
+        console.error("Item images load error:", imageError);
+      }
+
+      setImages(imageData || []);
+      setSelectedImage(
+        data.primary_image_url || imageData?.[0]?.image_url || ""
+      );
+
+      if (user?.id) {
+        const { data: watcherData } = await supabase
+          .from("item_availability_watchers")
+          .select("id")
+          .eq("item_id", itemId)
+          .eq("user_id", user.id)
+          .is("notified_at", null)
+          .maybeSingle();
+
+        setIsWatchingAvailability(Boolean(watcherData));
+      }
+    } catch (error) {
+      console.error("Unexpected item detail error:", error);
+      toast.error("Detail věci se nepodařilo načíst");
+      router.push("/items");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   async function handleBorrowClick() {
@@ -198,11 +214,6 @@ export default function ItemDetailPage() {
 
       return;
     }
-
-    setItem({
-      ...item,
-      status: "reserved",
-    });
 
     toast.success("Žádost o půjčení byla odeslána");
     router.push(`/dashboard/loans/${result.loanId}`);
@@ -482,6 +493,14 @@ export default function ItemDetailPage() {
                 />
               </div>
             </div>
+
+            {item.pickup_latitude && item.pickup_longitude && (
+              <div className="koluj-card overflow-hidden p-0">
+                <div className="relative h-[420px]">
+                  <ItemsMap items={mapItems} userLocation={null} />
+                </div>
+              </div>
+            )}
           </div>
 
           <aside className="min-w-0 space-y-5 md:space-y-6">
@@ -686,13 +705,6 @@ export default function ItemDetailPage() {
               )}
             </div>
           </aside>
-            {item.pickup_latitude && item.pickup_longitude && (
-              <div className="koluj-card overflow-hidden p-0">
-                <div className="relative h-[420px]">
-                  <ItemsMap items={mapItems} userLocation={null} />
-                </div>
-              </div>
-            )}
         </section>
       </div>
     </main>
