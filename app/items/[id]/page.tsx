@@ -340,33 +340,29 @@ export default function ItemDetailPage() {
           <div className="space-y-6">
             <div className="overflow-hidden rounded-[34px] bg-[var(--koluj-surface)] shadow-[0_18px_55px_rgba(31,31,26,0.12)]">
               <div className="border-b border-[var(--koluj-border)] px-5 py-6 md:px-8 md:py-7">
-                <div className="flex flex-col gap-5 md:flex-row md:items-start md:justify-between">
-                  <div className="min-w-0">
+                <div>
+                  <div className="flex items-start justify-between gap-4">
                     <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
                       {categoryLabels[item.category] || item.category}
                     </p>
 
-                    <h1 className="mt-2 max-w-4xl text-4xl font-black leading-none tracking-tight md:text-6xl">
-                      {item.title}
-                    </h1>
-
-                    <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm font-bold text-[var(--koluj-muted)] md:text-base">
-                      {item.condition && (
-                        <span className="flex items-center gap-2">
-                          <Star size={18} />
-                          {conditionLabels[item.condition] || item.condition}
-                        </span>
-                      )}
-
-                    </div>
-                  </div>
-
-                  <div className="flex shrink-0 flex-row items-center gap-3 md:flex-col md:items-end">
-                    <span className={`koluj-status-badge ${statusClass}`}>
+                    <span className={`koluj-status-badge shrink-0 ${statusClass}`}>
                       {statusLabel}
                     </span>
-
                   </div>
+
+                  <h1 className="mt-4 max-w-4xl text-4xl font-black leading-none tracking-tight md:text-6xl">
+                    {item.title}
+                  </h1>
+
+                  {item.condition && (
+                    <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm font-bold text-[var(--koluj-muted)] md:text-base">
+                      <span className="flex items-center gap-2">
+                        <Star size={18} />
+                        {conditionLabels[item.condition] || item.condition}
+                      </span>
+                    </div>
+                  )}
                 </div>
               </div>
 

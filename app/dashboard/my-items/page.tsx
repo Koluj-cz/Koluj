@@ -322,11 +322,11 @@ export default function MyItemsPage() {
                 )}
 
 
-                <div className="-mx-4 -mb-4 -mt-1 rounded-b-[30px] rounded-t-none bg-[var(--koluj-bg)] px-3 pb-3 pt-3">
-                  <div className="grid grid-cols-3 gap-2">
+                <div className="-mx-6 -mb-6 mt-6 border-t border-black/5 bg-[var(--koluj-bg)] px-6 py-5">
+                  <div className="grid grid-cols-3 gap-3">
                     <Link
                       href={`/items/${item.id}/edit`}
-                      className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl bg-white/85 px-2 py-2 text-center text-xs font-black leading-tight shadow-sm transition hover:bg-white"
+                      className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl border border-black/5 bg-[var(--koluj-bg)] px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-text)] transition hover:bg-[#e8e3d1]"
                     >
                       <Pencil size={17} />
                       Upravit
@@ -335,7 +335,7 @@ export default function MyItemsPage() {
                     <button
                       type="button"
                       onClick={() => toggleVisibility(item)}
-                      className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl bg-white/85 px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-green)] shadow-sm transition hover:bg-white"
+                      className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl border border-black/5 bg-[var(--koluj-bg)] px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-green)] transition hover:bg-[#e8e3d1]"
                     >
                       {item.is_active ? (
                         <>
@@ -354,10 +354,10 @@ export default function MyItemsPage() {
                       type="button"
                       onClick={() => archiveItem(item)}
                       onMouseLeave={() => setPendingDeleteId(null)}
-                      className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight shadow-sm transition ${
+                      className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl border px-2 py-2 text-center text-xs font-black leading-tight transition ${
                         pendingDeleteId === item.id
-                          ? "bg-red-50 text-red-600"
-                          : "bg-white/85 text-[var(--koluj-muted)] hover:bg-white"
+                          ? "border-red-200 bg-red-50 text-red-600"
+                          : "border-black/5 bg-[var(--koluj-bg)] text-[var(--koluj-muted)] hover:bg-[#e8e3d1]"
                       }`}
                     >
                       <Trash2 size={17} />
