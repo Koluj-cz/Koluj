@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Send } from "lucide-react";
+import { ArrowLeft, Printer, Send } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
 import PageLoader from "@/app/components/PageLoader";
@@ -559,6 +559,17 @@ export default function LoanDetailPage() {
                 </p>
                 <p><strong>Kauce:</strong> {loan.items?.deposit || 0} Kč</p>
               </div>
+
+              {isOwner && (
+                <Link
+                  href={`/dashboard/loans/${loan.id}/protocol`}
+                  target="_blank"
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-[24px] bg-white px-5 py-4 font-black text-[var(--koluj-green)] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                >
+                  <Printer size={18} />
+                  Vytisknout protokol o předání
+                </Link>
+              )}
             </div>
           </aside>
 
