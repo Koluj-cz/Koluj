@@ -322,29 +322,29 @@ export default function MyItemsPage() {
                 )}
 
 
-                <div className="-mx-6 -mb-6 mt-6 border-t border-black/5 bg-[var(--koluj-bg)] px-6 py-5">
-                  <div className="grid grid-cols-3 gap-3">
+                <div className="-mx-6 -mb-6 mt-0 rounded-b-[32px] border-t border-black/5 bg-[var(--koluj-surface)] px-5 py-4">
+                  <div className="grid grid-cols-3 gap-1">
                     <Link
                       href={`/items/${item.id}/edit`}
-                      className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl border border-black/5 bg-[var(--koluj-bg)] px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-text)] transition hover:bg-[#e8e3d1]"
+                      className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-text)] transition hover:bg-[var(--koluj-bg)]"
                     >
-                      <Pencil size={17} />
+                      <Pencil size={18} />
                       Upravit
                     </Link>
 
                     <button
                       type="button"
                       onClick={() => toggleVisibility(item)}
-                      className="flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl border border-black/5 bg-[var(--koluj-bg)] px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-green)] transition hover:bg-[#e8e3d1]"
+                      className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-green)] transition hover:bg-[var(--koluj-bg)]"
                     >
                       {item.is_active ? (
                         <>
-                          <EyeOff size={17} />
+                          <EyeOff size={18} />
                           Skrýt
                         </>
                       ) : (
                         <>
-                          <Eye size={17} />
+                          <Eye size={18} />
                           Obnovit
                         </>
                       )}
@@ -354,16 +354,14 @@ export default function MyItemsPage() {
                       type="button"
                       onClick={() => archiveItem(item)}
                       onMouseLeave={() => setPendingDeleteId(null)}
-                      className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-2xl border px-2 py-2 text-center text-xs font-black leading-tight transition ${
+                      className={`flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight transition ${
                         pendingDeleteId === item.id
-                          ? "border-red-200 bg-red-50 text-red-600"
-                          : "border-black/5 bg-[var(--koluj-bg)] text-[var(--koluj-muted)] hover:bg-[#e8e3d1]"
+                          ? "bg-red-50 text-red-600"
+                          : "text-[var(--koluj-muted)] hover:bg-[var(--koluj-bg)]"
                       }`}
                     >
-                      <Trash2 size={17} />
-                      {pendingDeleteId === item.id
-                        ? "Opravdu?"
-                        : "Odstranit"}
+                      <Trash2 size={18} />
+                      {pendingDeleteId === item.id ? "Opravdu?" : "Odstranit"}
                     </button>
                   </div>
                 </div>
