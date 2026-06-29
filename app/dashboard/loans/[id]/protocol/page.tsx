@@ -180,7 +180,7 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
           <div>
             <h2 className="mb-2 text-sm font-black uppercase">2. Vlastník</h2>
             <div className="space-y-1">
-              <p><strong>Jméno:</strong> {valueOrLine(loan.owner?.full_name)}</p>
+              <p><strong>Jméno:</strong> _______________________</p>
               <p><strong>Telefon:</strong> {valueOrLine(loan.owner?.phone)}</p>
               <p><strong>E-mail:</strong> {valueOrLine(loan.owner?.email)}</p>
             </div>
