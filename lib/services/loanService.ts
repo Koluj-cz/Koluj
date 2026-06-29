@@ -259,7 +259,7 @@ Kauce: ${item.deposit || 0} Kč${note?.trim() ? `\n\nPoznámka: ${note.trim()}` 
 
   if (itemUpdateError) {
     throw new Error(itemUpdateError.message);
-  }
+  } 
 
   await notifyUserServer({
     userId: item.owner_id,
