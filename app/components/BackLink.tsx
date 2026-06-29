@@ -25,7 +25,7 @@ export default function BackLink({
         px-3
         py-2
         pr-5
-        text-sm
+        text-lg
         font-black
         text-[var(--koluj-text)]
         shadow-sm
@@ -39,7 +39,7 @@ export default function BackLink({
         <ArrowLeft size={16} />
       </span>
 
-      <span className="whitespace-nowrap leading-none">
+      <span className="whitespace-nowrap leading-none text-lg">
         {children}
       </span>
     </Link>
