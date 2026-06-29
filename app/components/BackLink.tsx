@@ -19,13 +19,13 @@ export default function BackLink({
         group
         inline-flex
         items-center
-        gap-3
+        gap-2
         rounded-2xl
         bg-white
         px-3
-        py-3
+        py-2
         pr-5
-        text-base
+        text-sm
         font-black
         text-[var(--koluj-text)]
         shadow-sm
@@ -35,8 +35,8 @@ export default function BackLink({
         ${className}
       `}
     >
-      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-[var(--koluj-green)] transition-colors group-hover:bg-[var(--koluj-green)] group-hover:text-white">
-        <ArrowLeft size={18} />
+      <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-[var(--koluj-green)] transition group-hover:bg-[var(--koluj-green)] group-hover:text-white">
+        <ArrowLeft size={16} />
       </span>
 
       <span className="whitespace-nowrap leading-none">
