@@ -227,11 +227,11 @@ export async function requestLoanServer({
       status: "requested",
       date_from: dateFrom,
       date_to: dateTo,
-      price_amount: item.price_amount,
-      deposit_amount: item.deposit,
-      total_price: item.price_amount,
+      price_amount: item.price_amount ?? 0,
+      deposit_amount: item.deposit ?? 0,
+      total_price: item.price_amount ?? 0,
       platform_fee: 0,
-      owner_earnings: item.price_amount,
+      owner_earnings: item.price_amount ?? 0,
     })
     .select("id")
     .single();
