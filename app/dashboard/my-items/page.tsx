@@ -310,62 +310,62 @@ export default function MyItemsPage() {
               {visibleItems.map((item) => {
 
                 return (
-              <ItemCard
-                key={item.id}
-                item={item}
-                variant="owner"
-              >
-                {!item.is_active && (
-                  <p className="mb-3 rounded-2xl bg-[var(--koluj-bg)] px-4 py-2 text-sm font-bold text-[var(--koluj-muted)]">
-                    Skryto pro ostatní
-                  </p>
-                )}
-
-
-                <div className="-mx-6 -mb-6 mt-0 rounded-b-[32px] bg-white px-5 py-4">
-                  <div className="grid grid-cols-3 gap-1">
-                    <Link
-                      href={`/items/${item.id}/edit`}
-                      className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-text)] transition hover:bg-[var(--koluj-bg)]"
-                    >
-                      <Pencil size={18} />
-                      Upravit
-                    </Link>
-
-                    <button
-                      type="button"
-                      onClick={() => toggleVisibility(item)}
-                      className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-green)] transition hover:bg-[var(--koluj-bg)]"
-                    >
-                      {item.is_active ? (
-                        <>
-                          <EyeOff size={18} />
-                          Skrýt
-                        </>
-                      ) : (
-                        <>
-                          <Eye size={18} />
-                          Obnovit
-                        </>
+                <ItemCard
+                  key={item.id}
+                  item={item}
+                  variant="owner"
+                  footer={
+                    <>
+                      {!item.is_active && (
+                        <p className="mb-3 rounded-2xl bg-[var(--koluj-bg)] px-4 py-2 text-sm font-bold text-[var(--koluj-muted)]">
+                          Skryto pro ostatní
+                        </p>
                       )}
-                    </button>
 
-                    <button
-                      type="button"
-                      onClick={() => archiveItem(item)}
-                      onMouseLeave={() => setPendingDeleteId(null)}
-                      className={`flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight transition ${
-                        pendingDeleteId === item.id
-                          ? "bg-red-50 text-red-600"
-                          : "text-[var(--koluj-muted)] hover:bg-[var(--koluj-bg)]"
-                      }`}
-                    >
-                      <Trash2 size={18} />
-                      {pendingDeleteId === item.id ? "Opravdu?" : "Odstranit"}
-                    </button>
-                  </div>
-                </div>
-              </ItemCard>
+                      <div className="grid grid-cols-3 gap-1">
+                        <Link
+                          href={`/items/${item.id}/edit`}
+                          className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-text)] transition hover:bg-[var(--koluj-bg)]"
+                        >
+                          <Pencil size={18} />
+                          Upravit
+                        </Link>
+
+                        <button
+                          type="button"
+                          onClick={() => toggleVisibility(item)}
+                          className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-green)] transition hover:bg-[var(--koluj-bg)]"
+                        >
+                          {item.is_active ? (
+                            <>
+                              <EyeOff size={18} />
+                              Skrýt
+                            </>
+                          ) : (
+                            <>
+                              <Eye size={18} />
+                              Obnovit
+                            </>
+                          )}
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={() => archiveItem(item)}
+                          onMouseLeave={() => setPendingDeleteId(null)}
+                          className={`flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight transition ${
+                            pendingDeleteId === item.id
+                              ? "bg-red-50 text-red-600"
+                              : "text-[var(--koluj-muted)] hover:bg-[var(--koluj-bg)]"
+                          }`}
+                        >
+                          <Trash2 size={18} />
+                          {pendingDeleteId === item.id ? "Opravdu?" : "Odstranit"}
+                        </button>
+                      </div>
+                    </>
+                  }
+                />
                 );
               })}
             </div>
