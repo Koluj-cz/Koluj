@@ -139,10 +139,7 @@ export default function ItemDetailPage() {
       .select("*")
       .eq("item_id", itemId)
       .order("sort_order", { ascending: true });
-    setItem({
-      ...(data as ItemDetail),
-      views_count: Number(data.views_count || 0) + 1,
-    });
+
     setImages(imageData || []);
     setSelectedImage(
       data.primary_image_url || imageData?.[0]?.image_url || ""

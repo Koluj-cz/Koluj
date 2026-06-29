@@ -56,6 +56,7 @@ export default function LoanDetailPage() {
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [sendingMessage, setSendingMessage] = useState(false);
 
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
@@ -398,7 +399,9 @@ export default function LoanDetailPage() {
 
 
   async function sendMessage() {
-    if (!message.trim() || !loan) return;
+    if (!message.trim() || !loan || sendingMessage) return;
+
+    setSendingMessage(true);
 
     const trimmedMessage = message.trim();
 
@@ -417,10 +420,12 @@ export default function LoanDetailPage() {
 
     if (!response.ok) {
       toast.error(result?.error || "Zprávu se nepodařilo odeslat");
+      setSendingMessage(false);
       return;
     }
 
     setMessage("");
+    setSendingMessage(false);
     scrollMessagesToBottom("smooth");
   }
 
@@ -705,18 +710,28 @@ export default function LoanDetailPage() {
                 <div className="flex gap-3">
                   <input
                     value={message}
+                    disabled={sendingMessage}
                     onChange={(event) => setMessage(event.target.value)}
                     onKeyDown={(event) => {
-                      if (event.key === "Enter") {
+                      if (event.key === "Enter" && !sendingMessage) {
                         sendMessage();
                       }
                     }}
                     placeholder="Napiš zprávu..."
-                    className="koluj-input flex-1"
+                    className="koluj-input flex-1 disabled:opacity-60"
                   />
 
-                  <button type="button" onClick={sendMessage} className="koluj-button px-5">
-                    <Send size={18} />
+                  <button
+                    type="button"
+                    onClick={sendMessage}
+                    disabled={sendingMessage}
+                    className="koluj-button flex items-center justify-center px-5 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {sendingMessage ? (
+                      <span className="text-sm font-black">...</span>
+                    ) : (
+                      <Send size={18} />
+                    )}
                   </button>
                 </div>
               </div>

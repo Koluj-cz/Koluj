@@ -141,7 +141,7 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
         </div>
       </div>
 
-      <article className="mx-auto mb-10 max-w-[794px] bg-white p-8 text-[10px] leading-tight text-black shadow-sm print:mb-0 print:max-w-none print:p-0 print:text-[9.5px] print:shadow-none">
+      <article className="mx-auto max-w-[794px] bg-white p-8 text-[9px] leading-tight text-black shadow-sm print:m-0 print:max-w-none print:p-0 print:text-[8.5px] print:shadow-none">
         <header className="mb-6 flex items-start justify-between border-b border-black pb-4">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.28em]">KOLUJ</p>

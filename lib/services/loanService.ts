@@ -252,15 +252,6 @@ Cena: ${item.price_amount || 0} Kč
 Kauce: ${item.deposit || 0} Kč${note?.trim() ? `\n\nPoznámka: ${note.trim()}` : ""}`,
   });
 
-  const { error: itemUpdateError } = await supabaseAdmin
-    .from("items")
-    .update({ status: "reserved" })
-    .eq("id", item.id);
-
-  if (itemUpdateError) {
-    throw new Error(itemUpdateError.message);
-  } 
-
   await notifyUserServer({
     userId: item.owner_id,
     actorId: borrowerId,
