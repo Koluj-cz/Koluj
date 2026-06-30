@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Box,
+  CalendarDays,
   Eye,
   EyeOff,
   Grid2X2,
@@ -355,7 +356,15 @@ export default function MyItemsPage() {
                         </p>
                       )}
 
-                      <div className="grid grid-cols-3 gap-1">
+                      <div className="grid grid-cols-4 gap-1">
+                        <Link
+                          href={`/items/${item.id}`}
+                          className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-green)] transition hover:bg-[var(--koluj-bg)]"
+                        >
+                          <CalendarDays size={18} />
+                          Detail
+                        </Link>
+
                         <Link
                           href={`/items/${item.id}/edit`}
                           className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-text)] transition hover:bg-[var(--koluj-bg)]"
