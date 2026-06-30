@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Heart, Package, User, Handshake, Bell } from "lucide-react";
+import { Heart, Package, User, Handshake, Bell, CalendarOff } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import AddItemButton from "@/app/components/AddItemButton";
 import AddItemDashboardCard from "@/app/components/AddItemDashboardCard";
@@ -141,6 +141,14 @@ export default function DashboardPage() {
             icon={<Bell size={32} />}
             text="Zobraz nové žádosti, zprávy a důležité události."
             action="Zobrazit"
+          />
+
+          <DashboardCard
+            href="/dashboard/availability"
+            title="Dostupnost"
+            icon={<CalendarOff size={32} />}
+            text="Zablokuj termín pro jednu, více nebo všechny své věci."
+            action="Spravovat"
           />
           
         </section>

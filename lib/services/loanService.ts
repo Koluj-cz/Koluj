@@ -204,20 +204,22 @@ export async function requestLoanServer({
     );
   }
 
-  const { data: existingLoans, error: existingLoanError } = await supabaseAdmin
+  const { data: overlappingLoans, error: overlappingLoanError } = await supabaseAdmin
     .from("loans")
     .select("id")
     .eq("item_id", item.id)
     .eq("borrower_id", borrowerId)
     .in("status", ["requested", "approved", "active"])
+    .lte("date_from", dateTo)
+    .gte("date_to", dateFrom)
     .limit(1);
 
-  if (existingLoanError) {
-    throw new Error(existingLoanError.message);
+  if (overlappingLoanError) {
+    throw new Error(overlappingLoanError.message);
   }
 
-  if (existingLoans && existingLoans.length > 0) {
-    throw new Error("O tuhle věc už máš aktivní žádost");
+  if (overlappingLoans && overlappingLoans.length > 0) {
+    throw new Error("Na tuto věc už máš žádost ve stejném nebo překrývajícím se termínu.");
   }
 
   await assertItemAvailableServer({
