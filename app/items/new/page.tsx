@@ -276,15 +276,6 @@ export default function NewItemPage() {
       return;
     }
 
-    if (
-      form.availability_type === "period" &&
-      (!form.available_from || !form.available_to)
-    ) {
-      toast.error("Vyplň dostupnost od/do");
-      setLoading(false);
-      return;
-    }
-
     const { data: item, error: itemError } = await supabase
       .from("items")
       .insert({
@@ -645,37 +636,17 @@ export default function NewItemPage() {
             <div className="koluj-card p-8">
               <SectionTitle title="Dostupnost" />
 
-              <div className="mt-6 grid gap-4 md:grid-cols-2">
+              <div className="mt-6 rounded-3xl border border-[var(--koluj-border)] bg-[var(--koluj-bg)] p-6">
+                <p className="text-lg font-bold text-[var(--koluj-green)]">
+                  📅 Dostupnost se nastavuje až po vytvoření věci.
+                </p>
 
-                <select
-                  value={form.availability_type}
-                  onChange={(e) => updateField("availability_type", e.target.value)}
-                  className="koluj-input"
-                >
-                  <option value="long_term">Dlouhodobě k dispozici</option>
-                  <option value="period">Jen v určitém období</option>
-                </select>
+                <p className="mt-3 leading-relaxed text-[var(--koluj-muted)]">
+                  Po uložení budeš moci v detailu věci spravovat kalendář dostupnosti,
+                  blokovat termíny a schvalovat rezervace. Ostatní uživatelé okamžitě uvidí,
+                  které dny jsou volné a které obsazené.
+                </p>
               </div>
-
-              {form.availability_type === "period" && (
-                <div className="mt-4 grid gap-4 md:grid-cols-2">
-                  <input
-                    type="date"
-                    min={today}
-                    value={form.available_from}
-                    onChange={(e) => updateField("available_from", e.target.value)}
-                    className="koluj-input"
-                  />
-
-                  <input
-                    type="date"
-                    min={form.available_from || today}
-                    value={form.available_to}
-                    onChange={(e) => updateField("available_to", e.target.value)}
-                    className="koluj-input"
-                  />
-                </div>
-              )}
             </div>
           </div>
 

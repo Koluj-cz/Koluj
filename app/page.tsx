@@ -32,6 +32,49 @@ const ItemsMap = dynamic(() => import("@/app/components/ItemsMap"), {
 const DISPLAYED_ITEMS_COUNT = 10;
 const ROTATION_INTERVAL_MS = 3000;
 
+
+async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
+  if (items.length === 0) return items as (T & { is_reserved_today: boolean })[];
+
+  const today = new Date().toISOString().split("T")[0];
+  const itemIds = items.map((item) => item.id);
+
+  const [reservationsResult, blocksResult] = await Promise.all([
+    supabase
+      .from("item_reservations")
+      .select("item_id")
+      .in("item_id", itemIds)
+      .eq("status", "active")
+      .lte("date_from", today)
+      .gte("date_to", today),
+    supabase
+      .from("item_availability_blocks")
+      .select("item_id")
+      .in("item_id", itemIds)
+      .lte("date_from", today)
+      .gte("date_to", today),
+  ]);
+
+  if (reservationsResult.error) {
+    console.error("Reservations availability error:", reservationsResult.error);
+  }
+
+  if (blocksResult.error) {
+    console.error("Blocks availability error:", blocksResult.error);
+  }
+
+  const reservedIds = new Set([
+    ...(reservationsResult.data || []).map((row) => row.item_id),
+    ...(blocksResult.data || []).map((row) => row.item_id),
+  ]);
+
+  return items.map((item) => ({
+    ...item,
+    is_reserved_today: reservedIds.has(item.id),
+  }));
+}
+
+
 export default function HomePage() {
   const [showMap, setShowMap] = useState(false);
   const [items, setItems] = useState<ItemCardItem[]>([]);
@@ -101,11 +144,14 @@ export default function HomePage() {
       )
       .eq("is_active", true)
       .is("deleted_at", null)
-      .eq("status", "available")
       .order("created_at", { ascending: false })
       .limit(40);
 
-    setItems(data || []);
+    const itemsWithAvailability = await attachTodayAvailability(
+      ((data || []) as ItemCardItem[])
+    );
+
+    setItems(itemsWithAvailability);
     setTotalItems(count || 0);
   }
 

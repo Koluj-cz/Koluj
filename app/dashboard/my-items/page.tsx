@@ -17,6 +17,49 @@ import AddItemButton from "@/app/components/AddItemButton";
 import BackLink from "@/app/components/BackLink";
 import PageLoader from "@/app/components/PageLoader";
 
+
+async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
+  if (items.length === 0) return items as (T & { is_reserved_today: boolean })[];
+
+  const today = new Date().toISOString().split("T")[0];
+  const itemIds = items.map((item) => item.id);
+
+  const [reservationsResult, blocksResult] = await Promise.all([
+    supabase
+      .from("item_reservations")
+      .select("item_id")
+      .in("item_id", itemIds)
+      .eq("status", "active")
+      .lte("date_from", today)
+      .gte("date_to", today),
+    supabase
+      .from("item_availability_blocks")
+      .select("item_id")
+      .in("item_id", itemIds)
+      .lte("date_from", today)
+      .gte("date_to", today),
+  ]);
+
+  if (reservationsResult.error) {
+    console.error("Reservations availability error:", reservationsResult.error);
+  }
+
+  if (blocksResult.error) {
+    console.error("Blocks availability error:", blocksResult.error);
+  }
+
+  const reservedIds = new Set([
+    ...(reservationsResult.data || []).map((row) => row.item_id),
+    ...(blocksResult.data || []).map((row) => row.item_id),
+  ]);
+
+  return items.map((item) => ({
+    ...item,
+    is_reserved_today: reservedIds.has(item.id),
+  }));
+}
+
+
 type Item = ItemCardItem & {
   is_active: boolean;
   deleted_at: string | null;
@@ -69,7 +112,11 @@ export default function MyItemsPage() {
       return;
     }
 
-    setItems((data || []) as Item[]);
+    const itemsWithAvailability = await attachTodayAvailability(
+      ((data || []) as Item[])
+    );
+
+    setItems(itemsWithAvailability);
     setLoading(false);
   }
 
@@ -131,10 +178,8 @@ export default function MyItemsPage() {
   const counts = useMemo(() => {
     return {
       all: items.length,
-      available: items.filter((item) => item.status === "available").length,
-      reserved: items.filter((item) => item.status === "reserved").length,
-      borrowed: items.filter((item) => item.status === "borrowed").length,
-      hidden: items.filter((item) => !item.is_active).length,
+      available: items.filter((item) => item.is_active && !item.is_reserved_today).length,
+      reserved: items.filter((item) => item.is_active && item.is_reserved_today).length,
     };
   }, [items]);
 
@@ -151,10 +196,12 @@ export default function MyItemsPage() {
       );
     }
 
-    if (statusFilter === "hidden") {
-      result = result.filter((item) => !item.is_active);
-    } else if (statusFilter !== "all") {
-      result = result.filter((item) => item.status === statusFilter);
+    if (statusFilter === "available") {
+      result = result.filter((item) => item.is_active && !item.is_reserved_today);
+    }
+
+    if (statusFilter === "reserved") {
+      result = result.filter((item) => item.is_active && item.is_reserved_today);
     }
 
     if (sortBy === "newest") {
@@ -228,8 +275,6 @@ export default function MyItemsPage() {
               <option value="all">Všechny stavy</option>
               <option value="available">Volné</option>
               <option value="reserved">Rezervované</option>
-              <option value="borrowed">Půjčené</option>
-              <option value="hidden">Skryté</option>
             </select>
 
             <select
@@ -264,18 +309,6 @@ export default function MyItemsPage() {
                 onClick={() => setStatusFilter("reserved")}
                 label="Rezervované"
                 count={counts.reserved}
-              />
-              <FilterButton
-                active={statusFilter === "borrowed"}
-                onClick={() => setStatusFilter("borrowed")}
-                label="Půjčené"
-                count={counts.borrowed}
-              />
-              <FilterButton
-                active={statusFilter === "hidden"}
-                onClick={() => setStatusFilter("hidden")}
-                label="Skryté"
-                count={counts.hidden}
               />
             </div>
 

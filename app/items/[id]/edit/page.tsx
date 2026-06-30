@@ -329,15 +329,7 @@ async function makePrimary(imageUrl: string) {
       toast.error("Vyber alespoň jednu možnost předání");
       return;
     }
-
-    if (
-      form.availability_type === "period" &&
-      (!form.available_from || !form.available_to)
-    ) {
-      toast.error("Vyplň dostupnost od/do");
-      return;
-    }
-
+    
     setSaving(true);
 
     const { error } = await supabase
@@ -721,55 +713,18 @@ async function makePrimary(imageUrl: string) {
             </div>
 
             <div className="koluj-card p-8">
-              <SectionTitle title="Dostupnost a viditelnost" />
+              <SectionTitle title="Dostupnost" />
 
-              <div className="mt-6 grid gap-4 md:grid-cols-2">
-                <select
-                  value={form.is_active ? "true" : "false"}
-                  onChange={(e) =>
-                    setForm({ ...form, is_active: e.target.value === "true" })
-                  }
-                  className="koluj-input"
-                >
-                  <option value="true">Viditelné pro ostatní</option>
-                  <option value="false">Skryté</option>
-                </select>
+              <div className="mt-6 rounded-3xl border border-[var(--koluj-border)] bg-[var(--koluj-bg)] p-6">
+                <p className="text-lg font-bold text-[var(--koluj-green)]">
+                  📅 Dostupnost se spravuje v kalendáři této věci.
+                </p>
 
-                <select
-                  value={form.availability_type}
-                  onChange={(e) =>
-                    updateField("availability_type", e.target.value)
-                  }
-                  className="koluj-input md:col-span-2"
-                >
-                  <option value="long_term">Dlouhodobě k dispozici</option>
-                  <option value="period">Jen v určitém období</option>
-                </select>
+                <p className="mt-3 leading-relaxed text-[var(--koluj-muted)]">
+                  Kalendář najdeš v detailu věci. Zde můžeš blokovat vlastní termíny,
+                  schvalovat rezervace a sledovat obsazené dny.
+                </p>
               </div>
-
-              {form.availability_type === "period" && (
-                <div className="mt-4 grid gap-4 md:grid-cols-2">
-                  <input
-                    type="date"
-                    min={today}
-                    value={form.available_from}
-                    onChange={(e) =>
-                      updateField("available_from", e.target.value)
-                    }
-                    className="koluj-input"
-                  />
-
-                  <input
-                    type="date"
-                    min={form.available_from || today}
-                    value={form.available_to}
-                    onChange={(e) =>
-                      updateField("available_to", e.target.value)
-                    }
-                    className="koluj-input"
-                  />
-                </div>
-              )}
             </div>
           </div>
 

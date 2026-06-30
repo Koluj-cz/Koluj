@@ -17,8 +17,6 @@ import BackLink from "@/app/components/BackLink";
 import {
   categories,
   categoryLabels,
-  itemStatuses,
-  itemStatusLabels,
 } from "@/lib/constants";
 import { getDistanceKm } from "@/lib/location";
 
@@ -31,10 +29,52 @@ const categoryOptions = {
   ...Object.fromEntries(categories.map(c => [c, categoryLabels[c]])),
 };
 
+
+async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
+  if (items.length === 0) return items as (T & { is_reserved_today: boolean })[];
+
+  const today = new Date().toISOString().split("T")[0];
+  const itemIds = items.map((item) => item.id);
+
+  const [reservationsResult, blocksResult] = await Promise.all([
+    supabase
+      .from("item_reservations")
+      .select("item_id")
+      .in("item_id", itemIds)
+      .eq("status", "active")
+      .lte("date_from", today)
+      .gte("date_to", today),
+    supabase
+      .from("item_availability_blocks")
+      .select("item_id")
+      .in("item_id", itemIds)
+      .lte("date_from", today)
+      .gte("date_to", today),
+  ]);
+
+  if (reservationsResult.error) {
+    console.error("Reservations availability error:", reservationsResult.error);
+  }
+
+  if (blocksResult.error) {
+    console.error("Blocks availability error:", blocksResult.error);
+  }
+
+  const reservedIds = new Set([
+    ...(reservationsResult.data || []).map((row) => row.item_id),
+    ...(blocksResult.data || []).map((row) => row.item_id),
+  ]);
+
+  return items.map((item) => ({
+    ...item,
+    is_reserved_today: reservedIds.has(item.id),
+  }));
+}
+
+
 const statusOptions = {
-  available: itemStatusLabels.available,
-  reserved: itemStatusLabels.reserved,
-  borrowed: itemStatusLabels.borrowed,
+  available: "Volné",
+  reserved: "Rezervované",
   all: "Všechny stavy",
 };
 
@@ -101,7 +141,11 @@ function ItemsPageContent() {
       return;
     }
 
-    setItems(data || []);
+    const itemsWithAvailability = await attachTodayAvailability(
+      ((data || []) as ItemCardItem[])
+    );
+
+    setItems(itemsWithAvailability);
     setLoading(false);
   }
 
@@ -160,8 +204,12 @@ function ItemsPageContent() {
       result = result.filter((item) => item.category === category);
     }
 
-    if (status !== "all") {
-      result = result.filter((item) => item.status === status);
+    if (status === "available") {
+      result = result.filter((item) => !item.is_reserved_today);
+    }
+
+    if (status === "reserved") {
+      result = result.filter((item) => item.is_reserved_today);
     }
 
     if (userLocation) {
@@ -272,7 +320,7 @@ function ItemsPageContent() {
               {filteredItems.length} výsledků
             </span>
             <span className="rounded-full bg-white px-4 py-2 shadow-sm">
-              Výchozí zobrazení: volné věci
+              Stav podle dnešního dne
             </span>
           </div>
         </section>

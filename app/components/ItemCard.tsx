@@ -1,10 +1,6 @@
 import Link from "next/link";
 import { MapPin } from "lucide-react";
-import {
-  categoryLabels,
-  itemStatusClasses,
-  itemStatusLabels,
-} from "@/lib/constants";
+import { categoryLabels } from "@/lib/constants";
 import { translatePriceUnit } from "@/lib/format";
 
 export type ItemCardItem = {
@@ -20,7 +16,8 @@ export type ItemCardItem = {
   price_unit: string | null;
   primary_image_url: string | null;
   created_at: string;
-  status: string | null;
+  status?: string | null;
+  is_reserved_today?: boolean;
   owner_id: string | null;
   loans?: { id: string; owner_earnings: number | null }[] | null;
   profiles?: {
@@ -55,9 +52,11 @@ export default function ItemCard({
   variant = "public",
   footer,
 }: ItemCardProps) {
-  const status = item.status || "available";
-  const statusLabel = itemStatusLabels[status] || status;
-  const statusClass = itemStatusClasses[status] || itemStatusClasses.available;
+  const isReserved = Boolean(item.is_reserved_today);
+  const statusLabel = isReserved ? "Rezervované" : "Volné";
+  const statusClass = isReserved
+    ? "bg-red-100 text-red-700"
+    : "bg-emerald-100 text-emerald-800";
 
   const ownerName = item.profiles?.full_name || "Uživatel";
   const rating = item.profiles?.profile_ratings?.[0];
