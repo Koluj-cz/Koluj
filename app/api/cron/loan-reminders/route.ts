@@ -6,6 +6,10 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const cronSecret = process.env.CRON_SECRET;
+  return NextResponse.json({
+    hasCronSecret: Boolean(cronSecret),
+    received: request.headers.get("authorization"),
+  });
 
   if (cronSecret) {
     const authHeader = request.headers.get("authorization");
