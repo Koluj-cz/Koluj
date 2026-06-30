@@ -6,12 +6,11 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import PageLoader from "@/app/components/PageLoader";
 import BackLink from "@/app/components/BackLink";
+import AvailabilityCalendar from "@/app/components/AvailabilityCalendar";
 import {
   categoryLabels,
   conditionLabels,
   handoverLabels,
-  itemStatusClasses,
-  itemStatusLabels,
 } from "@/lib/constants";
 import { formatDate, translatePriceUnit } from "@/lib/format";
 
@@ -282,9 +281,6 @@ export default function ItemDetailPage() {
   const ratingCountText =
     rating && rating.rating_count ? `(${rating.rating_count})` : "";
 
-  const status = item?.status || "available";
-  const statusLabel = itemStatusLabels[status] || status;
-  const statusClass = itemStatusClasses[status] || itemStatusClasses.available;
   const todayIso = new Date().toISOString().split("T")[0];
   const isSingleDateRequest = item?.price_unit === "piece";
 
@@ -354,9 +350,6 @@ export default function ItemDetailPage() {
                       {categoryLabels[item.category] || item.category}
                     </p>
 
-                    <span className={`koluj-status-badge shrink-0 ${statusClass}`}>
-                      {statusLabel}
-                    </span>
                   </div>
 
                   <h1 className="mt-4 max-w-4xl text-4xl font-black leading-none tracking-tight md:text-6xl">
@@ -537,6 +530,22 @@ export default function ItemDetailPage() {
                 </p>
               )}
 
+              <div className="mt-6">
+                <AvailabilityCalendar
+                  itemId={item.id}
+                  isOwner={Boolean(isOwner)}
+                  selectedRange={
+                    borrowFrom && borrowTo
+                      ? { dateFrom: borrowFrom, dateTo: borrowTo }
+                      : null
+                  }
+                  onRangeChange={(range) => {
+                    setBorrowFrom(range?.dateFrom || "");
+                    setBorrowTo(range?.dateTo || "");
+                  }}
+                />
+              </div>
+
               {isOwner && (
                 <Link
                   href={`/items/${item.id}/edit`}
@@ -547,58 +556,9 @@ export default function ItemDetailPage() {
                 </Link>
               )}
 
-              {!isOwner && status === "available" && (
+              {!isOwner && (
                 <>
                   <div className="mt-6 grid gap-3">
-                    <div
-                      className={`grid min-w-0 gap-3 ${
-                        isSingleDateRequest ? "" : "sm:grid-cols-2"
-                      }`}
-                    >
-                      <label className="grid gap-2 text-sm font-bold text-[var(--koluj-muted)]">
-                        {isSingleDateRequest ? "Datum převzetí" : "Od kdy"}
-                        <input
-                          type="date"
-                          value={borrowFrom}
-                          min={todayIso}
-                          disabled={submittingBorrowRequest}
-                          onChange={(e) => {
-                            const value = e.target.value;
-
-                            setBorrowFrom(value);
-
-                            if (!borrowTo || borrowTo < value || isSingleDateRequest) {
-                              setBorrowTo(value);
-                            }
-                          }}
-                          className="koluj-input w-full min-w-0 max-w-full appearance-none"
-                        />
-                      </label>
-
-                      {!isSingleDateRequest && (
-                        <label className="grid gap-2 text-sm font-bold text-[var(--koluj-muted)]">
-                          Do kdy
-                          <input
-                            type="date"
-                            value={borrowTo}
-                            min={borrowFrom || todayIso}
-                            disabled={submittingBorrowRequest}
-                            onChange={(e) => {
-                              const value = e.target.value;
-
-                              if (borrowFrom && value < borrowFrom) {
-                                setBorrowTo(borrowFrom);
-                                return;
-                              }
-
-                              setBorrowTo(value);
-                            }}
-                            className="koluj-input w-full min-w-0 max-w-full appearance-none"
-                          />
-                        </label>
-                      )}
-                    </div>
-
                     <label className="grid gap-2 text-sm font-bold text-[var(--koluj-muted)]">
                       Zpráva pro vlastníka
                       <textarea
@@ -619,41 +579,16 @@ export default function ItemDetailPage() {
                   <button
                     type="button"
                     onClick={handleBorrowClick}
-                    disabled={submittingBorrowRequest}
-                    className="koluj-button mt-6 w-full px-6 py-4 disabled:cursor-wait disabled:opacity-70"
+                    disabled={submittingBorrowRequest || !borrowFrom || !borrowTo}
+                    className="koluj-button mt-6 w-full px-6 py-4 disabled:cursor-not-allowed disabled:opacity-70"
                   >
-                    {submittingBorrowRequest ? "Odesílám žádost..." : "Půjčit si"}
+                    {submittingBorrowRequest
+                      ? "Odesílám žádost..."
+                      : borrowFrom && borrowTo
+                      ? "Půjčit si"
+                      : "Vyber termín"}
                   </button>
                 </>
-              )}
-
-              {!isOwner && status !== "available" && (
-                <div className="mt-6 rounded-3xl bg-[var(--koluj-bg)] p-5">
-                  <p className="font-black">Věc je momentálně nedostupná</p>
-
-                  <p className="mt-2 text-sm text-[var(--koluj-muted)]">
-                    Jakmile bude znovu volná, můžeme ti poslat upozornění.
-                  </p>
-
-                  <button
-                    type="button"
-                    onClick={handleWatchAvailabilityClick}
-                    disabled={isWatchingAvailability || savingAvailabilityWatch}
-                    className="koluj-button mt-4 w-full px-6 py-4 disabled:cursor-default disabled:opacity-70"
-                  >
-                    {savingAvailabilityWatch
-                      ? "Ukládám..."
-                      : isWatchingAvailability
-                      ? "✓ Hlídáš dostupnost"
-                      : "🔔 Hlídat dostupnost"}
-                  </button>
-
-                  {isWatchingAvailability && (
-                    <p className="mt-3 text-center text-sm font-bold text-[var(--koluj-green)]">
-                      Dáme ti vědět, jakmile bude věc opět volná.
-                    </p>
-                  )}
-                </div>
               )}
 
               <div className="mt-6 flex gap-3 rounded-2xl bg-[var(--koluj-bg)] p-4 text-sm font-bold text-[var(--koluj-muted)]">
@@ -669,10 +604,10 @@ export default function ItemDetailPage() {
             <div className="koluj-card p-8">
               <h2 className="text-2xl font-black">Vlastník</h2>
 
-            <Link
-              href={`/users/${item.owner_id}`}
-              className="mt-5 flex items-center gap-4 transition hover:opacity-80"
-            >
+              <Link
+                href={`/users/${item.owner_id}`}
+                className="mt-5 flex items-center gap-4 transition hover:opacity-80"
+              >
                 {item.profiles?.avatar_url ? (
                   <img
                     src={item.profiles.avatar_url}

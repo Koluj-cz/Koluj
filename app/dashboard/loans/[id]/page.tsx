@@ -610,10 +610,29 @@ export default function LoanDetailPage() {
 
               {isOwner && loan.status === "approved" && (
                 <div>
-                  <p className="mb-4 font-bold">Žádost je schválená. Po předání věci potvrď předání.</p>
-                  <button type="button" onClick={markAsActive} disabled={saving} className="koluj-button w-full py-3 disabled:opacity-60">
-                    {saving ? "Ukládám..." : "Potvrdit předání"}
-                  </button>
+                  <p className="mb-4 font-bold">
+                    Žádost je schválená a termín je rezervovaný v kalendáři.
+                    Po předání věci potvrď předání.
+                  </p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={markAsActive}
+                      disabled={saving}
+                      className="koluj-button py-3 disabled:opacity-60"
+                    >
+                      {saving ? "Ukládám..." : "Potvrdit předání"}
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={rejectLoan}
+                      disabled={saving}
+                      className="rounded-2xl border border-red-200 bg-white py-3 font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-60"
+                    >
+                      {saving ? "Ukládám..." : "Zrušit rezervaci"}
+                    </button>
+                  </div>
                 </div>
               )}
 

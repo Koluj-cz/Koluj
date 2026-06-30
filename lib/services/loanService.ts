@@ -1,6 +1,12 @@
 import { createClient } from "@supabase/supabase-js";
 import { notifyUserServer } from "@/lib/notifyUserServer";
 import { containsForbiddenText } from "@/lib/moderation";
+import {
+  assertItemAvailableServer,
+  cancelReservationForLoanServer,
+  createReservationForLoanServer,
+  finishReservationForLoanServer,
+} from "@/lib/services/availabilityService";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -36,7 +42,7 @@ async function addSystemMessage({
 async function loadLoanWithItem(loanId: string) {
   const { data: loan, error: loanError } = await supabaseAdmin
     .from("loans")
-    .select("id, owner_id, borrower_id, item_id, status")
+    .select("id, owner_id, borrower_id, item_id, status, date_from, date_to")
     .eq("id", loanId)
     .single();
 
@@ -168,10 +174,6 @@ export async function requestLoanServer({
     throw new Error("Vlastní věc si nemůžeš půjčit");
   }
 
-  if (item.status !== "available") {
-    throw new Error("Tahle věc není momentálně dostupná");
-  }
-
   const profile = Array.isArray(item.profiles)
     ? item.profiles[0]
     : item.profiles;
@@ -218,6 +220,12 @@ export async function requestLoanServer({
     throw new Error("O tuhle věc už máš aktivní žádost");
   }
 
+  await assertItemAvailableServer({
+    itemId: item.id,
+    dateFrom,
+    dateTo,
+  });
+
   const { data: createdLoan, error: loanError } = await supabaseAdmin
     .from("loans")
     .insert({
@@ -232,6 +240,7 @@ export async function requestLoanServer({
       total_price: item.price_amount ?? 0,
       platform_fee: 0,
       owner_earnings: item.price_amount ?? 0,
+      note: note?.trim() || null,
     })
     .select("id")
     .single();
@@ -287,6 +296,16 @@ export async function approveLoanServer({
     throw new Error("Schválit lze pouze novou žádost");
   }
 
+  if (!loan.date_from || !loan.date_to) {
+    throw new Error("Půjčka nemá vybraný termín.");
+  }
+
+  await assertItemAvailableServer({
+    itemId: item.id,
+    dateFrom: loan.date_from,
+    dateTo: loan.date_to,
+  });
+
   const { error: updateLoanError } = await supabaseAdmin
     .from("loans")
     .update({ status: "approved", approved_at: approvedAt })
@@ -294,12 +313,7 @@ export async function approveLoanServer({
 
   if (updateLoanError) throw new Error(updateLoanError.message);
 
-  const { error: updateItemError } = await supabaseAdmin
-    .from("items")
-    .update({ status: "reserved" })
-    .eq("id", item.id);
-
-  if (updateItemError) throw new Error(updateItemError.message);
+  await createReservationForLoanServer(loan.id);
 
   await addSystemMessage({
     loanId: loan.id,
@@ -335,8 +349,8 @@ export async function rejectLoanServer({
     throw new Error("Tuto půjčku může odmítnout pouze vlastník");
   }
 
-  if (loan.status !== "requested") {
-    throw new Error("Odmítnout lze pouze novou žádost");
+  if (!["requested", "approved"].includes(loan.status)) {
+    throw new Error("Zrušit lze pouze novou nebo schválenou žádost");
   }
 
   const { error: loanError } = await supabaseAdmin
@@ -346,17 +360,12 @@ export async function rejectLoanServer({
 
   if (loanError) throw new Error(loanError.message);
 
-  const { error: itemError } = await supabaseAdmin
-    .from("items")
-    .update({ status: "available" })
-    .eq("id", item.id);
-
-  if (itemError) throw new Error(itemError.message);
+  await cancelReservationForLoanServer(loan.id);
 
   await addSystemMessage({
     loanId: loan.id,
     actorId,
-    message: "Žádost byla odmítnuta.",
+    message: loan.status === "approved" ? "Schválená půjčka byla zrušena." : "Žádost byla odmítnuta.",
   });
 
   await notifyUserServer({
@@ -397,13 +406,6 @@ export async function startLoanServer({
     .eq("id", loan.id);
 
   if (loanError) throw new Error(loanError.message);
-
-  const { error: itemError } = await supabaseAdmin
-    .from("items")
-    .update({ status: "borrowed" })
-    .eq("id", item.id);
-
-  if (itemError) throw new Error(itemError.message);
 
   await addSystemMessage({
     loanId: loan.id,
@@ -450,12 +452,7 @@ export async function returnLoanServer({
 
   if (loanError) throw new Error(loanError.message);
 
-  const { error: itemError } = await supabaseAdmin
-    .from("items")
-    .update({ status: "available" })
-    .eq("id", item.id);
-
-  if (itemError) throw new Error(itemError.message);
+  await finishReservationForLoanServer(loan.id);
 
   await addSystemMessage({
     loanId: loan.id,
