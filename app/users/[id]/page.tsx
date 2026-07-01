@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { MapPin, ShieldCheck, Star } from "lucide-react";
 import BackLink from "@/app/components/BackLink";
 import { supabase } from "@/lib/supabase";
@@ -8,7 +8,16 @@ import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
 import { useParams } from "next/navigation";
 import AuthHeaderButton from "@/app/components/AuthHeaderButton";
 import PageLoader from "@/app/components/PageLoader";
-import { formatDate, translatePriceUnit } from "@/lib/format";
+import OfferSearchFilters from "@/app/components/OfferSearchFilters";
+import { formatDate } from "@/lib/format";
+import {
+  categories,
+  categoryLabels,
+  serviceCategories,
+  serviceCategoryLabels,
+  offerTypeLabels,
+} from "@/lib/constants";
+
 
 type Profile = {
   id: string;
@@ -24,6 +33,28 @@ type Rating = {
   rating_avg: number | null;
   rating_count: number | null;
 };
+
+function getCategoryOptions(offerType: string) {
+  if (offerType === "service") {
+    return {
+      all: "Všechny kategorie",
+      ...Object.fromEntries(serviceCategories.map((c) => [c, serviceCategoryLabels[c]])),
+    };
+  }
+
+  if (offerType === "item") {
+    return {
+      all: "Všechny kategorie",
+      ...Object.fromEntries(categories.map((c) => [c, categoryLabels[c]])),
+    };
+  }
+
+  return {
+    all: "Všechny kategorie",
+    ...Object.fromEntries(categories.map((c) => [c, categoryLabels[c]])),
+    ...Object.fromEntries(serviceCategories.map((c) => [c, serviceCategoryLabels[c]])),
+  };
+}
 
 type Review = {
   id: string;
@@ -48,6 +79,10 @@ export default function UserProfilePage() {
   const [visibleReviewsCount, setVisibleReviewsCount] = useState(5);
   const [items, setItems] = useState<OfferCardOffer[]>([]);
   const [loading, setLoading] = useState(true);
+  const [offerSearch, setOfferSearch] = useState("");
+  const [offerType, setOfferType] = useState("all");
+  const [category, setCategory] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
 
   useEffect(() => {
     loadProfile();
@@ -151,6 +186,52 @@ export default function UserProfilePage() {
 
   const visibleReviews = reviews.slice(0, visibleReviewsCount);
   const hasMoreReviews = visibleReviewsCount < reviews.length;
+
+  const filteredItems = useMemo(() => {
+    let result = [...items];
+
+    if (offerSearch.trim()) {
+      const query = offerSearch.toLowerCase();
+
+      result = result.filter((item) =>
+        `${item.title} ${item.category} ${item.pickup_place} ${item.description || ""}`
+          .toLowerCase()
+          .includes(query)
+      );
+    }
+
+    if (offerType !== "all") {
+      result = result.filter((item) => (item.offer_type || "item") === offerType);
+    }
+
+    if (category !== "all") {
+      result = result.filter((item) => item.category === category);
+    }
+
+    if (sortBy === "newest") {
+      result.sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    }
+
+    if (sortBy === "oldest") {
+      result.sort(
+        (a, b) =>
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+    }
+
+    if (sortBy === "az") {
+      result.sort((a, b) => a.title.localeCompare(b.title, "cs"));
+    }
+
+    if (sortBy === "za") {
+      result.sort((a, b) => b.title.localeCompare(a.title, "cs"));
+    }
+
+    return result;
+  }, [items, offerSearch, offerType, category, sortBy]);
 
   return (
     <main className="min-h-screen">
@@ -307,14 +388,51 @@ export default function UserProfilePage() {
 
           <div className="space-y-10">
             <section>
+              {items.length > 0 && (
+                <div className="mb-6">
+                  <OfferSearchFilters
+                    search={offerSearch}
+                    onSearchChange={setOfferSearch}
+                    offerType={offerType}
+                    onOfferTypeChange={(value) => {
+                      setOfferType(value);
+                      setCategory("all");
+                    }}
+                    offerTypeOptions={[
+                      { value: "all", label: "Vše" },
+                      ...Object.entries(offerTypeLabels).map(([value, label]) => ({
+                        value,
+                        label,
+                      })),
+                    ]}
+                    category={category}
+                    onCategoryChange={setCategory}
+                    categoryOptions={Object.entries(getCategoryOptions(offerType)).map(
+                      ([value, label]) => ({ value, label })
+                    )}
+                    sortBy={sortBy}
+                    onSortByChange={setSortBy}
+                    sortOptions={[
+                      { value: "newest", label: "Nejnovější" },
+                      { value: "oldest", label: "Nejstarší" },
+                      { value: "az", label: "Název A–Z" },
+                      { value: "za", label: "Název Z–A" },
+                    ]}
+                  />
+                </div>
+              )}
 
               {items.length === 0 ? (
                 <div className="koluj-card p-8 text-[var(--koluj-muted)]">
                   Uživatel zatím nenabízí žádné aktivní nabídky.
                 </div>
+              ) : filteredItems.length === 0 ? (
+                <div className="koluj-card p-8 text-[var(--koluj-muted)]">
+                  Nic nenalezeno. Zkus změnit hledání nebo filtr.
+                </div>
               ) : (
                 <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                  {items.map((item) => (
+                  {filteredItems.map((item) => (
                     <OfferCard key={item.id} item={item} />
                   ))}
                 </div>

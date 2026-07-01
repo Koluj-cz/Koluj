@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import {
   LocateFixed,
   Map,
-  Search,
   SlidersHorizontal,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -14,6 +13,7 @@ import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
 import AuthHeaderButton from "@/app/components/AuthHeaderButton";
 import PageLoader from "@/app/components/PageLoader";
 import BackLink from "@/app/components/BackLink";
+import OfferSearchFilters from "@/app/components/OfferSearchFilters";
 import {
   categories,
   categoryLabels,
@@ -186,9 +186,6 @@ function ItemsPageContent() {
     router.replace(`/offers${params.toString() ? `?${params.toString()}` : ""}`);
   }
 
-  function submitSearch() {
-    updateUrl({ search });
-  }
 
   function useMyLocation() {
     if (!navigator.geolocation) return;
@@ -233,25 +230,30 @@ function ItemsPageContent() {
     }
 
     if (userLocation) {
-      return result
-        .filter((item) => item.pickup_latitude && item.pickup_longitude)
-        .sort((a, b) => {
-          const distanceA = getDistanceKm(
-            userLocation.latitude,
-            userLocation.longitude,
-            a.pickup_latitude!,
-            a.pickup_longitude!
-          );
+      return result.sort((a, b) => {
+        const aHasLocation = Boolean(a.pickup_latitude && a.pickup_longitude);
+        const bHasLocation = Boolean(b.pickup_latitude && b.pickup_longitude);
 
-          const distanceB = getDistanceKm(
-            userLocation.latitude,
-            userLocation.longitude,
-            b.pickup_latitude!,
-            b.pickup_longitude!
-          );
+        if (!aHasLocation && !bHasLocation) return 0;
+        if (!aHasLocation) return 1;
+        if (!bHasLocation) return -1;
 
-          return distanceA - distanceB;
-        });
+        const distanceA = getDistanceKm(
+          userLocation.latitude,
+          userLocation.longitude,
+          a.pickup_latitude!,
+          a.pickup_longitude!
+        );
+
+        const distanceB = getDistanceKm(
+          userLocation.latitude,
+          userLocation.longitude,
+          b.pickup_latitude!,
+          b.pickup_longitude!
+        );
+
+        return distanceA - distanceB;
+      });
     }
 
     if (sortBy === "newest") {
@@ -345,105 +347,58 @@ function ItemsPageContent() {
           </div>
         </section>
 
-        <section className="koluj-card mt-8 p-3 md:mt-10 md:p-4">
-          <div className="grid gap-3 lg:grid-cols-[1fr_180px_220px_220px_200px]">
-            <div className="flex items-center gap-3 rounded-2xl border border-[var(--koluj-border)] bg-white px-4">
-              <Search size={20} className="text-[var(--koluj-muted)]" />
-
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") submitSearch();
-                }}
-                placeholder="Hledat nabídku..."
-                className="w-full bg-transparent py-4 outline-none"
-              />
-            </div>
-
-
-            <select
-              value={offerType}
-              onChange={(e) => {
-                const value = e.target.value;
-                setOfferType(value);
-                setCategory("all");
-                updateUrl({ offerType: value, category: "all" });
-              }}
-              className="koluj-input"
-            >
-              <option value="all">Vše</option>
-              {Object.entries(offerTypeLabels).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={category}
-              onChange={(e) => {
-                setCategory(e.target.value);
-                updateUrl({ category: e.target.value });
-              }}
-              className="koluj-input"
-            >
-              {Object.entries(getCategoryOptions(offerType)).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={status}
-              onChange={(e) => {
-                setStatus(e.target.value);
-                updateUrl({ status: e.target.value });
-              }}
-              className="koluj-input"
-            >
-              {Object.entries(statusOptions).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={sortBy}
-              onChange={(e) => {
-                setSortBy(e.target.value);
-                updateUrl({ sortBy: e.target.value });
-              }}
-              className="koluj-input"
-            >
-              <option value="newest">Nejnovější</option>
-              <option value="oldest">Nejstarší</option>
-              <option value="az">Název A–Z</option>
-              <option value="za">Název Z–A</option>
-            </select>
-          </div>
-
-          <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <button
-              type="button"
-              onClick={useMyLocation}
-              className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--koluj-border)] bg-white px-5 py-3 font-bold text-[var(--koluj-muted)] transition hover:bg-[var(--koluj-bg)]"
-            >
-              <LocateFixed size={18} />
-              Okolo mě
-            </button>
-
-            <button
-              type="button"
-              onClick={submitSearch}
-              className="koluj-button px-6 py-3"
-            >
-              Hledat
-            </button>
-          </div>
-        </section>
+        <div className="mt-8 md:mt-10">
+          <OfferSearchFilters
+            search={search}
+            onSearchChange={(value) => {
+              setSearch(value);
+              updateUrl({ search: value });
+            }}
+            offerType={offerType}
+            onOfferTypeChange={(value) => {
+              setOfferType(value);
+              setCategory("all");
+              updateUrl({ offerType: value, category: "all" });
+            }}
+            offerTypeOptions={[
+              { value: "all", label: "Vše" },
+              ...Object.entries(offerTypeLabels).map(([value, label]) => ({
+                value,
+                label,
+              })),
+            ]}
+            category={category}
+            onCategoryChange={(value) => {
+              setCategory(value);
+              updateUrl({ category: value });
+            }}
+            categoryOptions={Object.entries(getCategoryOptions(offerType)).map(
+              ([value, label]) => ({ value, label })
+            )}
+            status={status}
+            onStatusChange={(value) => {
+              setStatus(value);
+              updateUrl({ status: value });
+            }}
+            statusOptions={Object.entries(statusOptions).map(([value, label]) => ({
+              value,
+              label,
+            }))}
+            sortBy={sortBy}
+            onSortByChange={(value) => {
+              setSortBy(value);
+              updateUrl({ sortBy: value });
+            }}
+            sortOptions={[
+              { value: "newest", label: "Nejnovější" },
+              { value: "oldest", label: "Nejstarší" },
+              { value: "az", label: "Název A–Z" },
+              { value: "za", label: "Název Z–A" },
+            ]}
+            onUseLocation={useMyLocation}
+            locationActive={Boolean(userLocation)}
+          />
+        </div>
 
         <section className="mt-10">
           <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">

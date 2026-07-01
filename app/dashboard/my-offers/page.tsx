@@ -7,7 +7,6 @@ import {
   CalendarDays,
   Eye,
   EyeOff,
-  Grid2X2,
   Pencil,
   Trash2,
 } from "lucide-react";
@@ -17,6 +16,7 @@ import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
 import AddOfferButton from "@/app/components/AddOfferButton";
 import BackLink from "@/app/components/BackLink";
 import PageLoader from "@/app/components/PageLoader";
+import OfferSearchFilters from "@/app/components/OfferSearchFilters";
 
 
 async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
@@ -260,59 +260,27 @@ export default function MyOffersPage() {
         </section>
 
         <section className="mt-12">
-          <div className="mb-6 grid gap-4 lg:grid-cols-[1fr_260px_220px]">
-            <input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Hledat nabídku..."
-              className="koluj-input"
-            />
+          <OfferSearchFilters
+            search={searchQuery}
+            onSearchChange={setSearchQuery}
+            status={statusFilter}
+            onStatusChange={setStatusFilter}
+            statusOptions={[
+              { value: "all", label: `Všechny stavy (${counts.all})` },
+              { value: "available", label: `Volné (${counts.available})` },
+              { value: "reserved", label: `Rezervované (${counts.reserved})` },
+            ]}
+            sortBy={sortBy}
+            onSortByChange={setSortBy}
+            sortOptions={[
+              { value: "newest", label: "Nejnovější" },
+              { value: "oldest", label: "Nejstarší" },
+              { value: "az", label: "Název A–Z" },
+              { value: "za", label: "Název Z–A" },
+            ]}
+          />
 
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="koluj-input"
-            >
-              <option value="all">Všechny stavy</option>
-              <option value="available">Volné</option>
-              <option value="reserved">Rezervované</option>
-            </select>
-
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="koluj-input"
-            >
-              <option value="newest">Nejnovější</option>
-              <option value="oldest">Nejstarší</option>
-              <option value="az">Název A–Z</option>
-              <option value="za">Název Z–A</option>
-            </select>
-          </div>
-
-          <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap gap-3">
-              <FilterButton
-                active={statusFilter === "all"}
-                onClick={() => setStatusFilter("all")}
-                icon={<Grid2X2 size={18} />}
-                label="Všechny"
-                count={counts.all}
-              />
-              <FilterButton
-                active={statusFilter === "available"}
-                onClick={() => setStatusFilter("available")}
-                label="Volné"
-                count={counts.available}
-              />
-              <FilterButton
-                active={statusFilter === "reserved"}
-                onClick={() => setStatusFilter("reserved")}
-                label="Rezervované"
-                count={counts.reserved}
-              />
-            </div>
-
+          <div className="mb-8 mt-4 flex flex-wrap items-center justify-between gap-4">
             <p className="font-bold text-[var(--koluj-muted)]">
               {filteredOffers.length}{" "}
               {filteredOffers.length === 1 ? "nabídku" : "nabídek"}
@@ -437,43 +405,5 @@ export default function MyOffersPage() {
         </section>
       </div>
     </main>
-  );
-}
-
-function FilterButton({
-  active,
-  onClick,
-  label,
-  count,
-  icon,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-  count: number;
-  icon?: React.ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex items-center gap-2 rounded-2xl border px-5 py-3 font-bold transition ${
-        active
-          ? "border-[var(--koluj-green)] bg-[var(--koluj-green)] text-white"
-          : "border-[var(--koluj-border)] bg-[var(--koluj-surface)] text-[var(--koluj-text)] hover:bg-[var(--koluj-bg)]"
-      }`}
-    >
-      {icon}
-      {label}
-      <span
-        className={`rounded-full px-2 py-0.5 text-sm ${
-          active
-            ? "bg-white/20 text-white"
-            : "bg-[var(--koluj-bg)] text-[var(--koluj-muted)]"
-        }`}
-      >
-        {count}
-      </span>
-    </button>
   );
 }
