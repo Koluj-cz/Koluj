@@ -17,6 +17,12 @@ import {
   ShieldCheck,
   Sparkles,
   Users,
+  Wrench,
+  GraduationCap,
+  Laptop,
+  Home,
+  Truck,
+  Baby,
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
@@ -32,9 +38,130 @@ const ItemsMap = dynamic(() => import("@/app/components/ItemsMap"), {
 const DISPLAYED_ITEMS_COUNT = 10;
 const ROTATION_INTERVAL_MS = 3000;
 
+type OfferTypeFilter = "all" | "item" | "service";
+
+type CategoryDefinition = {
+  icon?: React.ReactNode;
+  label: string;
+  category: string;
+  offerType?: "item" | "service";
+};
+
+const itemCategoryChips: CategoryDefinition[] = [
+  {
+    icon: <Drill size={16} />,
+    label: "Nářadí",
+    category: "naradi",
+    offerType: "item",
+  },
+  {
+    icon: <Bike size={16} />,
+    label: "Sport",
+    category: "sport",
+    offerType: "item",
+  },
+  {
+    icon: <Smartphone size={16} />,
+    label: "Elektronika",
+    category: "elektronika",
+    offerType: "item",
+  },
+  {
+    icon: <Sparkles size={16} />,
+    label: "Outdoor",
+    category: "outdoor",
+    offerType: "item",
+  },
+  {
+    icon: <Trees size={16} />,
+    label: "Dům a zahrada",
+    category: "dum_zahrada",
+    offerType: "item",
+  },
+  {
+    icon: <Camera size={16} />,
+    label: "Foto a video",
+    category: "foto_video",
+    offerType: "item",
+  },
+  {
+    icon: <Boxes size={16} />,
+    label: "Ostatní",
+    category: "ostatni",
+    offerType: "item",
+  },
+];
+
+const serviceCategoryChips: CategoryDefinition[] = [
+  {
+    icon: <Wrench size={16} />,
+    label: "Řemesla",
+    category: "remesla",
+    offerType: "service",
+  },
+  {
+    icon: <Home size={16} />,
+    label: "Domácnost",
+    category: "domacnost",
+    offerType: "service",
+  },
+  {
+    icon: <Trees size={16} />,
+    label: "Zahrada",
+    category: "zahrada",
+    offerType: "service",
+  },
+  {
+    icon: <Truck size={16} />,
+    label: "Stěhování",
+    category: "stehovani",
+    offerType: "service",
+  },
+  {
+    icon: <GraduationCap size={16} />,
+    label: "Doučování",
+    category: "doucovani",
+    offerType: "service",
+  },
+  {
+    icon: <Laptop size={16} />,
+    label: "IT",
+    category: "it",
+    offerType: "service",
+  },
+  {
+    icon: <Baby size={16} />,
+    label: "Hlídání",
+    category: "hlidani",
+    offerType: "service",
+  },
+  {
+    icon: <Boxes size={16} />,
+    label: "Ostatní služby",
+    category: "ostatni_sluzby",
+    offerType: "service",
+  },
+];
+
+const mixedCategoryChips: CategoryDefinition[] = [
+  itemCategoryChips[0],
+  itemCategoryChips[1],
+  itemCategoryChips[3],
+  itemCategoryChips[4],
+  serviceCategoryChips[0],
+  serviceCategoryChips[1],
+  serviceCategoryChips[2],
+  serviceCategoryChips[3],
+];
+
+function getOfferType(item: ItemCardItem) {
+  return ((item as ItemCardItem & { offer_type?: string }).offer_type ||
+    "item") as "item" | "service";
+}
 
 async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
-  if (items.length === 0) return items as (T & { is_reserved_today: boolean })[];
+  if (items.length === 0)
+    return items as (T & { is_reserved_today: boolean })[];
 
   const today = new Date().toISOString().split("T")[0];
   const itemIds = items.map((item) => item.id);
@@ -74,12 +201,14 @@ async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
   }));
 }
 
-
 export default function HomePage() {
   const [showMap, setShowMap] = useState(false);
   const [items, setItems] = useState<ItemCardItem[]>([]);
   const [displayedItems, setDisplayedItems] = useState<ItemCardItem[]>([]);
   const [search, setSearch] = useState("");
+  const [selectedOfferType, setSelectedOfferType] =
+    useState<OfferTypeFilter>("all");
+  const [selectedCategory, setSelectedCategory] = useState("");
   const [userLocation, setUserLocation] = useState<{
     latitude: number;
     longitude: number;
@@ -90,14 +219,31 @@ export default function HomePage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [totalItems, setTotalItems] = useState(0);
 
-  function submitSearch() {
+  function buildOffersHref() {
     const params = new URLSearchParams();
 
     if (search.trim()) {
       params.set("search", search.trim());
     }
 
-    router.push(`/offers?${params.toString()}`);
+    if (selectedOfferType !== "all") {
+      params.set("type", selectedOfferType);
+    }
+
+    if (selectedCategory) {
+      params.set("category", selectedCategory);
+    }
+
+    return `/offers${params.toString() ? `?${params.toString()}` : ""}`;
+  }
+
+  function submitSearch() {
+    router.push(buildOffersHref());
+  }
+
+  function selectOfferType(type: OfferTypeFilter) {
+    setSelectedOfferType(type);
+    setSelectedCategory("");
   }
 
   useEffect(() => {
@@ -140,7 +286,7 @@ export default function HomePage() {
           )
         )
         `,
-        { count: "exact" }
+        { count: "exact" },
       )
       .eq("is_active", true)
       .is("deleted_at", null)
@@ -148,7 +294,7 @@ export default function HomePage() {
       .limit(40);
 
     const itemsWithAvailability = await attachTodayAvailability(
-      ((data || []) as ItemCardItem[])
+      (data || []) as ItemCardItem[],
     );
 
     setItems(itemsWithAvailability);
@@ -202,12 +348,22 @@ export default function HomePage() {
         enableHighAccuracy: false,
         timeout: 15000,
         maximumAge: 300000,
-      }
+      },
     );
   }
 
   const filteredItems = useMemo(() => {
     let result = items;
+
+    if (selectedOfferType !== "all") {
+      result = result.filter(
+        (item) => getOfferType(item) === selectedOfferType,
+      );
+    }
+
+    if (selectedCategory) {
+      result = result.filter((item) => item.category === selectedCategory);
+    }
 
     if (search.trim()) {
       const query = search.toLowerCase();
@@ -215,7 +371,7 @@ export default function HomePage() {
       result = result.filter((item) =>
         `${item.title} ${item.category} ${item.pickup_place}`
           .toLowerCase()
-          .includes(query)
+          .includes(query),
       );
     }
 
@@ -227,14 +383,14 @@ export default function HomePage() {
             userLocation.latitude,
             userLocation.longitude,
             a.pickup_latitude!,
-            a.pickup_longitude!
+            a.pickup_longitude!,
           );
 
           const distanceB = getDistanceKm(
             userLocation.latitude,
             userLocation.longitude,
             b.pickup_latitude!,
-            b.pickup_longitude!
+            b.pickup_longitude!,
           );
 
           return distanceA - distanceB;
@@ -242,7 +398,14 @@ export default function HomePage() {
     }
 
     return result;
-  }, [items, search, userLocation]);
+  }, [items, search, selectedOfferType, selectedCategory, userLocation]);
+
+  const visibleCategoryChips =
+    selectedOfferType === "item"
+      ? itemCategoryChips
+      : selectedOfferType === "service"
+        ? serviceCategoryChips
+        : mixedCategoryChips;
 
   useEffect(() => {
     setDisplayedItems(filteredItems.slice(0, DISPLAYED_ITEMS_COUNT));
@@ -259,7 +422,7 @@ export default function HomePage() {
 
         const currentIds = new Set(currentItems.map((item) => item.id));
         const candidates = filteredItems.filter(
-          (item) => !currentIds.has(item.id)
+          (item) => !currentIds.has(item.id),
         );
 
         if (candidates.length === 0) {
@@ -292,7 +455,10 @@ export default function HomePage() {
           <div className="flex items-center gap-3">
             <InstallAppButton />
             {isLoggedIn ? (
-              <Link href="/dashboard" className="koluj-button px-5 py-3 md:px-6">
+              <Link
+                href="/dashboard"
+                className="koluj-button px-5 py-3 md:px-6"
+              >
                 Můj prostor
               </Link>
             ) : (
@@ -305,32 +471,30 @@ export default function HomePage() {
 
         <section className="grid items-start gap-8 pt-6 pb-0 md:py-10 lg:grid-cols-[0.95fr_1.05fr]">
           <div className="flex flex-col lg:h-[430px]">
-            <h1 className="koluj-heading">
-              <span className="md:hidden">Rezervuj si věc nebo službu poblíž</span>
-              <span className="hidden md:block">
-                Rezervuj si věci a služby od lidí ve svém okolí
-              </span>
-            </h1>
+            <h1 className="koluj-heading">Půjč si věci. Objednej si služby.</h1>
 
             <p className="mt-3 max-w-xl text-base leading-snug text-[var(--koluj-muted)] md:text-xl md:leading-relaxed">
-              Najdi nabídku poblíž a domluv rezervaci přímo s poskytovatelem.
+              Vše jednoduše od lidí ve tvém okolí.
             </p>
 
             <div className="mt-5 hidden flex-wrap gap-2 text-sm font-bold text-[var(--koluj-green)] md:flex">
               <span className="rounded-full bg-white px-4 py-2 shadow-sm">
-                {totalItems} nabídek k rezervaci
+                {totalItems} aktivních nabídek
               </span>
               <span className="rounded-full bg-white px-4 py-2 shadow-sm">
-                Věci i služby poblíž
+                Věci i služby
               </span>
               <span className="rounded-full bg-white px-4 py-2 shadow-sm">
-                Domluva přímo s poskytovatelem
+                Bez prostředníků
               </span>
             </div>
 
             <div className="mt-8 lg:mt-auto flex max-w-2xl items-center gap-2 rounded-[1.75rem] border border-[var(--koluj-border)] bg-white p-2 shadow-sm">
               <div className="flex min-w-0 flex-1 items-center gap-3 px-3">
-                <Search size={20} className="shrink-0 text-[var(--koluj-muted)]" />
+                <Search
+                  size={20}
+                  className="shrink-0 text-[var(--koluj-muted)]"
+                />
 
                 <input
                   value={search}
@@ -365,7 +529,7 @@ export default function HomePage() {
 
           {showMap && (
             <div className="relative h-[430px] overflow-hidden rounded-[2rem] border border-[var(--koluj-border)] bg-white shadow-sm">
-              <ItemsMap items={items} userLocation={userLocation} />
+              <ItemsMap items={filteredItems} userLocation={userLocation} />
 
               <button
                 type="button"
@@ -379,15 +543,47 @@ export default function HomePage() {
           )}
         </section>
 
-        <section className="koluj-categories-mobile mt-3 lg:grid lg:grid-cols-8 lg:gap-2">
-          <CategoryChip label="Vše" category="" />
-          <CategoryChip icon={<Drill size={16} />} label="Nářadí" category="naradi" />
-          <CategoryChip icon={<Bike size={16} />} label="Sport" category="sport" />
-          <CategoryChip icon={<Smartphone size={16} />} label="Elektronika" category="elektronika" />
-          <CategoryChip icon={<Sparkles size={16} />} label="Outdoor" category="outdoor" />
-          <CategoryChip icon={<Trees size={16} />} label="Dům a zahrada" category="dum_zahrada" />
-          <CategoryChip icon={<Camera size={16} />} label="Foto a video" category="foto_video" />
-          <CategoryChip icon={<Boxes size={16} />} label="Ostatní" category="ostatni" />
+        <section className="mt-4 space-y-3">
+          <div className="flex gap-2 overflow-x-auto pb-1 text-sm font-black md:flex-wrap md:overflow-visible">
+            <OfferTypeButton
+              active={selectedOfferType === "all"}
+              onClick={() => selectOfferType("all")}
+              label="Vše"
+            />
+            <OfferTypeButton
+              active={selectedOfferType === "item"}
+              onClick={() => selectOfferType("item")}
+              label="Věci"
+            />
+            <OfferTypeButton
+              active={selectedOfferType === "service"}
+              onClick={() => selectOfferType("service")}
+              label="Služby"
+            />
+          </div>
+
+          <div className="koluj-categories-mobile lg:grid lg:grid-cols-8 lg:gap-2">
+            <CategoryChip
+              label="Vše"
+              active={!selectedCategory}
+              onClick={() => setSelectedCategory("")}
+            />
+            {visibleCategoryChips.map((chip) => (
+              <CategoryChip
+                key={`${chip.offerType || "all"}-${chip.category}`}
+                icon={chip.icon}
+                label={chip.label}
+                active={selectedCategory === chip.category}
+                onClick={() => {
+                  setSelectedCategory(chip.category);
+
+                  if (chip.offerType && selectedOfferType === "all") {
+                    setSelectedOfferType(chip.offerType);
+                  }
+                }}
+              />
+            ))}
+          </div>
         </section>
 
         <section id="explore" className="mt-5 md:mt-14">
@@ -395,12 +591,14 @@ export default function HomePage() {
             <div>
               <h2 className="koluj-title">Nabídky ve tvém okolí</h2>
               <p className="mt-2 text-[var(--koluj-muted)]">
-                Celkem {totalItems} aktivních nabídek.
+                {filteredItems.length === totalItems
+                  ? `Celkem ${totalItems} aktivních nabídek.`
+                  : `Zobrazeno ${filteredItems.length} z ${totalItems} aktivních nabídek.`}
               </p>
             </div>
 
             <Link
-              href="/offers"
+              href={buildOffersHref()}
               className="hidden items-center gap-2 font-black text-[var(--koluj-green)] md:flex"
             >
               Zobrazit všechny
@@ -418,7 +616,7 @@ export default function HomePage() {
 
           <div className="mt-8 flex justify-center md:mt-10">
             <Link
-              href="/offers"
+              href={buildOffersHref()}
               className="koluj-button inline-flex items-center gap-2 px-8 py-4"
             >
               Zobrazit všechny nabídky
@@ -431,7 +629,8 @@ export default function HomePage() {
           <div className="mb-6">
             <h2 className="koluj-title">Jak to funguje</h2>
             <p className="mt-2 text-[var(--koluj-muted)]">
-              Vyber nabídku, domluv termín a rezervuj si ji od člověka poblíž.
+              Najdi věc nebo službu, domluv se přímo s poskytovatelem a rezervuj
+              si termín.
             </p>
           </div>
 
@@ -444,7 +643,7 @@ export default function HomePage() {
             <Feature
               icon={<Users size={28} />}
               title="2. Domluv termín"
-              text="Napiš poskytovateli a potvrďte si termín."
+              text="Napiš poskytovateli a potvrďte si vhodný čas."
             />
             <Feature
               icon={<MapPin size={28} />}
@@ -453,8 +652,8 @@ export default function HomePage() {
             />
             <Feature
               icon={<ShieldCheck size={28} />}
-              title="4. Vrať a ohodnoť"
-              text="Vrať nabídku a pomoz budovat důvěru."
+              title="4. Ohodnoť zkušenost"
+              text="Po skončení napiš hodnocení a pomoz budovat důvěru."
             />
           </div>
         </section>
@@ -463,24 +662,50 @@ export default function HomePage() {
   );
 }
 
-function CategoryChip({
-  icon,
+function OfferTypeButton({
+  active,
+  onClick,
   label,
-  category,
 }: {
-  icon?: React.ReactNode;
+  active: boolean;
+  onClick: () => void;
   label: string;
-  category: string;
 }) {
-  const router = useRouter();
-
   return (
     <button
       type="button"
-      onClick={() =>
-        router.push(category ? `/offers?category=${category}` : "/offers")
-      }
-      className="koluj-category-chip"
+      onClick={onClick}
+      className={`shrink-0 rounded-2xl border px-5 py-3 transition ${
+        active
+          ? "border-[var(--koluj-green)] bg-[var(--koluj-green)] text-white"
+          : "border-[var(--koluj-border)] bg-white text-[var(--koluj-text)] hover:bg-[var(--koluj-bg)]"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
+function CategoryChip({
+  icon,
+  label,
+  active,
+  onClick,
+}: {
+  icon?: React.ReactNode;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`koluj-category-chip ${
+        active
+          ? "border-[var(--koluj-green)] bg-[var(--koluj-green)] text-white"
+          : ""
+      }`}
     >
       {icon}
       {label}

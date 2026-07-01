@@ -291,8 +291,8 @@ async function makePrimary(imageUrl: string) {
 }
 
   async function saveItem() {
-    if (images.length + newPhotos.length === 0) {
-    toast.error("Nahraj alespoň jednu fotku");
+    if (form.offer_type === "item" && images.length + newPhotos.length === 0) {
+    toast.error("Nahraj alespoň jednu fotku věci");
     return;
     }
     if (!form.title.trim()) {
@@ -327,13 +327,24 @@ async function makePrimary(imageUrl: string) {
     return;
     }
 
-    if (!form.pickup_place.trim() || !form.pickup_latitude || !form.pickup_longitude) {
+    if (
+      form.offer_type === "item" &&
+      (!form.pickup_place.trim() || !form.pickup_latitude || !form.pickup_longitude)
+    ) {
       toast.error("Vyber místo předání z našeptávače");
       return;
     }
 
-    if (form.handover_options.length === 0) {
+    if (form.offer_type === "item" && form.handover_options.length === 0) {
       toast.error("Vyber alespoň jednu možnost předání");
+      return;
+    }
+
+    if (
+      form.offer_type === "service" &&
+      Number(form.service_duration_minutes || 0) < 15
+    ) {
+      toast.error("Vyplň obvyklou délku služby alespoň 15 minut");
       return;
     }
     
@@ -353,10 +364,16 @@ async function makePrimary(imageUrl: string) {
         deposit: form.offer_type === "item" && form.deposit ? Number(form.deposit) : null,
         service_duration_minutes:
           form.offer_type === "service" ? Number(form.service_duration_minutes || 60) : null,
-        pickup_place: form.pickup_place,
-        pickup_latitude: form.pickup_latitude,
-        pickup_longitude: form.pickup_longitude,
-        handover_options: form.handover_options,
+        pickup_place:
+          form.offer_type === "item"
+            ? form.pickup_place
+            : form.pickup_place.trim() || null,
+        pickup_latitude:
+          form.offer_type === "item" ? form.pickup_latitude : form.pickup_latitude,
+        pickup_longitude:
+          form.offer_type === "item" ? form.pickup_longitude : form.pickup_longitude,
+        handover_options:
+          form.offer_type === "item" ? form.handover_options : [],
         contact_note: form.contact_note,
         availability_type: form.availability_type,
         available_from:
@@ -467,7 +484,7 @@ async function makePrimary(imageUrl: string) {
           </h1>
 
           <p className="mt-6 max-w-2xl text-2xl leading-relaxed text-[var(--koluj-muted)]">
-            Uprav informace, cenu a dostupnost nabídky.
+            Uprav informace, cenu a základní nastavení nabídky.
           </p>
         </section>
 
@@ -475,9 +492,45 @@ async function makePrimary(imageUrl: string) {
         <div className="space-y-8">
 
         <div className="koluj-card p-8">
+              <SectionTitle icon={<Package size={24} />} title="Co chceš nabídnout?" />
+
+              <div className="mt-6 grid gap-3 md:grid-cols-2">
+                {["item", "service"].map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() =>
+                      setForm((prev) => ({
+                        ...prev,
+                        offer_type: type,
+                        category: "",
+                        condition: type === "service" ? "" : prev.condition,
+                        price_unit: type === "service" ? "hour" : prev.price_unit || "day",
+                        deposit: type === "service" ? "" : prev.deposit,
+                        handover_options: type === "service" ? [] : prev.handover_options,
+                      }))
+                    }
+                    className={`rounded-3xl px-5 py-4 text-left font-black transition ${
+                      form.offer_type === type
+                        ? "bg-[var(--koluj-green)] text-white"
+                        : "bg-[var(--koluj-bg)] text-[var(--koluj-text)]"
+                    }`}
+                  >
+                    {offerTypeLabels[type as keyof typeof offerTypeLabels]}
+                    <span className="mt-1 block text-sm font-bold opacity-80">
+                      {type === "item"
+                        ? "Fyzická věc s předáním a rezervací po dnech."
+                        : "Čas, práce nebo pomoc s rezervací po hodinách."}
+                    </span>
+                  </button>
+                ))}
+              </div>
+        </div>
+
+        <div className="koluj-card p-8">
         <SectionTitle
             icon={<Camera size={24} />}
-            title="Fotky"
+            title={form.offer_type === "service" ? "Fotky služby" : "Fotky věci"}
         />
 
         <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -553,6 +606,13 @@ async function makePrimary(imageUrl: string) {
             />
             </label>
         </div>
+
+            <p className="mt-4 text-sm text-[var(--koluj-muted)]">
+              {form.offer_type === "service"
+                ? "Fotky jsou u služby volitelné. Pomůžou ale zvýšit důvěryhodnost nabídky."
+                : "U věci doporučujeme mít alespoň jednu fotku."}
+            </p>
+
             {uploadingPhotos && (
               <div className="mt-4">
                 <div className="mb-2 flex justify-between text-sm font-bold text-[var(--koluj-muted)]">
@@ -573,36 +633,6 @@ async function makePrimary(imageUrl: string) {
               <SectionTitle icon={<Package size={24} />} title="O nabídce" />
 
               <div className="mt-6 space-y-4">
-                <div className="grid gap-3 md:grid-cols-2">
-                  {["item", "service"].map((type) => (
-                    <button
-                      key={type}
-                      type="button"
-                      onClick={() =>
-                        setForm((prev) => ({
-                          ...prev,
-                          offer_type: type,
-                          category: "",
-                          condition: type === "service" ? "" : prev.condition,
-                          price_unit: type === "service" ? "hour" : prev.price_unit || "day",
-                        }))
-                      }
-                      className={`rounded-3xl px-5 py-4 text-left font-black transition ${
-                        form.offer_type === type
-                          ? "bg-[var(--koluj-green)] text-white"
-                          : "bg-[var(--koluj-bg)] text-[var(--koluj-text)]"
-                      }`}
-                    >
-                      {offerTypeLabels[type as keyof typeof offerTypeLabels]}
-                      <span className="mt-1 block text-sm font-bold opacity-80">
-                        {type === "item"
-                          ? "Rezervace fyzické nabídky po dnech."
-                          : "Rezervace času nebo práce po hodinách."}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-
                 <input
                   value={form.title}
                   onChange={(e) => updateField("title", e.target.value)}
@@ -632,7 +662,7 @@ async function makePrimary(imageUrl: string) {
                       onChange={(e) => updateField("condition", e.target.value)}
                       className="koluj-input"
                     >
-                      <option value="">Stav nabídky *</option>
+                      <option value="">Stav věci *</option>
                       {conditions.map((condition) => (
                         <option key={condition} value={condition}>
                           {conditionLabels[condition]}
@@ -721,13 +751,13 @@ async function makePrimary(imageUrl: string) {
             </div>
 
             <div className="koluj-card p-8">
-              <SectionTitle icon={<MapPin size={24} />} title="Předání" />
+              <SectionTitle icon={<MapPin size={24} />} title={form.offer_type === "service" ? "Lokalita působení" : "Předání"} />
 
               <div className="relative mt-6">
                 <input
                   value={form.pickup_place}
                   onChange={(e) => searchPlaces(e.target.value)}
-                  placeholder="Místo předání *"
+                  placeholder={form.offer_type === "service" ? "Lokalita působení, např. Praha a okolí" : "Místo předání *"}
                   className="koluj-input"
                 />
 
@@ -751,8 +781,9 @@ async function makePrimary(imageUrl: string) {
                 )}
               </div>
 
-              <div className="mt-5 grid gap-3 md:grid-cols-2">
-                {handoverOptions.map((value) => (
+              {form.offer_type === "item" && (
+                <div className="mt-5 grid gap-3 md:grid-cols-2">
+                  {handoverOptions.map((value) => (
                   <button
                     key={value}
                     type="button"
@@ -766,13 +797,14 @@ async function makePrimary(imageUrl: string) {
                     {form.handover_options.includes(value) && <Check size={18} />}
                     {handoverLabels[value]}
                   </button>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
 
               <textarea
                 value={form.contact_note}
                 onChange={(e) => updateField("contact_note", e.target.value)}
-                placeholder="Poznámka k předání"
+                placeholder={form.offer_type === "service" ? "Poznámka ke službě, např. dojezd, online varianta nebo ideální časy" : "Poznámka k předání"}
                 className="koluj-input mt-5 min-h-28"
               />
             </div>
@@ -798,14 +830,22 @@ async function makePrimary(imageUrl: string) {
               <h2 className="text-2xl font-black">Kontrola</h2>
 
               <ul className="mt-6 space-y-4 text-[var(--koluj-muted)]">
-                <CheckLine done={images.length + newPhotos.length > 0} text="Alespoň jedna fotka"/>
+                {form.offer_type === "item" ? (
+                  <CheckLine done={images.length + newPhotos.length > 0} text="Alespoň jedna fotka" />
+                ) : (
+                  <CheckLine done={true} text="Fotky jsou volitelné" />
+                )}
                 <CheckLine done={!!form.title} text="Název nabídky" />
                 <CheckLine done={!!form.category} text="Kategorie" />
                 {form.offer_type === "item" && (
-                  <CheckLine done={!!form.condition} text="Stav nabídky" />
+                  <CheckLine done={!!form.condition} text="Stav věci" />
                 )}
                 <CheckLine done={!!form.price_amount && !!form.price_unit} text="Cena" />
-                <CheckLine done={!!form.pickup_latitude} text="Místo předání" />
+                {form.offer_type === "item" ? (
+                  <CheckLine done={!!form.pickup_latitude} text="Místo předání" />
+                ) : (
+                  <CheckLine done={true} text="Lokalita působení je volitelná" />
+                )}
               </ul>
 
               <button
