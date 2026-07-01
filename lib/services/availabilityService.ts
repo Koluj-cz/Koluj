@@ -5,46 +5,46 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-export type AvailabilityEntry = {
-  id: string;
-  offer_id: string;
-  date_from: string;
-  date_to: string;
-};
-
-export type AvailabilityReservation = AvailabilityEntry & {
-  booking_id: string;
-  status: string;
-};
-
-export type AvailabilityBlock = AvailabilityEntry & {
-  owner_id: string;
-  reason: string | null;
-};
-
-function normalizeDate(value: string) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
-    throw new Error("Neplatný formát data.");
-  }
-
-  const date = new Date(`${value}T00:00:00`);
-
-  if (Number.isNaN(date.getTime())) {
-    throw new Error("Neplatné datum.");
-  }
-
-  return value;
+function toIsoDate(value: string | Date) {
+  const date = typeof value === "string" ? new Date(value) : value;
+  return date.toISOString().split("T")[0];
 }
 
-export function normalizeDateRange(dateFrom: string, dateTo: string) {
-  const from = normalizeDate(dateFrom);
-  const to = normalizeDate(dateTo);
+function dayStart(date: string) {
+  return `${date}T00:00:00.000Z`;
+}
 
-  if (new Date(`${to}T00:00:00`) < new Date(`${from}T00:00:00`)) {
-    throw new Error("Datum vrácení nemůže být dřív než datum rezervace.");
+function dayAfter(date: string) {
+  const next = new Date(`${date}T00:00:00.000Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  return next.toISOString();
+}
+
+function assertDateRange(dateFrom?: string | null, dateTo?: string | null) {
+  if (!dateFrom || !dateTo) {
+    throw new Error("Vyber termín.");
   }
 
-  return { dateFrom: from, dateTo: to };
+  if (dateTo < dateFrom) {
+    throw new Error("Konec termínu nemůže být dřív než začátek.");
+  }
+}
+
+function assertTimeRange(startsAt?: string | null, endsAt?: string | null) {
+  if (!startsAt || !endsAt) {
+    throw new Error("Vyber čas rezervace.");
+  }
+
+  const start = new Date(startsAt);
+  const end = new Date(endsAt);
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    throw new Error("Vybraný čas není platný.");
+  }
+
+  if (end <= start) {
+    throw new Error("Konec rezervace musí být později než začátek.");
+  }
 }
 
 export async function getOfferAvailabilityServer({
@@ -56,37 +56,65 @@ export async function getOfferAvailabilityServer({
   dateFrom: string;
   dateTo: string;
 }) {
-  const range = normalizeDateRange(dateFrom, dateTo);
+  assertDateRange(dateFrom, dateTo);
 
-  const [reservationsResult, blocksResult] = await Promise.all([
-    supabaseAdmin
-      .from("offer_reservations")
-      .select("id, offer_id, booking_id, date_from, date_to, status")
-      .eq("offer_id", offerId)
-      .eq("status", "active")
-      .lte("date_from", range.dateTo)
-      .gte("date_to", range.dateFrom)
-      .order("date_from", { ascending: true }),
-    supabaseAdmin
-      .from("offer_availability_blocks")
-      .select("id, offer_id, owner_id, date_from, date_to, reason")
-      .eq("offer_id", offerId)
-      .lte("date_from", range.dateTo)
-      .gte("date_to", range.dateFrom)
-      .order("date_from", { ascending: true }),
-  ]);
+  const rangeStart = dayStart(dateFrom);
+  const rangeEnd = dayAfter(dateTo);
 
-  if (reservationsResult.error) {
-    throw new Error(reservationsResult.error.message);
+  const [dayReservationsResult, timeReservationsResult, dayBlocksResult, timeBlocksResult] =
+    await Promise.all([
+      supabaseAdmin
+        .from("offer_reservations")
+        .select("id, booking_id, date_from, date_to, starts_at, ends_at, status")
+        .eq("offer_id", offerId)
+        .eq("status", "active")
+        .lte("date_from", dateTo)
+        .gte("date_to", dateFrom),
+      supabaseAdmin
+        .from("offer_reservations")
+        .select("id, booking_id, date_from, date_to, starts_at, ends_at, status")
+        .eq("offer_id", offerId)
+        .eq("status", "active")
+        .not("starts_at", "is", null)
+        .lt("starts_at", rangeEnd)
+        .gt("ends_at", rangeStart),
+      supabaseAdmin
+        .from("offer_availability_blocks")
+        .select("id, date_from, date_to, starts_at, ends_at, reason")
+        .eq("offer_id", offerId)
+        .lte("date_from", dateTo)
+        .gte("date_to", dateFrom),
+      supabaseAdmin
+        .from("offer_availability_blocks")
+        .select("id, date_from, date_to, starts_at, ends_at, reason")
+        .eq("offer_id", offerId)
+        .not("starts_at", "is", null)
+        .lt("starts_at", rangeEnd)
+        .gt("ends_at", rangeStart),
+    ]);
+
+  for (const result of [
+    dayReservationsResult,
+    timeReservationsResult,
+    dayBlocksResult,
+    timeBlocksResult,
+  ]) {
+    if (result.error) throw new Error(result.error.message);
   }
 
-  if (blocksResult.error) {
-    throw new Error(blocksResult.error.message);
-  }
+  const reservationsById = new Map<string, any>();
+  [...(dayReservationsResult.data || []), ...(timeReservationsResult.data || [])].forEach(
+    (reservation) => reservationsById.set(reservation.id, reservation)
+  );
+
+  const blocksById = new Map<string, any>();
+  [...(dayBlocksResult.data || []), ...(timeBlocksResult.data || [])].forEach((block) =>
+    blocksById.set(block.id, block)
+  );
 
   return {
-    reservations: (reservationsResult.data || []) as AvailabilityReservation[],
-    blocks: (blocksResult.data || []) as AvailabilityBlock[],
+    reservations: Array.from(reservationsById.values()),
+    blocks: Array.from(blocksById.values()),
   };
 }
 
@@ -94,90 +122,200 @@ export async function assertOfferAvailableServer({
   offerId,
   dateFrom,
   dateTo,
+  startsAt,
+  endsAt,
+  ignoreBookingId,
 }: {
   offerId: string;
-  dateFrom: string;
-  dateTo: string;
+  dateFrom?: string | null;
+  dateTo?: string | null;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  ignoreBookingId?: string | null;
 }) {
-  const availability = await getOfferAvailabilityServer({
+  if (startsAt || endsAt) {
+    assertTimeRange(startsAt, endsAt);
+
+    const startDate = toIsoDate(startsAt!);
+    const endDate = toIsoDate(endsAt!);
+
+    const [bookingResult, blockResult] = await Promise.all([
+      supabaseAdmin
+        .from("bookings")
+        .select("id")
+        .eq("offer_id", offerId)
+        .in("status", ["requested", "approved", "active"])
+        .not("starts_at", "is", null)
+        .lt("starts_at", endsAt!)
+        .gt("ends_at", startsAt!)
+        .limit(1),
+      supabaseAdmin
+        .from("offer_availability_blocks")
+        .select("id")
+        .eq("offer_id", offerId)
+        .or(
+          `and(starts_at.not.is.null,starts_at.lt.${endsAt},ends_at.gt.${startsAt}),and(starts_at.is.null,date_from.lte.${endDate},date_to.gte.${startDate})`
+        )
+        .limit(1),
+    ]);
+
+    if (bookingResult.error) throw new Error(bookingResult.error.message);
+    if (blockResult.error) throw new Error(blockResult.error.message);
+
+    const overlappingBookings = (bookingResult.data || []).filter(
+      (booking) => booking.id !== ignoreBookingId
+    );
+
+    if (overlappingBookings.length > 0 || (blockResult.data || []).length > 0) {
+      throw new Error("Vybraný čas už není dostupný.");
+    }
+
+    return;
+  }
+
+  assertDateRange(dateFrom, dateTo);
+
+  const [reservationResult, blockResult] = await Promise.all([
+    supabaseAdmin
+      .from("offer_reservations")
+      .select("id, booking_id")
+      .eq("offer_id", offerId)
+      .eq("status", "active")
+      .lte("date_from", dateTo!)
+      .gte("date_to", dateFrom!)
+      .limit(1),
+    supabaseAdmin
+      .from("offer_availability_blocks")
+      .select("id")
+      .eq("offer_id", offerId)
+      .lte("date_from", dateTo!)
+      .gte("date_to", dateFrom!)
+      .limit(1),
+  ]);
+
+  if (reservationResult.error) throw new Error(reservationResult.error.message);
+  if (blockResult.error) throw new Error(blockResult.error.message);
+
+  const overlappingReservations = (reservationResult.data || []).filter(
+    (reservation) => reservation.booking_id !== ignoreBookingId
+  );
+
+  if (overlappingReservations.length > 0 || (blockResult.data || []).length > 0) {
+    throw new Error("Vybraný termín už není dostupný.");
+  }
+}
+
+export async function createAvailabilityBlockServer({
+  offerId,
+  ownerId,
+  dateFrom,
+  dateTo,
+  startsAt,
+  endsAt,
+  reason,
+}: {
+  offerId: string;
+  ownerId: string;
+  dateFrom?: string | null;
+  dateTo?: string | null;
+  startsAt?: string | null;
+  endsAt?: string | null;
+  reason?: string | null;
+}) {
+  const { data: offer, error: offerError } = await supabaseAdmin
+    .from("offers")
+    .select("id, owner_id")
+    .eq("id", offerId)
+    .single();
+
+  if (offerError || !offer) throw new Error("Nabídka nebyla nalezena");
+  if (offer.owner_id !== ownerId) throw new Error("Blokaci může vytvořit pouze vlastník");
+
+  if (startsAt || endsAt) {
+    assertTimeRange(startsAt, endsAt);
+    dateFrom = toIsoDate(startsAt!);
+    dateTo = toIsoDate(endsAt!);
+  } else {
+    assertDateRange(dateFrom, dateTo);
+  }
+
+  await assertOfferAvailableServer({
     offerId,
     dateFrom,
     dateTo,
+    startsAt,
+    endsAt,
   });
 
-  if (availability.reservations.length > 0) {
-    throw new Error("Vybraný termín je už rezervovaný.");
-  }
+  const { data: block, error } = await supabaseAdmin
+    .from("offer_availability_blocks")
+    .insert({
+      offer_id: offerId,
+      owner_id: ownerId,
+      date_from: dateFrom,
+      date_to: dateTo,
+      starts_at: startsAt || null,
+      ends_at: endsAt || null,
+      reason: reason?.trim() || null,
+    })
+    .select("id, date_from, date_to, starts_at, ends_at, reason")
+    .single();
 
-  if (availability.blocks.length > 0) {
-    throw new Error("Vybraný termín je blokovaný vlastníkem.");
-  }
+  if (error || !block) throw new Error(error?.message || "Blokaci se nepodařilo vytvořit");
+  return block;
+}
+
+export async function deleteAvailabilityBlockServer({
+  blockId,
+  ownerId,
+}: {
+  blockId: string;
+  ownerId: string;
+}) {
+  const { error } = await supabaseAdmin
+    .from("offer_availability_blocks")
+    .delete()
+    .eq("id", blockId)
+    .eq("owner_id", ownerId);
+
+  if (error) throw new Error(error.message);
+  return { ok: true };
 }
 
 export async function createReservationForBookingServer(bookingId: string) {
   const { data: booking, error: bookingError } = await supabaseAdmin
     .from("bookings")
-    .select("id, offer_id, date_from, date_to, status")
+    .select("id, offer_id, date_from, date_to, starts_at, ends_at")
     .eq("id", bookingId)
     .single();
 
-  if (bookingError || !booking) {
-    throw new Error("Rezervace nebyla nalezena.");
-  }
+  if (bookingError || !booking) throw new Error("Rezervace nebyla nalezena");
 
-  if (!booking.date_from || !booking.date_to) {
-    throw new Error("Rezervace nemá vybraný termín.");
-  }
+  const dateFrom = booking.date_from || (booking.starts_at ? toIsoDate(booking.starts_at) : null);
+  const dateTo = booking.date_to || (booking.ends_at ? toIsoDate(booking.ends_at) : null);
+
+  if (!dateFrom || !dateTo) throw new Error("Rezervace nemá vybraný termín.");
 
   await assertOfferAvailableServer({
     offerId: booking.offer_id,
-    dateFrom: booking.date_from,
-    dateTo: booking.date_to,
+    dateFrom,
+    dateTo,
+    startsAt: booking.starts_at,
+    endsAt: booking.ends_at,
+    ignoreBookingId: booking.id,
   });
 
-  const { data: existingReservation, error: existingError } = await supabaseAdmin
-    .from("offer_reservations")
-    .select("id, status")
-    .eq("booking_id", booking.id)
-    .maybeSingle();
+  const { error } = await supabaseAdmin.from("offer_reservations").insert({
+    offer_id: booking.offer_id,
+    booking_id: booking.id,
+    date_from: dateFrom,
+    date_to: dateTo,
+    starts_at: booking.starts_at || null,
+    ends_at: booking.ends_at || null,
+    status: "active",
+  });
 
-  if (existingError) {
-    throw new Error(existingError.message);
-  }
-
-  if (existingReservation) {
-    const { error } = await supabaseAdmin
-      .from("offer_reservations")
-      .update({
-        status: "active",
-        date_from: booking.date_from,
-        date_to: booking.date_to,
-        cancelled_at: null,
-        finished_at: null,
-      })
-      .eq("id", existingReservation.id);
-
-    if (error) throw new Error(error.message);
-    return existingReservation.id;
-  }
-
-  const { data: reservation, error } = await supabaseAdmin
-    .from("offer_reservations")
-    .insert({
-      offer_id: booking.offer_id,
-      booking_id: booking.id,
-      date_from: booking.date_from,
-      date_to: booking.date_to,
-      status: "active",
-    })
-    .select("id")
-    .single();
-
-  if (error || !reservation) {
-    throw new Error(error?.message || "Rezervaci se nepodařilo vytvořit.");
-  }
-
-  return reservation.id;
+  if (error) throw new Error(error.message);
 }
 
 export async function cancelReservationForBookingServer(bookingId: string) {
@@ -198,90 +336,4 @@ export async function finishReservationForBookingServer(bookingId: string) {
     .eq("status", "active");
 
   if (error) throw new Error(error.message);
-}
-
-export async function createAvailabilityBlockServer({
-  offerId,
-  ownerId,
-  dateFrom,
-  dateTo,
-  reason,
-}: {
-  offerId: string;
-  ownerId: string;
-  dateFrom: string;
-  dateTo: string;
-  reason?: string;
-}) {
-  const range = normalizeDateRange(dateFrom, dateTo);
-
-  const { data: offer, error: offerError } = await supabaseAdmin
-    .from("offers")
-    .select("id, owner_id")
-    .eq("id", offerId)
-    .is("deleted_at", null)
-    .single();
-
-  if (offerError || !offer) {
-    throw new Error("Nabídka nebyla nalezena.");
-  }
-
-  if (offer.owner_id !== ownerId) {
-    throw new Error("Blokace může upravovat pouze vlastník nabídky.");
-  }
-
-  await assertOfferAvailableServer({
-    offerId,
-    dateFrom: range.dateFrom,
-    dateTo: range.dateTo,
-  });
-
-  const { data: block, error } = await supabaseAdmin
-    .from("offer_availability_blocks")
-    .insert({
-      offer_id: offerId,
-      owner_id: ownerId,
-      date_from: range.dateFrom,
-      date_to: range.dateTo,
-      reason: reason?.trim() || null,
-    })
-    .select("id, offer_id, owner_id, date_from, date_to, reason")
-    .single();
-
-  if (error || !block) {
-    throw new Error(error?.message || "Blokaci se nepodařilo vytvořit.");
-  }
-
-  return block as AvailabilityBlock;
-}
-
-export async function deleteAvailabilityBlockServer({
-  blockId,
-  ownerId,
-}: {
-  blockId: string;
-  ownerId: string;
-}) {
-  const { data: block, error: blockError } = await supabaseAdmin
-    .from("offer_availability_blocks")
-    .select("id, owner_id")
-    .eq("id", blockId)
-    .single();
-
-  if (blockError || !block) {
-    throw new Error("Blokace nebyla nalezena.");
-  }
-
-  if (block.owner_id !== ownerId) {
-    throw new Error("Blokaci může zrušit pouze vlastník nabídky.");
-  }
-
-  const { error } = await supabaseAdmin
-    .from("offer_availability_blocks")
-    .delete()
-    .eq("id", blockId);
-
-  if (error) throw new Error(error.message);
-
-  return { ok: true };
 }

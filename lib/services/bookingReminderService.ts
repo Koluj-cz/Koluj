@@ -16,6 +16,8 @@ type BookingReminderRow = {
   status: string;
   date_from: string | null;
   date_to: string | null;
+  starts_at: string | null;
+  ends_at: string | null;
   offers:
     | {
         id: string;
@@ -50,6 +52,16 @@ function getTomorrowIsoDate() {
   return tomorrow.toISOString().split("T")[0];
 }
 
+function dayStart(date: string) {
+  return `${date}T00:00:00.000Z`;
+}
+
+function dayAfter(date: string) {
+  const next = new Date(`${date}T00:00:00.000Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  return next.toISOString();
+}
+
 function firstOrValue<T>(value: T | T[] | null | undefined): T | null {
   if (Array.isArray(value)) return value[0] || null;
   return value || null;
@@ -71,9 +83,7 @@ async function reserveReminderSlot(bookingId: string, type: ReminderType) {
 }
 
 async function loadBookingsForHandoverReminder(targetDate: string) {
-  const { data, error } = await supabaseAdmin
-    .from("bookings")
-    .select(`
+  const baseSelect = `
       id,
       offer_id,
       owner_id,
@@ -81,6 +91,8 @@ async function loadBookingsForHandoverReminder(targetDate: string) {
       status,
       date_from,
       date_to,
+      starts_at,
+      ends_at,
       offers:offers!bookings_offer_id_fkey (
         id,
         title
@@ -91,18 +103,36 @@ async function loadBookingsForHandoverReminder(targetDate: string) {
       customer:profiles!bookings_customer_id_fkey (
         full_name
       )
-    `)
-    .eq("status", "approved")
-    .eq("date_from", targetDate);
+    `;
 
-  if (error) throw new Error(error.message);
-  return (data || []) as unknown as BookingReminderRow[];
+  const [dateBookingsResult, timeBookingsResult] = await Promise.all([
+    supabaseAdmin
+      .from("bookings")
+      .select(baseSelect)
+      .eq("status", "approved")
+      .eq("date_from", targetDate),
+    supabaseAdmin
+      .from("bookings")
+      .select(baseSelect)
+      .eq("status", "approved")
+      .not("starts_at", "is", null)
+      .gte("starts_at", dayStart(targetDate))
+      .lt("starts_at", dayAfter(targetDate)),
+  ]);
+
+  if (dateBookingsResult.error) throw new Error(dateBookingsResult.error.message);
+  if (timeBookingsResult.error) throw new Error(timeBookingsResult.error.message);
+
+  const byId = new Map<string, BookingReminderRow>();
+  [...(dateBookingsResult.data || []), ...(timeBookingsResult.data || [])].forEach((booking) => {
+    byId.set(booking.id, booking as unknown as BookingReminderRow);
+  });
+
+  return Array.from(byId.values());
 }
 
 async function loadBookingsForReturnReminder(targetDate: string) {
-  const { data, error } = await supabaseAdmin
-    .from("bookings")
-    .select(`
+  const baseSelect = `
       id,
       offer_id,
       owner_id,
@@ -110,6 +140,8 @@ async function loadBookingsForReturnReminder(targetDate: string) {
       status,
       date_from,
       date_to,
+      starts_at,
+      ends_at,
       offers:offers!bookings_offer_id_fkey (
         id,
         title
@@ -120,12 +152,32 @@ async function loadBookingsForReturnReminder(targetDate: string) {
       customer:profiles!bookings_customer_id_fkey (
         full_name
       )
-    `)
-    .eq("status", "active")
-    .eq("date_to", targetDate);
+    `;
 
-  if (error) throw new Error(error.message);
-  return (data || []) as unknown as BookingReminderRow[];
+  const [dateBookingsResult, timeBookingsResult] = await Promise.all([
+    supabaseAdmin
+      .from("bookings")
+      .select(baseSelect)
+      .eq("status", "active")
+      .eq("date_to", targetDate),
+    supabaseAdmin
+      .from("bookings")
+      .select(baseSelect)
+      .eq("status", "active")
+      .not("ends_at", "is", null)
+      .gte("ends_at", dayStart(targetDate))
+      .lt("ends_at", dayAfter(targetDate)),
+  ]);
+
+  if (dateBookingsResult.error) throw new Error(dateBookingsResult.error.message);
+  if (timeBookingsResult.error) throw new Error(timeBookingsResult.error.message);
+
+  const byId = new Map<string, BookingReminderRow>();
+  [...(dateBookingsResult.data || []), ...(timeBookingsResult.data || [])].forEach((booking) => {
+    byId.set(booking.id, booking as unknown as BookingReminderRow);
+  });
+
+  return Array.from(byId.values());
 }
 
 export async function sendBookingRemindersServer() {

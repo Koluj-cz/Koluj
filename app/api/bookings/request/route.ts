@@ -27,7 +27,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { offerId, dateFrom, dateTo, note } = await request.json();
+  const { offerId, dateFrom, dateTo, startsAt, endsAt, note } = await request.json();
 
   if (!offerId) {
     return NextResponse.json({ error: "Missing offerId" }, { status: 400 });
@@ -39,6 +39,8 @@ export async function POST(request: Request) {
       customerId: user.id,
       dateFrom,
       dateTo,
+      startsAt,
+      endsAt,
       note,
     });
 

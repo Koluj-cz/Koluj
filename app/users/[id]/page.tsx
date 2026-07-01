@@ -88,6 +88,52 @@ export default function UserProfilePage() {
     loadProfile();
   }, []);
 
+  const filteredItems = useMemo(() => {
+    let result = [...items];
+
+    if (offerSearch.trim()) {
+      const query = offerSearch.toLowerCase();
+
+      result = result.filter((item) =>
+        `${item.title} ${item.category} ${item.pickup_place} ${item.description || ""}`
+          .toLowerCase()
+          .includes(query)
+      );
+    }
+
+    if (offerType !== "all") {
+      result = result.filter((item) => (item.offer_type || "item") === offerType);
+    }
+
+    if (category !== "all") {
+      result = result.filter((item) => item.category === category);
+    }
+
+    if (sortBy === "newest") {
+      result.sort(
+        (a, b) =>
+          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+      );
+    }
+
+    if (sortBy === "oldest") {
+      result.sort(
+        (a, b) =>
+          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+      );
+    }
+
+    if (sortBy === "az") {
+      result.sort((a, b) => a.title.localeCompare(b.title, "cs"));
+    }
+
+    if (sortBy === "za") {
+      result.sort((a, b) => b.title.localeCompare(a.title, "cs"));
+    }
+
+    return result;
+  }, [items, offerSearch, offerType, category, sortBy]);
+
   async function loadProfile() {
     const { data: profileData, error: profileError } = await supabase
       .from("profiles")
@@ -186,52 +232,6 @@ export default function UserProfilePage() {
 
   const visibleReviews = reviews.slice(0, visibleReviewsCount);
   const hasMoreReviews = visibleReviewsCount < reviews.length;
-
-  const filteredItems = useMemo(() => {
-    let result = [...items];
-
-    if (offerSearch.trim()) {
-      const query = offerSearch.toLowerCase();
-
-      result = result.filter((item) =>
-        `${item.title} ${item.category} ${item.pickup_place} ${item.description || ""}`
-          .toLowerCase()
-          .includes(query)
-      );
-    }
-
-    if (offerType !== "all") {
-      result = result.filter((item) => (item.offer_type || "item") === offerType);
-    }
-
-    if (category !== "all") {
-      result = result.filter((item) => item.category === category);
-    }
-
-    if (sortBy === "newest") {
-      result.sort(
-        (a, b) =>
-          new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-    }
-
-    if (sortBy === "oldest") {
-      result.sort(
-        (a, b) =>
-          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-      );
-    }
-
-    if (sortBy === "az") {
-      result.sort((a, b) => a.title.localeCompare(b.title, "cs"));
-    }
-
-    if (sortBy === "za") {
-      result.sort((a, b) => b.title.localeCompare(a.title, "cs"));
-    }
-
-    return result;
-  }, [items, offerSearch, offerType, category, sortBy]);
 
   return (
     <main className="min-h-screen">

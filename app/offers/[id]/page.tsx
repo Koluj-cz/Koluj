@@ -13,7 +13,7 @@ import {
   handoverLabels,
   serviceCategoryLabels,
 } from "@/lib/constants";
-import { formatDate, translatePriceUnit } from "@/lib/format";
+import { formatDate, formatDateTime, translatePriceUnit } from "@/lib/format";
 
 import {
   CalendarDays,
@@ -83,6 +83,8 @@ export default function ItemDetailPage() {
 
   const [borrowFrom, setBorrowFrom] = useState("");
   const [borrowTo, setBorrowTo] = useState("");
+  const [startsAt, setStartsAt] = useState("");
+  const [endsAt, setEndsAt] = useState("");
   const [borrowNote, setBorrowNote] = useState("");
   const [submittingBorrowRequest, setSubmittingBorrowRequest] = useState(false);
 
@@ -175,8 +177,10 @@ export default function ItemDetailPage() {
       },
       body: JSON.stringify({
         offerId: item.id,
-        dateFrom: borrowFrom,
-        dateTo: borrowTo,
+        dateFrom: item.offer_type === "service" ? null : borrowFrom,
+        dateTo: item.offer_type === "service" ? null : borrowTo,
+        startsAt: item.offer_type === "service" ? startsAt : null,
+        endsAt: item.offer_type === "service" ? endsAt : null,
         note: borrowNote,
       }),
     });
@@ -253,6 +257,7 @@ export default function ItemDetailPage() {
 
   const ownerName = item.profiles?.full_name || "Uživatel";
   const ownerInitial = ownerName.charAt(0).toUpperCase();
+  const isService = item.offer_type === "service";
 
   const descriptionCard = item.description ? (
     <div className="koluj-card p-6 md:p-8">
@@ -500,15 +505,25 @@ export default function ItemDetailPage() {
               <div className="mt-6">
                 <AvailabilityCalendar
                   offerId={item.id}
+                  offerType={item.offer_type}
                   isOwner={Boolean(isOwner)}
                   selectedRange={
-                    borrowFrom && borrowTo
+                    !isService && borrowFrom && borrowTo
                       ? { dateFrom: borrowFrom, dateTo: borrowTo }
+                      : null
+                  }
+                  selectedSlot={
+                    isService && startsAt && endsAt
+                      ? { startsAt, endsAt }
                       : null
                   }
                   onRangeChange={(range) => {
                     setBorrowFrom(range?.dateFrom || "");
                     setBorrowTo(range?.dateTo || "");
+                  }}
+                  onSlotChange={(slot) => {
+                    setStartsAt(slot?.startsAt || "");
+                    setEndsAt(slot?.endsAt || "");
                   }}
                 />
               </div>
@@ -518,31 +533,38 @@ export default function ItemDetailPage() {
                   <div>
                     <p className="font-black">Vybraný termín</p>
 
-                    {borrowFrom && borrowTo ? (
+                    {isService && startsAt && endsAt ? (
+                      <p className="mt-3 text-lg font-black">
+                        {formatDateTime(startsAt)} <span className="mx-2">→</span>{" "}
+                        {formatDateTime(endsAt)}
+                      </p>
+                    ) : !isService && borrowFrom && borrowTo ? (
                       <p className="mt-3 text-lg font-black">
                         {formatDate(borrowFrom)} <span className="mx-2">→</span>{" "}
                         {formatDate(borrowTo)}
                       </p>
                     ) : (
                       <p className="mt-3 text-[var(--koluj-muted)]">
-                        Zatím není vybraný žádný termín.
+                        {isService ? "Zatím není vybraný žádný čas." : "Zatím není vybraný žádný termín."}
                       </p>
                     )}
                   </div>
 
-                  {selectedDays && (
+                  {!isService && selectedDays && (
                     <span className="shrink-0 rounded-full bg-white px-3 py-1 text-sm font-black text-[var(--koluj-green)]">
                       {selectedDays} {selectedDays === 1 ? "den" : "dní"}
                     </span>
                   )}
                 </div>
 
-                {borrowFrom && borrowTo && (
+                {((isService && startsAt && endsAt) || (!isService && borrowFrom && borrowTo)) && (
                   <button
                     type="button"
                     onClick={() => {
                       setBorrowFrom("");
                       setBorrowTo("");
+                      setStartsAt("");
+                      setEndsAt("");
                     }}
                     className="mt-3 text-sm font-black text-[var(--koluj-green)] underline-offset-4 hover:underline"
                   >
@@ -584,13 +606,20 @@ export default function ItemDetailPage() {
                   <button
                     type="button"
                     onClick={handleBorrowClick}
-                    disabled={submittingBorrowRequest || !borrowFrom || !borrowTo}
+                    disabled={
+                      submittingBorrowRequest ||
+                      (isService ? !startsAt || !endsAt : !borrowFrom || !borrowTo)
+                    }
                     className="koluj-button mt-6 w-full px-6 py-4 disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {submittingBorrowRequest
                       ? "Odesílám žádost..."
-                      : borrowFrom && borrowTo
+                      : isService && startsAt && endsAt
+                      ? "Objednat službu"
+                      : !isService && borrowFrom && borrowTo
                       ? "Půjčit si"
+                      : isService
+                      ? "Vyber čas"
                       : "Vyber termín"}
                   </button>
                 </>
@@ -601,7 +630,7 @@ export default function ItemDetailPage() {
                   size={20}
                   className="shrink-0 text-[var(--koluj-green)]"
                 />
-                Domluv se s vlastníkem před předáním. Platbu a předání řešte
+                Domluv se s vlastníkem na detailech. Platbu a předání služby nebo věci řešte
                 bezpečně a férově.
               </div>
             </div>

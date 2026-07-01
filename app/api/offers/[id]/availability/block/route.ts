@@ -31,9 +31,9 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { dateFrom, dateTo, reason } = await request.json();
+  const { dateFrom, dateTo, startsAt, endsAt, reason } = await request.json();
 
-  if (!dateFrom || !dateTo) {
+  if ((!dateFrom || !dateTo) && (!startsAt || !endsAt)) {
     return NextResponse.json(
       { error: "Vyber termín blokace." },
       { status: 400 }
@@ -46,6 +46,8 @@ export async function POST(
       ownerId: user.id,
       dateFrom,
       dateTo,
+      startsAt,
+      endsAt,
       reason,
     });
 

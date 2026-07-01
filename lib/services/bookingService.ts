@@ -18,6 +18,21 @@ function formatDate(date: string | null) {
   return new Date(date).toLocaleDateString("cs-CZ");
 }
 
+function formatDateTime(date: string | null) {
+  if (!date) return "";
+  return new Date(date).toLocaleString("cs-CZ", {
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function toIsoDate(date: string) {
+  return new Date(date).toISOString().split("T")[0];
+}
+
 async function addSystemMessage({
   bookingId,
   actorId,
@@ -42,7 +57,7 @@ async function addSystemMessage({
 async function loadBookingWithOffer(bookingId: string) {
   const { data: booking, error: bookingError } = await supabaseAdmin
     .from("bookings")
-    .select("id, owner_id, customer_id, offer_id, status, date_from, date_to")
+    .select("id, owner_id, customer_id, offer_id, status, date_from, date_to, starts_at, ends_at")
     .eq("id", bookingId)
     .single();
 
@@ -52,7 +67,7 @@ async function loadBookingWithOffer(bookingId: string) {
 
   const { data: offer, error: offerError } = await supabaseAdmin
     .from("offers")
-    .select("id, title, status")
+    .select("id, title, status, offer_type")
     .eq("id", booking.offer_id)
     .single();
 
@@ -123,31 +138,18 @@ export async function requestBookingServer({
   customerId,
   dateFrom,
   dateTo,
+  startsAt,
+  endsAt,
   note,
 }: {
   offerId: string;
   customerId: string;
-  dateFrom: string;
-  dateTo: string;
+  dateFrom?: string;
+  dateTo?: string;
+  startsAt?: string;
+  endsAt?: string;
   note?: string;
 }) {
-  if (!dateFrom || !dateTo) {
-    throw new Error("Vyber termín rezervace.");
-  }
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  const fromDate = new Date(dateFrom);
-  const toDate = new Date(dateTo);
-
-  if (fromDate < today) {
-    throw new Error("Datum rezervace nemůže být v minulosti.");
-  }
-
-  if (toDate < fromDate) {
-    throw new Error("Datum vrácení nemůže být dřív než datum rezervace.");
-  }
 
   const { data: offer, error: offerError } = await supabaseAdmin
     .from("offers")
@@ -156,6 +158,7 @@ export async function requestBookingServer({
       owner_id,
       title,
       status,
+      offer_type,
       pickup_place,
       price_amount,
       deposit,
@@ -184,6 +187,50 @@ export async function requestBookingServer({
     );
   }
 
+  const isService = offer.offer_type === "service";
+
+  if (isService) {
+    if (!startsAt || !endsAt) {
+      throw new Error("Vyber den a čas služby.");
+    }
+
+    const start = new Date(startsAt);
+    const end = new Date(endsAt);
+
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      throw new Error("Vybraný čas není platný.");
+    }
+
+    if (start < new Date()) {
+      throw new Error("Čas rezervace nemůže být v minulosti.");
+    }
+
+    if (end <= start) {
+      throw new Error("Konec rezervace musí být později než začátek.");
+    }
+
+    dateFrom = toIsoDate(startsAt);
+    dateTo = toIsoDate(endsAt);
+  } else {
+    if (!dateFrom || !dateTo) {
+      throw new Error("Vyber termín rezervace.");
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const fromDate = new Date(dateFrom);
+    const toDate = new Date(dateTo);
+
+    if (fromDate < today) {
+      throw new Error("Datum rezervace nemůže být v minulosti.");
+    }
+
+    if (toDate < fromDate) {
+      throw new Error("Datum vrácení nemůže být dřív než datum rezervace.");
+    }
+  }
+
   const { data: customerProfile } = await supabaseAdmin
     .from("profiles")
     .select("id, full_name, city, latitude, longitude")
@@ -204,15 +251,23 @@ export async function requestBookingServer({
     );
   }
 
-  const { data: overlappingBookings, error: overlappingBookingError } = await supabaseAdmin
+  const overlappingBookingsQuery = supabaseAdmin
     .from("bookings")
     .select("id")
     .eq("offer_id", offer.id)
     .eq("customer_id", customerId)
-    .in("status", ["requested", "approved", "active"])
-    .lte("date_from", dateTo)
-    .gte("date_to", dateFrom)
-    .limit(1);
+    .in("status", ["requested", "approved", "active"]);
+
+  const { data: overlappingBookings, error: overlappingBookingError } = isService
+    ? await overlappingBookingsQuery
+        .not("starts_at", "is", null)
+        .lt("starts_at", endsAt!)
+        .gt("ends_at", startsAt!)
+        .limit(1)
+    : await overlappingBookingsQuery
+        .lte("date_from", dateTo!)
+        .gte("date_to", dateFrom!)
+        .limit(1);
 
   if (overlappingBookingError) {
     throw new Error(overlappingBookingError.message);
@@ -226,6 +281,8 @@ export async function requestBookingServer({
     offerId: offer.id,
     dateFrom,
     dateTo,
+    startsAt: isService ? startsAt : null,
+    endsAt: isService ? endsAt : null,
   });
 
   const { data: createdBooking, error: bookingError } = await supabaseAdmin
@@ -237,6 +294,8 @@ export async function requestBookingServer({
       status: "requested",
       date_from: dateFrom,
       date_to: dateTo,
+      starts_at: isService ? startsAt : null,
+      ends_at: isService ? endsAt : null,
       price_amount: offer.price_amount ?? 0,
       deposit_amount: offer.deposit ?? 0,
       total_price: offer.price_amount ?? 0,
@@ -257,7 +316,7 @@ export async function requestBookingServer({
     message: `Žádost o rezervace vytvořena.
 
 Nabídka: ${offer.title}
-Termín: ${formatDate(dateFrom)} – ${formatDate(dateTo)}
+Termín: ${isService ? `${formatDateTime(startsAt || null)} – ${formatDateTime(endsAt || null)}` : `${formatDate(dateFrom || null)} – ${formatDate(dateTo || null)}`}
 Místo předání: ${offer.pickup_place}
 Cena: ${offer.price_amount || 0} Kč
 Kauce: ${offer.deposit || 0} Kč${note?.trim() ? `\n\nPoznámka: ${note.trim()}` : ""}`,
@@ -298,7 +357,11 @@ export async function approveBookingServer({
     throw new Error("Schválit lze pouze novou žádost");
   }
 
-  if (!booking.date_from || !booking.date_to) {
+  if (offer.offer_type === "service") {
+    if (!booking.starts_at || !booking.ends_at) {
+      throw new Error("Rezervace nemá vybraný čas.");
+    }
+  } else if (!booking.date_from || !booking.date_to) {
     throw new Error("Rezervace nemá vybraný termín.");
   }
 
@@ -306,6 +369,9 @@ export async function approveBookingServer({
     offerId: offer.id,
     dateFrom: booking.date_from,
     dateTo: booking.date_to,
+    startsAt: booking.starts_at,
+    endsAt: booking.ends_at,
+    ignoreBookingId: booking.id,
   });
 
   const { error: updateBookingError } = await supabaseAdmin
