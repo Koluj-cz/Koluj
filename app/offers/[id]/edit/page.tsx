@@ -51,7 +51,6 @@ export default function EditItemPage() {
   const [newPhotos, setNewPhotos] = useState<File[]>([]);
   const [newPhotoPreviews, setNewPhotoPreviews] = useState<string[]>([]);
   const [primaryImageUrl, setPrimaryImageUrl] = useState("");
-  const today = new Date().toISOString().split("T")[0];
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
 
@@ -65,15 +64,11 @@ export default function EditItemPage() {
     price_unit: "day",
     price_note: "",
     deposit: "",
-    service_duration_minutes: "60",
     pickup_place: "",
     pickup_latitude: null as number | null,
     pickup_longitude: null as number | null,
     handover_options: [] as string[],
     contact_note: "",
-    availability_type: "long_term",
-    available_from: "",
-    available_to: "",
     is_active: true,
   });
 
@@ -121,15 +116,11 @@ export default function EditItemPage() {
       price_unit: data.price_unit || "day",
       price_note: data.price_note || "",
       deposit: data.deposit?.toString() || "",
-      service_duration_minutes: data.service_duration_minutes?.toString() || "60",
       pickup_place: data.pickup_place || "",
       pickup_latitude: data.pickup_latitude || null,
       pickup_longitude: data.pickup_longitude || null,
       handover_options: data.handover_options || [],
       contact_note: data.contact_note || "",
-      availability_type: data.availability_type || "long_term",
-      available_from: data.available_from || "",
-      available_to: data.available_to || "",
       is_active: data.is_active ?? true,
     });
 
@@ -327,11 +318,12 @@ async function makePrimary(imageUrl: string) {
     return;
     }
 
-    if (
-      form.offer_type === "item" &&
-      (!form.pickup_place.trim() || !form.pickup_latitude || !form.pickup_longitude)
-    ) {
-      toast.error("Vyber místo předání z našeptávače");
+    if (!form.pickup_place.trim() || !form.pickup_latitude || !form.pickup_longitude) {
+      toast.error(
+        form.offer_type === "service"
+          ? "Vyber lokalitu působení z našeptávače nebo zvol celou ČR"
+          : "Vyber místo předání z našeptávače"
+      );
       return;
     }
 
@@ -340,13 +332,6 @@ async function makePrimary(imageUrl: string) {
       return;
     }
 
-    if (
-      form.offer_type === "service" &&
-      Number(form.service_duration_minutes || 0) < 15
-    ) {
-      toast.error("Vyplň obvyklou délku služby alespoň 15 minut");
-      return;
-    }
     
     setSaving(true);
 
@@ -362,24 +347,12 @@ async function makePrimary(imageUrl: string) {
         price_unit: form.price_unit,
         price_note: form.price_note || null,
         deposit: form.offer_type === "item" && form.deposit ? Number(form.deposit) : null,
-        service_duration_minutes:
-          form.offer_type === "service" ? Number(form.service_duration_minutes || 60) : null,
-        pickup_place:
-          form.offer_type === "item"
-            ? form.pickup_place
-            : form.pickup_place.trim() || null,
-        pickup_latitude:
-          form.offer_type === "item" ? form.pickup_latitude : form.pickup_latitude,
-        pickup_longitude:
-          form.offer_type === "item" ? form.pickup_longitude : form.pickup_longitude,
+        pickup_place: form.pickup_place,
+        pickup_latitude: form.pickup_latitude,
+        pickup_longitude: form.pickup_longitude,
         handover_options:
           form.offer_type === "item" ? form.handover_options : [],
         contact_note: form.contact_note,
-        availability_type: form.availability_type,
-        available_from:
-          form.availability_type === "period" ? form.available_from : null,
-        available_to:
-          form.availability_type === "period" ? form.available_to : null,
         is_active: form.is_active,
       })
       .eq("id", itemId);
@@ -726,17 +699,6 @@ async function makePrimary(imageUrl: string) {
                 className="koluj-input min-h-28"
                 />
 
-                {form.offer_type === "service" && (
-                  <input
-                    type="number"
-                    min="15"
-                    step="15"
-                    value={form.service_duration_minutes}
-                    onChange={(e) => updateField("service_duration_minutes", e.target.value)}
-                    placeholder="Obvyklá délka služby v minutách"
-                    className="koluj-input"
-                  />
-                )}
 
                 {form.offer_type === "item" && (
                   <input
@@ -757,9 +719,27 @@ async function makePrimary(imageUrl: string) {
                 <input
                   value={form.pickup_place}
                   onChange={(e) => searchPlaces(e.target.value)}
-                  placeholder={form.offer_type === "service" ? "Lokalita působení, např. Praha a okolí" : "Místo předání *"}
+                  placeholder={form.offer_type === "service" ? "Lokalita působení *" : "Místo předání *"}
                   className="koluj-input"
                 />
+
+                {form.offer_type === "service" && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setForm((prev) => ({
+                        ...prev,
+                        pickup_place: "Celá Česká republika",
+                        pickup_latitude: 49.8175,
+                        pickup_longitude: 15.473,
+                      }));
+                      setPlaceSuggestions([]);
+                    }}
+                    className="mt-3 rounded-2xl bg-[var(--koluj-bg)] px-4 py-3 text-sm font-black text-[var(--koluj-green)]"
+                  >
+                    Působím po celé ČR
+                  </button>
+                )}
 
                 {placeSuggestions.length > 0 && (
                   <div className="absolute z-10 mt-2 w-full overflow-hidden rounded-3xl border border-[var(--koluj-border)] bg-[var(--koluj-surface)] shadow-lg">
@@ -844,7 +824,7 @@ async function makePrimary(imageUrl: string) {
                 {form.offer_type === "item" ? (
                   <CheckLine done={!!form.pickup_latitude} text="Místo předání" />
                 ) : (
-                  <CheckLine done={true} text="Lokalita působení je volitelná" />
+                  <CheckLine done={!!form.pickup_latitude} text="Lokalita působení" />
                 )}
               </ul>
 

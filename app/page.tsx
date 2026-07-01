@@ -376,25 +376,30 @@ export default function HomePage() {
     }
 
     if (userLocation) {
-      result = [...result]
-        .filter((item) => item.pickup_latitude && item.pickup_longitude)
-        .sort((a, b) => {
-          const distanceA = getDistanceKm(
-            userLocation.latitude,
-            userLocation.longitude,
-            a.pickup_latitude!,
-            a.pickup_longitude!,
-          );
+      result = [...result].sort((a, b) => {
+        const aHasLocation = Boolean(a.pickup_latitude && a.pickup_longitude);
+        const bHasLocation = Boolean(b.pickup_latitude && b.pickup_longitude);
 
-          const distanceB = getDistanceKm(
-            userLocation.latitude,
-            userLocation.longitude,
-            b.pickup_latitude!,
-            b.pickup_longitude!,
-          );
+        if (!aHasLocation && !bHasLocation) return 0;
+        if (!aHasLocation) return 1;
+        if (!bHasLocation) return -1;
 
-          return distanceA - distanceB;
-        });
+        const distanceA = getDistanceKm(
+          userLocation.latitude,
+          userLocation.longitude,
+          a.pickup_latitude!,
+          a.pickup_longitude!,
+        );
+
+        const distanceB = getDistanceKm(
+          userLocation.latitude,
+          userLocation.longitude,
+          b.pickup_latitude!,
+          b.pickup_longitude!,
+        );
+
+        return distanceA - distanceB;
+      });
     }
 
     return result;
@@ -405,7 +410,7 @@ export default function HomePage() {
       ? itemCategoryChips
       : selectedOfferType === "service"
         ? serviceCategoryChips
-        : mixedCategoryChips;
+        : [...itemCategoryChips, ...serviceCategoryChips];
 
   useEffect(() => {
     setDisplayedItems(filteredItems.slice(0, DISPLAYED_ITEMS_COUNT));
@@ -564,7 +569,7 @@ export default function HomePage() {
 
           <div className="koluj-categories-mobile lg:grid lg:grid-cols-8 lg:gap-2">
             <CategoryChip
-              label="Vše"
+              label="Všechny kategorie"
               active={!selectedCategory}
               onClick={() => setSelectedCategory("")}
             />
