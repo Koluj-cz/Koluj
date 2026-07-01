@@ -38,8 +38,7 @@ type OfferCardProps = {
   footer?: React.ReactNode;
 };
 
-
-function ServiceFallbackImage({ category, title }: { category: string; title: string }) {
+function ServiceFallbackImage({ category }: { category: string }) {
   const iconClass = "h-16 w-16 text-[var(--koluj-green)]";
   const icon =
     category === "domacnost" ? <Home className={iconClass} /> :
@@ -52,16 +51,10 @@ function ServiceFallbackImage({ category, title }: { category: string; title: st
     <Wrench className={iconClass} />;
 
   return (
-    <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-[var(--koluj-bg)] to-white px-8 text-center">
+    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[var(--koluj-bg)] to-white">
       <div className="flex h-28 w-28 items-center justify-center rounded-full bg-white shadow-sm">
         {icon}
       </div>
-      <p className="mt-5 text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
-        Služba
-      </p>
-      <p className="mt-1 line-clamp-2 text-xl font-black tracking-tight text-[var(--koluj-text)]">
-        {title}
-      </p>
     </div>
   );
 }
@@ -103,7 +96,7 @@ export default function OfferCard({
   const bookingCount = item.bookings?.length || 0;
 
   const cardContent = (
-    <div className="overflow-hidden rounded-[30px] bg-[var(--koluj-surface)] shadow-[0_16px_40px_rgba(31,31,26,0.12)]">
+    <div className="flex h-full flex-col overflow-hidden rounded-[30px] bg-[var(--koluj-surface)] shadow-[0_16px_40px_rgba(31,31,26,0.12)]">
       <div className="p-4 sm:p-5">
         <p className="text-sm font-black text-[var(--koluj-green)]">
           {categoryLabel}
@@ -168,7 +161,7 @@ export default function OfferCard({
             className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
           />
         ) : isService ? (
-          <ServiceFallbackImage category={item.category} title={item.title} />
+          <ServiceFallbackImage category={item.category} />
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-[var(--koluj-muted)]">
             Bez fotky
@@ -207,7 +200,7 @@ export default function OfferCard({
   return (
     <Link
       href={`/offers/${item.id}`}
-      className="group block overflow-hidden rounded-[30px] transition hover:-translate-y-1"
+      className="group block h-full overflow-hidden rounded-[30px] transition hover:-translate-y-1"
     >
       {cardContent}
     </Link>

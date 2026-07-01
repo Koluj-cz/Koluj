@@ -11,26 +11,17 @@ import {
   categoryLabels,
   conditionLabels,
   handoverLabels,
-  serviceCategoryLabels,
 } from "@/lib/constants";
 import { formatDate, translatePriceUnit } from "@/lib/format";
 
 import {
-  Baby,
-  Boxes,
   CalendarDays,
   Check,
   Edit,
-  GraduationCap,
   Handshake,
-  Home,
-  Laptop,
   MapPin,
   ShieldCheck,
   Star,
-  Trees,
-  Truck,
-  Wrench,
   Eye,
 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -39,33 +30,6 @@ import { supabase } from "@/lib/supabase";
 const OffersMap = dynamic(() => import("@/app/components/OffersMap"), {
   ssr: false,
 });
-
-function ServiceHeroFallback({ category, title }: { category: string; title: string }) {
-  const iconClass = "h-20 w-20 text-[var(--koluj-green)] md:h-28 md:w-28";
-  const icon =
-    category === "domacnost" ? <Home className={iconClass} /> :
-    category === "zahrada" ? <Trees className={iconClass} /> :
-    category === "stehovani" ? <Truck className={iconClass} /> :
-    category === "doucovani" ? <GraduationCap className={iconClass} /> :
-    category === "it" ? <Laptop className={iconClass} /> :
-    category === "hlidani" ? <Baby className={iconClass} /> :
-    category === "ostatni_sluzby" ? <Boxes className={iconClass} /> :
-    <Wrench className={iconClass} />;
-
-  return (
-    <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-[var(--koluj-bg)] to-white px-8 text-center">
-      <div className="flex h-36 w-36 items-center justify-center rounded-full bg-white shadow-sm md:h-52 md:w-52">
-        {icon}
-      </div>
-      <p className="mt-6 text-sm font-black uppercase tracking-wide text-[var(--koluj-green)] md:text-base">
-        {serviceCategoryLabels[category] || "Služba"}
-      </p>
-      <p className="mt-2 max-w-xl text-3xl font-black tracking-tight text-[var(--koluj-text)] md:text-5xl">
-        {title}
-      </p>
-    </div>
-  );
-}
 
 type ItemImage = {
   id: string;
@@ -444,32 +408,30 @@ export default function ItemDetailPage() {
                 </div>
               </div>
 
-              <div className="relative flex h-[360px] items-center justify-center overflow-hidden bg-[var(--koluj-bg)] md:h-[560px]">
-                {selectedImage ? (
-                  <>
-                    <img
-                      src={selectedImage}
-                      alt=""
-                      aria-hidden="true"
-                      className="absolute inset-0 h-full w-full scale-110 object-cover opacity-35 blur-2xl"
-                    />
+              {selectedImage ? (
+                <div className="relative flex h-[360px] items-center justify-center overflow-hidden bg-[var(--koluj-bg)] md:h-[560px]">
+                  <img
+                    src={selectedImage}
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute inset-0 h-full w-full scale-110 object-cover opacity-35 blur-2xl"
+                  />
 
-                    <div className="absolute inset-0 bg-white/20" />
+                  <div className="absolute inset-0 bg-white/20" />
 
-                    <img
-                      src={selectedImage}
-                      alt={item.title}
-                      className="relative z-10 h-full max-h-[360px] w-full object-contain p-5 md:max-h-[560px] md:p-8"
-                    />
-                  </>
-                ) : item.offer_type === "service" ? (
-                  <ServiceHeroFallback category={item.category} title={item.title} />
-                ) : (
+                  <img
+                    src={selectedImage}
+                    alt={item.title}
+                    className="relative z-10 h-full max-h-[360px] w-full object-contain p-5 md:max-h-[560px] md:p-8"
+                  />
+                </div>
+              ) : item.offer_type !== "service" ? (
+                <div className="relative flex h-[360px] items-center justify-center overflow-hidden bg-[var(--koluj-bg)] md:h-[560px]">
                   <div className="flex h-full items-center justify-center text-[var(--koluj-muted)]">
                     Bez fotky
                   </div>
-                )}
-              </div>
+                </div>
+              ) : null}
 
               {images.length > 1 && (
                 <div className="flex gap-3 overflow-x-auto border-t border-[var(--koluj-border)] bg-[var(--koluj-surface)] p-4">
