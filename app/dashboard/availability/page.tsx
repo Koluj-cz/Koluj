@@ -24,23 +24,23 @@ type OwnerItem = {
 
 type OwnerBlock = {
   id: string;
-  item_id: string;
+  offer_id: string;
   date_from: string;
   date_to: string;
   reason: string | null;
-  items?: {
+  offers?: {
     title: string | null;
   } | null;
 };
 
 type OwnerReservation = {
   id: string;
-  item_id: string;
-  loan_id: string;
+  offer_id: string;
+  booking_id: string;
   date_from: string;
   date_to: string;
   status: string;
-  items?: {
+  offers?: {
     title: string | null;
   } | null;
 };
@@ -54,8 +54,8 @@ type BulkResult = {
   ok: boolean;
   createdCount: number;
   skippedCount: number;
-  created: { id: string; itemId: string; title: string }[];
-  skipped: { itemId: string; title: string; reason: string }[];
+  created: { id: string; offerId: string; title: string }[];
+  skipped: { offerId: string; title: string; reason: string }[];
 };
 
 const monthNames = [
@@ -202,9 +202,9 @@ export default function DashboardAvailabilityPage() {
   }
 
   async function loadAvailability() {
-    const itemIds = items.map((item) => item.id);
+    const offerIds = items.map((item) => item.id);
 
-    if (itemIds.length === 0) {
+    if (offerIds.length === 0) {
       setBlocks([]);
       setReservations([]);
       return;
@@ -213,15 +213,15 @@ export default function DashboardAvailabilityPage() {
     const [blocksResult, reservationsResult] = await Promise.all([
       supabase
         .from("offer_availability_blocks")
-        .select("id, item_id, date_from, date_to, reason, items:offers(title)")
-        .in("item_id", itemIds)
+        .select("id, offer_id, date_from, date_to, reason, offers:offers(title)")
+        .in("offer_id", offerIds)
         .lte("date_from", lastVisibleDate)
         .gte("date_to", firstVisibleDate)
         .order("date_from", { ascending: true }),
       supabase
         .from("offer_reservations")
-        .select("id, item_id, loan_id, date_from, date_to, status, items:offers(title)")
-        .in("item_id", itemIds)
+        .select("id, offer_id, booking_id, date_from, date_to, status, offers:offers(title)")
+        .in("offer_id", offerIds)
         .eq("status", "active")
         .lte("date_from", lastVisibleDate)
         .gte("date_to", firstVisibleDate)
@@ -241,11 +241,11 @@ export default function DashboardAvailabilityPage() {
     }
   }
 
-  function toggleItem(itemId: string) {
+  function toggleItem(offerId: string) {
     setSelectedItemIds((current) =>
-      current.includes(itemId)
-        ? current.filter((id) => id !== itemId)
-        : [...current, itemId]
+      current.includes(offerId)
+        ? current.filter((id) => id !== offerId)
+        : [...current, offerId]
     );
   }
 
@@ -389,7 +389,7 @@ export default function DashboardAvailabilityPage() {
         dateTo: selectedRange.dateTo,
         reason,
         applyToAll,
-        itemIds: applyToAll ? [] : selectedItemIds,
+        offerIds: applyToAll ? [] : selectedItemIds,
       }),
     });
 
@@ -744,7 +744,7 @@ export default function DashboardAvailabilityPage() {
                       key={reservation.id}
                       className="rounded-3xl bg-red-50 p-4 text-sm font-bold text-red-700"
                     >
-                      <p>{reservation.items?.title || "Nabídka"}</p>
+                      <p>{reservation.offers?.title || "Nabídka"}</p>
                       <p className="mt-1 opacity-80">
                         {formatShortDate(reservation.date_from)} – {formatShortDate(reservation.date_to)}
                       </p>
@@ -759,7 +759,7 @@ export default function DashboardAvailabilityPage() {
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className="text-sm font-black text-[var(--koluj-text)]">
-                            {block.items?.title || "Nabídka"}
+                            {block.offers?.title || "Nabídka"}
                           </p>
                           <p className="mt-1 text-sm font-bold text-[var(--koluj-muted)]">
                             {formatShortDate(block.date_from)} – {formatShortDate(block.date_to)}
@@ -799,7 +799,7 @@ export default function DashboardAvailabilityPage() {
                       key={block.id}
                       className="rounded-3xl bg-[var(--koluj-bg)] p-4"
                     >
-                      <p className="font-black">{block.items?.title || "Nabídka"}</p>
+                      <p className="font-black">{block.offers?.title || "Nabídka"}</p>
                       <p className="mt-1 text-sm font-bold text-[var(--koluj-muted)]">
                         {formatShortDate(block.date_from)} – {formatShortDate(block.date_to)}
                         {block.reason ? ` · ${block.reason}` : ""}
@@ -834,7 +834,7 @@ export default function DashboardAvailabilityPage() {
                   <div className="mt-5 space-y-2">
                     {lastResult.skipped.map((item) => (
                       <div
-                        key={item.itemId}
+                        key={item.offerId}
                         className="rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700"
                       >
                         {item.title}: {item.reason}

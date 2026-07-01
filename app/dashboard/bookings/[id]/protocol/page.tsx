@@ -14,12 +14,12 @@ type Profile = {
   email: string | null;
 };
 
-type Loan = {
+type Booking = {
   id: string;
   owner_id: string | null;
-  borrower_id: string | null;
+  customer_id: string | null;
   status: string;
-  items: {
+  offers: {
     id: string;
     title: string;
     category: string | null;
@@ -29,7 +29,7 @@ type Loan = {
     deposit: number | null;
   } | null;
   owner: Profile | null;
-  borrower: Profile | null;
+  customer: Profile | null;
 };
 
 type PageProps = {
@@ -60,7 +60,7 @@ function WriteBox({ label, height = "h-16" }: { label: string; height?: string }
   );
 }
 
-export default async function LoanHandoverProtocolPage({ params }: PageProps) {
+export default async function BookingHandoverProtocolPage({ params }: PageProps) {
   const { id } = await params;
   const cookieStore = await cookies();
 
@@ -90,9 +90,9 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
     .select(`
       id,
       owner_id,
-      borrower_id,
+      customer_id,
       status,
-      items:offers (
+      offers:offers (
         id,
         title,
         category,
@@ -101,13 +101,13 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
         price_unit,
         deposit
       ),
-      owner:profiles!loans_owner_id_fkey (
+      owner:profiles!bookings_owner_id_fkey (
         id,
         full_name,
         phone,
         email
       ),
-      borrower:profiles!loans_borrower_id_fkey (
+      customer:profiles!bookings_customer_id_fkey (
         id,
         full_name,
         phone,
@@ -121,21 +121,21 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
     notFound();
   }
 
-  const loan = data as unknown as Loan;
+  const booking = data as unknown as Booking;
 
-  if (loan.owner_id !== user.id) {
-    redirect(`/dashboard/bookings/${loan.id}`);
+  if (booking.owner_id !== user.id) {
+    redirect(`/dashboard/bookings/${booking.id}`);
   }
 
-  const categoryLabel = loan.items?.category
-    ? categoryLabels[loan.items.category] || loan.items.category
+  const categoryLabel = booking.offers?.category
+    ? categoryLabels[booking.offers.category] || booking.offers.category
     : "—";
 
   return (
     <main className="min-h-screen bg-[#efebdd] print:bg-white">
       <div className="mx-auto max-w-[980px] px-4 py-8 print:hidden">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <BackLink href={`/dashboard/bookings/${loan.id}`}>Zpět na rezervaci</BackLink>
+          <BackLink href={`/dashboard/bookings/${booking.id}`}>Zpět na rezervaci</BackLink>
           
 <PrintButton />
         </div>
@@ -155,19 +155,19 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
 
           <div className="text-right text-[10px]">
             <p className="font-bold">ID rezervace</p>
-            <p>{loan.id}</p>
+            <p>{booking.id}</p>
           </div>
         </header>
 
         <section className="mb-5">
           <h2 className="mb-2 text-sm font-black uppercase">1. Identifikace rezervace</h2>
           <div className="grid grid-cols-2 gap-x-8 gap-y-1">
-            <p><strong>ID rezervace:</strong> {loan.id}</p>
-            <p><strong>Název nabídky:</strong> {valueOrLine(loan.items?.title)}</p>
+            <p><strong>ID rezervace:</strong> {booking.id}</p>
+            <p><strong>Název nabídky:</strong> {valueOrLine(booking.offers?.title)}</p>
             <p><strong>Kategorie:</strong> {categoryLabel}</p>
             <p><strong>Celková cena rezervaci:</strong> _______________________ Kč</p>
-            <p><strong>Kauce:</strong> {loan.items?.deposit || 0} Kč</p>
-            <p><strong>Místo předání:</strong> {valueOrLine(loan.items?.pickup_place)}</p>
+            <p><strong>Kauce:</strong> {booking.offers?.deposit || 0} Kč</p>
+            <p><strong>Místo předání:</strong> {valueOrLine(booking.offers?.pickup_place)}</p>
           </div>
         </section>
 
@@ -176,8 +176,8 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
             <h2 className="mb-2 text-sm font-black uppercase">2. Vlastník</h2>
             <div className="space-y-1">
               <p><strong>Jméno:</strong> _______________________</p>
-              <p><strong>Telefon:</strong> {valueOrLine(loan.owner?.phone)}</p>
-              <p><strong>E-mail:</strong> {valueOrLine(loan.owner?.email)}</p>
+              <p><strong>Telefon:</strong> {valueOrLine(booking.owner?.phone)}</p>
+              <p><strong>E-mail:</strong> {valueOrLine(booking.owner?.email)}</p>
             </div>
           </div>
 
@@ -185,8 +185,8 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
             <h2 className="mb-2 text-sm font-black uppercase">3. Rezervující</h2>
             <div className="space-y-1">
               <p><strong>Jméno:</strong> _______________________</p>
-              <p><strong>Telefon:</strong> {valueOrLine(loan.borrower?.phone)}</p>
-              <p><strong>E-mail:</strong> {valueOrLine(loan.borrower?.email)}</p>
+              <p><strong>Telefon:</strong> {valueOrLine(booking.customer?.phone)}</p>
+              <p><strong>E-mail:</strong> {valueOrLine(booking.customer?.email)}</p>
             </div>
           </div>
         </section>

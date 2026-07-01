@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
-import { rejectLoanServer } from "@/lib/services/loanService";
+import { rejectBookingServer } from "@/lib/services/bookingService";
 
 export async function POST(request: Request) {
   const cookieStore = await cookies();
@@ -27,15 +27,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { loanId } = await request.json();
+  const { bookingId } = await request.json();
 
-  if (!loanId) {
-    return NextResponse.json({ error: "Missing loanId" }, { status: 400 });
+  if (!bookingId) {
+    return NextResponse.json({ error: "Missing bookingId" }, { status: 400 });
   }
 
   try {
-    const result = await rejectLoanServer({
-      loanId,
+    const result = await rejectBookingServer({
+      bookingId,
       actorId: user.id,
     });
 

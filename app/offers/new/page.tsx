@@ -360,7 +360,7 @@ export default function NewItemPage() {
         }
 
         await supabase.from("offer_images").insert({
-          item_id: item.id,
+          offer_id: item.id,
           image_url: publicUrl.publicUrl,
           sort_order: index,
         });

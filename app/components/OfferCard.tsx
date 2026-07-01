@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { MapPin } from "lucide-react";
+import { Baby, Boxes, GraduationCap, Home, Laptop, MapPin, Trees, Truck, Wrench } from "lucide-react";
 import { categoryLabels, serviceCategoryLabels } from "@/lib/constants";
 import { translatePriceUnit } from "@/lib/format";
 
-export type ItemCardItem = {
+export type OfferCardOffer = {
   id: string;
   title: string;
   description: string | null;
@@ -20,7 +20,7 @@ export type ItemCardItem = {
   status?: string | null;
   is_reserved_today?: boolean;
   owner_id: string | null;
-  loans?: { id: string; owner_earnings: number | null }[] | null;
+  bookings?: { id: string; owner_earnings: number | null }[] | null;
   profiles?: {
     full_name: string | null;
     avatar_url: string | null;
@@ -32,11 +32,39 @@ export type ItemCardItem = {
   } | null;
 };
 
-type ItemCardProps = {
-  item: ItemCardItem;
+type OfferCardProps = {
+  item: OfferCardOffer;
   variant?: "public" | "owner";
   footer?: React.ReactNode;
 };
+
+
+function ServiceFallbackImage({ category, title }: { category: string; title: string }) {
+  const iconClass = "h-16 w-16 text-[var(--koluj-green)]";
+  const icon =
+    category === "domacnost" ? <Home className={iconClass} /> :
+    category === "zahrada" ? <Trees className={iconClass} /> :
+    category === "stehovani" ? <Truck className={iconClass} /> :
+    category === "doucovani" ? <GraduationCap className={iconClass} /> :
+    category === "it" ? <Laptop className={iconClass} /> :
+    category === "hlidani" ? <Baby className={iconClass} /> :
+    category === "ostatni_sluzby" ? <Boxes className={iconClass} /> :
+    <Wrench className={iconClass} />;
+
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-[var(--koluj-bg)] to-white px-8 text-center">
+      <div className="flex h-28 w-28 items-center justify-center rounded-full bg-white shadow-sm">
+        {icon}
+      </div>
+      <p className="mt-5 text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
+        Služba
+      </p>
+      <p className="mt-1 line-clamp-2 text-xl font-black tracking-tight text-[var(--koluj-text)]">
+        {title}
+      </p>
+    </div>
+  );
+}
 
 function shortPlace(place: string) {
   return (
@@ -48,11 +76,11 @@ function shortPlace(place: string) {
   );
 }
 
-export default function ItemCard({
+export default function OfferCard({
   item,
   variant = "public",
   footer,
-}: ItemCardProps) {
+}: OfferCardProps) {
   const isReserved = Boolean(item.is_reserved_today);
   const statusLabel = isReserved ? "Rezervované" : "Volné";
   const statusClass = isReserved
@@ -72,7 +100,7 @@ export default function ItemCard({
       ? `★ ${Number(rating.rating_avg).toFixed(1)}`
       : "★ Nový";
 
-  const loanCount = item.loans?.length || 0;
+  const bookingCount = item.bookings?.length || 0;
 
   const cardContent = (
     <div className="overflow-hidden rounded-[30px] bg-[var(--koluj-surface)] shadow-[0_16px_40px_rgba(31,31,26,0.12)]">
@@ -127,7 +155,7 @@ export default function ItemCard({
           )}
 
           {variant === "owner" && (
-            <span className="font-black">{loanCount} rezervací</span>
+            <span className="font-black">{bookingCount} rezervací</span>
           )}
         </div>
       </div>
@@ -139,6 +167,8 @@ export default function ItemCard({
             alt={item.title}
             className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
           />
+        ) : isService ? (
+          <ServiceFallbackImage category={item.category} title={item.title} />
         ) : (
           <div className="flex h-full items-center justify-center text-sm text-[var(--koluj-muted)]">
             Bez fotky

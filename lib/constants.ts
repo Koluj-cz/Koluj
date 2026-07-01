@@ -66,19 +66,19 @@ export const conditions = [
   "used",
 ] as const;
 
-export const itemStatusLabels: Record<string, string> = {
+export const offerStatusLabels: Record<string, string> = {
   available: "Volné",
   reserved: "Rezervované",
   borrowed: "Půjčené",
 };
 
-export const itemStatuses = [
+export const offerStatuses = [
   "available",
   "reserved",
   "borrowed",
 ] as const;
 
-export const itemStatusClasses: Record<string, string> = {
+export const offerStatusClasses: Record<string, string> = {
   available: "koluj-status-available",
   reserved: "koluj-status-reserved",
   borrowed: "koluj-status-borrowed",
@@ -98,7 +98,7 @@ export const handoverOptions = [
   "kdykoliv",
 ] as const;
 
-export const loanStatusLabels: Record<string, string> = {
+export const bookingStatusLabels: Record<string, string> = {
   all: "Vše",
   requested: "Čeká na schválení",
   approved: "Schváleno",
@@ -107,7 +107,7 @@ export const loanStatusLabels: Record<string, string> = {
   cancelled: "Zrušeno",
 };
 
-export const loanStatusClasses: Record<string, string> = {
+export const bookingStatusClasses: Record<string, string> = {
   requested: "bg-yellow-100 text-yellow-800",
   approved: "bg-blue-100 text-blue-800",
   active: "bg-[var(--koluj-green)] text-white",

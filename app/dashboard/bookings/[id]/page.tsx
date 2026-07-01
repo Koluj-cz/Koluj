@@ -11,13 +11,13 @@ import PageLoader from "@/app/components/PageLoader";
 import {
   translatePriceUnit,
   formatDateTime,
-  translateLoanStatus,
+  translateBookingStatus,
 } from "@/lib/format";
 
-type Loan = {
+type Booking = {
   id: string;
   owner_id: string | null;
-  borrower_id: string | null;
+  customer_id: string | null;
   status: string;
   created_at: string;
   approved_at?: string | null;
@@ -25,8 +25,8 @@ type Loan = {
   handed_over_at?: string | null;
   reviewed?: boolean;
   owner: { id: string; full_name: string | null; avatar_url: string | null } | null;
-  borrower: { id: string; full_name: string | null; avatar_url: string | null } | null;
-  items: {
+  customer: { id: string; full_name: string | null; avatar_url: string | null } | null;
+  offers: {
     id: string;
     title: string;
     primary_image_url: string | null;
@@ -46,11 +46,11 @@ type Message = {
   profiles?: { full_name: string | null } | null;
 };
 
-export default function LoanDetailPage() {
+export default function BookingDetailPage() {
   const params = useParams();
-  const loanId = params.id as string;
+  const bookingId = params.id as string;
 
-  const [loan, setLoan] = useState<Loan | null>(null);
+  const [booking, setBooking] = useState<Booking | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [message, setMessage] = useState("");
   const [userId, setUserId] = useState<string | null>(null);
@@ -87,17 +87,17 @@ export default function LoanDetailPage() {
   }
 
   useEffect(() => {
-    loadLoan();
+    loadBooking();
 
     const messagesChannel = supabase
-      .channel(`loan-messages-${loanId}`)
+      .channel(`booking-messages-${bookingId}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
           table: "booking_messages",
-          filter: `loan_id=eq.${loanId}`,
+          filter: `booking_id=eq.${bookingId}`,
         },
         async (payload) => {
           const shouldScroll = isNearBottom();
@@ -132,18 +132,18 @@ export default function LoanDetailPage() {
       )
       .subscribe();
 
-    const loanChannel = supabase
-      .channel(`loan-status-${loanId}`)
+    const bookingChannel = supabase
+      .channel(`booking-status-${bookingId}`)
       .on(
         "postgres_changes",
         {
           event: "UPDATE",
           schema: "public",
-          table: "loans",
-          filter: `id=eq.${loanId}`,
+          table: "bookings",
+          filter: `id=eq.${bookingId}`,
         },
         () => {
-          loadLoan(false);
+          loadBooking(false);
         }
       )
       .subscribe();
@@ -159,7 +159,7 @@ export default function LoanDetailPage() {
             full_name
           )
         `)
-        .eq("loan_id", loanId)
+        .eq("booking_id", bookingId)
         .order("created_at");
 
       if (!data) return;
@@ -184,15 +184,15 @@ export default function LoanDetailPage() {
     return () => {
       clearInterval(messagesInterval);
       supabase.removeChannel(messagesChannel);
-      supabase.removeChannel(loanChannel);
+      supabase.removeChannel(bookingChannel);
     };
-  }, [loanId]);
+  }, [bookingId]);
 
   async function updatePresence() {
     if (!userId) return;
 
     await supabase.from("booking_participant_presence").upsert({
-      loan_id: loanId,
+      booking_id: bookingId,
       user_id: userId,
       last_seen_at: new Date().toISOString(),
     });
@@ -208,26 +208,26 @@ export default function LoanDetailPage() {
     }, 30000);
 
     return () => clearInterval(interval);
-  }, [userId, loanId]);
+  }, [userId, bookingId]);
 
-  async function loadLoan(shouldScrollToBottom = true) {
+  async function loadBooking(shouldScrollToBottom = true) {
     try {
       const {
         data: { user },
       } = await supabase.auth.getUser();
 
       if (!user) {
-        setLoan(null);
+        setBooking(null);
         return;
       }
 
       setUserId(user.id);
 
-      const { data: loanData, error: loanError } = await supabase
+      const { data: bookingData, error: bookingError } = await supabase
         .from("bookings")
         .select(`
           *,
-          items:offers (
+          offers:offers (
             id,
             title,
             primary_image_url,
@@ -236,31 +236,31 @@ export default function LoanDetailPage() {
             price_unit,
             deposit
           ),
-          owner:profiles!loans_owner_id_fkey (
+          owner:profiles!bookings_owner_id_fkey (
             id,
             full_name,
             avatar_url
           ),
-          borrower:profiles!loans_borrower_id_fkey (
+          customer:profiles!bookings_customer_id_fkey (
             id,
             full_name,
             avatar_url
           )
         `)
-        .eq("id", loanId)
+        .eq("id", bookingId)
         .single();
 
-      if (loanError || !loanData) {
-        console.error("Loan load error:", loanError);
+      if (bookingError || !bookingData) {
+        console.error("Booking load error:", bookingError);
         toast.error("Půjčku se nepodařilo načíst");
-        setLoan(null);
+        setBooking(null);
         return;
       }
 
       const { data: existingReview } = await supabase
         .from("reviews")
         .select("id")
-        .eq("loan_id", loanId)
+        .eq("booking_id", bookingId)
         .eq("reviewer_id", user.id)
         .maybeSingle();
 
@@ -272,7 +272,7 @@ export default function LoanDetailPage() {
             full_name
           )
         `)
-        .eq("loan_id", loanId)
+        .eq("booking_id", bookingId)
         .order("created_at");
 
       if (messagesError) {
@@ -280,16 +280,16 @@ export default function LoanDetailPage() {
       }
 
       setReviewSent(!!existingReview);
-      setLoan(loanData as Loan);
+      setBooking(bookingData as Booking);
       setMessages((messagesData || []) as Message[]);
 
       if (shouldScrollToBottom) {
         setTimeout(() => scrollMessagesToBottom("auto"), 100);
       }
     } catch (error) {
-      console.error("Unexpected loan page error:", error);
+      console.error("Unexpected booking page error:", error);
       toast.error("Stránku rezervace se nepodařilo načíst");
-      setLoan(null);
+      setBooking(null);
     } finally {
       setLoading(false);
     }
@@ -299,22 +299,22 @@ export default function LoanDetailPage() {
     if (!userId) return;
 
     await supabase.from("booking_messages").insert({
-      loan_id: loanId,
+      booking_id: bookingId,
       sender_id: userId,
       is_system: true,
       message: text,
     });
   }
 
-  async function approveLoan() {
-    if (!loan) return;
+  async function approveBooking() {
+    if (!booking) return;
 
     setSaving(true);
 
     const response = await fetch("/api/bookings/approve", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ loanId: loan.id }),
+      body: JSON.stringify({ bookingId: booking.id }),
     });
 
     const result = await response.json().catch(() => null);
@@ -325,22 +325,22 @@ export default function LoanDetailPage() {
       return;
     }
 
-    setLoan({ ...loan, status: "approved", approved_at: result.approvedAt });
+    setBooking({ ...booking, status: "approved", approved_at: result.approvedAt });
     toast.success("Žádost schválena");
     setSaving(false);
     scrollMessagesToBottom("smooth");
   }
 
 
-  async function rejectLoan() {
-    if (!loan) return;
+  async function rejectBooking() {
+    if (!booking) return;
 
     setSaving(true);
 
     const response = await fetch("/api/bookings/reject", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ loanId: loan.id }),
+      body: JSON.stringify({ bookingId: booking.id }),
     });
 
     const result = await response.json().catch(() => null);
@@ -351,7 +351,7 @@ export default function LoanDetailPage() {
       return;
     }
 
-    setLoan({ ...loan, status: "cancelled" });
+    setBooking({ ...booking, status: "cancelled" });
     toast.success("Žádost odmítnuta");
     setSaving(false);
     scrollMessagesToBottom("smooth");
@@ -359,14 +359,14 @@ export default function LoanDetailPage() {
 
 
   async function markAsActive() {
-    if (!loan) return;
+    if (!booking) return;
 
     setSaving(true);
 
     const response = await fetch("/api/bookings/start", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ loanId: loan.id }),
+      body: JSON.stringify({ bookingId: booking.id }),
     });
 
     const result = await response.json().catch(() => null);
@@ -377,7 +377,7 @@ export default function LoanDetailPage() {
       return;
     }
 
-    setLoan({ ...loan, status: "active", handed_over_at: result.handedOverAt });
+    setBooking({ ...booking, status: "active", handed_over_at: result.handedOverAt });
     toast.success("Předání potvrzeno");
     setSaving(false);
     scrollMessagesToBottom("smooth");
@@ -385,14 +385,14 @@ export default function LoanDetailPage() {
 
 
   async function markAsReturned() {
-    if (!loan) return;
+    if (!booking) return;
 
     setSaving(true);
 
     const response = await fetch("/api/bookings/return", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ loanId: loan.id }),
+      body: JSON.stringify({ bookingId: booking.id }),
     });
 
     const result = await response.json().catch(() => null);
@@ -403,7 +403,7 @@ export default function LoanDetailPage() {
       return;
     }
 
-    setLoan({ ...loan, status: "returned", returned_at: result.returnedAt });
+    setBooking({ ...booking, status: "returned", returned_at: result.returnedAt });
     toast.success("Vrácení potvrzeno");
     setSaving(false);
     scrollMessagesToBottom("smooth");
@@ -411,7 +411,7 @@ export default function LoanDetailPage() {
 
 
   async function sendMessage() {
-    if (!message.trim() || !loan || sendingMessage) return;
+    if (!message.trim() || !booking || sendingMessage) return;
 
     setSendingMessage(true);
 
@@ -423,7 +423,7 @@ export default function LoanDetailPage() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        loanId: loan.id,
+        bookingId: booking.id,
         message: trimmedMessage,
       }),
     });
@@ -442,14 +442,14 @@ export default function LoanDetailPage() {
   }
 
   async function submitReview() {
-    if (!loan || !userId || rating === 0) return;
+    if (!booking || !userId || rating === 0) return;
 
     const reviewedUserId =
-      loan.owner_id === userId ? loan.borrower_id : loan.owner_id;
+      booking.owner_id === userId ? booking.customer_id : booking.owner_id;
 
     const { error } = await supabase.from("reviews").insert({
-      loan_id: loan.id,
-      item_id: loan.items?.id,
+      booking_id: booking.id,
+      offer_id: booking.offers?.id,
       reviewer_id: userId,
       reviewed_user_id: reviewedUserId,
       rating,
@@ -476,7 +476,7 @@ export default function LoanDetailPage() {
     );
   }
 
-  if (!loan) {
+  if (!booking) {
     return (
       <main className="min-h-screen">
         <div className="koluj-shell">
@@ -486,12 +486,12 @@ export default function LoanDetailPage() {
     );
   }
 
-  const isOwner = loan.owner_id === userId;
+  const isOwner = booking.owner_id === userId;
   const otherPersonLabel = isOwner ? "Zájemce" : "Vlastník";
   const otherPersonName = isOwner
-    ? loan.borrower?.full_name || "Uživatel"
-    : loan.owner?.full_name || "Uživatel";
-  const otherPerson = isOwner ? loan.borrower : loan.owner;
+    ? booking.customer?.full_name || "Uživatel"
+    : booking.owner?.full_name || "Uživatel";
+  const otherPerson = isOwner ? booking.customer : booking.owner;
 
   return (
     <main className="min-h-screen">
@@ -537,44 +537,44 @@ export default function LoanDetailPage() {
             </div>
 
             <div className="koluj-card p-6">
-              {loan.items?.primary_image_url && (
+              {booking.offers?.primary_image_url && (
                 <img
-                  src={loan.items.primary_image_url}
-                  alt={loan.items.title}
+                  src={booking.offers.primary_image_url}
+                  alt={booking.offers.title}
                   className="mb-5 h-56 w-full rounded-2xl object-cover"
                 />
               )}
 
-              <h1 className="text-3xl font-black">{loan.items?.title}</h1>
+              <h1 className="text-3xl font-black">{booking.offers?.title}</h1>
 
               <div className="mt-5 space-y-3 text-sm">
-                <p><strong>Stav:</strong> {translateLoanStatus(loan.status)}</p>
+                <p><strong>Stav:</strong> {translateBookingStatus(booking.status)}</p>
                 <p><strong>{otherPersonLabel}:</strong> {otherPersonName}</p>
-                <p><strong>Vytvořeno:</strong> {formatDateTime(loan.created_at)}</p>
+                <p><strong>Vytvořeno:</strong> {formatDateTime(booking.created_at)}</p>
 
-                {loan.approved_at && (
-                  <p><strong>Schváleno:</strong> {formatDateTime(loan.approved_at)}</p>
+                {booking.approved_at && (
+                  <p><strong>Schváleno:</strong> {formatDateTime(booking.approved_at)}</p>
                 )}
-                {loan.handed_over_at && (
-                  <p><strong>Předáno:</strong> {formatDateTime(loan.handed_over_at)}</p>
+                {booking.handed_over_at && (
+                  <p><strong>Předáno:</strong> {formatDateTime(booking.handed_over_at)}</p>
                 )}
-                {loan.returned_at && (
-                  <p><strong>Vráceno:</strong> {formatDateTime(loan.returned_at)}</p>
+                {booking.returned_at && (
+                  <p><strong>Vráceno:</strong> {formatDateTime(booking.returned_at)}</p>
                 )}
 
-                <p><strong>Místo předání:</strong> {loan.items?.pickup_place}</p>
+                <p><strong>Místo předání:</strong> {booking.offers?.pickup_place}</p>
                 <p>
-                  <strong>Cena:</strong> {loan.items?.price_amount || 0} Kč
-                  {loan.items?.price_unit
-                    ? ` / ${translatePriceUnit(loan.items.price_unit)}`
+                  <strong>Cena:</strong> {booking.offers?.price_amount || 0} Kč
+                  {booking.offers?.price_unit
+                    ? ` / ${translatePriceUnit(booking.offers.price_unit)}`
                     : ""}
                 </p>
-                <p><strong>Kauce:</strong> {loan.items?.deposit || 0} Kč</p>
+                <p><strong>Kauce:</strong> {booking.offers?.deposit || 0} Kč</p>
               </div>
 
               {isOwner && (
                 <Link
-                  href={`/dashboard/bookings/${loan.id}/protocol`}
+                  href={`/dashboard/bookings/${booking.id}/protocol`}
                   target="_blank"
                   className="mt-6 flex w-full items-center justify-center gap-2 rounded-[24px] bg-white px-5 py-4 font-black text-[var(--koluj-green)] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                 >
@@ -589,26 +589,26 @@ export default function LoanDetailPage() {
             <div className="border-b border-[var(--koluj-border)] p-5">
               <h2 className="text-xl font-black">Domluva předání</h2>
               <p className="mt-1 text-sm font-bold text-[var(--koluj-muted)]">
-                Stav: {translateLoanStatus(loan.status)}
+                Stav: {translateBookingStatus(booking.status)}
               </p>
             </div>
 
             <div className="border-b border-[var(--koluj-border)] bg-[var(--koluj-bg)] p-5">
-              {isOwner && loan.status === "requested" && (
+              {isOwner && booking.status === "requested" && (
                 <div>
                   <p className="mb-4 font-bold">Máš novou žádost o rezervace.</p>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <button type="button" onClick={approveLoan} disabled={saving} className="koluj-button py-3 disabled:opacity-60">
+                    <button type="button" onClick={approveBooking} disabled={saving} className="koluj-button py-3 disabled:opacity-60">
                       {saving ? "Ukládám..." : "Schválit žádost"}
                     </button>
-                    <button type="button" onClick={rejectLoan} disabled={saving} className="rounded-2xl border border-red-200 bg-white py-3 font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-60">
+                    <button type="button" onClick={rejectBooking} disabled={saving} className="rounded-2xl border border-red-200 bg-white py-3 font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-60">
                       Odmítnout žádost
                     </button>
                   </div>
                 </div>
               )}
 
-              {isOwner && loan.status === "approved" && (
+              {isOwner && booking.status === "approved" && (
                 <div>
                   <p className="mb-4 font-bold">
                     Žádost je schválená a termín je rezervovaný v kalendáři.
@@ -626,7 +626,7 @@ export default function LoanDetailPage() {
 
                     <button
                       type="button"
-                      onClick={rejectLoan}
+                      onClick={rejectBooking}
                       disabled={saving}
                       className="rounded-2xl border border-red-200 bg-white py-3 font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-60"
                     >
@@ -636,7 +636,7 @@ export default function LoanDetailPage() {
                 </div>
               )}
 
-              {isOwner && loan.status === "active" && (
+              {isOwner && booking.status === "active" && (
                 <div>
                   <p className="mb-4 font-bold">Rezervace probíhá. Po vrácení nabídky potvrď vrácení.</p>
                   <button type="button" onClick={markAsReturned} disabled={saving} className="koluj-button w-full py-3 disabled:opacity-60">
@@ -645,7 +645,7 @@ export default function LoanDetailPage() {
                 </div>
               )}
 
-              {loan.status === "returned" && !reviewSent && (
+              {booking.status === "returned" && !reviewSent && (
                 <div>
                   <h3 className="font-black">Jak proběhla rezervace?</h3>
                   <p className="mt-2 text-sm text-[var(--koluj-muted)]">
@@ -680,21 +680,21 @@ export default function LoanDetailPage() {
                 </div>
               )}
 
-              {loan.status === "returned" && reviewSent && (
+              {booking.status === "returned" && reviewSent && (
                 <p className="font-bold text-[var(--koluj-green)]">
                   Hodnocení už bylo odesláno.
                 </p>
               )}
 
-              {loan.status === "cancelled" && (
+              {booking.status === "cancelled" && (
                 <p className="font-bold text-[var(--koluj-muted)]">
                   Tato žádost byla zrušena.
                 </p>
               )}
 
               {!isOwner &&
-                loan.status !== "returned" &&
-                loan.status !== "cancelled" && (
+                booking.status !== "returned" &&
+                booking.status !== "cancelled" && (
                   <p className="font-bold text-[var(--koluj-muted)]">
                     Další krok nyní potvrzuje vlastník nabídky.
                   </p>
@@ -730,7 +730,7 @@ export default function LoanDetailPage() {
               </div>
             </div>
 
-            {loan.status === "returned" || loan.status === "cancelled" ? (
+            {booking.status === "returned" || booking.status === "cancelled" ? (
               <div className="border-t border-[var(--koluj-border)] p-4">
                 <p className="text-center font-bold text-[var(--koluj-muted)]">
                   Chat je po ukončení rezervace uzamčen.

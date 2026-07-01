@@ -10,7 +10,7 @@ type Props = {
   className?: string;
 };
 
-export default function AddItemButton({
+export default function AddOfferButton({
   variant = "button",
   className = "",
 }: Props) {

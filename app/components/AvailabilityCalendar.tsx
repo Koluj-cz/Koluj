@@ -6,7 +6,7 @@ import toast from "react-hot-toast";
 
 type Reservation = {
   id: string;
-  loan_id: string;
+  booking_id: string;
   date_from: string;
   date_to: string;
   status: string;
@@ -25,7 +25,7 @@ type SelectedRange = {
 };
 
 type AvailabilityCalendarProps = {
-  itemId: string;
+  offerId: string;
   isOwner?: boolean;
   selectedRange?: SelectedRange | null;
   onRangeChange?: (range: SelectedRange | null) => void;
@@ -104,7 +104,7 @@ function buildMonthDays(month: Date) {
 }
 
 export default function AvailabilityCalendar({
-  itemId,
+  offerId,
   isOwner = false,
   selectedRange,
   onRangeChange,
@@ -126,7 +126,7 @@ export default function AvailabilityCalendar({
 
   useEffect(() => {
     loadAvailability();
-  }, [itemId, firstVisibleDate, lastVisibleDate]);
+  }, [offerId, firstVisibleDate, lastVisibleDate]);
 
   async function loadAvailability() {
     setLoading(true);
@@ -136,7 +136,7 @@ export default function AvailabilityCalendar({
       dateTo: lastVisibleDate,
     });
 
-    const response = await fetch(`/api/offers/${itemId}/availability?${params.toString()}`);
+    const response = await fetch(`/api/offers/${offerId}/availability?${params.toString()}`);
     const result = await response.json().catch(() => null);
 
     setLoading(false);
@@ -217,7 +217,7 @@ export default function AvailabilityCalendar({
 
     setSavingBlock(true);
 
-    const response = await fetch(`/api/offers/${itemId}/availability/block`, {
+    const response = await fetch(`/api/offers/${offerId}/availability/block`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -245,7 +245,7 @@ export default function AvailabilityCalendar({
   }
 
   async function deleteBlock(blockId: string) {
-    const response = await fetch(`/api/offers/${itemId}/availability/block/${blockId}`, {
+    const response = await fetch(`/api/offers/${offerId}/availability/block/${blockId}`, {
       method: "DELETE",
     });
 

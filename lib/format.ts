@@ -25,8 +25,8 @@ export function formatDateTime(date: string | null) {
   });
 }
 
-import { loanStatusLabels } from "./constants";
+import { bookingStatusLabels } from "./constants";
 
-export function translateLoanStatus(status: string | null) {
-  return status ? loanStatusLabels[status as keyof typeof loanStatusLabels] ?? status : "";
+export function translateBookingStatus(status: string | null) {
+  return status ? bookingStatusLabels[status as keyof typeof bookingStatusLabels] ?? status : "";
 }

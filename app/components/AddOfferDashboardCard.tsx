@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Lock, Plus } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 
-export default function AddItemDashboardCard() {
+export default function AddOfferDashboardCard() {
   const [profileComplete, setProfileComplete] = useState(false);
   const [loading, setLoading] = useState(true);
 

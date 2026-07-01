@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { CircleMarker, MapContainer, Popup, TileLayer, Tooltip, useMap, useMapEvents } from "react-leaflet";
 import Link from "next/link";
 
-type MapItem = {
+type MapOffer = {
   id: string;
   title: string;
   pickup_place: string;
@@ -71,30 +71,30 @@ function ResizeMap() {
   return null;
 }
 
-export default function ItemsMap({
+export default function OffersMap({
   items,
   userLocation,
 }: {
-  items: MapItem[];
+  items: MapOffer[];
   userLocation: UserLocation;
 }) {
   const [zoom, setZoom] = useState(11);
 
-  const mapItems = items.filter(
+  const mapOffers = items.filter(
     (item) => item.pickup_latitude !== null && item.pickup_longitude !== null
   );
 
   const center: [number, number] = userLocation
     ? [userLocation.latitude, userLocation.longitude]
-    : mapItems.length > 0
-      ? [mapItems[0].pickup_latitude!, mapItems[0].pickup_longitude!]
+    : mapOffers.length > 0
+      ? [mapOffers[0].pickup_latitude!, mapOffers[0].pickup_longitude!]
       : [49.4144, 14.6578];
 
-  const groupedItems = useMemo(() => {
+  const groupedOffers = useMemo(() => {
     const precision = zoom >= 14 ? 3 : zoom >= 11 ? 2 : 1;
-    const groups = new Map<string, MapItem[]>();
+    const groups = new Map<string, MapOffer[]>();
 
-    mapItems.forEach((item) => {
+    mapOffers.forEach((item) => {
       const lat = item.pickup_latitude!.toFixed(precision);
       const lng = item.pickup_longitude!.toFixed(precision);
       const key = `${lat},${lng}`;
@@ -112,7 +112,7 @@ export default function ItemsMap({
         items: grouped,
       };
     });
-  }, [mapItems, zoom]);
+  }, [mapOffers, zoom]);
 
   return (
     <MapContainer
@@ -147,7 +147,7 @@ export default function ItemsMap({
         </CircleMarker>
       )}
 
-      {groupedItems.map((group) => (
+      {groupedOffers.map((group) => (
         <CircleMarker
           key={`${group.lat}-${group.lng}`}
           center={[group.lat, group.lng]}

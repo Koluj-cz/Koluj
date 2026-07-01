@@ -26,12 +26,12 @@ import {
 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import ItemCard, { type ItemCardItem } from "@/app/components/ItemCard";
+import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
 import toast from "react-hot-toast";
 import InstallAppButton from "@/app/components/InstallAppButton";
 import { getDistanceKm } from "@/lib/location";
 
-const ItemsMap = dynamic(() => import("@/app/components/ItemsMap"), {
+const OffersMap = dynamic(() => import("@/app/components/OffersMap"), {
   ssr: false,
 });
 
@@ -154,8 +154,8 @@ const mixedCategoryChips: CategoryDefinition[] = [
   serviceCategoryChips[3],
 ];
 
-function getOfferType(item: ItemCardItem) {
-  return ((item as ItemCardItem & { offer_type?: string }).offer_type ||
+function getOfferType(item: OfferCardOffer) {
+  return ((item as OfferCardOffer & { offer_type?: string }).offer_type ||
     "item") as "item" | "service";
 }
 
@@ -164,20 +164,20 @@ async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
     return items as (T & { is_reserved_today: boolean })[];
 
   const today = new Date().toISOString().split("T")[0];
-  const itemIds = items.map((item) => item.id);
+  const offerIds = items.map((item) => item.id);
 
   const [reservationsResult, blocksResult] = await Promise.all([
     supabase
       .from("offer_reservations")
-      .select("item_id")
-      .in("item_id", itemIds)
+      .select("offer_id")
+      .in("offer_id", offerIds)
       .eq("status", "active")
       .lte("date_from", today)
       .gte("date_to", today),
     supabase
       .from("offer_availability_blocks")
-      .select("item_id")
-      .in("item_id", itemIds)
+      .select("offer_id")
+      .in("offer_id", offerIds)
       .lte("date_from", today)
       .gte("date_to", today),
   ]);
@@ -191,8 +191,8 @@ async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
   }
 
   const reservedIds = new Set([
-    ...(reservationsResult.data || []).map((row) => row.item_id),
-    ...(blocksResult.data || []).map((row) => row.item_id),
+    ...(reservationsResult.data || []).map((row) => row.offer_id),
+    ...(blocksResult.data || []).map((row) => row.offer_id),
   ]);
 
   return items.map((item) => ({
@@ -203,8 +203,8 @@ async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
 
 export default function HomePage() {
   const [showMap, setShowMap] = useState(false);
-  const [items, setItems] = useState<ItemCardItem[]>([]);
-  const [displayedItems, setDisplayedItems] = useState<ItemCardItem[]>([]);
+  const [items, setItems] = useState<OfferCardOffer[]>([]);
+  const [displayedItems, setDisplayedItems] = useState<OfferCardOffer[]>([]);
   const [search, setSearch] = useState("");
   const [selectedOfferType, setSelectedOfferType] =
     useState<OfferTypeFilter>("all");
@@ -276,7 +276,7 @@ export default function HomePage() {
       .select(
         `
         *,
-        profiles:profiles!items_owner_id_fkey (
+        profiles:profiles!offers_owner_id_fkey (
           full_name,
           avatar_url,
           is_verified,
@@ -294,7 +294,7 @@ export default function HomePage() {
       .limit(40);
 
     const itemsWithAvailability = await attachTodayAvailability(
-      (data || []) as ItemCardItem[],
+      (data || []) as OfferCardOffer[],
     );
 
     setItems(itemsWithAvailability);
@@ -534,7 +534,7 @@ export default function HomePage() {
 
           {showMap && (
             <div className="relative h-[430px] overflow-hidden rounded-[2rem] border border-[var(--koluj-border)] bg-white shadow-sm">
-              <ItemsMap items={filteredItems} userLocation={userLocation} />
+              <OffersMap items={filteredItems} userLocation={userLocation} />
 
               <button
                 type="button"
@@ -614,7 +614,7 @@ export default function HomePage() {
           <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {displayedItems.map((item) => (
               <div key={item.id} className="transition duration-300">
-                <ItemCard item={item} />
+                <OfferCard item={item} />
               </div>
             ))}
           </div>

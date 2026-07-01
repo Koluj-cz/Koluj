@@ -14,8 +14,8 @@ type Notification = {
   type: string;
   is_read: boolean;
   created_at: string;
-  loan_id: string | null;
-  item_id: string | null;
+  booking_id: string | null;
+  offer_id: string | null;
   actor_id: string | null;
   actor: {
     full_name: string | null;
@@ -158,17 +158,17 @@ export default function NotificationsPage() {
                           {formatDateTime(notification.created_at)}
                         </p>
 
-                        {notification.loan_id && (
+                        {notification.booking_id && (
                           <Link
-                            href={`/dashboard/bookings/${notification.loan_id}`}
+                            href={`/dashboard/bookings/${notification.booking_id}`}
                             className="koluj-link mt-3 inline-block"
                           >
                             Otevřít rezervaci →
                           </Link>
                         )}
-                        {!notification.loan_id && notification.item_id && (
+                        {!notification.booking_id && notification.offer_id && (
                           <Link
-                            href={`/offers/${notification.item_id}`}
+                            href={`/offers/${notification.offer_id}`}
                             className="koluj-link mt-3 inline-block"
                           >
                             Otevřít nabídku →

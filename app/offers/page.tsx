@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import ItemCard, { type ItemCardItem } from "@/app/components/ItemCard";
+import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
 import AuthHeaderButton from "@/app/components/AuthHeaderButton";
 import PageLoader from "@/app/components/PageLoader";
 import BackLink from "@/app/components/BackLink";
@@ -23,7 +23,7 @@ import {
 } from "@/lib/constants";
 import { getDistanceKm } from "@/lib/location";
 
-const ItemsMap = dynamic(() => import("@/app/components/ItemsMap"), {
+const OffersMap = dynamic(() => import("@/app/components/OffersMap"), {
   ssr: false,
 });
 
@@ -46,20 +46,20 @@ async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
   if (items.length === 0) return items as (T & { is_reserved_today: boolean })[];
 
   const today = new Date().toISOString().split("T")[0];
-  const itemIds = items.map((item) => item.id);
+  const offerIds = items.map((item) => item.id);
 
   const [reservationsResult, blocksResult] = await Promise.all([
     supabase
       .from("offer_reservations")
-      .select("item_id")
-      .in("item_id", itemIds)
+      .select("offer_id")
+      .in("offer_id", offerIds)
       .eq("status", "active")
       .lte("date_from", today)
       .gte("date_to", today),
     supabase
       .from("offer_availability_blocks")
-      .select("item_id")
-      .in("item_id", itemIds)
+      .select("offer_id")
+      .in("offer_id", offerIds)
       .lte("date_from", today)
       .gte("date_to", today),
   ]);
@@ -73,8 +73,8 @@ async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
   }
 
   const reservedIds = new Set([
-    ...(reservationsResult.data || []).map((row) => row.item_id),
-    ...(blocksResult.data || []).map((row) => row.item_id),
+    ...(reservationsResult.data || []).map((row) => row.offer_id),
+    ...(blocksResult.data || []).map((row) => row.offer_id),
   ]);
 
   return items.map((item) => ({
@@ -102,7 +102,7 @@ function ItemsPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [items, setItems] = useState<ItemCardItem[]>([]);
+  const [items, setItems] = useState<OfferCardOffer[]>([]);
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState(searchParams.get("search") || "");
@@ -133,7 +133,7 @@ function ItemsPageContent() {
       .select(
         `
         *,
-        profiles:profiles!items_owner_id_fkey (
+        profiles:profiles!offers_owner_id_fkey (
           full_name,
           avatar_url,
           is_verified,
@@ -155,7 +155,7 @@ function ItemsPageContent() {
     }
 
     const itemsWithAvailability = await attachTodayAvailability(
-      ((data || []) as ItemCardItem[])
+      ((data || []) as OfferCardOffer[])
     );
 
     setItems(itemsWithAvailability);
@@ -492,7 +492,7 @@ function ItemsPageContent() {
           {viewMode === "map" ? (
             <div className="koluj-card h-[560px] overflow-hidden p-3 md:h-[720px] md:p-4">
               <div className="relative h-full overflow-hidden rounded-[2rem]">
-                <ItemsMap items={filteredItems} userLocation={userLocation} />
+                <OffersMap items={filteredItems} userLocation={userLocation} />
 
                 <button
                   type="button"
@@ -515,7 +515,7 @@ function ItemsPageContent() {
             <>
               <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                 {visibleItems.map((item) => (
-                  <ItemCard key={item.id} item={item} />
+                  <OfferCard key={item.id} item={item} />
                 ))}
               </div>
 

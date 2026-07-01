@@ -17,17 +17,17 @@ function getStoragePathFromPublicUrl(url: string | null) {
   return url.split(marker)[1] || null;
 }
 
-export async function archiveItemServer({
-  itemId,
+export async function archiveOfferServer({
+  offerId,
   actorId,
 }: {
-  itemId: string;
+  offerId: string;
   actorId: string;
 }) {
   const { data: item, error: itemError } = await supabaseAdmin
     .from("offers")
     .select("id, owner_id, deleted_at")
-    .eq("id", itemId)
+    .eq("id", offerId)
     .single();
 
   if (itemError || !item) {
@@ -45,23 +45,23 @@ export async function archiveItemServer({
     };
   }
 
-  const { count: loanCount, error: loanCountError } = await supabaseAdmin
+  const { count: bookingCount, error: bookingCountError } = await supabaseAdmin
     .from("bookings")
     .select("id", {
       count: "exact",
       head: true,
     })
-    .eq("item_id", itemId);
+    .eq("offer_id", offerId);
 
-  if (loanCountError) {
-    throw new Error(loanCountError.message);
+  if (bookingCountError) {
+    throw new Error(bookingCountError.message);
   }
 
-  if ((loanCount || 0) === 0) {
+  if ((bookingCount || 0) === 0) {
     const { data: images, error: imagesError } = await supabaseAdmin
       .from("offer_images")
       .select("image_url")
-      .eq("item_id", itemId);
+      .eq("offer_id", offerId);
 
     if (imagesError) {
       throw new Error(imagesError.message);
@@ -85,7 +85,7 @@ export async function archiveItemServer({
     const { error: imageDeleteError } = await supabaseAdmin
       .from("offer_images")
       .delete()
-      .eq("item_id", itemId);
+      .eq("offer_id", offerId);
 
     if (imageDeleteError) {
       throw new Error(imageDeleteError.message);
@@ -94,7 +94,7 @@ export async function archiveItemServer({
     const { error: itemDeleteError } = await supabaseAdmin
       .from("offers")
       .delete()
-      .eq("id", itemId);
+      .eq("id", offerId);
 
     if (itemDeleteError) {
       throw new Error(itemDeleteError.message);
@@ -112,7 +112,7 @@ export async function archiveItemServer({
       deleted_at: new Date().toISOString(),
       is_active: false,
     })
-    .eq("id", itemId);
+    .eq("id", offerId);
 
   if (error) {
     throw new Error(error.message);

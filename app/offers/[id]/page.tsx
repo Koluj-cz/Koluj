@@ -11,25 +11,61 @@ import {
   categoryLabels,
   conditionLabels,
   handoverLabels,
+  serviceCategoryLabels,
 } from "@/lib/constants";
 import { formatDate, translatePriceUnit } from "@/lib/format";
 
 import {
+  Baby,
+  Boxes,
   CalendarDays,
   Check,
   Edit,
+  GraduationCap,
   Handshake,
+  Home,
+  Laptop,
   MapPin,
   ShieldCheck,
   Star,
+  Trees,
+  Truck,
+  Wrench,
   Eye,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
 
-const ItemsMap = dynamic(() => import("@/app/components/ItemsMap"), {
+const OffersMap = dynamic(() => import("@/app/components/OffersMap"), {
   ssr: false,
 });
+
+function ServiceHeroFallback({ category, title }: { category: string; title: string }) {
+  const iconClass = "h-20 w-20 text-[var(--koluj-green)] md:h-28 md:w-28";
+  const icon =
+    category === "domacnost" ? <Home className={iconClass} /> :
+    category === "zahrada" ? <Trees className={iconClass} /> :
+    category === "stehovani" ? <Truck className={iconClass} /> :
+    category === "doucovani" ? <GraduationCap className={iconClass} /> :
+    category === "it" ? <Laptop className={iconClass} /> :
+    category === "hlidani" ? <Baby className={iconClass} /> :
+    category === "ostatni_sluzby" ? <Boxes className={iconClass} /> :
+    <Wrench className={iconClass} />;
+
+  return (
+    <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-[var(--koluj-bg)] to-white px-8 text-center">
+      <div className="flex h-36 w-36 items-center justify-center rounded-full bg-white shadow-sm md:h-52 md:w-52">
+        {icon}
+      </div>
+      <p className="mt-6 text-sm font-black uppercase tracking-wide text-[var(--koluj-green)] md:text-base">
+        {serviceCategoryLabels[category] || "Služba"}
+      </p>
+      <p className="mt-2 max-w-xl text-3xl font-black tracking-tight text-[var(--koluj-text)] md:text-5xl">
+        {title}
+      </p>
+    </div>
+  );
+}
 
 type ItemImage = {
   id: string;
@@ -42,6 +78,7 @@ type ItemDetail = {
   owner_id: string | null;
   title: string;
   description: string | null;
+  offer_type?: "item" | "service" | string | null;
   category: string;
   condition: string | null;
   pickup_place: string;
@@ -71,7 +108,7 @@ type ItemDetail = {
 export default function ItemDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const itemId = params.id as string;
+  const offerId = params.id as string;
 
   const [item, setItem] = useState<ItemDetail | null>(null);
   const [images, setImages] = useState<ItemImage[]>([]);
@@ -101,7 +138,7 @@ export default function ItemDetailPage() {
         .select(
           `
           *,
-          profiles:profiles!items_owner_id_fkey (
+          profiles:profiles!offers_owner_id_fkey (
             full_name,
             avatar_url,
             is_verified,
@@ -113,7 +150,7 @@ export default function ItemDetailPage() {
           )
           `
         )
-        .eq("id", itemId)
+        .eq("id", offerId)
         .is("deleted_at", null)
         .single();
 
@@ -124,8 +161,8 @@ export default function ItemDetailPage() {
         return;
       }
 
-      await supabase.rpc("increment_item_views", {
-        item_id_input: itemId,
+      await supabase.rpc("increment_offer_views", {
+        offer_id_input: offerId,
       });
 
       setItem({
@@ -136,7 +173,7 @@ export default function ItemDetailPage() {
       const { data: imageData, error: imageError } = await supabase
         .from("offer_images")
         .select("*")
-        .eq("item_id", itemId)
+        .eq("offer_id", offerId)
         .order("sort_order", { ascending: true });
 
       if (imageError) {
@@ -172,7 +209,7 @@ export default function ItemDetailPage() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        itemId: item.id,
+        offerId: item.id,
         dateFrom: borrowFrom,
         dateTo: borrowTo,
         note: borrowNote,
@@ -196,7 +233,7 @@ export default function ItemDetailPage() {
     }
 
     toast.success("Žádost o rezervaci byla odeslána");
-    router.push(`/dashboard/bookings/${result.loanId}`);
+    router.push(`/dashboard/bookings/${result.bookingId}`);
   }
 
   const isOwner = item?.owner_id && currentUserId === item.owner_id;
@@ -223,7 +260,7 @@ export default function ItemDetailPage() {
     return diff >= 0 ? diff + 1 : null;
   }, [borrowFrom, borrowTo]);
 
-  const mapItems = useMemo(() => {
+  const mapOffers = useMemo(() => {
     if (!item) return [];
 
     return [
@@ -272,21 +309,23 @@ export default function ItemDetailPage() {
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         <InfoLine
           icon={<MapPin size={20} />}
-          title="Místo předání"
+          title={item.offer_type === "service" ? "Lokalita působení" : "Místo předání"}
           text={item.pickup_place}
         />
 
-        <InfoLine
-          icon={<Handshake size={20} />}
-          title="Možnosti předání"
-          text={
-            item.handover_options && item.handover_options.length > 0
-              ? item.handover_options
-                  .map((option) => handoverLabels[option] || option)
-                  .join(", ")
-              : "Domluvou"
-          }
-        />
+        {item.offer_type !== "service" && (
+          <InfoLine
+            icon={<Handshake size={20} />}
+            title="Možnosti předání"
+            text={
+              item.handover_options && item.handover_options.length > 0
+                ? item.handover_options
+                    .map((option) => handoverLabels[option] || option)
+                    .join(", ")
+                : "Domluvou"
+            }
+          />
+        )}
 
         {item.contact_note && (
           <InfoLine
@@ -345,7 +384,7 @@ export default function ItemDetailPage() {
   const mapCard = item.pickup_latitude && item.pickup_longitude ? (
     <div className="koluj-card overflow-hidden p-0">
       <div className="relative h-[320px] lg:h-[420px]">
-        <ItemsMap items={mapItems} userLocation={null} />
+        <OffersMap items={mapOffers} userLocation={null} />
       </div>
     </div>
   ) : null;
@@ -423,6 +462,8 @@ export default function ItemDetailPage() {
                       className="relative z-10 h-full max-h-[360px] w-full object-contain p-5 md:max-h-[560px] md:p-8"
                     />
                   </>
+                ) : item.offer_type === "service" ? (
+                  <ServiceHeroFallback category={item.category} title={item.title} />
                 ) : (
                   <div className="flex h-full items-center justify-center text-[var(--koluj-muted)]">
                     Bez fotky
@@ -493,7 +534,7 @@ export default function ItemDetailPage() {
 
               <div className="mt-6">
                 <AvailabilityCalendar
-                  itemId={item.id}
+                  offerId={item.id}
                   isOwner={Boolean(isOwner)}
                   selectedRange={
                     borrowFrom && borrowTo

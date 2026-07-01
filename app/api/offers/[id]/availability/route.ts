@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getItemAvailabilityServer } from "@/lib/services/availabilityService";
+import { getOfferAvailabilityServer } from "@/lib/services/availabilityService";
 
 function monthBounds() {
   const now = new Date();
@@ -24,8 +24,8 @@ export async function GET(
   const dateTo = searchParams.get("dateTo") || defaults.dateTo;
 
   try {
-    const availability = await getItemAvailabilityServer({
-      itemId: id,
+    const availability = await getOfferAvailabilityServer({
+      offerId: id,
       dateFrom,
       dateTo,
     });

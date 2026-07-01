@@ -7,15 +7,15 @@ import BackLink from "@/app/components/BackLink";
 import { supabase } from "@/lib/supabase";
 import PageLoader from "@/app/components/PageLoader";
 import {
-  loanStatusLabels,
-  loanStatusClasses,
+  bookingStatusLabels,
+  bookingStatusClasses,
 } from "@/lib/constants";
 
 import {
   formatDateTime,
 } from "@/lib/format";
 
-type LoanStatus =
+type BookingStatus =
   | "all"
   | "requested"
   | "approved"
@@ -25,7 +25,7 @@ type LoanStatus =
 
 type MobileMode = "borrowing" | "lending";
 
-type Loan = {
+type Booking = {
   id: string;
   status: string;
   created_at: string;
@@ -33,10 +33,10 @@ type Loan = {
   handed_over_at: string | null;
   returned_at: string | null;
   owner_id: string | null;
-  borrower_id: string | null;
+  customer_id: string | null;
   owner: { full_name: string | null } | null;
-  borrower: { full_name: string | null } | null;
-  items: {
+  customer: { full_name: string | null } | null;
+  offers: {
     id: string;
     title: string;
     primary_image_url: string | null;
@@ -45,11 +45,11 @@ type Loan = {
 
 const PAGE_SIZE = 10;
 
-export default function LoansPage() {
-  const [borrowing, setBorrowing] = useState<Loan[]>([]);
-  const [lending, setLending] = useState<Loan[]>([]);
+export default function BookingsPage() {
+  const [borrowing, setBorrowing] = useState<Booking[]>([]);
+  const [lending, setLending] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<LoanStatus>("all");
+  const [filter, setFilter] = useState<BookingStatus>("all");
   const [mobileMode, setMobileMode] = useState<MobileMode>("borrowing");
 
   const [borrowingPage, setBorrowingPage] = useState(1);
@@ -58,10 +58,10 @@ export default function LoansPage() {
   const [lendingTotal, setLendingTotal] = useState(0);
 
   useEffect(() => {
-    loadLoans();
+    loadBookings();
   }, [borrowingPage, lendingPage]);
 
-  async function loadLoans() {
+  async function loadBookings() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -73,15 +73,15 @@ export default function LoansPage() {
 
     const selectQuery = `
       *,
-      items:offers (
+      offers:offers (
         id,
         title,
         primary_image_url
       ),
-      owner:profiles!loans_owner_id_fkey (
+      owner:profiles!bookings_owner_id_fkey (
         full_name
       ),
-      borrower:profiles!loans_borrower_id_fkey (
+      customer:profiles!bookings_customer_id_fkey (
         full_name
       )
     `;
@@ -89,7 +89,7 @@ export default function LoansPage() {
     const borrowingQuery = supabase
       .from("bookings")
       .select(selectQuery, { count: "exact" })
-      .eq("borrower_id", user.id)
+      .eq("customer_id", user.id)
       .order("created_at", { ascending: false })
       .range(0, borrowingPage * PAGE_SIZE - 1);
 
@@ -103,8 +103,8 @@ export default function LoansPage() {
     const { data: borrowingData, count: borrowingCount } = await borrowingQuery;
     const { data: lendingData, count: lendingCount } = await lendingQuery;
 
-    setBorrowing((borrowingData || []) as Loan[]);
-    setLending((lendingData || []) as Loan[]);
+    setBorrowing((borrowingData || []) as Booking[]);
+    setLending((lendingData || []) as Booking[]);
     setBorrowingTotal(borrowingCount || 0);
     setLendingTotal(lendingCount || 0);
     setLoading(false);
@@ -112,12 +112,12 @@ export default function LoansPage() {
 
   const filteredBorrowing = useMemo(() => {
     if (filter === "all") return borrowing;
-    return borrowing.filter((loan) => loan.status === filter);
+    return borrowing.filter((booking) => booking.status === filter);
   }, [borrowing, filter]);
 
   const filteredLending = useMemo(() => {
     if (filter === "all") return lending;
-    return lending.filter((loan) => loan.status === filter);
+    return lending.filter((booking) => booking.status === filter);
   }, [lending, filter]);
 
   return (
@@ -137,7 +137,7 @@ export default function LoansPage() {
 
         <section className="koluj-card mt-10 p-4">
           <div className="flex flex-wrap gap-2">
-            {(Object.keys(loanStatusLabels) as LoanStatus[]).map((status) => (
+            {(Object.keys(bookingStatusLabels) as BookingStatus[]).map((status) => (
               <button
                 key={status}
                 type="button"
@@ -148,7 +148,7 @@ export default function LoansPage() {
                     : "bg-[var(--koluj-bg)] text-[var(--koluj-muted)] hover:text-[var(--koluj-green)]"
                 }`}
               >
-                {loanStatusLabels[status]}
+                {bookingStatusLabels[status]}
               </button>
             ))}
           </div>
@@ -199,8 +199,8 @@ export default function LoansPage() {
                     Žádné rezervace pro vybraný filtr.
                   </div>
                 ) : (
-                  filteredBorrowing.map((loan) => (
-                    <LoanCard key={loan.id} loan={loan} mode="borrowing" />
+                  filteredBorrowing.map((booking) => (
+                    <BookingCard key={booking.id} booking={booking} mode="borrowing" />
                   ))
                 )}
 
@@ -232,8 +232,8 @@ export default function LoansPage() {
                     Žádné rezervace pro vybraný filtr.
                   </div>
                 ) : (
-                  filteredLending.map((loan) => (
-                    <LoanCard key={loan.id} loan={loan} mode="lending" />
+                  filteredLending.map((booking) => (
+                    <BookingCard key={booking.id} booking={booking} mode="lending" />
                   ))
                 )}
 
@@ -268,35 +268,35 @@ function SectionHeader({ title, count }: { title: string; count: number }) {
   );
 }
 
-function LoanCard({
-  loan,
+function BookingCard({
+  booking,
   mode,
 }: {
-  loan: Loan;
+  booking: Booking;
   mode: "borrowing" | "lending";
 }) {
   const personLabel = mode === "borrowing" ? "Vlastník" : "Zájemce";
 
   const personName =
     mode === "borrowing"
-      ? loan.owner?.full_name || "Uživatel"
-      : loan.borrower?.full_name || "Uživatel";
+      ? booking.owner?.full_name || "Uživatel"
+      : booking.customer?.full_name || "Uživatel";
 
   const statusClass =
-    loanStatusClasses[loan.status] ||
+    bookingStatusClasses[booking.status] ||
     "bg-[var(--koluj-bg)] text-[var(--koluj-muted)]";
 
   return (
     <Link
-      href={`/dashboard/bookings/${loan.id}`}
+      href={`/dashboard/bookings/${booking.id}`}
       className="koluj-card block p-4 transition hover:-translate-y-1"
     >
       <div className="flex gap-4">
         <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-[var(--koluj-bg)]">
-          {loan.items?.primary_image_url ? (
+          {booking.offers?.primary_image_url ? (
             <img
-              src={loan.items.primary_image_url}
-              alt={loan.items.title}
+              src={booking.offers.primary_image_url}
+              alt={booking.offers.title}
               className="h-full w-full object-cover"
             />
           ) : null}
@@ -307,7 +307,7 @@ function LoanCard({
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
                 <p className="truncate text-lg font-black">
-                  {loan.items?.title || "Nabídka"}
+                  {booking.offers?.title || "Nabídka"}
                 </p>
 
                 <p className="mt-1 text-sm text-[var(--koluj-muted)]">
@@ -318,37 +318,37 @@ function LoanCard({
               <span
                 className={`inline-flex max-w-full shrink-0 rounded-full px-3 py-1 text-xs font-black ${statusClass}`}
               >
-                {loanStatusLabels[loan.status] || loan.status}
+                {bookingStatusLabels[booking.status] || booking.status}
               </span>
             </div>
           </div>
 
           <div className="mt-4 text-sm text-[var(--koluj-muted)]">
-            {loan.status === "requested" && (
+            {booking.status === "requested" && (
               <p className="flex items-center gap-2">
                 <CalendarDays size={15} />
-                Vytvořeno: {formatDateTime(loan.created_at)}
+                Vytvořeno: {formatDateTime(booking.created_at)}
               </p>
             )}
 
-            {loan.status === "approved" && loan.approved_at && (
+            {booking.status === "approved" && booking.approved_at && (
               <p className="flex items-center gap-2">
                 <CalendarDays size={15} />
-                Schváleno: {formatDateTime(loan.approved_at)}
+                Schváleno: {formatDateTime(booking.approved_at)}
               </p>
             )}
 
-            {loan.status === "active" && loan.handed_over_at && (
+            {booking.status === "active" && booking.handed_over_at && (
               <p className="flex items-center gap-2">
                 <CalendarDays size={15} />
-                Předáno: {formatDateTime(loan.handed_over_at)}
+                Předáno: {formatDateTime(booking.handed_over_at)}
               </p>
             )}
 
-            {loan.status === "returned" && loan.returned_at && (
+            {booking.status === "returned" && booking.returned_at && (
               <p className="flex items-center gap-2">
                 <CalendarDays size={15} />
-                Vráceno: {formatDateTime(loan.returned_at)}
+                Vráceno: {formatDateTime(booking.returned_at)}
               </p>
             )}
           </div>

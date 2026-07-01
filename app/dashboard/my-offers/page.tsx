@@ -13,8 +13,8 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
-import ItemCard, { type ItemCardItem } from "@/app/components/ItemCard";
-import AddItemButton from "@/app/components/AddItemButton";
+import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
+import AddOfferButton from "@/app/components/AddOfferButton";
 import BackLink from "@/app/components/BackLink";
 import PageLoader from "@/app/components/PageLoader";
 
@@ -23,20 +23,20 @@ async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
   if (items.length === 0) return items as (T & { is_reserved_today: boolean })[];
 
   const today = new Date().toISOString().split("T")[0];
-  const itemIds = items.map((item) => item.id);
+  const offerIds = items.map((item) => item.id);
 
   const [reservationsResult, blocksResult] = await Promise.all([
     supabase
       .from("offer_reservations")
-      .select("item_id")
-      .in("item_id", itemIds)
+      .select("offer_id")
+      .in("offer_id", offerIds)
       .eq("status", "active")
       .lte("date_from", today)
       .gte("date_to", today),
     supabase
       .from("offer_availability_blocks")
-      .select("item_id")
-      .in("item_id", itemIds)
+      .select("offer_id")
+      .in("offer_id", offerIds)
       .lte("date_from", today)
       .gte("date_to", today),
   ]);
@@ -50,8 +50,8 @@ async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
   }
 
   const reservedIds = new Set([
-    ...(reservationsResult.data || []).map((row) => row.item_id),
-    ...(blocksResult.data || []).map((row) => row.item_id),
+    ...(reservationsResult.data || []).map((row) => row.offer_id),
+    ...(blocksResult.data || []).map((row) => row.offer_id),
   ]);
 
   return items.map((item) => ({
@@ -61,14 +61,14 @@ async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
 }
 
 
-type Item = ItemCardItem & {
+type Offer = OfferCardOffer & {
   is_active: boolean;
   deleted_at: string | null;
   borrow_count: number | null;
 };
 
-export default function MyItemsPage() {
-  const [items, setItems] = useState<Item[]>([]);
+export default function MyOffersPage() {
+  const [items, setItems] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -77,14 +77,14 @@ export default function MyItemsPage() {
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
-    loadItems();
+    loadOffers();
   }, []);
 
   useEffect(() => {
     setVisibleCount(8);
   }, [searchQuery, statusFilter, sortBy]);
 
-  async function loadItems() {
+  async function loadOffers() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -98,7 +98,7 @@ export default function MyItemsPage() {
       .from("offers")
       .select(`
         *,
-        loans:bookings!loans_item_id_fkey (
+        bookings:bookings!bookings_offer_id_fkey (
           id,
           owner_earnings
         )
@@ -114,14 +114,14 @@ export default function MyItemsPage() {
     }
 
     const itemsWithAvailability = await attachTodayAvailability(
-      ((data || []) as Item[])
+      ((data || []) as Offer[])
     );
 
     setItems(itemsWithAvailability);
     setLoading(false);
   }
 
-  async function toggleVisibility(item: Item) {
+  async function toggleVisibility(item: Offer) {
     const nextValue = !item.is_active;
 
     const { error } = await supabase
@@ -145,7 +145,7 @@ export default function MyItemsPage() {
     toast.success(nextValue ? "Nabídka je znovu viditelná" : "Nabídka je skrytá");
   }
 
-  async function archiveItem(item: Item) {
+  async function archiveOffer(item: Offer) {
     if (pendingDeleteId !== item.id) {
       setPendingDeleteId(item.id);
       return;
@@ -157,7 +157,7 @@ export default function MyItemsPage() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        itemId: item.id,
+        offerId: item.id,
       }),
     });
 
@@ -184,7 +184,7 @@ export default function MyItemsPage() {
     };
   }, [items]);
 
-  const filteredItems = useMemo(() => {
+  const filteredOffers = useMemo(() => {
     let result = [...items];
 
     if (searchQuery.trim()) {
@@ -230,7 +230,7 @@ export default function MyItemsPage() {
     return result;
   }, [items, searchQuery, statusFilter, sortBy]);
 
-  const visibleItems = filteredItems.slice(0, visibleCount);
+  const visibleOffers = filteredOffers.slice(0, visibleCount);
 
   if (loading) {
     return (
@@ -246,7 +246,7 @@ export default function MyItemsPage() {
         <header className="koluj-page-header">
           <BackLink href="/dashboard">Dashboard</BackLink>
 
-          <AddItemButton
+          <AddOfferButton
             className="koluj-button flex items-center gap-2 px-6 py-3"
           />
         </header>
@@ -314,8 +314,8 @@ export default function MyItemsPage() {
             </div>
 
             <p className="font-bold text-[var(--koluj-muted)]">
-              {filteredItems.length}{" "}
-              {filteredItems.length === 1 ? "nabídku" : "nabídek"}
+              {filteredOffers.length}{" "}
+              {filteredOffers.length === 1 ? "nabídku" : "nabídek"}
             </p>
           </div>
 
@@ -332,7 +332,7 @@ export default function MyItemsPage() {
               </p>
 
             </div>
-          ) : filteredItems.length === 0 ? (
+          ) : filteredOffers.length === 0 ? (
             <div className="koluj-card p-10 text-center">
               <h2 className="text-2xl font-black">Nic nenalezeno</h2>
               <p className="mt-2 text-[var(--koluj-muted)]">
@@ -341,10 +341,10 @@ export default function MyItemsPage() {
             </div>
           ) : (
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
-              {visibleItems.map((item) => {
+              {visibleOffers.map((item) => {
 
                 return (
-                <ItemCard
+                <OfferCard
                   key={item.id}
                   item={item}
                   variant="owner"
@@ -393,7 +393,7 @@ export default function MyItemsPage() {
 
                         <button
                           type="button"
-                          onClick={() => archiveItem(item)}
+                          onClick={() => archiveOffer(item)}
                           onMouseLeave={() => setPendingDeleteId(null)}
                           className={`flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight transition ${
                             pendingDeleteId === item.id
@@ -413,7 +413,7 @@ export default function MyItemsPage() {
             </div>
           )}
 
-          {visibleCount < filteredItems.length && (
+          {visibleCount < filteredOffers.length && (
             <div className="pt-8 text-center">
               <button
                 onClick={() => setVisibleCount((prev) => prev + 8)}
@@ -423,7 +423,7 @@ export default function MyItemsPage() {
               </button>
 
               <p className="mt-3 text-sm text-[var(--koluj-muted)]">
-                Zobrazeno {visibleItems.length} z {filteredItems.length} nabídek
+                Zobrazeno {visibleOffers.length} z {filteredOffers.length} nabídek
               </p>
             </div>
           )}

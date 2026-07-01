@@ -2,10 +2,10 @@ import { createClient } from "@supabase/supabase-js";
 import { notifyUserServer } from "@/lib/notifyUserServer";
 import { containsForbiddenText } from "@/lib/moderation";
 import {
-  assertItemAvailableServer,
-  cancelReservationForLoanServer,
-  createReservationForLoanServer,
-  finishReservationForLoanServer,
+  assertOfferAvailableServer,
+  cancelReservationForBookingServer,
+  createReservationForBookingServer,
+  finishReservationForBookingServer,
 } from "@/lib/services/availabilityService";
 
 const supabaseAdmin = createClient(
@@ -19,16 +19,16 @@ function formatDate(date: string | null) {
 }
 
 async function addSystemMessage({
-  loanId,
+  bookingId,
   actorId,
   message,
 }: {
-  loanId: string;
+  bookingId: string;
   actorId: string;
   message: string;
 }) {
   const { error } = await supabaseAdmin.from("booking_messages").insert({
-    loan_id: loanId,
+    booking_id: bookingId,
     sender_id: actorId,
     is_system: true,
     message,
@@ -39,51 +39,51 @@ async function addSystemMessage({
   }
 }
 
-async function loadLoanWithItem(loanId: string) {
-  const { data: loan, error: loanError } = await supabaseAdmin
+async function loadBookingWithOffer(bookingId: string) {
+  const { data: booking, error: bookingError } = await supabaseAdmin
     .from("bookings")
-    .select("id, owner_id, borrower_id, item_id, status, date_from, date_to")
-    .eq("id", loanId)
+    .select("id, owner_id, customer_id, offer_id, status, date_from, date_to")
+    .eq("id", bookingId)
     .single();
 
-  if (loanError || !loan) {
+  if (bookingError || !booking) {
     throw new Error("Rezervace nebyla nalezena");
   }
 
-  const { data: item, error: itemError } = await supabaseAdmin
+  const { data: offer, error: offerError } = await supabaseAdmin
     .from("offers")
     .select("id, title, status")
-    .eq("id", loan.item_id)
+    .eq("id", booking.offer_id)
     .single();
 
-  if (itemError || !item) {
+  if (offerError || !offer) {
     throw new Error("Nabídka nebyla nalezena");
   }
 
-  return { loan, item };
+  return { booking, offer };
 }
 
 async function notifyAvailabilityWatchers({
-  itemId,
+  offerId,
   actorId,
 }: {
-  itemId: string;
+  offerId: string;
   actorId: string;
 }) {
-  const { data: item, error: itemError } = await supabaseAdmin
+  const { data: offer, error: offerError } = await supabaseAdmin
     .from("offers")
     .select("id, title, owner_id")
-    .eq("id", itemId)
+    .eq("id", offerId)
     .single();
 
-  if (itemError || !item) {
+  if (offerError || !offer) {
     throw new Error("Nabídka nebyla nalezena");
   }
 
   const { data: watchers, error: watchersError } = await supabaseAdmin
     .from("offer_availability_watchers")
     .select("user_id")
-    .eq("item_id", itemId)
+    .eq("offer_id", offerId)
     .is("notified_at", null);
 
   if (watchersError) {
@@ -91,19 +91,19 @@ async function notifyAvailabilityWatchers({
   }
 
   const recipients = (watchers || []).filter(
-    (watcher) => watcher.user_id !== item.owner_id
+    (watcher) => watcher.user_id !== offer.owner_id
   );
 
   for (const watcher of recipients) {
     await notifyUserServer({
       userId: watcher.user_id,
       actorId,
-      itemId: item.id,
-      type: "item_available",
+      offerId: offer.id,
+      type: "offer_available",
       title: "Nabídka je znovu dostupná",
-      message: `${item.title} je opět k rezervaci.`,
+      message: `${offer.title} je opět k rezervaci.`,
       emailSubject: "Nabídka je znovu dostupná",
-      url: `/offers/${item.id}`,
+      url: `/offers/${offer.id}`,
     });
   }
 
@@ -111,22 +111,22 @@ async function notifyAvailabilityWatchers({
     await supabaseAdmin
       .from("offer_availability_watchers")
       .update({ notified_at: new Date().toISOString() })
-      .eq("item_id", itemId)
+      .eq("offer_id", offerId)
       .is("notified_at", null);
   }
 
   return recipients.length;
 }
 
-export async function requestLoanServer({
-  itemId,
-  borrowerId,
+export async function requestBookingServer({
+  offerId,
+  customerId,
   dateFrom,
   dateTo,
   note,
 }: {
-  itemId: string;
-  borrowerId: string;
+  offerId: string;
+  customerId: string;
   dateFrom: string;
   dateTo: string;
   note?: string;
@@ -149,7 +149,7 @@ export async function requestLoanServer({
     throw new Error("Datum vrácení nemůže být dřív než datum rezervace.");
   }
 
-  const { data: item, error: itemError } = await supabaseAdmin
+  const { data: offer, error: offerError } = await supabaseAdmin
     .from("offers")
     .select(`
       id,
@@ -159,24 +159,24 @@ export async function requestLoanServer({
       pickup_place,
       price_amount,
       deposit,
-      profiles:profiles!items_owner_id_fkey (
+      profiles:profiles!offers_owner_id_fkey (
         is_seed_user
       )
     `)
-    .eq("id", itemId)
+    .eq("id", offerId)
     .single();
 
-  if (itemError || !item) {
+  if (offerError || !offer) {
     throw new Error("Nabídka nebyla nalezena");
   }
 
-  if (item.owner_id === borrowerId) {
+  if (offer.owner_id === customerId) {
     throw new Error("Vlastní nabídku si nemůžeš rezervovat");
   }
 
-  const profile = Array.isArray(item.profiles)
-    ? item.profiles[0]
-    : item.profiles;
+  const profile = Array.isArray(offer.profiles)
+    ? offer.profiles[0]
+    : offer.profiles;
 
   if (profile?.is_seed_user) {
     throw new Error(
@@ -184,18 +184,18 @@ export async function requestLoanServer({
     );
   }
 
-  const { data: borrowerProfile } = await supabaseAdmin
+  const { data: customerProfile } = await supabaseAdmin
     .from("profiles")
     .select("id, full_name, city, latitude, longitude")
-    .eq("id", borrowerId)
+    .eq("id", customerId)
     .maybeSingle();
 
   const profileComplete = Boolean(
-    borrowerProfile?.id &&
-      borrowerProfile.full_name &&
-      borrowerProfile.city &&
-      borrowerProfile.latitude &&
-      borrowerProfile.longitude
+    customerProfile?.id &&
+      customerProfile.full_name &&
+      customerProfile.city &&
+      customerProfile.latitude &&
+      customerProfile.longitude
   );
 
   if (!profileComplete) {
@@ -204,289 +204,289 @@ export async function requestLoanServer({
     );
   }
 
-  const { data: overlappingLoans, error: overlappingLoanError } = await supabaseAdmin
+  const { data: overlappingBookings, error: overlappingBookingError } = await supabaseAdmin
     .from("bookings")
     .select("id")
-    .eq("item_id", item.id)
-    .eq("borrower_id", borrowerId)
+    .eq("offer_id", offer.id)
+    .eq("customer_id", customerId)
     .in("status", ["requested", "approved", "active"])
     .lte("date_from", dateTo)
     .gte("date_to", dateFrom)
     .limit(1);
 
-  if (overlappingLoanError) {
-    throw new Error(overlappingLoanError.message);
+  if (overlappingBookingError) {
+    throw new Error(overlappingBookingError.message);
   }
 
-  if (overlappingLoans && overlappingLoans.length > 0) {
+  if (overlappingBookings && overlappingBookings.length > 0) {
     throw new Error("Na tuto nabídku už máš žádost ve stejném nebo překrývajícím se termínu.");
   }
 
-  await assertItemAvailableServer({
-    itemId: item.id,
+  await assertOfferAvailableServer({
+    offerId: offer.id,
     dateFrom,
     dateTo,
   });
 
-  const { data: createdLoan, error: loanError } = await supabaseAdmin
+  const { data: createdBooking, error: bookingError } = await supabaseAdmin
     .from("bookings")
     .insert({
-      item_id: item.id,
-      owner_id: item.owner_id,
-      borrower_id: borrowerId,
+      offer_id: offer.id,
+      owner_id: offer.owner_id,
+      customer_id: customerId,
       status: "requested",
       date_from: dateFrom,
       date_to: dateTo,
-      price_amount: item.price_amount ?? 0,
-      deposit_amount: item.deposit ?? 0,
-      total_price: item.price_amount ?? 0,
+      price_amount: offer.price_amount ?? 0,
+      deposit_amount: offer.deposit ?? 0,
+      total_price: offer.price_amount ?? 0,
       platform_fee: 0,
-      owner_earnings: item.price_amount ?? 0,
+      owner_earnings: offer.price_amount ?? 0,
       note: note?.trim() || null,
     })
     .select("id")
     .single();
 
-  if (loanError || !createdLoan) {
-    throw new Error(loanError?.message || "Žádost se nepodařilo vytvořit");
+  if (bookingError || !createdBooking) {
+    throw new Error(bookingError?.message || "Žádost se nepodařilo vytvořit");
   }
 
   await addSystemMessage({
-    loanId: createdLoan.id,
-    actorId: borrowerId,
+    bookingId: createdBooking.id,
+    actorId: customerId,
     message: `Žádost o rezervace vytvořena.
 
-Nabídka: ${item.title}
+Nabídka: ${offer.title}
 Termín: ${formatDate(dateFrom)} – ${formatDate(dateTo)}
-Místo předání: ${item.pickup_place}
-Cena: ${item.price_amount || 0} Kč
-Kauce: ${item.deposit || 0} Kč${note?.trim() ? `\n\nPoznámka: ${note.trim()}` : ""}`,
+Místo předání: ${offer.pickup_place}
+Cena: ${offer.price_amount || 0} Kč
+Kauce: ${offer.deposit || 0} Kč${note?.trim() ? `\n\nPoznámka: ${note.trim()}` : ""}`,
   });
 
   await notifyUserServer({
-    userId: item.owner_id,
-    actorId: borrowerId,
-    itemId: item.id,
-    loanId: createdLoan.id,
-    type: "loan_requested",
+    userId: offer.owner_id,
+    actorId: customerId,
+    offerId: offer.id,
+    bookingId: createdBooking.id,
+    type: "booking_requested",
     title: "Nová žádost o rezervace",
-    message: `si chce rezervovat: ${item.title}`,
+    message: `si chce rezervovat: ${offer.title}`,
     emailSubject: "Nová žádost o rezervace",
   });
 
   return {
     ok: true,
-    loanId: createdLoan.id,
+    bookingId: createdBooking.id,
   };
 }
 
-export async function approveLoanServer({
-  loanId,
+export async function approveBookingServer({
+  bookingId,
   actorId,
 }: {
-  loanId: string;
+  bookingId: string;
   actorId: string;
 }) {
   const approvedAt = new Date().toISOString();
-  const { loan, item } = await loadLoanWithItem(loanId);
+  const { booking, offer } = await loadBookingWithOffer(bookingId);
 
-  if (loan.owner_id !== actorId) {
+  if (booking.owner_id !== actorId) {
     throw new Error("Tuto rezervaci může schválit pouze vlastník");
   }
 
-  if (loan.status !== "requested") {
+  if (booking.status !== "requested") {
     throw new Error("Schválit lze pouze novou žádost");
   }
 
-  if (!loan.date_from || !loan.date_to) {
+  if (!booking.date_from || !booking.date_to) {
     throw new Error("Rezervace nemá vybraný termín.");
   }
 
-  await assertItemAvailableServer({
-    itemId: item.id,
-    dateFrom: loan.date_from,
-    dateTo: loan.date_to,
+  await assertOfferAvailableServer({
+    offerId: offer.id,
+    dateFrom: booking.date_from,
+    dateTo: booking.date_to,
   });
 
-  const { error: updateLoanError } = await supabaseAdmin
+  const { error: updateBookingError } = await supabaseAdmin
     .from("bookings")
     .update({ status: "approved", approved_at: approvedAt })
-    .eq("id", loan.id);
+    .eq("id", booking.id);
 
-  if (updateLoanError) throw new Error(updateLoanError.message);
+  if (updateBookingError) throw new Error(updateBookingError.message);
 
-  await createReservationForLoanServer(loan.id);
+  await createReservationForBookingServer(booking.id);
 
   await addSystemMessage({
-    loanId: loan.id,
+    bookingId: booking.id,
     actorId,
     message:
       "Žádost byla schválena.\n\nMůžete se domluvit na termínu předání.",
   });
 
   await notifyUserServer({
-    userId: loan.borrower_id,
+    userId: booking.customer_id,
     actorId,
-    itemId: item.id,
-    loanId: loan.id,
-    type: "loan_approved",
+    offerId: offer.id,
+    bookingId: booking.id,
+    type: "booking_approved",
     title: "Rezervace schválena",
-    message: `${item.title} byla schválena. Domluvte si předání.`,
+    message: `${offer.title} byla schválena. Domluvte si předání.`,
     emailSubject: "Rezervace schválena",
   });
 
   return { ok: true, approvedAt };
 }
 
-export async function rejectLoanServer({
-  loanId,
+export async function rejectBookingServer({
+  bookingId,
   actorId,
 }: {
-  loanId: string;
+  bookingId: string;
   actorId: string;
 }) {
-  const { loan, item } = await loadLoanWithItem(loanId);
+  const { booking, offer } = await loadBookingWithOffer(bookingId);
 
-  if (loan.owner_id !== actorId) {
+  if (booking.owner_id !== actorId) {
     throw new Error("Tuto rezervaci může odmítnout pouze vlastník");
   }
 
-  if (!["requested", "approved"].includes(loan.status)) {
+  if (!["requested", "approved"].includes(booking.status)) {
     throw new Error("Zrušit lze pouze novou nebo schválenou žádost");
   }
 
-  const { error: loanError } = await supabaseAdmin
+  const { error: bookingError } = await supabaseAdmin
     .from("bookings")
     .update({ status: "cancelled" })
-    .eq("id", loan.id);
+    .eq("id", booking.id);
 
-  if (loanError) throw new Error(loanError.message);
+  if (bookingError) throw new Error(bookingError.message);
 
-  await cancelReservationForLoanServer(loan.id);
+  await cancelReservationForBookingServer(booking.id);
 
   await addSystemMessage({
-    loanId: loan.id,
+    bookingId: booking.id,
     actorId,
-    message: loan.status === "approved" ? "Schválená rezervace byla zrušena." : "Žádost byla odmítnuta.",
+    message: booking.status === "approved" ? "Schválená rezervace byla zrušena." : "Žádost byla odmítnuta.",
   });
 
   await notifyUserServer({
-    userId: loan.borrower_id,
+    userId: booking.customer_id,
     actorId,
-    itemId: item.id,
-    loanId: loan.id,
-    type: "loan_rejected",
+    offerId: offer.id,
+    bookingId: booking.id,
+    type: "booking_rejected",
     title: "Žádost byla odmítnuta",
-    message: `${item.title} nebyla schválena k rezervaci.`,
+    message: `${offer.title} nebyla schválena k rezervaci.`,
     emailSubject: "Žádost byla odmítnuta",
   });
 
   return { ok: true };
 }
 
-export async function startLoanServer({
-  loanId,
+export async function startBookingServer({
+  bookingId,
   actorId,
 }: {
-  loanId: string;
+  bookingId: string;
   actorId: string;
 }) {
   const handedOverAt = new Date().toISOString();
-  const { loan, item } = await loadLoanWithItem(loanId);
+  const { booking, offer } = await loadBookingWithOffer(bookingId);
 
-  if (loan.owner_id !== actorId) {
+  if (booking.owner_id !== actorId) {
     throw new Error("Předání může potvrdit pouze vlastník");
   }
 
-  if (loan.status !== "approved") {
+  if (booking.status !== "approved") {
     throw new Error("Předání lze potvrdit pouze u schválené rezervace");
   }
 
-  const { error: loanError } = await supabaseAdmin
+  const { error: bookingError } = await supabaseAdmin
     .from("bookings")
     .update({ status: "active", handed_over_at: handedOverAt })
-    .eq("id", loan.id);
+    .eq("id", booking.id);
 
-  if (loanError) throw new Error(loanError.message);
+  if (bookingError) throw new Error(bookingError.message);
 
   await addSystemMessage({
-    loanId: loan.id,
+    bookingId: booking.id,
     actorId,
     message: "Nabídka byla předána. Rezervace právě probíhá.",
   });
 
   await notifyUserServer({
-    userId: loan.borrower_id,
+    userId: booking.customer_id,
     actorId,
-    itemId: item.id,
-    loanId: loan.id,
-    type: "loan_started",
+    offerId: offer.id,
+    bookingId: booking.id,
+    type: "booking_started",
     title: "Rezervace začala",
-    message: `${item.title} byla označena jako předaná.`,
+    message: `${offer.title} byla označena jako předaná.`,
     emailSubject: "Rezervace začala",
   });
 
   return { ok: true, handedOverAt };
 }
 
-export async function returnLoanServer({
-  loanId,
+export async function returnBookingServer({
+  bookingId,
   actorId,
 }: {
-  loanId: string;
+  bookingId: string;
   actorId: string;
 }) {
   const returnedAt = new Date().toISOString();
-  const { loan, item } = await loadLoanWithItem(loanId);
+  const { booking, offer } = await loadBookingWithOffer(bookingId);
 
-  if (loan.owner_id !== actorId) {
+  if (booking.owner_id !== actorId) {
     throw new Error("Vrácení může potvrdit pouze vlastník");
   }
 
-  if (loan.status !== "active") {
+  if (booking.status !== "active") {
     throw new Error("Vrácení lze potvrdit pouze u probíhající rezervace");
   }
 
-  const { error: loanError } = await supabaseAdmin
+  const { error: bookingError } = await supabaseAdmin
     .from("bookings")
     .update({ status: "returned", returned_at: returnedAt })
-    .eq("id", loan.id);
+    .eq("id", booking.id);
 
-  if (loanError) throw new Error(loanError.message);
+  if (bookingError) throw new Error(bookingError.message);
 
-  await finishReservationForLoanServer(loan.id);
+  await finishReservationForBookingServer(booking.id);
 
   await addSystemMessage({
-    loanId: loan.id,
+    bookingId: booking.id,
     actorId,
     message: "Nabídka byla vrácena. Rezervace byla ukončena.",
   });
 
   await notifyUserServer({
-    userId: loan.borrower_id,
+    userId: booking.customer_id,
     actorId,
-    itemId: item.id,
-    loanId: loan.id,
-    type: "loan_returned",
+    offerId: offer.id,
+    bookingId: booking.id,
+    type: "booking_returned",
     title: "Rezervace ukončena",
-    message: `${item.title} byla označena jako vrácená.`,
+    message: `${offer.title} byla označena jako vrácená.`,
     emailSubject: "Rezervace ukončena",
   });
 
   const watchersNotified = await notifyAvailabilityWatchers({
-    itemId: item.id,
+    offerId: offer.id,
     actorId,
   });
 
   return { ok: true, returnedAt, watchersNotified };
 }
 
-export async function sendLoanMessageServer({
-  loanId,
+export async function sendBookingMessageServer({
+  bookingId,
   actorId,
   message,
 }: {
-  loanId: string;
+  bookingId: string;
   actorId: string;
   message: string;
 }) {
@@ -500,20 +500,20 @@ export async function sendLoanMessageServer({
     throw new Error("Zpráva obsahuje nepovolený obsah.");
   }
 
-  const { loan, item } = await loadLoanWithItem(loanId);
+  const { booking, offer } = await loadBookingWithOffer(bookingId);
 
-  if (loan.owner_id !== actorId && loan.borrower_id !== actorId) {
+  if (booking.owner_id !== actorId && booking.customer_id !== actorId) {
     throw new Error("Nemáš přístup k této rezervaci");
   }
 
-  if (loan.status === "returned" || loan.status === "cancelled") {
+  if (booking.status === "returned" || booking.status === "cancelled") {
     throw new Error("Do ukončené rezervace už nelze psát.");
   }
 
   const { data: createdMessage, error: messageError } = await supabaseAdmin
     .from("booking_messages")
     .insert({
-      loan_id: loan.id,
+      booking_id: booking.id,
       sender_id: actorId,
       message: trimmedMessage,
       is_system: false,
@@ -526,7 +526,7 @@ export async function sendLoanMessageServer({
   }
 
   const recipientId =
-    loan.owner_id === actorId ? loan.borrower_id : loan.owner_id;
+    booking.owner_id === actorId ? booking.customer_id : booking.owner_id;
 
   let recipientIsActive = false;
 
@@ -534,7 +534,7 @@ export async function sendLoanMessageServer({
     const { data: presence } = await supabaseAdmin
       .from("booking_participant_presence")
       .select("last_seen_at")
-      .eq("loan_id", loan.id)
+      .eq("booking_id", booking.id)
       .eq("user_id", recipientId)
       .maybeSingle();
 
@@ -549,11 +549,11 @@ export async function sendLoanMessageServer({
     await notifyUserServer({
       userId: recipientId,
       actorId,
-      itemId: item.id,
-      loanId: loan.id,
+      offerId: offer.id,
+      bookingId: booking.id,
       type: "new_message",
       title: "Nová zpráva",
-      message: `poslal(a) zprávu k rezervaci: ${item.title}`,
+      message: `poslal(a) zprávu k rezervaci: ${offer.title}`,
       emailSubject: "Nová zpráva",
       sendEmail: !recipientIsActive,
       sendPush: !recipientIsActive,

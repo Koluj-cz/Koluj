@@ -8,15 +8,15 @@ const supabaseAdmin = createClient(
 
 type ReminderType = "handover_24h" | "return_24h";
 
-type LoanReminderRow = {
+type BookingReminderRow = {
   id: string;
-  item_id: string;
+  offer_id: string;
   owner_id: string;
-  borrower_id: string;
+  customer_id: string;
   status: string;
   date_from: string | null;
   date_to: string | null;
-  items:
+  offers:
     | {
         id: string;
         title: string | null;
@@ -34,7 +34,7 @@ type LoanReminderRow = {
         full_name: string | null;
       }[]
     | null;
-  borrower:
+  customer:
     | {
         full_name: string | null;
       }
@@ -55,9 +55,9 @@ function firstOrValue<T>(value: T | T[] | null | undefined): T | null {
   return value || null;
 }
 
-async function reserveReminderSlot(loanId: string, type: ReminderType) {
+async function reserveReminderSlot(bookingId: string, type: ReminderType) {
   const { error } = await supabaseAdmin.from("booking_reminders").insert({
-    loan_id: loanId,
+    booking_id: bookingId,
     type,
   });
 
@@ -70,25 +70,25 @@ async function reserveReminderSlot(loanId: string, type: ReminderType) {
   throw new Error(error.message);
 }
 
-async function loadLoansForHandoverReminder(targetDate: string) {
+async function loadBookingsForHandoverReminder(targetDate: string) {
   const { data, error } = await supabaseAdmin
     .from("bookings")
     .select(`
       id,
-      item_id,
+      offer_id,
       owner_id,
-      borrower_id,
+      customer_id,
       status,
       date_from,
       date_to,
-      items:offers!loans_item_id_fkey (
+      offers:offers!bookings_offer_id_fkey (
         id,
         title
       ),
-      owner:profiles!loans_owner_id_fkey (
+      owner:profiles!bookings_owner_id_fkey (
         full_name
       ),
-      borrower:profiles!loans_borrower_id_fkey (
+      customer:profiles!bookings_customer_id_fkey (
         full_name
       )
     `)
@@ -96,28 +96,28 @@ async function loadLoansForHandoverReminder(targetDate: string) {
     .eq("date_from", targetDate);
 
   if (error) throw new Error(error.message);
-  return (data || []) as unknown as LoanReminderRow[];
+  return (data || []) as unknown as BookingReminderRow[];
 }
 
-async function loadLoansForReturnReminder(targetDate: string) {
+async function loadBookingsForReturnReminder(targetDate: string) {
   const { data, error } = await supabaseAdmin
     .from("bookings")
     .select(`
       id,
-      item_id,
+      offer_id,
       owner_id,
-      borrower_id,
+      customer_id,
       status,
       date_from,
       date_to,
-      items:offers!loans_item_id_fkey (
+      offers:offers!bookings_offer_id_fkey (
         id,
         title
       ),
-      owner:profiles!loans_owner_id_fkey (
+      owner:profiles!bookings_owner_id_fkey (
         full_name
       ),
-      borrower:profiles!loans_borrower_id_fkey (
+      customer:profiles!bookings_customer_id_fkey (
         full_name
       )
     `)
@@ -125,83 +125,83 @@ async function loadLoansForReturnReminder(targetDate: string) {
     .eq("date_to", targetDate);
 
   if (error) throw new Error(error.message);
-  return (data || []) as unknown as LoanReminderRow[];
+  return (data || []) as unknown as BookingReminderRow[];
 }
 
-export async function sendLoanRemindersServer() {
+export async function sendBookingRemindersServer() {
   const targetDate = getTomorrowIsoDate();
 
   let handoverSent = 0;
   let returnSent = 0;
 
-  const handoverLoans = await loadLoansForHandoverReminder(targetDate);
+  const handoverBookings = await loadBookingsForHandoverReminder(targetDate);
 
-  for (const loan of handoverLoans) {
-    const shouldSend = await reserveReminderSlot(loan.id, "handover_24h");
+  for (const booking of handoverBookings) {
+    const shouldSend = await reserveReminderSlot(booking.id, "handover_24h");
     if (!shouldSend) continue;
 
-    const item = firstOrValue(loan.items);
-    const owner = firstOrValue(loan.owner);
-    const borrower = firstOrValue(loan.borrower);
-    const itemTitle = item?.title || "nabídku";
+    const offer = firstOrValue(booking.offers);
+    const owner = firstOrValue(booking.owner);
+    const customer = firstOrValue(booking.customer);
+    const offerTitle = offer?.title || "nabídku";
     const ownerName = owner?.full_name || "vlastníka";
-    const borrowerName = borrower?.full_name || "rezervujícího";
+    const customerName = customer?.full_name || "rezervujícího";
 
     await notifyUserServer({
-      userId: loan.owner_id,
+      userId: booking.owner_id,
       actorId: null,
-      loanId: loan.id,
-      itemId: loan.item_id,
-      type: "loan_handover_reminder_24h",
+      bookingId: booking.id,
+      offerId: booking.offer_id,
+      type: "booking_handover_reminder_24h",
       title: "Zítra začíná rezervace",
-      message: `Zítra začíná rezervace „${itemTitle}“ uživateli ${borrowerName}.`,
+      message: `Zítra začíná rezervace „${offerTitle}“ uživateli ${customerName}.`,
       emailSubject: "Připomínka začátku rezervace",
     });
 
     await notifyUserServer({
-      userId: loan.borrower_id,
+      userId: booking.customer_id,
       actorId: null,
-      loanId: loan.id,
-      itemId: loan.item_id,
-      type: "loan_handover_reminder_24h",
+      bookingId: booking.id,
+      offerId: booking.offer_id,
+      type: "booking_handover_reminder_24h",
       title: "Zítra začíná tvoje rezervace",
-      message: `Zítra začíná tvoje rezervace „${itemTitle}“ od uživatele ${ownerName}.`,
+      message: `Zítra začíná tvoje rezervace „${offerTitle}“ od uživatele ${ownerName}.`,
       emailSubject: "Připomínka začátku rezervace",
     });
 
     handoverSent += 2;
   }
 
-  const returnLoans = await loadLoansForReturnReminder(targetDate);
+  const returnBookings = await loadBookingsForReturnReminder(targetDate);
 
-  for (const loan of returnLoans) {
-    const shouldSend = await reserveReminderSlot(loan.id, "return_24h");
+  for (const booking of returnBookings) {
+    const shouldSend = await reserveReminderSlot(booking.id, "return_24h");
     if (!shouldSend) continue;
 
-    const item = firstOrValue(loan.items);
-    const borrower = firstOrValue(loan.borrower);
-    const itemTitle = item?.title || "nabídku";
-    const borrowerName = borrower?.full_name || "rezervujícího";
+    const offer = firstOrValue(booking.offers);
+    const customer = firstOrValue(booking.customer);
+    const offerTitle = offer?.title || "nabídku";
+    const customerName = customer?.full_name || "rezervujícího";
 
     await notifyUserServer({
-      userId: loan.owner_id,
+      userId: booking.owner_id,
       actorId: null,
-      loanId: loan.id,
-      itemId: loan.item_id,
-      type: "loan_return_reminder_24h",
+      bookingId: booking.id,
+      offerId: booking.offer_id,
+      type: "booking_return_reminder_24h",
       title: "Zítra končí rezervace",
-      message: `Zítra končí rezervace „${itemTitle}“ s uživatelem ${borrowerName}.`,
+      message: `Zítra končí rezervace „${offerTitle}“ s uživatelem ${customerName}.`,
       emailSubject: "Připomínka konce rezervace",
     });
 
     await notifyUserServer({
-      userId: loan.borrower_id,
+      userId: booking.customer_id,
       actorId: null,
-      loanId: loan.id,
-      itemId: loan.item_id,
-      type: "loan_return_reminder_24h",
+      bookingId: booking.id,
+      offerId: booking.offer_id,
+      type: "booking_return_reminder_24h",
       title: "Zítra končí tvoje rezervace",
-      message: `Zítra končí tvoje rezervace „${itemTitle}“.`,
+      message: `Zítra končí tvoje rezervace „${offerTitle}“.`,
       emailSubject: "Připomínka konce rezervace",
     });
 
@@ -211,8 +211,8 @@ export async function sendLoanRemindersServer() {
   return {
     ok: true,
     targetDate,
-    handoverLoans: handoverLoans.length,
-    returnLoans: returnLoans.length,
+    handoverBookings: handoverBookings.length,
+    returnBookings: returnBookings.length,
     notificationsSent: handoverSent + returnSent,
   };
 }

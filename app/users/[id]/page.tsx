@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { MapPin, ShieldCheck, Star } from "lucide-react";
 import BackLink from "@/app/components/BackLink";
 import { supabase } from "@/lib/supabase";
-import ItemCard, { type ItemCardItem } from "@/app/components/ItemCard";
+import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
 import { useParams } from "next/navigation";
 import AuthHeaderButton from "@/app/components/AuthHeaderButton";
 import PageLoader from "@/app/components/PageLoader";
@@ -34,7 +34,7 @@ type Review = {
     full_name: string | null;
     avatar_url: string | null;
   } | null;
-  items: {
+  offers: {
     title: string | null;
   } | null;
 };
@@ -46,7 +46,7 @@ export default function UserProfilePage() {
   const [rating, setRating] = useState<Rating | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [visibleReviewsCount, setVisibleReviewsCount] = useState(5);
-  const [items, setItems] = useState<ItemCardItem[]>([]);
+  const [items, setItems] = useState<OfferCardOffer[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -82,7 +82,7 @@ export default function UserProfilePage() {
           full_name,
           avatar_url
         ),
-        items:offers (
+        offers:offers (
           title
         )
       `)
@@ -93,7 +93,7 @@ export default function UserProfilePage() {
       .from("offers")
       .select(`
         *,
-        profiles:profiles!items_owner_id_fkey (
+        profiles:profiles!offers_owner_id_fkey (
           full_name,
           avatar_url,
           is_verified,
@@ -111,7 +111,7 @@ export default function UserProfilePage() {
     setProfile(profileData as Profile);
     setRating(ratingData || null);
     setReviews((reviewsData || []) as unknown as Review[]);
-    setItems((itemsData || []) as ItemCardItem[]);
+    setItems((itemsData || []) as OfferCardOffer[]);
     setLoading(false);
   }
 
@@ -269,8 +269,8 @@ export default function UserProfilePage() {
 
                             <p className="text-sm text-[var(--koluj-muted)]">
                               {formatDate(review.created_at)}
-                              {review.items?.title
-                                ? ` · ${review.items.title}`
+                              {review.offers?.title
+                                ? ` · ${review.offers.title}`
                                 : ""}
                             </p>
                           </div>
@@ -315,7 +315,7 @@ export default function UserProfilePage() {
               ) : (
                 <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
                   {items.map((item) => (
-                    <ItemCard key={item.id} item={item} />
+                    <OfferCard key={item.id} item={item} />
                   ))}
                 </div>
               )}

@@ -3,7 +3,7 @@ import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import {
-  assertItemAvailableServer,
+  assertOfferAvailableServer,
   normalizeDateRange,
 } from "@/lib/services/availabilityService";
 
@@ -17,7 +17,7 @@ type RequestBody = {
   dateTo?: string;
   reason?: string;
   applyToAll?: boolean;
-  itemIds?: string[];
+  offerIds?: string[];
 };
 
 export async function POST(request: Request) {
@@ -65,11 +65,11 @@ export async function POST(request: Request) {
   }
 
   const applyToAll = Boolean(body.applyToAll);
-  const itemIds = Array.isArray(body.itemIds)
-    ? body.itemIds.filter(Boolean)
+  const offerIds = Array.isArray(body.offerIds)
+    ? body.offerIds.filter(Boolean)
     : [];
 
-  if (!applyToAll && itemIds.length === 0) {
+  if (!applyToAll && offerIds.length === 0) {
     return NextResponse.json(
       { error: "Vyber alespoň jednu nabídku." },
       { status: 400 }
@@ -83,31 +83,31 @@ export async function POST(request: Request) {
     .is("deleted_at", null);
 
   if (!applyToAll) {
-    query = query.in("id", itemIds);
+    query = query.in("id", offerIds);
   }
 
-  const { data: items, error: itemsError } = await query.order("created_at", {
+  const { data: offers, error: offersError } = await query.order("created_at", {
     ascending: false,
   });
 
-  if (itemsError) {
-    return NextResponse.json({ error: itemsError.message }, { status: 400 });
+  if (offersError) {
+    return NextResponse.json({ error: offersError.message }, { status: 400 });
   }
 
-  if (!items || items.length === 0) {
+  if (!offers || offers.length === 0) {
     return NextResponse.json(
       { error: "Nenalezeny žádné nabídky k blokaci." },
       { status: 400 }
     );
   }
 
-  const created: { id: string; itemId: string; title: string }[] = [];
-  const skipped: { itemId: string; title: string; reason: string }[] = [];
+  const created: { id: string; offerId: string; title: string }[] = [];
+  const skipped: { offerId: string; title: string; reason: string }[] = [];
 
-  for (const item of items) {
+  for (const offer of offers) {
     try {
-      await assertItemAvailableServer({
-        itemId: item.id,
+      await assertOfferAvailableServer({
+        offerId: offer.id,
         dateFrom: range.dateFrom,
         dateTo: range.dateTo,
       });
@@ -115,7 +115,7 @@ export async function POST(request: Request) {
       const { data: block, error: blockError } = await supabaseAdmin
         .from("offer_availability_blocks")
         .insert({
-          item_id: item.id,
+          offer_id: offer.id,
           owner_id: user.id,
           date_from: range.dateFrom,
           date_to: range.dateTo,
@@ -126,8 +126,8 @@ export async function POST(request: Request) {
 
       if (blockError || !block) {
         skipped.push({
-          itemId: item.id,
-          title: item.title || "Nabídka",
+          offerId: offer.id,
+          title: offer.title || "Nabídka",
           reason: blockError?.message || "Blokaci se nepodařilo vytvořit.",
         });
         continue;
@@ -135,13 +135,13 @@ export async function POST(request: Request) {
 
       created.push({
         id: block.id,
-        itemId: item.id,
-        title: item.title || "Nabídka",
+        offerId: offer.id,
+        title: offer.title || "Nabídka",
       });
     } catch (error: any) {
       skipped.push({
-        itemId: item.id,
-        title: item.title || "Nabídka",
+        offerId: offer.id,
+        title: offer.title || "Nabídka",
         reason: error.message || "Termín není dostupný.",
       });
     }

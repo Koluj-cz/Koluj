@@ -28,8 +28,8 @@ import {
   conditionLabels,
   handoverLabels,
   handoverOptions,
-  itemStatuses,
-  itemStatusLabels,
+  offerStatuses,
+  offerStatusLabels,
 } from "@/lib/constants";
 
 type PlaceSuggestion = {
@@ -42,7 +42,7 @@ type PlaceSuggestion = {
 export default function EditItemPage() {
   const router = useRouter();
   const params = useParams();
-  const itemId = params.id as string;
+  const offerId = params.id as string;
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -97,7 +97,7 @@ export default function EditItemPage() {
     const { data, error } = await supabase
       .from("offers")
       .select("*")
-      .eq("id", itemId)
+      .eq("id", offerId)
       .single();
 
     if (error || !data) {
@@ -130,7 +130,7 @@ export default function EditItemPage() {
     const { data: imageData } = await supabase
     .from("offer_images")
     .select("*")
-    .eq("item_id", itemId)
+    .eq("offer_id", offerId)
     .order("sort_order");
     setImages(imageData || []);
     setLoading(false);
@@ -255,7 +255,7 @@ async function deleteImage(imageId: string, imageUrl: string) {
       .update({
         primary_image_url: nextPrimary,
       })
-      .eq("id", itemId);
+      .eq("id", offerId);
 
     setPrimaryImageUrl(nextPrimary || "");
   }
@@ -269,7 +269,7 @@ async function makePrimary(imageUrl: string) {
     .update({
       primary_image_url: imageUrl,
     })
-    .eq("id", itemId);
+    .eq("id", offerId);
 
   if (error) {
     toast.error(error.message);
@@ -355,7 +355,7 @@ async function makePrimary(imageUrl: string) {
         contact_note: form.contact_note,
         is_active: form.is_active,
       })
-      .eq("id", itemId);
+      .eq("id", offerId);
 
         if (error) {
         toast.error(error.message);
@@ -380,7 +380,7 @@ async function makePrimary(imageUrl: string) {
         setUploadProgress(0);
         for (let index = 0; index < newPhotos.length; index++) {
             const photo = newPhotos[index];
-            const filePath = `${user.id}/${itemId}/${Date.now()}-${index}.webp`;
+            const filePath = `${user.id}/${offerId}/${Date.now()}-${index}.webp`;
 
             const { error: uploadError } = await supabase.storage
             .from("offers")
@@ -399,7 +399,7 @@ async function makePrimary(imageUrl: string) {
             const sortOrder = currentCount + index;
 
             const { error: imageError } = await supabase.from("offer_images").insert({
-            item_id: itemId,
+            offer_id: offerId,
             image_url: publicUrl.publicUrl,
             sort_order: sortOrder,
             });
@@ -416,7 +416,7 @@ async function makePrimary(imageUrl: string) {
                 .update({
                 primary_image_url: publicUrl.publicUrl,
                 })
-                .eq("id", itemId);
+                .eq("id", offerId);
             }
             setUploadProgress(Math.round(((index + 1) / newPhotos.length) * 100));
         }

@@ -42,7 +42,7 @@ export async function POST(
 
   try {
     const block = await createAvailabilityBlockServer({
-      itemId: id,
+      offerId: id,
       ownerId: user.id,
       dateFrom,
       dateTo,

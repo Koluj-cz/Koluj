@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sendLoanRemindersServer } from "@/lib/services/loanReminderService";
+import { sendBookingRemindersServer } from "@/lib/services/bookingReminderService";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,13 +19,13 @@ export async function GET(request: Request) {
   }
 
   try {
-    const result = await sendLoanRemindersServer();
+    const result = await sendBookingRemindersServer();
     return NextResponse.json(result);
   } catch (error: any) {
-    console.error("Loan reminders cron error:", error);
+    console.error("Booking reminders cron error:", error);
 
     return NextResponse.json(
-      { error: error.message || "Loan reminders failed" },
+      { error: error.message || "Booking reminders failed" },
       { status: 500 }
     );
   }

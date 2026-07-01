@@ -12,8 +12,8 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 type NotifyUserServerParams = {
   userId: string | null;
   actorId: string | null;
-  loanId?: string | null;
-  itemId?: string | null;
+  bookingId?: string | null;
+  offerId?: string | null;
   type: string;
   title: string;
   message: string;
@@ -26,8 +26,8 @@ type NotifyUserServerParams = {
 export async function notifyUserServer({
   userId,
   actorId,
-  loanId,
-  itemId,
+  bookingId,
+  offerId,
   type,
   title,
   message,
@@ -41,8 +41,8 @@ export async function notifyUserServer({
   await supabaseAdmin.from("notifications").insert({
     user_id: userId,
     actor_id: actorId,
-    loan_id: loanId,
-    item_id: itemId,
+    booking_id: bookingId,
+    offer_id: offerId,
     type,
     title,
     message,
@@ -52,10 +52,10 @@ export async function notifyUserServer({
 
   const targetUrl =
     url ||
-    (loanId
-      ? `/dashboard/bookings/${loanId}`
-      : itemId
-      ? `/offers/${itemId}`
+    (bookingId
+      ? `/dashboard/bookings/${bookingId}`
+      : offerId
+      ? `/offers/${offerId}`
       : "/dashboard/notifications");
 
   const fullUrl = `${appUrl}${targetUrl}`;
@@ -137,9 +137,9 @@ export async function notifyUserServer({
     return;
   }
 
-  const buttonText = loanId
+  const buttonText = bookingId
     ? "Otevřít rezervaci"
-    : itemId
+    : offerId
     ? "Otevřít nabídku"
     : "Otevřít notifikace";
 

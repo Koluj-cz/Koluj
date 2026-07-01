@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
-import { archiveItemServer } from "@/lib/services/itemService";
+import { archiveOfferServer } from "@/lib/services/offerService";
 
 export async function POST(request: Request) {
   const cookieStore = await cookies();
@@ -27,15 +27,15 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { itemId } = await request.json();
+  const { offerId } = await request.json();
 
-  if (!itemId) {
-    return NextResponse.json({ error: "Missing itemId" }, { status: 400 });
+  if (!offerId) {
+    return NextResponse.json({ error: "Missing offerId" }, { status: 400 });
   }
 
   try {
-    const result = await archiveItemServer({
-      itemId,
+    const result = await archiveOfferServer({
+      offerId,
       actorId: user.id,
     });
 

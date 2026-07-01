@@ -4,8 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Heart, Package, User, Handshake, Bell, CalendarOff } from "lucide-react";
 import { supabase } from "@/lib/supabase";
-import AddItemButton from "@/app/components/AddItemButton";
-import AddItemDashboardCard from "@/app/components/AddItemDashboardCard";
+import AddOfferButton from "@/app/components/AddOfferButton";
+import AddOfferDashboardCard from "@/app/components/AddOfferDashboardCard";
 import RestoreAccountOnLogin from "@/app/components/RestoreAccountOnLogin";
 
 export default function DashboardPage() {
@@ -77,7 +77,7 @@ export default function DashboardPage() {
             KOLUJ
           </Link>
 
-        <AddItemButton className="koluj-button flex items-center gap-2 px-6 py-3" />
+        <AddOfferButton className="koluj-button flex items-center gap-2 px-6 py-3" />
         </header>
 
         <section className="mt-16 px-8">
@@ -113,7 +113,7 @@ export default function DashboardPage() {
             action="Otevřít"
           />
 
-          <AddItemDashboardCard />
+          <AddOfferDashboardCard />
 
           <DashboardCard
             href="/profile"
