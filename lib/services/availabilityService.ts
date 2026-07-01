@@ -30,6 +30,23 @@ function assertDateRange(dateFrom?: string | null, dateTo?: string | null) {
   }
 }
 
+
+export function normalizeDateRange(dateFrom?: string | null, dateTo?: string | null) {
+  assertDateRange(dateFrom, dateTo);
+
+  const from = toIsoDate(`${dateFrom}T00:00:00.000Z`);
+  const to = toIsoDate(`${dateTo}T00:00:00.000Z`);
+
+  if (to < from) {
+    throw new Error("Konec termínu nemůže být dřív než začátek.");
+  }
+
+  return {
+    dateFrom: from,
+    dateTo: to,
+  };
+}
+
 function assertTimeRange(startsAt?: string | null, endsAt?: string | null) {
   if (!startsAt || !endsAt) {
     throw new Error("Vyber čas rezervace.");
