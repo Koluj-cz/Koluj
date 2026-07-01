@@ -53,9 +53,9 @@ export async function notifyUserServer({
   const targetUrl =
     url ||
     (loanId
-      ? `/dashboard/loans/${loanId}`
+      ? `/dashboard/bookings/${loanId}`
       : itemId
-      ? `/items/${itemId}`
+      ? `/offers/${itemId}`
       : "/dashboard/notifications");
 
   const fullUrl = `${appUrl}${targetUrl}`;
@@ -138,9 +138,9 @@ export async function notifyUserServer({
   }
 
   const buttonText = loanId
-    ? "Otevřít půjčku"
+    ? "Otevřít rezervaci"
     : itemId
-    ? "Otevřít věc"
+    ? "Otevřít nabídku"
     : "Otevřít notifikace";
 
   await resend.emails.send({

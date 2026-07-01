@@ -17,6 +17,9 @@ import BackLink from "@/app/components/BackLink";
 import {
   categories,
   categoryLabels,
+  serviceCategories,
+  serviceCategoryLabels,
+  offerTypeLabels,
 } from "@/lib/constants";
 import { getDistanceKm } from "@/lib/location";
 
@@ -24,10 +27,19 @@ const ItemsMap = dynamic(() => import("@/app/components/ItemsMap"), {
   ssr: false,
 });
 
-const categoryOptions = {
-  all: "Všechny kategorie",
-  ...Object.fromEntries(categories.map(c => [c, categoryLabels[c]])),
-};
+function getCategoryOptions(offerType: string) {
+  if (offerType === "service") {
+    return {
+      all: "Všechny kategorie",
+      ...Object.fromEntries(serviceCategories.map((c) => [c, serviceCategoryLabels[c]])),
+    };
+  }
+
+  return {
+    all: "Všechny kategorie",
+    ...Object.fromEntries(categories.map((c) => [c, categoryLabels[c]])),
+  };
+}
 
 
 async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
@@ -38,14 +50,14 @@ async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
 
   const [reservationsResult, blocksResult] = await Promise.all([
     supabase
-      .from("item_reservations")
+      .from("offer_reservations")
       .select("item_id")
       .in("item_id", itemIds)
       .eq("status", "active")
       .lte("date_from", today)
       .gte("date_to", today),
     supabase
-      .from("item_availability_blocks")
+      .from("offer_availability_blocks")
       .select("item_id")
       .in("item_id", itemIds)
       .lte("date_from", today)
@@ -94,6 +106,7 @@ function ItemsPageContent() {
   const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState(searchParams.get("search") || "");
+  const [offerType, setOfferType] = useState(searchParams.get("type") || "all");
   const [category, setCategory] = useState(searchParams.get("category") || "all");
   const [status, setStatus] = useState(searchParams.get("status") || "available");
   const [sortBy, setSortBy] = useState(searchParams.get("sort") || "newest");
@@ -112,11 +125,11 @@ function ItemsPageContent() {
 
   useEffect(() => {
     setVisibleCount(15);
-  }, [search, category, status, sortBy, userLocation]);
+  }, [search, offerType, category, status, sortBy, userLocation]);
 
   async function loadItems() {
     const { data, error } = await supabase
-      .from("items")
+      .from("offers")
       .select(
         `
         *,
@@ -151,6 +164,7 @@ function ItemsPageContent() {
 
   function updateUrl(next?: {
     search?: string;
+    offerType?: string;
     category?: string;
     status?: string;
     sortBy?: string;
@@ -158,16 +172,18 @@ function ItemsPageContent() {
     const params = new URLSearchParams();
 
     const nextSearch = next?.search ?? search;
+    const nextOfferType = next?.offerType ?? offerType;
     const nextCategory = next?.category ?? category;
     const nextStatus = next?.status ?? status;
     const nextSortBy = next?.sortBy ?? sortBy;
 
     if (nextSearch.trim()) params.set("search", nextSearch.trim());
+    if (nextOfferType !== "all") params.set("type", nextOfferType);
     if (nextCategory !== "all") params.set("category", nextCategory);
     if (nextStatus !== "available") params.set("status", nextStatus);
     if (nextSortBy !== "newest") params.set("sort", nextSortBy);
 
-    router.replace(`/items${params.toString() ? `?${params.toString()}` : ""}`);
+    router.replace(`/offers${params.toString() ? `?${params.toString()}` : ""}`);
   }
 
   function submitSearch() {
@@ -198,6 +214,10 @@ function ItemsPageContent() {
           .toLowerCase()
           .includes(query)
       );
+    }
+
+    if (offerType !== "all") {
+      result = result.filter((item) => (item.offer_type || "item") === offerType);
     }
 
     if (category !== "all") {
@@ -257,7 +277,7 @@ function ItemsPageContent() {
     }
 
     return result;
-  }, [items, search, category, status, sortBy, userLocation]);
+  }, [items, search, offerType, category, status, sortBy, userLocation]);
 
   const visibleItems = filteredItems.slice(0, visibleCount);
 
@@ -308,11 +328,11 @@ function ItemsPageContent() {
         </header>
 
         <section className="mt-10 md:mt-12">
-          <h1 className="koluj-heading">Všechny věci</h1>
+          <h1 className="koluj-heading">Všechny nabídky</h1>
 
           <p className="mt-5 max-w-2xl text-lg leading-relaxed text-[var(--koluj-muted)] md:text-xl">
-            Procházej věci k půjčení, filtruj podle kategorií, stavu nebo hledej
-            konkrétní věc.
+            Procházej nabídky k rezervaci, filtruj podle kategorií, stavu nebo hledej
+            konkrétní nabídku.
           </p>
 
           <div className="mt-5 flex flex-wrap gap-2 text-sm font-bold text-[var(--koluj-green)]">
@@ -326,7 +346,7 @@ function ItemsPageContent() {
         </section>
 
         <section className="koluj-card mt-8 p-3 md:mt-10 md:p-4">
-          <div className="grid gap-3 lg:grid-cols-[1fr_220px_220px_200px]">
+          <div className="grid gap-3 lg:grid-cols-[1fr_180px_220px_220px_200px]">
             <div className="flex items-center gap-3 rounded-2xl border border-[var(--koluj-border)] bg-white px-4">
               <Search size={20} className="text-[var(--koluj-muted)]" />
 
@@ -336,10 +356,29 @@ function ItemsPageContent() {
                 onKeyDown={(e) => {
                   if (e.key === "Enter") submitSearch();
                 }}
-                placeholder="Hledat věc..."
+                placeholder="Hledat nabídku..."
                 className="w-full bg-transparent py-4 outline-none"
               />
             </div>
+
+
+            <select
+              value={offerType}
+              onChange={(e) => {
+                const value = e.target.value;
+                setOfferType(value);
+                setCategory("all");
+                updateUrl({ offerType: value, category: "all" });
+              }}
+              className="koluj-input"
+            >
+              <option value="all">Vše</option>
+              {Object.entries(offerTypeLabels).map(([value, label]) => (
+                <option key={value} value={value}>
+                  {label}
+                </option>
+              ))}
+            </select>
 
             <select
               value={category}
@@ -349,7 +388,7 @@ function ItemsPageContent() {
               }}
               className="koluj-input"
             >
-              {Object.entries(categoryOptions).map(([value, label]) => (
+              {Object.entries(getCategoryOptions(offerType)).map(([value, label]) => (
                 <option key={value} value={value}>
                   {label}
                 </option>
@@ -411,13 +450,13 @@ function ItemsPageContent() {
             <div>
               <h2 className="koluj-title">
                 {filteredItems.length}{" "}
-                {filteredItems.length === 1 ? "věc" : "věcí"}
+                {filteredItems.length === 1 ? "nabídku" : "nabídek"}
               </h2>
 
               <p className="mt-2 text-[var(--koluj-muted)]">
                 {userLocation
                   ? "Seřazeno podle vzdálenosti od tvé polohy."
-                  : "Vyber si věc a otevři detail půjčení."}
+                  : "Vyber si nabídku a otevři detail rezervace."}
               </p>
             </div>
 
@@ -484,11 +523,11 @@ function ItemsPageContent() {
 
               {visibleItems.length < filteredItems.length ? (
                 <p className="mt-3 text-center text-sm font-bold text-[var(--koluj-muted)]">
-                  Načítám další věci...
+                  Načítám další nabídky...
                 </p>
               ) : (
                 <p className="mt-8 text-center text-sm text-[var(--koluj-muted)]">
-                  Zobrazeno všech {filteredItems.length} věcí
+                  Zobrazeno všech {filteredItems.length} nabídek
                 </p>
               )}
             </>

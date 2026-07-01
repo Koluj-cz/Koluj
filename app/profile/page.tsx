@@ -238,7 +238,7 @@ export default function ProfilePage() {
           </h1>
 
           <p className="mt-4 max-w-2xl text-lg leading-relaxed text-[var(--koluj-muted)] md:mt-6 md:text-2xl">
-            Vyplň základní údaje, aby ostatní věděli, s kým si věc předávají.
+            Vyplň základní údaje, aby ostatní věděli, s kým si nabídku předávají.
           </p>
         </section>
 
@@ -282,7 +282,7 @@ export default function ProfilePage() {
                   <p className="font-bold">E-mailové notifikace</p>
 
                   <p className="mt-1 text-sm text-[var(--koluj-muted)]">
-                    Žádosti o půjčení, nové zprávy a změny stavu půjček.
+                    Žádosti o rezervaci, nové zprávy a změny stavu rezervací.
                   </p>
                 </div>
 
@@ -368,7 +368,7 @@ export default function ProfilePage() {
                   )}
 
                   <p className="mt-2 text-sm text-[var(--koluj-muted)]">
-                    Vyber místo z našeptávače. Díky tomu později zobrazíme věci
+                    Vyber místo z našeptávače. Díky tomu později zobrazíme nabídky
                     v okolí a na mapě.
                   </p>
                 </div>
@@ -387,7 +387,7 @@ export default function ProfilePage() {
                     className="koluj-input"
                   />
                   <p className="mt-2 text-sm text-[var(--koluj-muted)]">
-                    Telefon později použijeme pro ověření a bezpečné předání věcí.
+                    Telefon později použijeme pro ověření a bezpečné předání nabídek.
                   </p>
                 </div>
 
@@ -411,7 +411,7 @@ export default function ProfilePage() {
 
               <p className="mt-3 text-[var(--koluj-muted)]">
                 Deaktivací účtu se skryje tvůj profil i všechny tvoje nabídky.
-                Historie půjček zůstane zachována kvůli ostatním uživatelům.
+                Historie rezervací zůstane zachována kvůli ostatním uživatelům.
                 Kdykoliv se můžeš znovu přihlásit a účet se automaticky obnoví.
               </p>
 

@@ -36,7 +36,7 @@ export default function AddItemDashboardCard() {
     setLoading(false);
   }
 
-  const href = profileComplete ? "/items/new" : "/profile";
+  const href = profileComplete ? "/offers/new" : "/profile";
 
   return (
     <Link
@@ -48,7 +48,7 @@ export default function AddItemDashboardCard() {
       }`}
     >
       <div className="flex items-start justify-between gap-6">
-        <h2 className="text-3xl font-black tracking-tight">Přidat věc</h2>
+        <h2 className="text-3xl font-black tracking-tight">Přidat nabídku</h2>
 
         <span className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-[var(--koluj-green)]">
           {profileComplete ? <Plus size={32} /> : <Lock size={32} />}
@@ -57,8 +57,8 @@ export default function AddItemDashboardCard() {
 
       <p className="mt-8 text-lg leading-relaxed text-[var(--koluj-muted)]">
         {profileComplete
-          ? "Přidej novou věc, kterou chceš nabídnout ostatním."
-          : "Nejdřív dokonči profil, aby lidé věděli, s kým a kde si věc předávají."}
+          ? "Přidej novou nabídku, kterou chceš nabídnout ostatním."
+          : "Nejdřív dokonči profil, aby lidé věděli, s kým a kde si nabídku předávají."}
       </p>
 
       <p className="koluj-link mt-14">

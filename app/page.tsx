@@ -41,14 +41,14 @@ async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
 
   const [reservationsResult, blocksResult] = await Promise.all([
     supabase
-      .from("item_reservations")
+      .from("offer_reservations")
       .select("item_id")
       .in("item_id", itemIds)
       .eq("status", "active")
       .lte("date_from", today)
       .gte("date_to", today),
     supabase
-      .from("item_availability_blocks")
+      .from("offer_availability_blocks")
       .select("item_id")
       .in("item_id", itemIds)
       .lte("date_from", today)
@@ -97,7 +97,7 @@ export default function HomePage() {
       params.set("search", search.trim());
     }
 
-    router.push(`/items?${params.toString()}`);
+    router.push(`/offers?${params.toString()}`);
   }
 
   useEffect(() => {
@@ -126,7 +126,7 @@ export default function HomePage() {
 
   async function loadItems() {
     const { data, count } = await supabase
-      .from("items")
+      .from("offers")
       .select(
         `
         *,
@@ -306,25 +306,25 @@ export default function HomePage() {
         <section className="grid items-start gap-8 pt-6 pb-0 md:py-10 lg:grid-cols-[0.95fr_1.05fr]">
           <div className="flex flex-col lg:h-[430px]">
             <h1 className="koluj-heading">
-              <span className="md:hidden">Půjč si věc poblíž</span>
+              <span className="md:hidden">Rezervuj si věc nebo službu poblíž</span>
               <span className="hidden md:block">
-                Půjčuj si věci od lidí ve svém okolí
+                Rezervuj si věci a služby od lidí ve svém okolí
               </span>
             </h1>
 
             <p className="mt-3 max-w-xl text-base leading-snug text-[var(--koluj-muted)] md:text-xl md:leading-relaxed">
-              Najdi věc poblíž a domluv půjčení přímo s majitelem.
+              Najdi nabídku poblíž a domluv rezervaci přímo s poskytovatelem.
             </p>
 
             <div className="mt-5 hidden flex-wrap gap-2 text-sm font-bold text-[var(--koluj-green)] md:flex">
               <span className="rounded-full bg-white px-4 py-2 shadow-sm">
-                {totalItems} věcí k půjčení
+                {totalItems} nabídek k rezervaci
               </span>
               <span className="rounded-full bg-white px-4 py-2 shadow-sm">
-                Půjčení ve tvém okolí
+                Věci i služby poblíž
               </span>
               <span className="rounded-full bg-white px-4 py-2 shadow-sm">
-                Domluva přímo s majitelem
+                Domluva přímo s poskytovatelem
               </span>
             </div>
 
@@ -393,14 +393,14 @@ export default function HomePage() {
         <section id="explore" className="mt-5 md:mt-14">
           <div className="mb-6 flex items-end justify-between gap-4">
             <div>
-              <h2 className="koluj-title">Věci ve tvém okolí</h2>
+              <h2 className="koluj-title">Nabídky ve tvém okolí</h2>
               <p className="mt-2 text-[var(--koluj-muted)]">
-                Celkem {totalItems} aktivních věcí.
+                Celkem {totalItems} aktivních nabídek.
               </p>
             </div>
 
             <Link
-              href="/items"
+              href="/offers"
               className="hidden items-center gap-2 font-black text-[var(--koluj-green)] md:flex"
             >
               Zobrazit všechny
@@ -418,10 +418,10 @@ export default function HomePage() {
 
           <div className="mt-8 flex justify-center md:mt-10">
             <Link
-              href="/items"
+              href="/offers"
               className="koluj-button inline-flex items-center gap-2 px-8 py-4"
             >
-              Zobrazit všechny věci
+              Zobrazit všechny nabídky
               <ArrowRight size={18} />
             </Link>
           </div>
@@ -431,30 +431,30 @@ export default function HomePage() {
           <div className="mb-6">
             <h2 className="koluj-title">Jak to funguje</h2>
             <p className="mt-2 text-[var(--koluj-muted)]">
-              Vyber věc, domluv termín a půjč si ji od člověka poblíž.
+              Vyber nabídku, domluv termín a rezervuj si ji od člověka poblíž.
             </p>
           </div>
 
           <div className="grid gap-5 md:grid-cols-4">
             <Feature
               icon={<Search size={28} />}
-              title="1. Najdi věc"
+              title="1. Najdi nabídku"
               text="Vyhledej, co zrovna potřebuješ."
             />
             <Feature
               icon={<Users size={28} />}
               title="2. Domluv termín"
-              text="Napiš majiteli a potvrďte si předání."
+              text="Napiš poskytovateli a potvrďte si termín."
             />
             <Feature
               icon={<MapPin size={28} />}
-              title="3. Půjč si"
-              text="Vyzvedni věc ve svém okolí."
+              title="3. Rezervuj"
+              text="Vyzvedni věc nebo využij službu."
             />
             <Feature
               icon={<ShieldCheck size={28} />}
               title="4. Vrať a ohodnoť"
-              text="Vrať věc a pomoz budovat důvěru."
+              text="Vrať nabídku a pomoz budovat důvěru."
             />
           </div>
         </section>
@@ -478,7 +478,7 @@ function CategoryChip({
     <button
       type="button"
       onClick={() =>
-        router.push(category ? `/items?category=${category}` : "/items")
+        router.push(category ? `/offers?category=${category}` : "/offers")
       }
       className="koluj-category-chip"
     >

@@ -24,7 +24,7 @@ function priceUnit(unit: string | null) {
   if (unit === "day") return "den";
   if (unit === "week") return "týden";
   if (unit === "month") return "měsíc";
-  if (unit === "piece") return "půjčení";
+  if (unit === "piece") return "rezervaci";
   return "";
 }
 
@@ -167,8 +167,8 @@ export default function ItemsMap({
               <div className="mb-3">
                 <p className="text-sm font-black">
                   {group.items.length === 1
-                    ? "1 věc v místě"
-                    : `${group.items.length} věci v místě`}
+                    ? "1 nabídka v místě"
+                    : `${group.items.length} nabídky v místě`}
                 </p>
                 <p className="truncate text-xs text-[var(--koluj-muted)]">
                   {group.items[0]?.pickup_place}
@@ -179,7 +179,7 @@ export default function ItemsMap({
                 {group.items.map((item) => (
                   <Link
                     key={item.id}
-                    href={`/items/${item.id}`}
+                    href={`/offers/${item.id}`}
                     className="block rounded-xl border border-[var(--koluj-border)] bg-white px-3 py-2 transition hover:bg-[var(--koluj-bg)]"
                   >
                     <div className="flex items-start justify-between gap-2">

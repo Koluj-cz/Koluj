@@ -56,7 +56,7 @@ function firstOrValue<T>(value: T | T[] | null | undefined): T | null {
 }
 
 async function reserveReminderSlot(loanId: string, type: ReminderType) {
-  const { error } = await supabaseAdmin.from("loan_reminders").insert({
+  const { error } = await supabaseAdmin.from("booking_reminders").insert({
     loan_id: loanId,
     type,
   });
@@ -72,7 +72,7 @@ async function reserveReminderSlot(loanId: string, type: ReminderType) {
 
 async function loadLoansForHandoverReminder(targetDate: string) {
   const { data, error } = await supabaseAdmin
-    .from("loans")
+    .from("bookings")
     .select(`
       id,
       item_id,
@@ -81,7 +81,7 @@ async function loadLoansForHandoverReminder(targetDate: string) {
       status,
       date_from,
       date_to,
-      items:item_id (
+      items:offers!loans_item_id_fkey (
         id,
         title
       ),
@@ -101,7 +101,7 @@ async function loadLoansForHandoverReminder(targetDate: string) {
 
 async function loadLoansForReturnReminder(targetDate: string) {
   const { data, error } = await supabaseAdmin
-    .from("loans")
+    .from("bookings")
     .select(`
       id,
       item_id,
@@ -110,7 +110,7 @@ async function loadLoansForReturnReminder(targetDate: string) {
       status,
       date_from,
       date_to,
-      items:item_id (
+      items:offers!loans_item_id_fkey (
         id,
         title
       ),
@@ -143,9 +143,9 @@ export async function sendLoanRemindersServer() {
     const item = firstOrValue(loan.items);
     const owner = firstOrValue(loan.owner);
     const borrower = firstOrValue(loan.borrower);
-    const itemTitle = item?.title || "věc";
+    const itemTitle = item?.title || "nabídku";
     const ownerName = owner?.full_name || "vlastníka";
-    const borrowerName = borrower?.full_name || "půjčujícího";
+    const borrowerName = borrower?.full_name || "rezervujícího";
 
     await notifyUserServer({
       userId: loan.owner_id,
@@ -153,9 +153,9 @@ export async function sendLoanRemindersServer() {
       loanId: loan.id,
       itemId: loan.item_id,
       type: "loan_handover_reminder_24h",
-      title: "Zítra předáváš věc",
-      message: `Zítra předáváš věc „${itemTitle}“ uživateli ${borrowerName}.`,
-      emailSubject: "Připomínka předání věci",
+      title: "Zítra začíná rezervace",
+      message: `Zítra začíná rezervace „${itemTitle}“ uživateli ${borrowerName}.`,
+      emailSubject: "Připomínka začátku rezervace",
     });
 
     await notifyUserServer({
@@ -164,9 +164,9 @@ export async function sendLoanRemindersServer() {
       loanId: loan.id,
       itemId: loan.item_id,
       type: "loan_handover_reminder_24h",
-      title: "Zítra si přebíráš věc",
-      message: `Zítra si přebíráš věc „${itemTitle}“ od uživatele ${ownerName}.`,
-      emailSubject: "Připomínka převzetí věci",
+      title: "Zítra začíná tvoje rezervace",
+      message: `Zítra začíná tvoje rezervace „${itemTitle}“ od uživatele ${ownerName}.`,
+      emailSubject: "Připomínka začátku rezervace",
     });
 
     handoverSent += 2;
@@ -180,8 +180,8 @@ export async function sendLoanRemindersServer() {
 
     const item = firstOrValue(loan.items);
     const borrower = firstOrValue(loan.borrower);
-    const itemTitle = item?.title || "věc";
-    const borrowerName = borrower?.full_name || "půjčujícího";
+    const itemTitle = item?.title || "nabídku";
+    const borrowerName = borrower?.full_name || "rezervujícího";
 
     await notifyUserServer({
       userId: loan.owner_id,
@@ -189,9 +189,9 @@ export async function sendLoanRemindersServer() {
       loanId: loan.id,
       itemId: loan.item_id,
       type: "loan_return_reminder_24h",
-      title: "Zítra má být věc vrácena",
-      message: `Zítra by měla být vrácena věc „${itemTitle}“ od uživatele ${borrowerName}.`,
-      emailSubject: "Připomínka vrácení věci",
+      title: "Zítra končí rezervace",
+      message: `Zítra končí rezervace „${itemTitle}“ s uživatelem ${borrowerName}.`,
+      emailSubject: "Připomínka konce rezervace",
     });
 
     await notifyUserServer({
@@ -200,9 +200,9 @@ export async function sendLoanRemindersServer() {
       loanId: loan.id,
       itemId: loan.item_id,
       type: "loan_return_reminder_24h",
-      title: "Zítra vracíš věc",
-      message: `Zítra je potřeba vrátit věc „${itemTitle}“.`,
-      emailSubject: "Připomínka vrácení věci",
+      title: "Zítra končí tvoje rezervace",
+      message: `Zítra končí tvoje rezervace „${itemTitle}“.`,
+      emailSubject: "Připomínka konce rezervace",
     });
 
     returnSent += 2;

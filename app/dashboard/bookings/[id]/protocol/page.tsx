@@ -86,13 +86,13 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
   }
 
   const { data, error } = await supabase
-    .from("loans")
+    .from("bookings")
     .select(`
       id,
       owner_id,
       borrower_id,
       status,
-      items (
+      items:offers (
         id,
         title,
         category,
@@ -124,7 +124,7 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
   const loan = data as unknown as Loan;
 
   if (loan.owner_id !== user.id) {
-    redirect(`/dashboard/loans/${loan.id}`);
+    redirect(`/dashboard/bookings/${loan.id}`);
   }
 
   const categoryLabel = loan.items?.category
@@ -135,7 +135,7 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
     <main className="min-h-screen bg-[#efebdd] print:bg-white">
       <div className="mx-auto max-w-[980px] px-4 py-8 print:hidden">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-          <BackLink href={`/dashboard/loans/${loan.id}`}>Zpět na půjčku</BackLink>
+          <BackLink href={`/dashboard/bookings/${loan.id}`}>Zpět na rezervaci</BackLink>
           
 <PrintButton />
         </div>
@@ -145,27 +145,27 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
         <header className="mb-6 flex items-start justify-between border-b border-black pb-4">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.28em]">KOLUJ</p>
-            <h1 className="mt-2 text-2xl font-black">Protokol o předání věci</h1>
+            <h1 className="mt-2 text-2xl font-black">Protokol o předání</h1>
             <p className="mt-2 max-w-[560px] text-[11px] leading-relaxed">
-              Tento protokol potvrzuje fyzické předání předmětu půjčky mezi vlastníkem
-              a půjčujícím. Půjčující podpisem potvrzuje převzetí věci, její stav při
+              Tento protokol potvrzuje fyzické předání předmětu rezervace mezi vlastníkem
+              a rezervujícím. Rezervující podpisem potvrzuje převzetí nabídky, její stav při
               předání a odpovědnost za její vrácení.
             </p>
           </div>
 
           <div className="text-right text-[10px]">
-            <p className="font-bold">ID půjčky</p>
+            <p className="font-bold">ID rezervace</p>
             <p>{loan.id}</p>
           </div>
         </header>
 
         <section className="mb-5">
-          <h2 className="mb-2 text-sm font-black uppercase">1. Identifikace půjčky</h2>
+          <h2 className="mb-2 text-sm font-black uppercase">1. Identifikace rezervace</h2>
           <div className="grid grid-cols-2 gap-x-8 gap-y-1">
-            <p><strong>ID půjčky:</strong> {loan.id}</p>
-            <p><strong>Název věci:</strong> {valueOrLine(loan.items?.title)}</p>
+            <p><strong>ID rezervace:</strong> {loan.id}</p>
+            <p><strong>Název nabídky:</strong> {valueOrLine(loan.items?.title)}</p>
             <p><strong>Kategorie:</strong> {categoryLabel}</p>
-            <p><strong>Celková cena půjčení:</strong> _______________________ Kč</p>
+            <p><strong>Celková cena rezervaci:</strong> _______________________ Kč</p>
             <p><strong>Kauce:</strong> {loan.items?.deposit || 0} Kč</p>
             <p><strong>Místo předání:</strong> {valueOrLine(loan.items?.pickup_place)}</p>
           </div>
@@ -182,7 +182,7 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
           </div>
 
           <div>
-            <h2 className="mb-2 text-sm font-black uppercase">3. Půjčující</h2>
+            <h2 className="mb-2 text-sm font-black uppercase">3. Rezervující</h2>
             <div className="space-y-1">
               <p><strong>Jméno:</strong> _______________________</p>
               <p><strong>Telefon:</strong> {valueOrLine(loan.borrower?.phone)}</p>
@@ -192,7 +192,7 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
         </section>
 
         <section className="mb-5">
-          <h2 className="mb-2 text-sm font-black uppercase">4. Ověření totožnosti půjčujícího</h2>
+          <h2 className="mb-2 text-sm font-black uppercase">4. Ověření totožnosti rezervujícího</h2>
           <div className="grid grid-cols-2 gap-x-8 gap-y-2">
             <Checkbox label="Totožnost ověřena dle občanského průkazu" />
             <Checkbox label="Totožnost nebyla ověřena" />
@@ -202,12 +202,12 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
         </section>
 
         <section className="mb-5">
-          <h2 className="mb-2 text-sm font-black uppercase">5. Stav věci při předání</h2>
+          <h2 className="mb-2 text-sm font-black uppercase">5. Stav nabídky při předání</h2>
           <p className="mb-2">
-            Půjčující potvrzuje, že si věc při převzetí prohlédl a přebírá ji ve stavu
+            Rezervující potvrzuje, že si nabídku při převzetí prohlédl a přebírá ji ve stavu
             uvedeném níže.
           </p>
-          <WriteBox label="Stav věci při předání:" height="h-20" />
+          <WriteBox label="Stav nabídky při předání:" height="h-20" />
           <div className="mt-2">
             <WriteBox label="Viditelné vady / opotřebení:" height="h-16" />
           </div>
@@ -233,9 +233,9 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
         </section>
 
         <section className="mb-5">
-          <h2 className="mb-2 text-sm font-black uppercase">8. Prohlášení půjčujícího</h2>
+          <h2 className="mb-2 text-sm font-black uppercase">8. Prohlášení rezervujícího</h2>
           <p className="leading-relaxed">
-            Potvrzuji, že jsem převzal/a uvedenou věc ve stavu popsaném v tomto
+            Potvrzuji, že jsem převzal/a uvedenou nabídku ve stavu popsaném v tomto
             protokolu. Byl/a jsem seznámen/a s jejím používáním a zavazuji se ji vrátit
             ve sjednaném termínu. Beru na vědomí odpovědnost za škodu způsobenou
             ztrátou, odcizením nebo poškozením nad rámec běžného opotřebení.
@@ -252,13 +252,13 @@ export default async function LoanHandoverProtocolPage({ params }: PageProps) {
             <div className="border-t border-black pt-3">Podpis vlastníka</div>
           </div>
           <div>
-            <div className="border-t border-black pt-3">Podpis půjčujícího</div>
+            <div className="border-t border-black pt-3">Podpis rezervujícího</div>
           </div>
         </section>
 
         <footer className="mt-5 border-t border-black pt-2 text-[8px] leading-tight">
           Tento protokol byl vytvořen prostřednictvím platformy KOLUJ a potvrzuje fyzické
-          předání předmětu půjčky mezi oběma stranami.
+          předání předmětu rezervace mezi oběma stranami.
         </footer>
       </article>
     </main>

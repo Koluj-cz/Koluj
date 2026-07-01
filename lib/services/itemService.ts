@@ -8,7 +8,7 @@ const supabaseAdmin = createClient(
 function getStoragePathFromPublicUrl(url: string | null) {
   if (!url) return null;
 
-  const marker = "/storage/v1/object/public/items/";
+  const marker = "/storage/v1/object/public/offers/";
 
   if (!url.includes(marker)) {
     return null;
@@ -25,17 +25,17 @@ export async function archiveItemServer({
   actorId: string;
 }) {
   const { data: item, error: itemError } = await supabaseAdmin
-    .from("items")
+    .from("offers")
     .select("id, owner_id, deleted_at")
     .eq("id", itemId)
     .single();
 
   if (itemError || !item) {
-    throw new Error("Věc nebyla nalezena");
+    throw new Error("Nabídka nebyla nalezena");
   }
 
   if (item.owner_id !== actorId) {
-    throw new Error("Tuhle věc může odstranit pouze vlastník");
+    throw new Error("Tuhle nabídku může odstranit pouze vlastník");
   }
 
   if (item.deleted_at) {
@@ -46,7 +46,7 @@ export async function archiveItemServer({
   }
 
   const { count: loanCount, error: loanCountError } = await supabaseAdmin
-    .from("loans")
+    .from("bookings")
     .select("id", {
       count: "exact",
       head: true,
@@ -59,7 +59,7 @@ export async function archiveItemServer({
 
   if ((loanCount || 0) === 0) {
     const { data: images, error: imagesError } = await supabaseAdmin
-      .from("item_images")
+      .from("offer_images")
       .select("image_url")
       .eq("item_id", itemId);
 
@@ -74,7 +74,7 @@ export async function archiveItemServer({
 
     if (storagePaths.length > 0) {
       const { error: storageError } = await supabaseAdmin.storage
-        .from("items")
+        .from("offers")
         .remove(storagePaths as string[]);
 
       if (storageError) {
@@ -83,7 +83,7 @@ export async function archiveItemServer({
     }
 
     const { error: imageDeleteError } = await supabaseAdmin
-      .from("item_images")
+      .from("offer_images")
       .delete()
       .eq("item_id", itemId);
 
@@ -92,7 +92,7 @@ export async function archiveItemServer({
     }
 
     const { error: itemDeleteError } = await supabaseAdmin
-      .from("items")
+      .from("offers")
       .delete()
       .eq("id", itemId);
 
@@ -107,7 +107,7 @@ export async function archiveItemServer({
   }
 
   const { error } = await supabaseAdmin
-    .from("items")
+    .from("offers")
     .update({
       deleted_at: new Date().toISOString(),
       is_active: false,

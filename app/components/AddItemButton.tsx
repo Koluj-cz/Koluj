@@ -36,9 +36,9 @@ export default function AddItemButton({
     setProfileComplete(!!profile?.full_name && !!profile?.city);
   }
 
-  const href = profileComplete ? "/items/new" : "/profile";
+  const href = profileComplete ? "/offers/new" : "/profile";
   const icon = profileComplete ? <Plus size={18} /> : <Lock size={18} />;
-  const label = profileComplete ? "Přidat věc" : "Dokončit profil";
+  const label = profileComplete ? "Přidat nabídku" : "Dokončit profil";
 
   if (variant === "card") {
     return (

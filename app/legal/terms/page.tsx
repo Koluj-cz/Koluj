@@ -24,17 +24,17 @@ export default function TermsPage() {
               </h2>
               <p className="mt-3">
                 Koluj je online platforma umožňující uživatelům nabízet a
-                půjčovat si věci mezi sebou. Služba slouží ke zprostředkování
+                rezervovat si nabídky mezi sebou. Služba slouží ke zprostředkování
                 kontaktu mezi uživateli.
               </p>
             </section>
 
             <section>
               <h2 className="text-2xl font-black text-[var(--koluj-text)]">
-                2. Koluj není stranou půjčky
+                2. Koluj není stranou rezervace
               </h2>
               <p className="mt-3">
-                Koluj není účastníkem půjčky, kupní smlouvy ani jiné dohody
+                Koluj není účastníkem rezervace, kupní smlouvy ani jiné dohody
                 uzavírané mezi uživateli. Veškeré dohody, předání, platby,
                 kauce, vrácení a případné nároky řeší uživatelé mezi sebou.
               </p>
@@ -46,8 +46,8 @@ export default function TermsPage() {
               </h2>
               <p className="mt-3">
                 Každý uživatel odpovídá za pravdivost zveřejněných údajů, stav
-                nabízených věcí, dodržení domluvy, bezpečné předání a vrácení
-                věci. Uživatelé používají službu na vlastní odpovědnost.
+                nabízených nabídek, dodržení domluvy, bezpečné předání a vrácení
+                nabídky. Uživatelé používají službu na vlastní odpovědnost.
               </p>
             </section>
 
@@ -56,10 +56,10 @@ export default function TermsPage() {
                 4. Omezení odpovědnosti
               </h2>
               <p className="mt-3">
-                Koluj neověřuje vlastnictví nabízených věcí, negarantuje stav
-                věcí, identitu uživatelů, jejich spolehlivost ani splnění
+                Koluj neověřuje vlastnictví nabízených nabídek, negarantuje stav
+                nabídek, identitu uživatelů, jejich spolehlivost ani splnění
                 domluvených podmínek. Koluj nenese odpovědnost za ztrátu,
-                poškození, nevrácení věci, škodu, ušlý zisk ani jiné nároky
+                poškození, nevrácení nabídky, škodu, ušlý zisk ani jiné nároky
                 vzniklé mezi uživateli.
               </p>
             </section>

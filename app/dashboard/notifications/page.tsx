@@ -160,18 +160,18 @@ export default function NotificationsPage() {
 
                         {notification.loan_id && (
                           <Link
-                            href={`/dashboard/loans/${notification.loan_id}`}
+                            href={`/dashboard/bookings/${notification.loan_id}`}
                             className="koluj-link mt-3 inline-block"
                           >
-                            Otevřít půjčku →
+                            Otevřít rezervaci →
                           </Link>
                         )}
                         {!notification.loan_id && notification.item_id && (
                           <Link
-                            href={`/items/${notification.item_id}`}
+                            href={`/offers/${notification.item_id}`}
                             className="koluj-link mt-3 inline-block"
                           >
-                            Otevřít věc →
+                            Otevřít nabídku →
                           </Link>
                         )}
                       </div>

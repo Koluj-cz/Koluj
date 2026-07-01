@@ -1,3 +1,33 @@
+
+export const offerTypeLabels: Record<string, string> = {
+  item: "Nabídka",
+  service: "Služba",
+};
+
+export const offerTypes = ["item", "service"] as const;
+
+export const serviceCategoryLabels: Record<string, string> = {
+  remesla: "Řemesla",
+  domacnost: "Domácnost",
+  zahrada: "Zahrada",
+  stehovani: "Stěhování",
+  doucovani: "Doučování",
+  it: "IT a technika",
+  hlidani: "Hlídání",
+  ostatni_sluzby: "Ostatní služby",
+};
+
+export const serviceCategories = [
+  "remesla",
+  "domacnost",
+  "zahrada",
+  "stehovani",
+  "doucovani",
+  "it",
+  "hlidani",
+  "ostatni_sluzby",
+] as const;
+
 export const categoryLabels: Record<string, string> = {
   naradi: "Nářadí",
   elektronika: "Elektronika",

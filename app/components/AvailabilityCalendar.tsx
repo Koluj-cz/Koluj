@@ -136,7 +136,7 @@ export default function AvailabilityCalendar({
       dateTo: lastVisibleDate,
     });
 
-    const response = await fetch(`/api/items/${itemId}/availability?${params.toString()}`);
+    const response = await fetch(`/api/offers/${itemId}/availability?${params.toString()}`);
     const result = await response.json().catch(() => null);
 
     setLoading(false);
@@ -217,7 +217,7 @@ export default function AvailabilityCalendar({
 
     setSavingBlock(true);
 
-    const response = await fetch(`/api/items/${itemId}/availability/block`, {
+    const response = await fetch(`/api/offers/${itemId}/availability/block`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -245,7 +245,7 @@ export default function AvailabilityCalendar({
   }
 
   async function deleteBlock(blockId: string) {
-    const response = await fetch(`/api/items/${itemId}/availability/block/${blockId}`, {
+    const response = await fetch(`/api/offers/${itemId}/availability/block/${blockId}`, {
       method: "DELETE",
     });
 

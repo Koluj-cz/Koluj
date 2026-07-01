@@ -41,7 +41,7 @@ export function normalizeDateRange(dateFrom: string, dateTo: string) {
   const to = normalizeDate(dateTo);
 
   if (new Date(`${to}T00:00:00`) < new Date(`${from}T00:00:00`)) {
-    throw new Error("Datum vrácení nemůže být dřív než datum půjčení.");
+    throw new Error("Datum vrácení nemůže být dřív než datum rezervace.");
   }
 
   return { dateFrom: from, dateTo: to };
@@ -60,7 +60,7 @@ export async function getItemAvailabilityServer({
 
   const [reservationsResult, blocksResult] = await Promise.all([
     supabaseAdmin
-      .from("item_reservations")
+      .from("offer_reservations")
       .select("id, item_id, loan_id, date_from, date_to, status")
       .eq("item_id", itemId)
       .eq("status", "active")
@@ -68,7 +68,7 @@ export async function getItemAvailabilityServer({
       .gte("date_to", range.dateFrom)
       .order("date_from", { ascending: true }),
     supabaseAdmin
-      .from("item_availability_blocks")
+      .from("offer_availability_blocks")
       .select("id, item_id, owner_id, date_from, date_to, reason")
       .eq("item_id", itemId)
       .lte("date_from", range.dateTo)
@@ -116,17 +116,17 @@ export async function assertItemAvailableServer({
 
 export async function createReservationForLoanServer(loanId: string) {
   const { data: loan, error: loanError } = await supabaseAdmin
-    .from("loans")
+    .from("bookings")
     .select("id, item_id, date_from, date_to, status")
     .eq("id", loanId)
     .single();
 
   if (loanError || !loan) {
-    throw new Error("Půjčka nebyla nalezena.");
+    throw new Error("Rezervace nebyla nalezena.");
   }
 
   if (!loan.date_from || !loan.date_to) {
-    throw new Error("Půjčka nemá vybraný termín.");
+    throw new Error("Rezervace nemá vybraný termín.");
   }
 
   await assertItemAvailableServer({
@@ -136,7 +136,7 @@ export async function createReservationForLoanServer(loanId: string) {
   });
 
   const { data: existingReservation, error: existingError } = await supabaseAdmin
-    .from("item_reservations")
+    .from("offer_reservations")
     .select("id, status")
     .eq("loan_id", loan.id)
     .maybeSingle();
@@ -147,7 +147,7 @@ export async function createReservationForLoanServer(loanId: string) {
 
   if (existingReservation) {
     const { error } = await supabaseAdmin
-      .from("item_reservations")
+      .from("offer_reservations")
       .update({
         status: "active",
         date_from: loan.date_from,
@@ -162,7 +162,7 @@ export async function createReservationForLoanServer(loanId: string) {
   }
 
   const { data: reservation, error } = await supabaseAdmin
-    .from("item_reservations")
+    .from("offer_reservations")
     .insert({
       item_id: loan.item_id,
       loan_id: loan.id,
@@ -182,7 +182,7 @@ export async function createReservationForLoanServer(loanId: string) {
 
 export async function cancelReservationForLoanServer(loanId: string) {
   const { error } = await supabaseAdmin
-    .from("item_reservations")
+    .from("offer_reservations")
     .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
     .eq("loan_id", loanId)
     .eq("status", "active");
@@ -192,7 +192,7 @@ export async function cancelReservationForLoanServer(loanId: string) {
 
 export async function finishReservationForLoanServer(loanId: string) {
   const { error } = await supabaseAdmin
-    .from("item_reservations")
+    .from("offer_reservations")
     .update({ status: "finished", finished_at: new Date().toISOString() })
     .eq("loan_id", loanId)
     .eq("status", "active");
@@ -216,18 +216,18 @@ export async function createAvailabilityBlockServer({
   const range = normalizeDateRange(dateFrom, dateTo);
 
   const { data: item, error: itemError } = await supabaseAdmin
-    .from("items")
+    .from("offers")
     .select("id, owner_id")
     .eq("id", itemId)
     .is("deleted_at", null)
     .single();
 
   if (itemError || !item) {
-    throw new Error("Věc nebyla nalezena.");
+    throw new Error("Nabídka nebyla nalezena.");
   }
 
   if (item.owner_id !== ownerId) {
-    throw new Error("Blokace může upravovat pouze vlastník věci.");
+    throw new Error("Blokace může upravovat pouze vlastník nabídky.");
   }
 
   await assertItemAvailableServer({
@@ -237,7 +237,7 @@ export async function createAvailabilityBlockServer({
   });
 
   const { data: block, error } = await supabaseAdmin
-    .from("item_availability_blocks")
+    .from("offer_availability_blocks")
     .insert({
       item_id: itemId,
       owner_id: ownerId,
@@ -263,7 +263,7 @@ export async function deleteAvailabilityBlockServer({
   ownerId: string;
 }) {
   const { data: block, error: blockError } = await supabaseAdmin
-    .from("item_availability_blocks")
+    .from("offer_availability_blocks")
     .select("id, owner_id")
     .eq("id", blockId)
     .single();
@@ -273,11 +273,11 @@ export async function deleteAvailabilityBlockServer({
   }
 
   if (block.owner_id !== ownerId) {
-    throw new Error("Blokaci může zrušit pouze vlastník věci.");
+    throw new Error("Blokaci může zrušit pouze vlastník nabídky.");
   }
 
   const { error } = await supabaseAdmin
-    .from("item_availability_blocks")
+    .from("offer_availability_blocks")
     .delete()
     .eq("id", blockId);
 

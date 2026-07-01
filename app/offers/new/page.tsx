@@ -20,6 +20,9 @@ import BackLink from "@/app/components/BackLink";
 import {
   categories,
   categoryLabels,
+  serviceCategories,
+  serviceCategoryLabels,
+  offerTypeLabels,
   conditions,
   conditionLabels,
   handoverLabels,
@@ -76,6 +79,7 @@ export default function NewItemPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const [form, setForm] = useState({
+    offer_type: "item",
     title: "",
     description: "",
     category: "",
@@ -84,6 +88,7 @@ export default function NewItemPage() {
     price_unit: "day",
     price_note: "",
     deposit: "",
+    service_duration_minutes: "60",
     pickup_place: "",
     pickup_latitude: null as number | null,
     pickup_longitude: null as number | null,
@@ -229,7 +234,7 @@ export default function NewItemPage() {
     }
 
     if (!form.title.trim()) {
-      toast.error("Vyplň název věci");
+      toast.error("Vyplň název nabídky");
       setLoading(false);
       return;
     }
@@ -240,8 +245,8 @@ export default function NewItemPage() {
       return;
     }
 
-    if (!form.condition) {
-      toast.error("Vyber stav věci");
+    if (form.offer_type === "item" && !form.condition) {
+      toast.error("Vyber stav nabídky");
       setLoading(false);
       return;
     }
@@ -277,17 +282,20 @@ export default function NewItemPage() {
     }
 
     const { data: item, error: itemError } = await supabase
-      .from("items")
+      .from("offers")
       .insert({
         owner_id: user.id,
+        offer_type: form.offer_type,
         title: form.title,
         description: form.description,
         category: form.category,
-        condition: form.condition,
+        condition: form.offer_type === "item" ? form.condition : null,
         price_amount: Number(form.price_amount),
         price_unit: form.price_unit,
         price_note: form.price_note || null,
-        deposit: form.deposit ? Number(form.deposit) : null,
+        deposit: form.offer_type === "item" && form.deposit ? Number(form.deposit) : null,
+        service_duration_minutes:
+          form.offer_type === "service" ? Number(form.service_duration_minutes || 60) : null,
         pickup_place: form.pickup_place,
         pickup_latitude: form.pickup_latitude,
         pickup_longitude: form.pickup_longitude,
@@ -304,7 +312,7 @@ export default function NewItemPage() {
       .single();
 
     if (itemError || !item) {
-      toast.error(itemError?.message || "Nepodařilo se uložit věc");
+      toast.error(itemError?.message || "Nepodařilo se uložit nabídku");
       setLoading(false);
       return;
     }
@@ -335,12 +343,12 @@ export default function NewItemPage() {
       const filePath = `${user.id}/${item.id}/${index}.webp`;
 
       const { error: uploadError } = await supabase.storage
-        .from("items")
+        .from("offers")
         .upload(filePath, photo);
 
       if (uploadError) {
         await supabase
-          .from("items")
+          .from("offers")
           .delete()
           .eq("id", item.id);
 
@@ -350,14 +358,14 @@ export default function NewItemPage() {
       }
 
       const { data: publicUrl } = supabase.storage
-        .from("items")
+        .from("offers")
         .getPublicUrl(filePath);
 
       if (index === 0) {
         primaryImageUrl = publicUrl.publicUrl;
       }
 
-      await supabase.from("item_images").insert({
+      await supabase.from("offer_images").insert({
         item_id: item.id,
         image_url: publicUrl.publicUrl,
         sort_order: index,
@@ -366,12 +374,12 @@ export default function NewItemPage() {
     }
     setUploadingPhotos(false);
     await supabase
-      .from("items")
+      .from("offers")
       .update({ primary_image_url: primaryImageUrl })
       .eq("id", item.id);
 
-    toast.success("Věc byla přidána");
-    router.push("/dashboard/my-items");
+    toast.success("Nabídka byla přidána");
+    router.push("/dashboard/my-offers");
   }
 
   return (
@@ -385,17 +393,17 @@ export default function NewItemPage() {
           disabled={loading}
           className="hidden lg:block koluj-button px-6 py-3 disabled:opacity-60"
         >
-          {loading ? "Ukládám..." : "Přidat věc"}
+          {loading ? "Ukládám..." : "Přidat nabídku"}
         </button>
         </header>
 
         <section className="mt-16 px-8">
           <h1 className="koluj-heading">
-            Přidat věc
+            Přidat nabídku
           </h1>
 
           <p className="mt-6 max-w-2xl text-2xl leading-relaxed text-[var(--koluj-muted)]">
-            Vyplň jen to důležité. Čím jasnější informace, tím méně zbytečného domlouvání.
+            Vyplň jen to důležité. Nabídnout můžeš nabídku i službu.
           </p>
         </section>
 
@@ -482,13 +490,43 @@ export default function NewItemPage() {
             </div>
 
             <div className="koluj-card p-8">
-              <SectionTitle icon={<Package size={24} />} title="O věci" />
+              <SectionTitle icon={<Package size={24} />} title="O nabídce" />
 
               <div className="mt-6 space-y-4">
+                <div className="grid gap-3 md:grid-cols-2">
+                  {["item", "service"].map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() =>
+                        setForm((prev) => ({
+                          ...prev,
+                          offer_type: type,
+                          category: "",
+                          condition: type === "service" ? "" : prev.condition,
+                          price_unit: type === "service" ? "hour" : prev.price_unit || "day",
+                        }))
+                      }
+                      className={`rounded-3xl px-5 py-4 text-left font-black transition ${
+                        form.offer_type === type
+                          ? "bg-[var(--koluj-green)] text-white"
+                          : "bg-[var(--koluj-bg)] text-[var(--koluj-text)]"
+                      }`}
+                    >
+                      {offerTypeLabels[type as keyof typeof offerTypeLabels]}
+                      <span className="mt-1 block text-sm font-bold opacity-80">
+                        {type === "item"
+                          ? "Rezervace fyzické nabídky po dnech."
+                          : "Rezervace času nebo práce po hodinách."}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
                 <input
                   value={form.title}
                   onChange={(e) => updateField("title", e.target.value)}
-                  placeholder="Název věci *"
+                  placeholder={form.offer_type === "service" ? "Název služby *" : "Název nabídky *"}
                   className="koluj-input"
                 />
 
@@ -499,25 +537,29 @@ export default function NewItemPage() {
                     className="koluj-input"
                   >
                     <option value="">Kategorie *</option>
-                    {categories.map((category) => (
+                    {(form.offer_type === "service" ? serviceCategories : categories).map((category) => (
                       <option key={category} value={category}>
-                        {categoryLabels[category]}
+                        {form.offer_type === "service"
+                          ? serviceCategoryLabels[category as keyof typeof serviceCategoryLabels]
+                          : categoryLabels[category as keyof typeof categoryLabels]}
                       </option>
                     ))}
                   </select>
 
-                  <select
-                    value={form.condition}
-                    onChange={(e) => updateField("condition", e.target.value)}
-                    className="koluj-input"
-                  >
-                    <option value="">Stav věci *</option>
-                    {conditions.map((condition) => (
-                      <option key={condition} value={condition}>
-                        {conditionLabels[condition]}
-                      </option>
-                    ))}
-                  </select>
+                  {form.offer_type === "item" && (
+                    <select
+                      value={form.condition}
+                      onChange={(e) => updateField("condition", e.target.value)}
+                      className="koluj-input"
+                    >
+                      <option value="">Stav nabídky *</option>
+                      {conditions.map((condition) => (
+                        <option key={condition} value={condition}>
+                          {conditionLabels[condition]}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
               <RichTextEditor
@@ -552,28 +594,49 @@ export default function NewItemPage() {
                     className="koluj-input"
                   >
                     <option value="hour">za hodinu</option>
-                    <option value="day">za den</option>
-                    <option value="weekend">za víkend</option>
-                    <option value="week">za týden</option>
-                    <option value="month">za měsíc</option>
-                    <option value="piece">za půjčení</option>
+                    {form.offer_type === "item" && (
+                      <>
+                        <option value="day">za den</option>
+                        <option value="weekend">za víkend</option>
+                        <option value="week">za týden</option>
+                        <option value="month">za měsíc</option>
+                        <option value="piece">za rezervaci</option>
+                      </>
+                    )}
+                    {form.offer_type === "service" && (
+                      <option value="piece">za službu</option>
+                    )}
                   </select>
                 </div>
 
                 <textarea
                   value={form.price_note}
                   onChange={(e) => updateField("price_note", e.target.value)}
-                  placeholder="Poznámka k ceně, např. víkend za 250 Kč nebo sleva při delším půjčení"
+                  placeholder="Poznámka k ceně, např. víkend za 250 Kč nebo sleva při delším rezervaci"
                   className="koluj-input min-h-28"
                 />
 
-                <input
-                  type="number"
-                  value={form.deposit}
-                  onChange={(e) => updateField("deposit", e.target.value)}
-                  placeholder="Kauce Kč, volitelné"
-                  className="koluj-input"
-                />
+                {form.offer_type === "service" && (
+                  <input
+                    type="number"
+                    min="15"
+                    step="15"
+                    value={form.service_duration_minutes}
+                    onChange={(e) => updateField("service_duration_minutes", e.target.value)}
+                    placeholder="Obvyklá délka služby v minutách"
+                    className="koluj-input"
+                  />
+                )}
+
+                {form.offer_type === "item" && (
+                  <input
+                    type="number"
+                    value={form.deposit}
+                    onChange={(e) => updateField("deposit", e.target.value)}
+                    placeholder="Kauce Kč, volitelné"
+                    className="koluj-input"
+                  />
+                )}
               </div>
             </div>
 
@@ -638,11 +701,11 @@ export default function NewItemPage() {
 
               <div className="mt-6 rounded-3xl border border-[var(--koluj-border)] bg-[var(--koluj-bg)] p-6">
                 <p className="text-lg font-bold text-[var(--koluj-green)]">
-                  📅 Dostupnost se nastavuje až po vytvoření věci.
+                  📅 Dostupnost se nastavuje až po vytvoření nabídky.
                 </p>
 
                 <p className="mt-3 leading-relaxed text-[var(--koluj-muted)]">
-                  Po uložení budeš moci v detailu věci spravovat kalendář dostupnosti,
+                  Po uložení budeš moci v detailu nabídky spravovat kalendář dostupnosti,
                   blokovat termíny a schvalovat rezervace. Ostatní uživatelé okamžitě uvidí,
                   které dny jsou volné a které obsazené.
                 </p>
@@ -656,9 +719,11 @@ export default function NewItemPage() {
 
               <ul className="mt-6 space-y-4 text-[var(--koluj-muted)]">
                 <CheckLine done={photos.length > 0} text="Alespoň jedna fotka" />
-                <CheckLine done={!!form.title} text="Název věci" />
+                <CheckLine done={!!form.title} text="Název nabídky" />
                 <CheckLine done={!!form.category} text="Kategorie" />
-                <CheckLine done={!!form.condition} text="Stav věci" />
+                {form.offer_type === "item" && (
+                  <CheckLine done={!!form.condition} text="Stav nabídky" />
+                )}
                 <CheckLine done={!!form.price_amount && !!form.price_unit} text="Cena" />
                 <CheckLine done={!!form.pickup_latitude} text="Místo předání" />
               </ul>
@@ -668,7 +733,7 @@ export default function NewItemPage() {
                 disabled={loading}
                 className="koluj-button mt-8 w-full px-6 py-4 disabled:opacity-60"
               >
-                {loading ? "Ukládám..." : "Přidat věc"}
+                {loading ? "Ukládám..." : "Přidat nabídku"}
               </button>
             </div>
           </aside>
@@ -681,7 +746,7 @@ export default function NewItemPage() {
         disabled={loading}
         className="koluj-button px-6 py-3 shadow-2xl disabled:opacity-60"
       >
-        {loading ? "Ukládám..." : "Přidat věc"}
+        {loading ? "Ukládám..." : "Přidat nabídku"}
       </button>
     </div>
     </main>

@@ -97,7 +97,7 @@ async function seed() {
         email,
         full_name: fullName,
         city,
-        bio: "Ukázkový profil pro první nabídku věcí v okolí.",
+        bio: "Ukázkový profil pro první nabídku nabídek v okolí.",
         is_verified: true,
         is_seed_user: true,
         email_notifications_enabled: true,
@@ -111,7 +111,7 @@ async function seed() {
       }
 
       const { data: existingItem } = await supabase
-        .from("items")
+        .from("offers")
         .select("id")
         .eq("owner_id", userId)
         .eq("title", title)
@@ -125,10 +125,10 @@ async function seed() {
     const coordinates =
     cityCoordinates[city] || cityCoordinates["Tábor"];
 
-      const { error: itemError } = await supabase.from("items").insert({
+      const { error: itemError } = await supabase.from("offers").insert({
         owner_id: userId,
         title,
-        description: `${title} k půjčení v okolí. Vhodné pro krátkodobé použití.`,
+        description: `${title} k rezervaci v okolí. Vhodné pro krátkodobé použití.`,
         category,
         pickup_place: city,
         pickup_latitude: coordinates.lat,

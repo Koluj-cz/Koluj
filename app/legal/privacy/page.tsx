@@ -20,7 +20,7 @@ export default function PrivacyPage() {
               </h2>
               <p className="mt-3">
                 Zpracováváme zejména e-mail, jméno, profilové údaje, lokalitu,
-                informace o nabízených věcech, půjčkách, hodnoceních,
+                informace o nabízených nabídkách, rezervacích, hodnoceních,
                 notifikacích a komunikaci mezi uživateli.
               </p>
             </section>
@@ -43,7 +43,7 @@ export default function PrivacyPage() {
               <p className="mt-3">
                 Osobní údaje neprodáváme třetím stranám. Některé údaje mohou být
                 viditelné ostatním uživatelům, například jméno, veřejný profil,
-                hodnocení nebo nabídky věcí.
+                hodnocení nebo nabídky nabídek.
               </p>
             </section>
 

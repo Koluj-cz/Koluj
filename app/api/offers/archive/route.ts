@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     return NextResponse.json(result);
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || "Věc se nepodařilo archivovat" },
+      { error: error.message || "Nabídka se nepodařilo archivovat" },
       { status: 400 }
     );
   }

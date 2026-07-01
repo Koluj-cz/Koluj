@@ -27,7 +27,7 @@ export async function deactivateAccountServer({
   }
 
   const { error: itemsError } = await supabaseAdmin
-    .from("items")
+    .from("offers")
     .update({
       is_active: false,
       deleted_at: deactivatedAt,
@@ -85,7 +85,7 @@ export async function restoreAccountServer({
   }
 
   const { error: itemsError } = await supabaseAdmin
-    .from("items")
+    .from("offers")
     .update({
       deleted_at: null,
       is_active: true,

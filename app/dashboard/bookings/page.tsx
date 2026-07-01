@@ -73,7 +73,7 @@ export default function LoansPage() {
 
     const selectQuery = `
       *,
-      items (
+      items:offers (
         id,
         title,
         primary_image_url
@@ -87,14 +87,14 @@ export default function LoansPage() {
     `;
 
     const borrowingQuery = supabase
-      .from("loans")
+      .from("bookings")
       .select(selectQuery, { count: "exact" })
       .eq("borrower_id", user.id)
       .order("created_at", { ascending: false })
       .range(0, borrowingPage * PAGE_SIZE - 1);
 
     const lendingQuery = supabase
-      .from("loans")
+      .from("bookings")
       .select(selectQuery, { count: "exact" })
       .eq("owner_id", user.id)
       .order("created_at", { ascending: false })
@@ -128,10 +128,10 @@ export default function LoansPage() {
         </header>
 
         <div>
-          <h1 className="koluj-heading">Půjčky</h1>
+          <h1 className="koluj-heading">Rezervace</h1>
 
           <p className="mt-4 text-lg text-[var(--koluj-muted)]">
-            Přehled věcí, které si půjčuješ nebo půjčuješ ostatním.
+            Přehled nabídek, které si rezervuješ nebo rezervuješ ostatním.
           </p>
         </div>
 
@@ -196,7 +196,7 @@ export default function LoansPage() {
               <div className="space-y-4">
                 {filteredBorrowing.length === 0 ? (
                   <div className="koluj-card p-6 text-[var(--koluj-muted)]">
-                    Žádné půjčky pro vybraný filtr.
+                    Žádné rezervace pro vybraný filtr.
                   </div>
                 ) : (
                   filteredBorrowing.map((loan) => (
@@ -229,7 +229,7 @@ export default function LoansPage() {
               <div className="space-y-4">
                 {filteredLending.length === 0 ? (
                   <div className="koluj-card p-6 text-[var(--koluj-muted)]">
-                    Žádné půjčky pro vybraný filtr.
+                    Žádné rezervace pro vybraný filtr.
                   </div>
                 ) : (
                   filteredLending.map((loan) => (
@@ -288,7 +288,7 @@ function LoanCard({
 
   return (
     <Link
-      href={`/dashboard/loans/${loan.id}`}
+      href={`/dashboard/bookings/${loan.id}`}
       className="koluj-card block p-4 transition hover:-translate-y-1"
     >
       <div className="flex gap-4">
@@ -307,7 +307,7 @@ function LoanCard({
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0 flex-1">
                 <p className="truncate text-lg font-black">
-                  {loan.items?.title || "Věc"}
+                  {loan.items?.title || "Nabídka"}
                 </p>
 
                 <p className="mt-1 text-sm text-[var(--koluj-muted)]">

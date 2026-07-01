@@ -27,14 +27,14 @@ async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
 
   const [reservationsResult, blocksResult] = await Promise.all([
     supabase
-      .from("item_reservations")
+      .from("offer_reservations")
       .select("item_id")
       .in("item_id", itemIds)
       .eq("status", "active")
       .lte("date_from", today)
       .gte("date_to", today),
     supabase
-      .from("item_availability_blocks")
+      .from("offer_availability_blocks")
       .select("item_id")
       .in("item_id", itemIds)
       .lte("date_from", today)
@@ -95,10 +95,10 @@ export default function MyItemsPage() {
     }
 
     const { data, error } = await supabase
-      .from("items")
+      .from("offers")
       .select(`
         *,
-        loans:loans!loans_item_id_fkey (
+        loans:bookings!loans_item_id_fkey (
           id,
           owner_earnings
         )
@@ -125,7 +125,7 @@ export default function MyItemsPage() {
     const nextValue = !item.is_active;
 
     const { error } = await supabase
-      .from("items")
+      .from("offers")
       .update({ is_active: nextValue })
       .eq("id", item.id);
 
@@ -142,7 +142,7 @@ export default function MyItemsPage() {
       )
     );
 
-    toast.success(nextValue ? "Věc je znovu viditelná" : "Věc je skrytá");
+    toast.success(nextValue ? "Nabídka je znovu viditelná" : "Nabídka je skrytá");
   }
 
   async function archiveItem(item: Item) {
@@ -151,7 +151,7 @@ export default function MyItemsPage() {
       return;
     }
 
-    const response = await fetch("/api/items/archive", {
+    const response = await fetch("/api/offers/archive", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -164,7 +164,7 @@ export default function MyItemsPage() {
     const result = await response.json().catch(() => null);
 
     if (!response.ok) {
-      toast.error(result?.error || "Věc se nepodařilo archivovat");
+      toast.error(result?.error || "Nabídka se nepodařilo archivovat");
       return;
     }
 
@@ -173,7 +173,7 @@ export default function MyItemsPage() {
     );
 
     setPendingDeleteId(null);
-    toast.success("Věc byla archivována");
+    toast.success("Nabídka byla archivována");
   }
 
   const counts = useMemo(() => {
@@ -252,10 +252,10 @@ export default function MyItemsPage() {
         </header>
 
         <section className="mt-12">
-          <h1 className="koluj-heading">Moje věci</h1>
+          <h1 className="koluj-heading">Moje nabídky</h1>
 
           <p className="mt-6 max-w-2xl text-2xl leading-relaxed text-[var(--koluj-muted)]">
-            Spravuj své věci, sleduj jejich stav a půjčení.
+            Spravuj své nabídky, sleduj jejich stav a rezervace.
           </p>
         </section>
 
@@ -264,7 +264,7 @@ export default function MyItemsPage() {
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Hledat věc..."
+              placeholder="Hledat nabídku..."
               className="koluj-input"
             />
 
@@ -315,7 +315,7 @@ export default function MyItemsPage() {
 
             <p className="font-bold text-[var(--koluj-muted)]">
               {filteredItems.length}{" "}
-              {filteredItems.length === 1 ? "věc" : "věcí"}
+              {filteredItems.length === 1 ? "nabídku" : "nabídek"}
             </p>
           </div>
 
@@ -325,10 +325,10 @@ export default function MyItemsPage() {
                 <Box size={36} />
               </div>
 
-              <h2 className="text-3xl font-black">Zatím nemáš žádnou věc</h2>
+              <h2 className="text-3xl font-black">Zatím nemáš žádnou nabídku</h2>
 
               <p className="mt-3 text-lg text-[var(--koluj-muted)]">
-                Přidej první věc a začni půjčovat.
+                Přidej první nabídku a začni rezervovat.
               </p>
 
             </div>
@@ -358,7 +358,7 @@ export default function MyItemsPage() {
 
                       <div className="grid grid-cols-4 gap-1">
                         <Link
-                          href={`/items/${item.id}`}
+                          href={`/offers/${item.id}`}
                           className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-green)] transition hover:bg-[var(--koluj-bg)]"
                         >
                           <CalendarDays size={18} />
@@ -366,7 +366,7 @@ export default function MyItemsPage() {
                         </Link>
 
                         <Link
-                          href={`/items/${item.id}/edit`}
+                          href={`/offers/${item.id}/edit`}
                           className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-text)] transition hover:bg-[var(--koluj-bg)]"
                         >
                           <Pencil size={18} />
@@ -423,7 +423,7 @@ export default function MyItemsPage() {
               </button>
 
               <p className="mt-3 text-sm text-[var(--koluj-muted)]">
-                Zobrazeno {visibleItems.length} z {filteredItems.length} věcí
+                Zobrazeno {visibleItems.length} z {filteredItems.length} nabídek
               </p>
             </div>
           )}
@@ -432,7 +432,7 @@ export default function MyItemsPage() {
         <section className="koluj-card mt-10 px-8 py-6">
           <p className="text-[var(--koluj-muted)]">
             <span className="font-bold text-[var(--koluj-green)]">Tip:</span>{" "}
-            Udržuj své věci aktuální. Zvyšuješ tím šanci, že si je někdo půjčí.
+            Udržuj své nabídky aktuální. Zvyšuješ tím šanci, že si je někdo rezervuje.
           </p>
         </section>
       </div>

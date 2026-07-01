@@ -71,13 +71,13 @@ export async function POST(request: Request) {
 
   if (!applyToAll && itemIds.length === 0) {
     return NextResponse.json(
-      { error: "Vyber alespoň jednu věc." },
+      { error: "Vyber alespoň jednu nabídku." },
       { status: 400 }
     );
   }
 
   let query = supabaseAdmin
-    .from("items")
+    .from("offers")
     .select("id, title")
     .eq("owner_id", user.id)
     .is("deleted_at", null);
@@ -96,7 +96,7 @@ export async function POST(request: Request) {
 
   if (!items || items.length === 0) {
     return NextResponse.json(
-      { error: "Nenalezeny žádné věci k blokaci." },
+      { error: "Nenalezeny žádné nabídky k blokaci." },
       { status: 400 }
     );
   }
@@ -113,7 +113,7 @@ export async function POST(request: Request) {
       });
 
       const { data: block, error: blockError } = await supabaseAdmin
-        .from("item_availability_blocks")
+        .from("offer_availability_blocks")
         .insert({
           item_id: item.id,
           owner_id: user.id,
@@ -127,7 +127,7 @@ export async function POST(request: Request) {
       if (blockError || !block) {
         skipped.push({
           itemId: item.id,
-          title: item.title || "Věc",
+          title: item.title || "Nabídka",
           reason: blockError?.message || "Blokaci se nepodařilo vytvořit.",
         });
         continue;
@@ -136,12 +136,12 @@ export async function POST(request: Request) {
       created.push({
         id: block.id,
         itemId: item.id,
-        title: item.title || "Věc",
+        title: item.title || "Nabídka",
       });
     } catch (error: any) {
       skipped.push({
         itemId: item.id,
-        title: item.title || "Věc",
+        title: item.title || "Nabídka",
         reason: error.message || "Termín není dostupný.",
       });
     }

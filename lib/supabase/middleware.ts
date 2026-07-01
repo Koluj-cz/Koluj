@@ -4,7 +4,7 @@ import { NextResponse, type NextRequest } from "next/server";
 const protectedRoutes = [
   "/dashboard",
   "/profile",
-  "/items/new",
+  "/offers/new",
 ];
 
 export async function updateSession(request: NextRequest) {

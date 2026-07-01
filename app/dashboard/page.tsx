@@ -86,7 +86,7 @@ export default function DashboardPage() {
           </h1>
 
           <p className="mt-6 text-2xl leading-relaxed text-[var(--koluj-muted)]">
-            Tvoje věci mohou někomu udělat radost.
+            Tvoje nabídky mohou někomu udělat radost.
             <br />
             Co chceš dnes udělat?
           </p>
@@ -99,17 +99,17 @@ export default function DashboardPage() {
                 Nejdřív dokonči profil:
               </span>{" "}
               Potřebujeme jméno a lokalitu, aby bylo jasné, s kým a kde si lidé
-              věc předávají.
+              nabídku předávají.
             </p>
           </section>
         )}
 
         <section className="mt-14 grid gap-6 px-8 md:grid-cols-3">
           <DashboardCard
-            href="/dashboard/my-items"
-            title="Moje věci"
+            href="/dashboard/my-offers"
+            title="Moje nabídky"
             icon={<Package size={32} />}
-            text="Zobraz a spravuj věci, které nabízíš k půjčení."
+            text="Zobraz a spravuj nabídky, které nabízíš k rezervaci."
             action="Otevřít"
           />
 
@@ -124,10 +124,10 @@ export default function DashboardPage() {
           />
 
           <DashboardCard
-            href="/dashboard/loans"
-            title="Půjčky"
+            href="/dashboard/bookings"
+            title="Rezervace"
             icon={<Handshake size={32} />}
-            text="Spravuj půjčky, žádosti a vrácení věcí."
+            text="Spravuj rezervace, žádosti a vrácení nabídek."
             action="Otevřít"
           />
 
@@ -147,7 +147,7 @@ export default function DashboardPage() {
             href="/dashboard/availability"
             title="Dostupnost"
             icon={<CalendarOff size={32} />}
-            text="Zablokuj termín pro jednu, více nebo všechny své věci."
+            text="Zablokuj termín pro jednu, více nebo všechny své nabídky."
             action="Spravovat"
           />
           
@@ -160,7 +160,7 @@ export default function DashboardPage() {
             </p>
 
             <p className="mt-1 text-base leading-relaxed text-[var(--koluj-muted)] md:text-lg">
-              Čím lépe popíšeš věc a podmínky předání, tím snadněji najde správného
+              Čím lépe popíšeš nabídku a podmínky předání, tím snadněji najde správného
               zájemce.
             </p>
           </div>

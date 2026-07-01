@@ -40,7 +40,7 @@ export async function DELETE(_request: Request, { params }: RouteProps) {
   }
 
   const { data: block, error: blockError } = await supabaseAdmin
-    .from("item_availability_blocks")
+    .from("offer_availability_blocks")
     .select("id, owner_id")
     .eq("id", id)
     .single();
@@ -60,7 +60,7 @@ export async function DELETE(_request: Request, { params }: RouteProps) {
   }
 
   const { error: deleteError } = await supabaseAdmin
-    .from("item_availability_blocks")
+    .from("offer_availability_blocks")
     .delete()
     .eq("id", id);
 

@@ -26,7 +26,7 @@ export const metadata = {
     default: "KOLUJ",
     template: "%s | KOLUJ",
   },
-  description: "Půjčuj si věci od lidí ve svém okolí",
+  description: "Půjčuj si nabídky od lidí ve svém okolí",
   manifest: "/manifest.webmanifest",
   themeColor: "#6b7f32",
   appleWebApp: {

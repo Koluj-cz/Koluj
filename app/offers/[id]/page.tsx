@@ -97,7 +97,7 @@ export default function ItemDetailPage() {
       setCurrentUserId(user?.id || null);
 
       const { data, error } = await supabase
-        .from("items")
+        .from("offers")
         .select(
           `
           *,
@@ -119,8 +119,8 @@ export default function ItemDetailPage() {
 
       if (error || !data) {
         console.error("Item load error:", error);
-        toast.error("Věc se nepodařilo načíst");
-        router.push("/items");
+        toast.error("Nabídku se nepodařilo načíst");
+        router.push("/offers");
         return;
       }
 
@@ -134,7 +134,7 @@ export default function ItemDetailPage() {
       });
 
       const { data: imageData, error: imageError } = await supabase
-        .from("item_images")
+        .from("offer_images")
         .select("*")
         .eq("item_id", itemId)
         .order("sort_order", { ascending: true });
@@ -149,8 +149,8 @@ export default function ItemDetailPage() {
       );
     } catch (error) {
       console.error("Unexpected item detail error:", error);
-      toast.error("Detail věci se nepodařilo načíst");
-      router.push("/items");
+      toast.error("Detail nabídky se nepodařilo načíst");
+      router.push("/offers");
     } finally {
       setLoading(false);
     }
@@ -166,7 +166,7 @@ export default function ItemDetailPage() {
 
     setSubmittingBorrowRequest(true);
 
-    const response = await fetch("/api/loans/request", {
+    const response = await fetch("/api/bookings/request", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -187,7 +187,7 @@ export default function ItemDetailPage() {
 
       if (
         result?.error ===
-        "Nejdřív dokonči profil, aby bylo jasné, s kým a kde se věc předává."
+        "Nejdřív dokonči profil, aby bylo jasné, s kým a kde se nabídku předává."
       ) {
         router.push("/profile");
       }
@@ -195,8 +195,8 @@ export default function ItemDetailPage() {
       return;
     }
 
-    toast.success("Žádost o půjčení byla odeslána");
-    router.push(`/dashboard/loans/${result.loanId}`);
+    toast.success("Žádost o rezervaci byla odeslána");
+    router.push(`/dashboard/bookings/${result.loanId}`);
   }
 
   const isOwner = item?.owner_id && currentUserId === item.owner_id;
@@ -354,16 +354,16 @@ export default function ItemDetailPage() {
     <main className="min-h-screen">
       <div className="koluj-shell-wide">
         <header className="koluj-page-header">
-          <BackLink href="/items">Zpět na věci</BackLink>
+          <BackLink href="/offers">Zpět na nabídky</BackLink>
 
           {currentUserId ? (
             isOwner ? (
               <Link
-                href={`/items/${item.id}/edit`}
+                href={`/offers/${item.id}/edit`}
                 className="koluj-button flex items-center gap-2 px-6 py-3"
               >
                 <Edit size={18} />
-                Upravit věc
+                Upravit nabídku
               </Link>
             ) : (
               <Link href="/dashboard" className="koluj-button px-6 py-3">
@@ -547,11 +547,11 @@ export default function ItemDetailPage() {
 
               {isOwner && (
                 <Link
-                  href={`/items/${item.id}/edit`}
+                  href={`/offers/${item.id}/edit`}
                   className="koluj-button mt-6 flex w-full items-center justify-center gap-2 px-6 py-4"
                 >
                   <Edit size={18} />
-                  Upravit vlastní věc
+                  Upravit vlastní nabídku
                 </Link>
               )}
 

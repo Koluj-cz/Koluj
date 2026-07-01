@@ -182,7 +182,7 @@ export default function DashboardAvailabilityPage() {
     }
 
     const { data, error } = await supabase
-      .from("items")
+      .from("offers")
       .select("id, title, primary_image_url, is_active")
       .eq("owner_id", user.id)
       .is("deleted_at", null)
@@ -212,15 +212,15 @@ export default function DashboardAvailabilityPage() {
 
     const [blocksResult, reservationsResult] = await Promise.all([
       supabase
-        .from("item_availability_blocks")
-        .select("id, item_id, date_from, date_to, reason, items(title)")
+        .from("offer_availability_blocks")
+        .select("id, item_id, date_from, date_to, reason, items:offers(title)")
         .in("item_id", itemIds)
         .lte("date_from", lastVisibleDate)
         .gte("date_to", firstVisibleDate)
         .order("date_from", { ascending: true }),
       supabase
-        .from("item_reservations")
-        .select("id, item_id, loan_id, date_from, date_to, status, items(title)")
+        .from("offer_reservations")
+        .select("id, item_id, loan_id, date_from, date_to, status, items:offers(title)")
         .in("item_id", itemIds)
         .eq("status", "active")
         .lte("date_from", lastVisibleDate)
@@ -372,7 +372,7 @@ export default function DashboardAvailabilityPage() {
     }
 
     if (!applyToAll && selectedItemIds.length === 0) {
-      toast.error("Vyber alespoň jednu věc.");
+      toast.error("Vyber alespoň jednu nabídku.");
       return;
     }
 
@@ -404,14 +404,14 @@ export default function DashboardAvailabilityPage() {
     setLastResult(result as BulkResult);
 
     if (result.createdCount > 0) {
-      toast.success(`Zablokováno ${result.createdCount} věcí.`);
+      toast.success(`Zablokováno ${result.createdCount} nabídek.`);
       setReason("");
       setSelectedRange(null);
       loadAvailability();
     }
 
     if (result.skippedCount > 0) {
-      toast.error(`${result.skippedCount} věcí se nepodařilo zablokovat.`);
+      toast.error(`${result.skippedCount} nabídek se nepodařilo zablokovat.`);
     }
   }
 
@@ -457,8 +457,8 @@ export default function DashboardAvailabilityPage() {
         <header className="koluj-page-header">
           <BackLink href="/dashboard">Dashboard</BackLink>
 
-          <Link href="/dashboard/my-items" className="koluj-button px-6 py-3">
-            Moje věci
+          <Link href="/dashboard/my-offers" className="koluj-button px-6 py-3">
+            Moje nabídky
           </Link>
         </header>
 
@@ -466,8 +466,8 @@ export default function DashboardAvailabilityPage() {
           <h1 className="koluj-heading">Dostupnost</h1>
 
           <p className="mt-6 max-w-3xl text-2xl leading-relaxed text-[var(--koluj-muted)]">
-            Spravuj dostupnost všech věcí v jednom kalendáři. Vyber termín,
-            zvol věci a ulož blokaci.
+            Spravuj dostupnost všech nabídek v jednom kalendáři. Vyber termín,
+            zvol nabídky a ulož blokaci.
           </p>
         </section>
 
@@ -705,8 +705,8 @@ export default function DashboardAvailabilityPage() {
               />
 
               <div className="mt-5 space-y-3 text-sm font-bold text-[var(--koluj-muted)]">
-                <SummaryLine label="Počet věcí" value={String(items.length)} />
-                <SummaryLine label="Skrytých věcí" value={String(inactiveCount)} />
+                <SummaryLine label="Počet nabídek" value={String(items.length)} />
+                <SummaryLine label="Skrytých nabídek" value={String(inactiveCount)} />
                 <SummaryLine label="Vybráno" value={String(selectedCount)} />
               </div>
 
@@ -720,7 +720,7 @@ export default function DashboardAvailabilityPage() {
               </button>
 
               <p className="mt-4 text-sm leading-relaxed text-[var(--koluj-muted)]">
-                Pokud je některá věc v termínu už rezervovaná, server ji přeskočí
+                Pokud je některá nabídku v termínu už rezervovaná, server ji přeskočí
                 a zobrazí ji ve výsledku.
               </p>
             </div>
@@ -744,7 +744,7 @@ export default function DashboardAvailabilityPage() {
                       key={reservation.id}
                       className="rounded-3xl bg-red-50 p-4 text-sm font-bold text-red-700"
                     >
-                      <p>{reservation.items?.title || "Věc"}</p>
+                      <p>{reservation.items?.title || "Nabídka"}</p>
                       <p className="mt-1 opacity-80">
                         {formatShortDate(reservation.date_from)} – {formatShortDate(reservation.date_to)}
                       </p>
@@ -759,7 +759,7 @@ export default function DashboardAvailabilityPage() {
                       <div className="flex items-start justify-between gap-3">
                         <div>
                           <p className="text-sm font-black text-[var(--koluj-text)]">
-                            {block.items?.title || "Věc"}
+                            {block.items?.title || "Nabídka"}
                           </p>
                           <p className="mt-1 text-sm font-bold text-[var(--koluj-muted)]">
                             {formatShortDate(block.date_from)} – {formatShortDate(block.date_to)}
@@ -799,7 +799,7 @@ export default function DashboardAvailabilityPage() {
                       key={block.id}
                       className="rounded-3xl bg-[var(--koluj-bg)] p-4"
                     >
-                      <p className="font-black">{block.items?.title || "Věc"}</p>
+                      <p className="font-black">{block.items?.title || "Nabídka"}</p>
                       <p className="mt-1 text-sm font-bold text-[var(--koluj-muted)]">
                         {formatShortDate(block.date_from)} – {formatShortDate(block.date_to)}
                         {block.reason ? ` · ${block.reason}` : ""}

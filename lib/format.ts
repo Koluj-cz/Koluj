@@ -4,7 +4,7 @@ export function translatePriceUnit(unit: string | null) {
   if (unit === "weekend") return "víkend";
   if (unit === "week") return "týden";
   if (unit === "month") return "měsíc";
-  if (unit === "piece") return "půjčení";
+  if (unit === "piece") return "rezervaci";
   return "";
 }
 

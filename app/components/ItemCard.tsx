@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { MapPin } from "lucide-react";
-import { categoryLabels } from "@/lib/constants";
+import { categoryLabels, serviceCategoryLabels } from "@/lib/constants";
 import { translatePriceUnit } from "@/lib/format";
 
 export type ItemCardItem = {
   id: string;
   title: string;
   description: string | null;
+  offer_type?: "item" | "service" | string | null;
   category: string;
   condition: string | null;
   pickup_place: string;
@@ -58,6 +59,11 @@ export default function ItemCard({
     ? "bg-red-100 text-red-700"
     : "bg-emerald-100 text-emerald-800";
 
+  const isService = item.offer_type === "service";
+  const categoryLabel = isService
+    ? serviceCategoryLabels[item.category] || item.category
+    : categoryLabels[item.category] || item.category;
+
   const ownerName = item.profiles?.full_name || "Uživatel";
   const rating = item.profiles?.profile_ratings?.[0];
 
@@ -72,7 +78,7 @@ export default function ItemCard({
     <div className="overflow-hidden rounded-[30px] bg-[var(--koluj-surface)] shadow-[0_16px_40px_rgba(31,31,26,0.12)]">
       <div className="p-4 sm:p-5">
         <p className="text-sm font-black text-[var(--koluj-green)]">
-          {categoryLabels[item.category] || item.category}
+          {categoryLabel}
         </p>
 
         <h3 className="mt-1 overflow-hidden whitespace-nowrap text-ellipsis text-[1.75rem] font-extrabold leading-none tracking-[-0.03em]">
@@ -121,7 +127,7 @@ export default function ItemCard({
           )}
 
           {variant === "owner" && (
-            <span className="font-black">{loanCount} půjčení</span>
+            <span className="font-black">{loanCount} rezervací</span>
           )}
         </div>
       </div>
@@ -170,7 +176,7 @@ export default function ItemCard({
 
   return (
     <Link
-      href={`/items/${item.id}`}
+      href={`/offers/${item.id}`}
       className="group block overflow-hidden rounded-[30px] transition hover:-translate-y-1"
     >
       {cardContent}

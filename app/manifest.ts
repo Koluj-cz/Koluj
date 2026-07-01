@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Koluj",
     short_name: "Koluj",
-    description: "Půjčuj si věci od lidí ve svém okolí",
+    description: "Půjčuj si nabídky od lidí ve svém okolí",
     start_url: "/",
     scope: "/",
     display: "standalone",

@@ -21,6 +21,9 @@ import BackLink from "@/app/components/BackLink";
 import {
   categories,
   categoryLabels,
+  serviceCategories,
+  serviceCategoryLabels,
+  offerTypeLabels,
   conditions,
   conditionLabels,
   handoverLabels,
@@ -53,6 +56,7 @@ export default function EditItemPage() {
   const [uploadProgress, setUploadProgress] = useState(0);
 
   const [form, setForm] = useState({
+    offer_type: "item",
     title: "",
     description: "",
     category: "",
@@ -61,6 +65,7 @@ export default function EditItemPage() {
     price_unit: "day",
     price_note: "",
     deposit: "",
+    service_duration_minutes: "60",
     pickup_place: "",
     pickup_latitude: null as number | null,
     pickup_longitude: null as number | null,
@@ -95,18 +100,19 @@ export default function EditItemPage() {
 
   async function loadItem() {
     const { data, error } = await supabase
-      .from("items")
+      .from("offers")
       .select("*")
       .eq("id", itemId)
       .single();
 
     if (error || !data) {
-      toast.error("Věc se nepodařilo načíst");
-      router.push("/dashboard/my-items");
+      toast.error("Nabídku se nepodařilo načíst");
+      router.push("/dashboard/my-offers");
       return;
     }
 
     setForm({
+      offer_type: data.offer_type || "item",
       title: data.title || "",
       description: data.description || "",
       category: data.category || "",
@@ -115,6 +121,7 @@ export default function EditItemPage() {
       price_unit: data.price_unit || "day",
       price_note: data.price_note || "",
       deposit: data.deposit?.toString() || "",
+      service_duration_minutes: data.service_duration_minutes?.toString() || "60",
       pickup_place: data.pickup_place || "",
       pickup_latitude: data.pickup_latitude || null,
       pickup_longitude: data.pickup_longitude || null,
@@ -130,7 +137,7 @@ export default function EditItemPage() {
     setPrimaryImageUrl(data.primary_image_url || "");
 
     const { data: imageData } = await supabase
-    .from("item_images")
+    .from("offer_images")
     .select("*")
     .eq("item_id", itemId)
     .order("sort_order");
@@ -221,7 +228,7 @@ export default function EditItemPage() {
 
 async function deleteImage(imageId: string, imageUrl: string) {
   const { error: deleteDbError } = await supabase
-    .from("item_images")
+    .from("offer_images")
     .delete()
     .eq("id", imageId);
 
@@ -230,14 +237,14 @@ async function deleteImage(imageId: string, imageUrl: string) {
     return;
   }
 
-  const marker = "/storage/v1/object/public/items/";
+  const marker = "/storage/v1/object/public/offers/";
   const storagePath = imageUrl.includes(marker)
     ? imageUrl.split(marker)[1]
     : null;
 
   if (storagePath) {
     const { error: storageError } = await supabase.storage
-      .from("items")
+      .from("offers")
       .remove([storagePath]);
 
     if (storageError) {
@@ -253,7 +260,7 @@ async function deleteImage(imageId: string, imageUrl: string) {
     const nextPrimary = remainingImages[0]?.image_url || null;
 
     await supabase
-      .from("items")
+      .from("offers")
       .update({
         primary_image_url: nextPrimary,
       })
@@ -267,7 +274,7 @@ async function deleteImage(imageId: string, imageUrl: string) {
 
 async function makePrimary(imageUrl: string) {
   const { error } = await supabase
-    .from("items")
+    .from("offers")
     .update({
       primary_image_url: imageUrl,
     })
@@ -289,7 +296,7 @@ async function makePrimary(imageUrl: string) {
     return;
     }
     if (!form.title.trim()) {
-      toast.error("Vyplň název věci");
+      toast.error("Vyplň název nabídky");
       return;
     }
 
@@ -298,8 +305,8 @@ async function makePrimary(imageUrl: string) {
       return;
     }
 
-    if (!form.condition) {
-      toast.error("Vyber stav věci");
+    if (form.offer_type === "item" && !form.condition) {
+      toast.error("Vyber stav nabídky");
       return;
     }
 
@@ -333,16 +340,19 @@ async function makePrimary(imageUrl: string) {
     setSaving(true);
 
     const { error } = await supabase
-      .from("items")
+      .from("offers")
       .update({
+        offer_type: form.offer_type,
         title: form.title,
         description: form.description,
         category: form.category,
-        condition: form.condition,
+        condition: form.offer_type === "item" ? form.condition : null,
         price_amount: Number(form.price_amount),
         price_unit: form.price_unit,
         price_note: form.price_note || null,
-        deposit: form.deposit ? Number(form.deposit) : null,
+        deposit: form.offer_type === "item" && form.deposit ? Number(form.deposit) : null,
+        service_duration_minutes:
+          form.offer_type === "service" ? Number(form.service_duration_minutes || 60) : null,
         pickup_place: form.pickup_place,
         pickup_latitude: form.pickup_latitude,
         pickup_longitude: form.pickup_longitude,
@@ -383,7 +393,7 @@ async function makePrimary(imageUrl: string) {
             const filePath = `${user.id}/${itemId}/${Date.now()}-${index}.webp`;
 
             const { error: uploadError } = await supabase.storage
-            .from("items")
+            .from("offers")
             .upload(filePath, photo);
 
             if (uploadError) {
@@ -393,12 +403,12 @@ async function makePrimary(imageUrl: string) {
             }
 
             const { data: publicUrl } = supabase.storage
-            .from("items")
+            .from("offers")
             .getPublicUrl(filePath);
 
             const sortOrder = currentCount + index;
 
-            const { error: imageError } = await supabase.from("item_images").insert({
+            const { error: imageError } = await supabase.from("offer_images").insert({
             item_id: itemId,
             image_url: publicUrl.publicUrl,
             sort_order: sortOrder,
@@ -412,7 +422,7 @@ async function makePrimary(imageUrl: string) {
 
             if (images.length === 0 && index === 0) {
             await supabase
-                .from("items")
+                .from("offers")
                 .update({
                 primary_image_url: publicUrl.publicUrl,
                 })
@@ -424,7 +434,7 @@ async function makePrimary(imageUrl: string) {
         setUploadingPhotos(false);
         setSaving(false);
         toast.success("Změny uloženy");
-        router.push("/dashboard/my-items");
+        router.push("/dashboard/my-offers");
   }
 
   if (loading) {
@@ -439,7 +449,7 @@ async function makePrimary(imageUrl: string) {
     <main className="min-h-screen pb-24 lg:pb-0">
       <div className="koluj-shell">
         <header className="mb-8 flex items-center justify-between">
-          <BackLink href="/dashboard/my-items">Moje věci</BackLink>
+          <BackLink href="/dashboard/my-offers">Moje nabídky</BackLink>
 
           <button
             onClick={saveItem}
@@ -453,11 +463,11 @@ async function makePrimary(imageUrl: string) {
 
         <section className="mt-16 px-8">
           <h1 className="koluj-heading">
-            Upravit věc
+            Upravit nabídku
           </h1>
 
           <p className="mt-6 max-w-2xl text-2xl leading-relaxed text-[var(--koluj-muted)]">
-            Uprav informace, stav a dostupnost věci.
+            Uprav informace, cenu a dostupnost nabídky.
           </p>
         </section>
 
@@ -560,13 +570,43 @@ async function makePrimary(imageUrl: string) {
             )}
         </div>
             <div className="koluj-card p-8">
-              <SectionTitle icon={<Package size={24} />} title="O věci" />
+              <SectionTitle icon={<Package size={24} />} title="O nabídce" />
 
               <div className="mt-6 space-y-4">
+                <div className="grid gap-3 md:grid-cols-2">
+                  {["item", "service"].map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() =>
+                        setForm((prev) => ({
+                          ...prev,
+                          offer_type: type,
+                          category: "",
+                          condition: type === "service" ? "" : prev.condition,
+                          price_unit: type === "service" ? "hour" : prev.price_unit || "day",
+                        }))
+                      }
+                      className={`rounded-3xl px-5 py-4 text-left font-black transition ${
+                        form.offer_type === type
+                          ? "bg-[var(--koluj-green)] text-white"
+                          : "bg-[var(--koluj-bg)] text-[var(--koluj-text)]"
+                      }`}
+                    >
+                      {offerTypeLabels[type as keyof typeof offerTypeLabels]}
+                      <span className="mt-1 block text-sm font-bold opacity-80">
+                        {type === "item"
+                          ? "Rezervace fyzické nabídky po dnech."
+                          : "Rezervace času nebo práce po hodinách."}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+
                 <input
                   value={form.title}
                   onChange={(e) => updateField("title", e.target.value)}
-                  placeholder="Název věci *"
+                  placeholder={form.offer_type === "service" ? "Název služby *" : "Název nabídky *"}
                   className="koluj-input"
                 />
 
@@ -577,25 +617,29 @@ async function makePrimary(imageUrl: string) {
                     className="koluj-input"
                   >
                     <option value="">Kategorie *</option>
-                    {categories.map((category) => (
+                    {(form.offer_type === "service" ? serviceCategories : categories).map((category) => (
                       <option key={category} value={category}>
-                        {categoryLabels[category]}
+                        {form.offer_type === "service"
+                          ? serviceCategoryLabels[category as keyof typeof serviceCategoryLabels]
+                          : categoryLabels[category as keyof typeof categoryLabels]}
                       </option>
                     ))}
                   </select>
 
-                  <select
-                    value={form.condition}
-                    onChange={(e) => updateField("condition", e.target.value)}
-                    className="koluj-input"
-                  >
-                    <option value="">Stav věci *</option>
-                    {conditions.map((condition) => (
-                      <option key={condition} value={condition}>
-                        {conditionLabels[condition]}
-                      </option>
-                    ))}
-                  </select>
+                  {form.offer_type === "item" && (
+                    <select
+                      value={form.condition}
+                      onChange={(e) => updateField("condition", e.target.value)}
+                      className="koluj-input"
+                    >
+                      <option value="">Stav nabídky *</option>
+                      {conditions.map((condition) => (
+                        <option key={condition} value={condition}>
+                          {conditionLabels[condition]}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                 </div>
 
               <RichTextEditor
@@ -630,28 +674,49 @@ async function makePrimary(imageUrl: string) {
                     className="koluj-input"
                 >
                     <option value="hour">za hodinu</option>
-                    <option value="day">za den</option>
-                    <option value="weekend">za víkend</option>
-                    <option value="week">za týden</option>
-                    <option value="month">za měsíc</option>
-                    <option value="piece">za půjčení</option>
+                    {form.offer_type === "item" && (
+                      <>
+                        <option value="day">za den</option>
+                        <option value="weekend">za víkend</option>
+                        <option value="week">za týden</option>
+                        <option value="month">za měsíc</option>
+                        <option value="piece">za rezervaci</option>
+                      </>
+                    )}
+                    {form.offer_type === "service" && (
+                      <option value="piece">za službu</option>
+                    )}
                 </select>
                 </div>
 
                 <textarea
                 value={form.price_note}
                 onChange={(e) => updateField("price_note", e.target.value)}
-                placeholder="Poznámka k ceně, např. víkend za 250 Kč nebo sleva při delším půjčení"
+                placeholder="Poznámka k ceně, např. víkend za 250 Kč nebo sleva při delším rezervaci"
                 className="koluj-input min-h-28"
                 />
 
-                <input
-                type="number"
-                value={form.deposit}
-                onChange={(e) => updateField("deposit", e.target.value)}
-                placeholder="Kauce Kč, volitelné"
-                className="koluj-input"
-                />
+                {form.offer_type === "service" && (
+                  <input
+                    type="number"
+                    min="15"
+                    step="15"
+                    value={form.service_duration_minutes}
+                    onChange={(e) => updateField("service_duration_minutes", e.target.value)}
+                    placeholder="Obvyklá délka služby v minutách"
+                    className="koluj-input"
+                  />
+                )}
+
+                {form.offer_type === "item" && (
+                  <input
+                    type="number"
+                    value={form.deposit}
+                    onChange={(e) => updateField("deposit", e.target.value)}
+                    placeholder="Kauce Kč, volitelné"
+                    className="koluj-input"
+                  />
+                )}
             </div>
             </div>
 
@@ -717,11 +782,11 @@ async function makePrimary(imageUrl: string) {
 
               <div className="mt-6 rounded-3xl border border-[var(--koluj-border)] bg-[var(--koluj-bg)] p-6">
                 <p className="text-lg font-bold text-[var(--koluj-green)]">
-                  📅 Dostupnost se spravuje v kalendáři této věci.
+                  📅 Dostupnost se spravuje v kalendáři této nabídky.
                 </p>
 
                 <p className="mt-3 leading-relaxed text-[var(--koluj-muted)]">
-                  Kalendář najdeš v detailu věci. Zde můžeš blokovat vlastní termíny,
+                  Kalendář najdeš v detailu nabídky. Zde můžeš blokovat vlastní termíny,
                   schvalovat rezervace a sledovat obsazené dny.
                 </p>
               </div>
@@ -734,9 +799,11 @@ async function makePrimary(imageUrl: string) {
 
               <ul className="mt-6 space-y-4 text-[var(--koluj-muted)]">
                 <CheckLine done={images.length + newPhotos.length > 0} text="Alespoň jedna fotka"/>
-                <CheckLine done={!!form.title} text="Název věci" />
+                <CheckLine done={!!form.title} text="Název nabídky" />
                 <CheckLine done={!!form.category} text="Kategorie" />
-                <CheckLine done={!!form.condition} text="Stav věci" />
+                {form.offer_type === "item" && (
+                  <CheckLine done={!!form.condition} text="Stav nabídky" />
+                )}
                 <CheckLine done={!!form.price_amount && !!form.price_unit} text="Cena" />
                 <CheckLine done={!!form.pickup_latitude} text="Místo předání" />
               </ul>

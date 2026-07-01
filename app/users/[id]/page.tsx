@@ -82,7 +82,7 @@ export default function UserProfilePage() {
           full_name,
           avatar_url
         ),
-        items (
+        items:offers (
           title
         )
       `)
@@ -90,7 +90,7 @@ export default function UserProfilePage() {
       .order("created_at", { ascending: false });
 
     const { data: itemsData } = await supabase
-      .from("items")
+      .from("offers")
       .select(`
         *,
         profiles:profiles!items_owner_id_fkey (
@@ -156,7 +156,7 @@ export default function UserProfilePage() {
     <main className="min-h-screen">
       <div className="koluj-shell-wide">
         <header className="koluj-page-header">
-          <BackLink href="/items">Zpět na věci</BackLink>
+          <BackLink href="/offers">Zpět na nabídky</BackLink>
 
           <AuthHeaderButton />
         </header>
@@ -233,7 +233,7 @@ export default function UserProfilePage() {
                 </p>
 
                 <p>
-                  <strong>Aktivní věci:</strong> {items.length}
+                  <strong>Aktivní nabídky:</strong> {items.length}
                 </p>
               </div>
             </div>
@@ -310,7 +310,7 @@ export default function UserProfilePage() {
 
               {items.length === 0 ? (
                 <div className="koluj-card p-8 text-[var(--koluj-muted)]">
-                  Uživatel zatím nenabízí žádné aktivní věci.
+                  Uživatel zatím nenabízí žádné aktivní nabídky.
                 </div>
               ) : (
                 <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
