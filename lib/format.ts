@@ -1,10 +1,19 @@
-export function translatePriceUnit(unit: string | null) {
+import { bookingStatusLabels } from "./constants";
+
+export function translatePriceUnit(
+  unit: string | null,
+  offerType?: string | null
+) {
   if (unit === "hour") return "hodinu";
   if (unit === "day") return "den";
   if (unit === "weekend") return "víkend";
   if (unit === "week") return "týden";
   if (unit === "month") return "měsíc";
-  if (unit === "piece") return "rezervaci";
+
+  if (unit === "piece") {
+    return offerType === "service" ? "zakázku" : "půjčení";
+  }
+
   return "";
 }
 
@@ -25,8 +34,9 @@ export function formatDateTime(date: string | null) {
   });
 }
 
-import { bookingStatusLabels } from "./constants";
-
 export function translateBookingStatus(status: string | null) {
-  return status ? bookingStatusLabels[status as keyof typeof bookingStatusLabels] ?? status : "";
+  return status
+    ? bookingStatusLabels[status as keyof typeof bookingStatusLabels] ?? status
+    : "";
 }
+

@@ -27,7 +27,13 @@ import {
   conditionLabels,
   handoverLabels,
   handoverOptions,
+  itemPriceUnits,
+  itemPriceUnitLabels,
+  servicePriceUnits,
+  servicePriceUnitLabels,
 } from "@/lib/constants";
+import SectionTitle from "@/app/components/SectionTitle";
+import CheckLine from "@/app/components/CheckLine";
 
 type PlaceSuggestion = {
   name: string;
@@ -419,7 +425,7 @@ export default function NewItemPage() {
                         offer_type: type,
                         category: "",
                         condition: type === "service" ? "" : prev.condition,
-                        price_unit: type === "service" ? "hour" : prev.price_unit || "day",
+                        price_unit: type === "service" ? "hour" : "day",
                         deposit: type === "service" ? "" : prev.deposit,
                         handover_options: type === "service" ? [] : prev.handover_options,
                       }))
@@ -597,26 +603,20 @@ export default function NewItemPage() {
                     onChange={(e) => updateField("price_unit", e.target.value)}
                     className="koluj-input"
                   >
-                    <option value="hour">za hodinu</option>
-                    {form.offer_type === "item" && (
-                      <>
-                        <option value="day">za den</option>
-                        <option value="weekend">za víkend</option>
-                        <option value="week">za týden</option>
-                        <option value="month">za měsíc</option>
-                        <option value="piece">za rezervaci</option>
-                      </>
-                    )}
-                    {form.offer_type === "service" && (
-                      <option value="piece">za službu</option>
-                    )}
+                    {(form.offer_type === "service" ? servicePriceUnits : itemPriceUnits).map((unit) => (
+                      <option key={unit} value={unit}>
+                        {form.offer_type === "service"
+                          ? servicePriceUnitLabels[unit]
+                          : itemPriceUnitLabels[unit]}
+                      </option>
+                    ))}
                   </select>
                 </div>
 
                 <textarea
                   value={form.price_note}
                   onChange={(e) => updateField("price_note", e.target.value)}
-                  placeholder="Poznámka k ceně, např. víkend za 250 Kč nebo sleva při delším rezervaci"
+                  placeholder="Poznámka k ceně, např. víkend za 250 Kč nebo sleva při delší rezervaci"
                   className="koluj-input min-h-28"
                 />
 
@@ -771,41 +771,5 @@ export default function NewItemPage() {
       </button>
     </div>
     </main>
-  );
-}
-
-function SectionTitle({
-  title,
-  icon,
-}: {
-  title: string;
-  icon?: React.ReactNode;
-}) {
-  return (
-    <div className="flex items-center gap-3">
-      {icon && (
-        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-[var(--koluj-green)]">
-          {icon}
-        </div>
-      )}
-      <h2 className="text-2xl font-black">{title}</h2>
-    </div>
-  );
-}
-
-function CheckLine({ done, text }: { done: boolean; text: string }) {
-  return (
-    <li className="flex items-center gap-3">
-      <span
-        className={`flex h-6 w-6 items-center justify-center rounded-full ${
-          done
-            ? "bg-[var(--koluj-green)] text-white"
-            : "bg-[var(--koluj-bg)] text-[var(--koluj-muted)]"
-        }`}
-      >
-        {done ? <Check size={14} /> : ""}
-      </span>
-      {text}
-    </li>
   );
 }

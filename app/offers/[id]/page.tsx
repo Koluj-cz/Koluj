@@ -11,6 +11,7 @@ import {
   categoryLabels,
   conditionLabels,
   handoverLabels,
+  serviceCategoryLabels,
 } from "@/lib/constants";
 import { formatDate, translatePriceUnit } from "@/lib/format";
 
@@ -385,7 +386,9 @@ export default function ItemDetailPage() {
             <div className="overflow-hidden rounded-[34px] bg-[var(--koluj-surface)] shadow-[0_18px_55px_rgba(31,31,26,0.12)]">
               <div className="border-b border-[var(--koluj-border)] px-5 py-6 md:px-8 md:py-7">
                 <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
-                  {categoryLabels[item.category] || item.category}
+                  {item.offer_type === "service"
+                    ? serviceCategoryLabels[item.category] || item.category
+                    : categoryLabels[item.category] || item.category}
                 </p>
 
                 <h1 className="mt-4 max-w-4xl text-4xl font-black leading-none tracking-tight md:text-6xl">
@@ -477,7 +480,7 @@ export default function ItemDetailPage() {
 
                 {item.price_unit && (
                   <p className="mt-1 font-bold text-[var(--koluj-green)]">
-                    za {translatePriceUnit(item.price_unit)}
+                    za {translatePriceUnit(item.price_unit, item.offer_type)}
                   </p>
                 )}
 

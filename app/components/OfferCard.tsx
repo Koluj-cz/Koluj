@@ -170,7 +170,7 @@ export default function OfferCard({
 
         {item.price_amount && item.price_unit && (
           <div className="absolute bottom-4 left-4 rounded-2xl bg-[var(--koluj-green)] px-4 py-2 text-sm font-black text-white shadow-lg">
-            {item.price_amount} Kč / {translatePriceUnit(item.price_unit)}
+            {item.price_amount} Kč / {translatePriceUnit(item.price_unit, item.offer_type)}
           </div>
         )}
 

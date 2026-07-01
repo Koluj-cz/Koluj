@@ -1,10 +1,38 @@
-
 export const offerTypeLabels: Record<string, string> = {
-  item: "Nabídka",
+  item: "Věc",
   service: "Služba",
 };
 
 export const offerTypes = ["item", "service"] as const;
+
+export const itemPriceUnitLabels: Record<string, string> = {
+  day: "za den",
+  weekend: "za víkend",
+  week: "za týden",
+  month: "za měsíc",
+};
+
+export const itemPriceUnits = [
+  "day",
+  "weekend",
+  "week",
+  "month",
+] as const;
+
+export const servicePriceUnitLabels: Record<string, string> = {
+  hour: "za hodinu",
+  piece: "za zakázku",
+};
+
+export const servicePriceUnits = [
+  "hour",
+  "piece",
+] as const;
+
+export const priceUnitLabels: Record<string, string> = {
+  ...itemPriceUnitLabels,
+  ...servicePriceUnitLabels,
+};
 
 export const serviceCategoryLabels: Record<string, string> = {
   remesla: "Řemesla",
@@ -114,3 +142,10 @@ export const bookingStatusClasses: Record<string, string> = {
   returned: "bg-green-100 text-green-800",
   cancelled: "bg-red-100 text-red-700",
 };
+
+// Backwards-compatible aliases, kdyby někde v projektu ještě zůstal starší import.
+export const itemStatusLabels = offerStatusLabels;
+export const itemStatuses = offerStatuses;
+export const itemStatusClasses = offerStatusClasses;
+export const loanStatusLabels = bookingStatusLabels;
+export const loanStatusClasses = bookingStatusClasses;
