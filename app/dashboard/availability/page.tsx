@@ -587,7 +587,7 @@ export default function DashboardAvailabilityPage() {
           </div>
 
           <aside className="space-y-6">
-            <div className="koluj-card p-6 md:p-8 xl:sticky xl:top-8">
+            <div className="koluj-card p-6 md:p-8">
               <h2 className="text-2xl font-black">Nová blokace</h2>
 
               {selectedRange?.dateFrom && selectedRange?.dateTo ? (

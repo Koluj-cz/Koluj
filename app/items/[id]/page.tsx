@@ -27,7 +27,6 @@ import {
 import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
 
-
 const ItemsMap = dynamic(() => import("@/app/components/ItemsMap"), {
   ssr: false,
 });
@@ -54,10 +53,6 @@ type ItemDetail = {
   deposit: number | null;
   contact_note: string | null;
   handover_options: string[] | null;
-  status: string | null;
-  availability_type: string | null;
-  available_from: string | null;
-  available_to: string | null;
   primary_image_url: string | null;
   created_at: string;
   views_count: number | null;
@@ -87,8 +82,6 @@ export default function ItemDetailPage() {
   const [borrowFrom, setBorrowFrom] = useState("");
   const [borrowTo, setBorrowTo] = useState("");
   const [borrowNote, setBorrowNote] = useState("");
-  const [isWatchingAvailability, setIsWatchingAvailability] = useState(false);
-  const [savingAvailabilityWatch, setSavingAvailabilityWatch] = useState(false);
   const [submittingBorrowRequest, setSubmittingBorrowRequest] = useState(false);
 
   useEffect(() => {
@@ -154,18 +147,6 @@ export default function ItemDetailPage() {
       setSelectedImage(
         data.primary_image_url || imageData?.[0]?.image_url || ""
       );
-
-      if (user?.id) {
-        const { data: watcherData } = await supabase
-          .from("item_availability_watchers")
-          .select("id")
-          .eq("item_id", itemId)
-          .eq("user_id", user.id)
-          .is("notified_at", null)
-          .maybeSingle();
-
-        setIsWatchingAvailability(Boolean(watcherData));
-      }
     } catch (error) {
       console.error("Unexpected item detail error:", error);
       toast.error("Detail věci se nepodařilo načíst");
@@ -218,57 +199,6 @@ export default function ItemDetailPage() {
     router.push(`/dashboard/loans/${result.loanId}`);
   }
 
-  async function handleWatchAvailabilityClick() {
-    if (!item) return;
-
-    if (!currentUserId) {
-      router.push("/login");
-      return;
-    }
-
-    if (currentUserId === item.owner_id) {
-      toast.error("Vlastní věc si nemusíš hlídat.");
-      return;
-    }
-
-    if (item.status === "available") {
-      toast.success("Věc je právě dostupná.");
-      return;
-    }
-
-    if (item.profiles?.is_seed_user) {
-      toast(
-        "💚 Tato nabídka je ukázková. Přidej svou první věc a pomoz rozšířit Koluj ve svém okolí."
-      );
-      return;
-    }
-
-    setSavingAvailabilityWatch(true);
-
-    const { error } = await supabase
-      .from("item_availability_watchers")
-      .upsert(
-        {
-          item_id: item.id,
-          user_id: currentUserId,
-          notified_at: null,
-        },
-        {
-          onConflict: "item_id,user_id",
-        }
-      );
-
-    setSavingAvailabilityWatch(false);
-
-    if (error) {
-      toast.error(error.message);
-      return;
-    }
-
-    setIsWatchingAvailability(true);
-    toast.success("Dáme ti vědět, jakmile bude věc znovu volná.");
-  }
-
   const isOwner = item?.owner_id && currentUserId === item.owner_id;
 
   const rating = item?.profiles?.profile_ratings?.[0];
@@ -281,8 +211,17 @@ export default function ItemDetailPage() {
   const ratingCountText =
     rating && rating.rating_count ? `(${rating.rating_count})` : "";
 
-  const todayIso = new Date().toISOString().split("T")[0];
-  const isSingleDateRequest = item?.price_unit === "piece";
+  const selectedDays = useMemo(() => {
+    if (!borrowFrom || !borrowTo) return null;
+
+    const from = new Date(borrowFrom);
+    const to = new Date(borrowTo);
+    const diff = Math.round(
+      (to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    return diff >= 0 ? diff + 1 : null;
+  }, [borrowFrom, borrowTo]);
 
   const mapItems = useMemo(() => {
     if (!item) return [];
@@ -313,61 +252,160 @@ export default function ItemDetailPage() {
   const ownerName = item.profiles?.full_name || "Uživatel";
   const ownerInitial = ownerName.charAt(0).toUpperCase();
 
+  const descriptionCard = item.description ? (
+    <div className="koluj-card p-6 md:p-8">
+      <h2 className="text-2xl font-black">Popis</h2>
+
+      <div
+        className="koluj-rich-text mt-3 text-lg leading-relaxed text-[var(--koluj-muted)]"
+        dangerouslySetInnerHTML={{
+          __html: item.description,
+        }}
+      />
+    </div>
+  ) : null;
+
+  const handoverCard = (
+    <div className="koluj-card p-6 md:p-8">
+      <h2 className="text-2xl font-black">Předání</h2>
+
+      <div className="mt-5 grid gap-4 md:grid-cols-2">
+        <InfoLine
+          icon={<MapPin size={20} />}
+          title="Místo předání"
+          text={item.pickup_place}
+        />
+
+        <InfoLine
+          icon={<Handshake size={20} />}
+          title="Možnosti předání"
+          text={
+            item.handover_options && item.handover_options.length > 0
+              ? item.handover_options
+                  .map((option) => handoverLabels[option] || option)
+                  .join(", ")
+              : "Domluvou"
+          }
+        />
+
+        {item.contact_note && (
+          <InfoLine
+            icon={<Check size={20} />}
+            title="Poznámka k předání"
+            text={item.contact_note}
+          />
+        )}
+      </div>
+    </div>
+  );
+
+  const ownerCard = (
+    <div className="koluj-card p-6 md:p-8">
+      <h2 className="text-2xl font-black">Vlastník</h2>
+
+      <Link
+        href={`/users/${item.owner_id}`}
+        className="mt-5 flex items-center gap-4 transition hover:opacity-80"
+      >
+        {item.profiles?.avatar_url ? (
+          <img
+            src={item.profiles.avatar_url}
+            alt={ownerName}
+            className="h-14 w-14 rounded-full object-cover"
+          />
+        ) : (
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-xl font-black text-[var(--koluj-green)]">
+            {ownerInitial}
+          </div>
+        )}
+
+        <div>
+          <p className="text-xl font-black">{ownerName}</p>
+
+          <p className="font-bold text-[var(--koluj-green)]">
+            {ratingText}
+            {ratingCountText && (
+              <span className="ml-1 text-[var(--koluj-muted)]">
+                {ratingCountText}
+              </span>
+            )}
+          </p>
+        </div>
+      </Link>
+
+      {item.profiles?.is_verified && (
+        <p className="mt-5 inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-4 py-2 text-sm font-bold text-[var(--koluj-green)]">
+          <ShieldCheck size={16} />
+          Ověřený profil
+        </p>
+      )}
+    </div>
+  );
+
+  const mapCard = item.pickup_latitude && item.pickup_longitude ? (
+    <div className="koluj-card overflow-hidden p-0">
+      <div className="relative h-[320px] lg:h-[420px]">
+        <ItemsMap items={mapItems} userLocation={null} />
+      </div>
+    </div>
+  ) : null;
+
   return (
     <main className="min-h-screen">
       <div className="koluj-shell-wide">
         <header className="koluj-page-header">
           <BackLink href="/items">Zpět na věci</BackLink>
 
-        {currentUserId ? (
-          isOwner ? (
-            <Link
-              href={`/items/${item.id}/edit`}
-              className="koluj-button flex items-center gap-2 px-6 py-3"
-            >
-              <Edit size={18} />
-              Upravit věc
-            </Link>
+          {currentUserId ? (
+            isOwner ? (
+              <Link
+                href={`/items/${item.id}/edit`}
+                className="koluj-button flex items-center gap-2 px-6 py-3"
+              >
+                <Edit size={18} />
+                Upravit věc
+              </Link>
+            ) : (
+              <Link href="/dashboard" className="koluj-button px-6 py-3">
+                Můj prostor
+              </Link>
+            )
           ) : (
-            <Link href="/dashboard" className="koluj-button px-6 py-3">
-              Můj prostor
+            <Link href="/login" className="koluj-button px-6 py-3">
+              Přihlásit se
             </Link>
-          )
-        ) : (
-          <Link href="/login" className="koluj-button px-6 py-3">
-            Přihlásit se
-          </Link>
-        )}
+          )}
         </header>
 
-        <section className="mt-6 grid gap-8 md:mt-10 lg:grid-cols-[1fr_420px]">
+        <section className="mt-6 grid gap-6 md:mt-10 lg:grid-cols-[1fr_420px] lg:gap-8">
           <div className="space-y-6">
             <div className="overflow-hidden rounded-[34px] bg-[var(--koluj-surface)] shadow-[0_18px_55px_rgba(31,31,26,0.12)]">
               <div className="border-b border-[var(--koluj-border)] px-5 py-6 md:px-8 md:py-7">
-                <div>
-                  <div className="flex items-start justify-between gap-4">
-                    <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
-                      {categoryLabels[item.category] || item.category}
-                    </p>
+                <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
+                  {categoryLabels[item.category] || item.category}
+                </p>
 
-                  </div>
+                <h1 className="mt-4 max-w-4xl text-4xl font-black leading-none tracking-tight md:text-6xl">
+                  {item.title}
+                </h1>
 
-                  <h1 className="mt-4 max-w-4xl text-4xl font-black leading-none tracking-tight md:text-6xl">
-                    {item.title}
-                  </h1>
+                <div className="mt-5 flex flex-wrap gap-2 text-sm font-bold text-[var(--koluj-muted)] md:text-base">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-3 py-1.5">
+                    <Star size={16} className="text-[var(--koluj-green)]" />
+                    {ratingText}
+                    {ratingCountText && <span>{ratingCountText}</span>}
+                  </span>
 
                   {item.condition && (
-                    <div className="mt-5 flex flex-wrap gap-x-5 gap-y-2 text-sm font-bold text-[var(--koluj-muted)] md:text-base">
-                      <span className="flex items-center gap-2">
-                        <Star size={18} />
-                        {conditionLabels[item.condition] || item.condition}
-                      </span>
-                    </div>
+                    <span className="inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-3 py-1.5">
+                      <ShieldCheck size={16} className="text-[var(--koluj-green)]" />
+                      {conditionLabels[item.condition] || item.condition}
+                    </span>
                   )}
                 </div>
               </div>
 
-              <div className="relative flex min-h-[360px] items-center justify-center overflow-hidden bg-[var(--koluj-bg)] md:min-h-[560px]">
+              <div className="relative flex h-[360px] items-center justify-center overflow-hidden bg-[var(--koluj-bg)] md:h-[560px]">
                 {selectedImage ? (
                   <>
                     <img
@@ -416,86 +454,11 @@ export default function ItemDetailPage() {
               )}
             </div>
 
-            <div className="koluj-card p-6 md:p-8">
-              <div className="flex flex-wrap gap-3 text-sm font-bold text-[var(--koluj-muted)]">
-                <span className="flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-4 py-2">
-                  <CalendarDays size={16} />
-                  Přidáno {formatDate(item.created_at)}
-                </span>
-
-                <span className="flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-4 py-2">
-                  <Eye size={16} />
-                  {item.views_count || 0} zobrazení
-                </span>
-              </div>
-
-              {item.description && (
-                <div className="mt-6">
-                  <h2 className="text-2xl font-black">Popis</h2>
-
-                  <div
-                    className="koluj-rich-text mt-3 text-lg leading-relaxed text-[var(--koluj-muted)]"
-                    dangerouslySetInnerHTML={{
-                      __html: item.description,
-                    }}
-                  />
-                </div>
-              )}
+            <div className="hidden space-y-6 lg:block">
+              <MetaAndDescriptionCard item={item} />
+              {handoverCard}
+              {mapCard}
             </div>
-
-            <div className="koluj-card p-6 md:p-8">
-              <h2 className="text-2xl font-black">Předání</h2>
-
-              <div className="mt-5 grid gap-4 md:grid-cols-2">
-                <InfoLine
-                  icon={<MapPin size={20} />}
-                  title="Místo předání"
-                  text={item.pickup_place}
-                />
-
-                <InfoLine
-                  icon={<Handshake size={20} />}
-                  title="Možnosti předání"
-                  text={
-                    item.handover_options && item.handover_options.length > 0
-                      ? item.handover_options
-                          .map((option) => handoverLabels[option] || option)
-                          .join(", ")
-                      : "Domluvou"
-                  }
-                />
-
-                {item.contact_note && (
-                  <InfoLine
-                    icon={<Check size={20} />}
-                    title="Poznámka k předání"
-                    text={item.contact_note}
-                  />
-                )}
-
-                <InfoLine
-                  icon={<CalendarDays size={20} />}
-                  title="Dostupnost"
-                  text={
-                    item.availability_type === "period"
-                      ? `${formatDate(item.available_from)} – ${formatDate(
-                          item.available_to
-                        )}`
-                      : "Dlouhodobě k dispozici"
-                  }
-                />
-              </div>
-            </div>
-
-            {item.pickup_latitude && item.pickup_longitude && (
-              <div className="hidden lg:block">
-                <div className="koluj-card overflow-hidden p-0">
-                  <div className="relative h-[420px]">
-                    <ItemsMap items={mapItems} userLocation={null} />
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           <aside className="min-w-0 space-y-5 md:space-y-6">
@@ -506,9 +469,7 @@ export default function ItemDetailPage() {
                 </p>
 
                 <p className="mt-2 text-4xl font-black">
-                  {item.price_amount
-                    ? `${item.price_amount} Kč`
-                    : "Dohodou"}
+                  {item.price_amount ? `${item.price_amount} Kč` : "Dohodou"}
                 </p>
 
                 {item.price_unit && (
@@ -546,6 +507,44 @@ export default function ItemDetailPage() {
                 />
               </div>
 
+              <div className="mt-5 rounded-3xl bg-[var(--koluj-bg)] p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="font-black">Vybraný termín</p>
+
+                    {borrowFrom && borrowTo ? (
+                      <p className="mt-3 text-lg font-black">
+                        {formatDate(borrowFrom)} <span className="mx-2">→</span>{" "}
+                        {formatDate(borrowTo)}
+                      </p>
+                    ) : (
+                      <p className="mt-3 text-[var(--koluj-muted)]">
+                        Zatím není vybraný žádný termín.
+                      </p>
+                    )}
+                  </div>
+
+                  {selectedDays && (
+                    <span className="shrink-0 rounded-full bg-white px-3 py-1 text-sm font-black text-[var(--koluj-green)]">
+                      {selectedDays} {selectedDays === 1 ? "den" : "dní"}
+                    </span>
+                  )}
+                </div>
+
+                {borrowFrom && borrowTo && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBorrowFrom("");
+                      setBorrowTo("");
+                    }}
+                    className="mt-3 text-sm font-black text-[var(--koluj-green)] underline-offset-4 hover:underline"
+                  >
+                    Zrušit výběr
+                  </button>
+                )}
+              </div>
+
               {isOwner && (
                 <Link
                   href={`/items/${item.id}/edit`}
@@ -560,14 +559,14 @@ export default function ItemDetailPage() {
                 <>
                   <div className="mt-6 grid gap-3">
                     <label className="grid gap-2 text-sm font-bold text-[var(--koluj-muted)]">
-                      Zpráva pro vlastníka
+                      Zpráva pro vlastníka <span className="font-normal">(volitelné)</span>
                       <textarea
                         value={borrowNote}
                         maxLength={500}
                         disabled={submittingBorrowRequest}
                         onChange={(e) => setBorrowNote(e.target.value)}
-                        placeholder="Dobrý den, potřeboval bych věc půjčit od pátku do neděle. Hodilo by se Vám předání večer?"
-                        className="koluj-input min-h-[100px] disabled:opacity-70"
+                        placeholder="Napište zprávu pro majitele..."
+                        className="koluj-input min-h-[120px] disabled:opacity-70"
                       />
                     </label>
 
@@ -601,60 +600,49 @@ export default function ItemDetailPage() {
               </div>
             </div>
 
-            <div className="koluj-card p-8">
-              <h2 className="text-2xl font-black">Vlastník</h2>
-
-              <Link
-                href={`/users/${item.owner_id}`}
-                className="mt-5 flex items-center gap-4 transition hover:opacity-80"
-              >
-                {item.profiles?.avatar_url ? (
-                  <img
-                    src={item.profiles.avatar_url}
-                    alt={ownerName}
-                    className="h-14 w-14 rounded-full object-cover"
-                  />
-                ) : (
-                  <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-xl font-black text-[var(--koluj-green)]">
-                    {ownerInitial}
-                  </div>
-                )}
-
-                <div>
-                  <p className="text-xl font-black">{ownerName}</p>
-
-                  <p className="font-bold text-[var(--koluj-green)]">
-                    {ratingText}
-                    {ratingCountText && (
-                      <span className="ml-1 text-[var(--koluj-muted)]">
-                        {ratingCountText}
-                      </span>
-                    )}
-                  </p>
-                </div>
-              </Link>
-
-              {item.profiles?.is_verified && (
-                <p className="mt-5 inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-4 py-2 text-sm font-bold text-[var(--koluj-green)]">
-                  <ShieldCheck size={16} />
-                  Ověřený profil
-                </p>
-              )}
-            </div>
+            <div className="hidden lg:block">{ownerCard}</div>
           </aside>
         </section>
 
-        {item.pickup_latitude && item.pickup_longitude && (
-          <div className="mt-8 lg:hidden">
-            <div className="koluj-card overflow-hidden p-0">
-              <div className="relative h-[320px]">
-                <ItemsMap items={mapItems} userLocation={null} />
-              </div>
-            </div>
-          </div>
-        )}
+        <div className="mt-6 space-y-6 lg:hidden">
+          <MetaAndDescriptionCard item={item} />
+          {handoverCard}
+          {ownerCard}
+          {mapCard}
+        </div>
       </div>
     </main>
+  );
+}
+
+function MetaAndDescriptionCard({ item }: { item: ItemDetail }) {
+  return (
+    <div className="koluj-card p-6 md:p-8">
+      <div className="flex flex-wrap gap-3 text-sm font-bold text-[var(--koluj-muted)]">
+        <span className="flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-4 py-2">
+          <CalendarDays size={16} />
+          Přidáno {formatDate(item.created_at)}
+        </span>
+
+        <span className="flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-4 py-2">
+          <Eye size={16} />
+          {item.views_count || 0} zobrazení
+        </span>
+      </div>
+
+      {item.description && (
+        <div className="mt-6">
+          <h2 className="text-2xl font-black">Popis</h2>
+
+          <div
+            className="koluj-rich-text mt-3 text-lg leading-relaxed text-[var(--koluj-muted)]"
+            dangerouslySetInnerHTML={{
+              __html: item.description,
+            }}
+          />
+        </div>
+      )}
+    </div>
   );
 }
 
