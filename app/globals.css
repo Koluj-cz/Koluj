@@ -305,10 +305,6 @@ button, input, textarea, select { font: inherit; }
   min-height: 560px;
   overflow: hidden;
   border-radius: 56px;
-  background:
-    radial-gradient(circle at 50% 45%, rgba(255,255,255,.98), rgba(250,247,238,.86) 48%, rgba(224,232,198,.36) 68%, rgba(255,255,255,.18) 100%);
-  border: 1px solid rgba(255,255,255,.8);
-  box-shadow: 0 38px 90px rgba(60,58,42,.14);
 }
 .koluj-orbit-stage {
   position: absolute;

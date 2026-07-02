@@ -210,7 +210,6 @@ export default function HomePage() {
 
         <section className="relative grid min-h-[calc(100vh-96px)] items-center gap-8 py-8 lg:grid-cols-[0.78fr_1.22fr] lg:py-10">
           <div className="relative z-20 max-w-2xl">
-            <p className="koluj-pill w-fit"><Sparkles size={15} /> Věci a služby od lidí poblíž</p>
             <h1 className="koluj-heading mt-6">
               Sdílej.<br />Půjčuj.<br /><span className="text-[var(--koluj-green)]">Koluj.</span>
             </h1>
@@ -314,7 +313,6 @@ export default function HomePage() {
 function HeroOrbit() {
   return (
     <div className="koluj-orbit-card relative z-10 hidden lg:block">
-      <div className="koluj-orbit-stage" />
       <OrbitObject className="left-[12%] top-[30%] h-28 w-28" delay="0s" title="Vrtačka" icon={<Drill />} />
       <OrbitObject className="left-[43%] top-[18%] h-24 w-24" delay=".7s" title="Židle" icon={<Briefcase />} />
       <OrbitObject className="right-[17%] top-[20%] h-24 w-24" delay="1.1s" title="Zahrada" icon={<Sprout />} />
