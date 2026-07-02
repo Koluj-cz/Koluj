@@ -220,7 +220,7 @@ export default async function BookingHandoverProtocolPage({ params }: PageProps)
           <h2 className="mb-2 text-sm font-black uppercase">{isService ? "5. Provedení služby" : "5. Stav nabídky při předání"}</h2>
           <p className="mb-2">
             {isService
-              ? "Zákazník potvrzuje, že služba byla provedena v dohodnutém rozsahu uvedeném níže."
+              ? "Zákazník potvrzuje, že služba byla provedena v dohodnutém rozsahu uvedeném níže. "
               : "Rezervující potvrzuje, že si nabídku při převzetí prohlédl a přebírá ji ve stavu uvedeném níže."}
           </p>
           <WriteBox label={isService ? "Rozsah provedené služby:" : "Stav nabídky při předání:"} height="h-20" />
