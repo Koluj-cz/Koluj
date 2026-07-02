@@ -34,6 +34,7 @@ type Booking = {
     price_amount: number | null;
     price_unit: string | null;
     deposit: number | null;
+    offer_type: string | null;
   } | null;
 };
 
@@ -234,7 +235,8 @@ export default function BookingDetailPage() {
             pickup_place,
             price_amount,
             price_unit,
-            deposit
+            deposit,
+            offer_type
           ),
           owner:profiles!bookings_owner_id_fkey (
             id,
@@ -325,8 +327,13 @@ export default function BookingDetailPage() {
       return;
     }
 
-    setBooking({ ...booking, status: "approved", approved_at: result.approvedAt });
-    toast.success("Žádost schválena");
+    setBooking({
+      ...booking,
+      status: result.status || "approved",
+      approved_at: result.approvedAt,
+      handed_over_at: result.status === "active" ? result.approvedAt : booking.handed_over_at,
+    });
+    toast.success(booking.offers?.offer_type === "service" ? "Služba schválena" : "Žádost schválena");
     setSaving(false);
     scrollMessagesToBottom("smooth");
   }
@@ -398,13 +405,13 @@ export default function BookingDetailPage() {
     const result = await response.json().catch(() => null);
 
     if (!response.ok) {
-      toast.error(result?.error || "Vrácení se nepodařilo potvrdit");
+      toast.error(result?.error || (booking.offers?.offer_type === "service" ? "Dokončení se nepodařilo potvrdit" : "Vrácení se nepodařilo potvrdit"));
       setSaving(false);
       return;
     }
 
     setBooking({ ...booking, status: "returned", returned_at: result.returnedAt });
-    toast.success("Vrácení potvrzeno");
+    toast.success(booking.offers?.offer_type === "service" ? "Služba dokončena" : "Vrácení potvrzeno");
     setSaving(false);
     scrollMessagesToBottom("smooth");
   }
@@ -487,6 +494,7 @@ export default function BookingDetailPage() {
   }
 
   const isOwner = booking.owner_id === userId;
+  const isService = booking.offers?.offer_type === "service";
   const otherPersonLabel = isOwner ? "Zájemce" : "Vlastník";
   const otherPersonName = isOwner
     ? booking.customer?.full_name || "Uživatel"
@@ -562,11 +570,11 @@ export default function BookingDetailPage() {
                   <p><strong>Vráceno:</strong> {formatDateTime(booking.returned_at)}</p>
                 )}
 
-                <p><strong>Místo předání:</strong> {booking.offers?.pickup_place}</p>
+                <p><strong>{isService ? "Lokalita působení" : "Místo předání"}:</strong> {booking.offers?.pickup_place}</p>
                 <p>
                   <strong>Cena:</strong> {booking.offers?.price_amount || 0} Kč
                   {booking.offers?.price_unit
-                    ? ` / ${translatePriceUnit(booking.offers.price_unit)}`
+                    ? ` / ${translatePriceUnit(booking.offers.price_unit, booking.offers.offer_type)}`
                     : ""}
                 </p>
                 <p><strong>Kauce:</strong> {booking.offers?.deposit || 0} Kč</p>
@@ -579,7 +587,7 @@ export default function BookingDetailPage() {
                   className="mt-6 flex w-full items-center justify-center gap-2 rounded-[24px] bg-white px-5 py-4 font-black text-[var(--koluj-green)] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
                 >
                   <Printer size={18} />
-                  Vytisknout protokol o předání
+                  {isService ? "Vytisknout protokol o provedení služby" : "Vytisknout protokol o předání"}
                 </Link>
               )}
             </div>
@@ -587,7 +595,7 @@ export default function BookingDetailPage() {
 
           <section className="koluj-card flex h-[740px] flex-col overflow-hidden">
             <div className="border-b border-[var(--koluj-border)] p-5">
-              <h2 className="text-xl font-black">Domluva předání</h2>
+              <h2 className="text-xl font-black">{isService ? "Domluva služby" : "Domluva předání"}</h2>
               <p className="mt-1 text-sm font-bold text-[var(--koluj-muted)]">
                 Stav: {translateBookingStatus(booking.status)}
               </p>
@@ -611,17 +619,18 @@ export default function BookingDetailPage() {
               {isOwner && booking.status === "approved" && (
                 <div>
                   <p className="mb-4 font-bold">
-                    Žádost je schválená a termín je rezervovaný v kalendáři.
-                    Po předání nabídky potvrď předání.
+                    {isService
+                      ? "Služba je schválená. Po dokončení ji označ jako dokončenou."
+                      : "Žádost je schválená a termín je rezervovaný v kalendáři. Po předání nabídky potvrď předání."}
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <button
                       type="button"
-                      onClick={markAsActive}
+                      onClick={isService ? markAsReturned : markAsActive}
                       disabled={saving}
                       className="koluj-button py-3 disabled:opacity-60"
                     >
-                      {saving ? "Ukládám..." : "Potvrdit předání"}
+                      {saving ? "Ukládám..." : isService ? "Potvrdit dokončení" : "Potvrdit předání"}
                     </button>
 
                     <button
@@ -638,10 +647,17 @@ export default function BookingDetailPage() {
 
               {isOwner && booking.status === "active" && (
                 <div>
-                  <p className="mb-4 font-bold">Rezervace probíhá. Po vrácení nabídky potvrď vrácení.</p>
-                  <button type="button" onClick={markAsReturned} disabled={saving} className="koluj-button w-full py-3 disabled:opacity-60">
-                    {saving ? "Ukládám..." : "Potvrdit vrácení"}
-                  </button>
+                  <p className="mb-4 font-bold">{isService ? "Služba je schválená/probíhá. Po dokončení potvrď provedení." : "Rezervace probíhá. Po vrácení nabídky potvrď vrácení."}</p>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <button type="button" onClick={markAsReturned} disabled={saving} className="koluj-button py-3 disabled:opacity-60">
+                      {saving ? "Ukládám..." : isService ? "Potvrdit dokončení" : "Potvrdit vrácení"}
+                    </button>
+                    {isService && (
+                      <button type="button" onClick={rejectBooking} disabled={saving} className="rounded-2xl border border-red-200 bg-white py-3 font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-60">
+                        {saving ? "Ukládám..." : "Zrušit službu"}
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
 
@@ -670,7 +686,7 @@ export default function BookingDetailPage() {
                   <textarea
                     value={reviewText}
                     onChange={(event) => setReviewText(event.target.value)}
-                    placeholder="Jak rezervaci proběhla?"
+                    placeholder={isService ? "Jak služba proběhla?" : "Jak rezervace proběhla?"}
                     className="koluj-input mt-4 min-h-[100px] w-full"
                   />
 
@@ -696,7 +712,7 @@ export default function BookingDetailPage() {
                 booking.status !== "returned" &&
                 booking.status !== "cancelled" && (
                   <p className="font-bold text-[var(--koluj-muted)]">
-                    Další krok nyní potvrzuje vlastník nabídky.
+                    {isService ? "Další krok nyní potvrzuje poskytovatel služby." : "Další krok nyní potvrzuje vlastník nabídky."}
                   </p>
                 )}
             </div>

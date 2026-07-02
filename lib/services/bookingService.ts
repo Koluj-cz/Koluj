@@ -33,6 +33,29 @@ function toIsoDate(date: string) {
   return new Date(date).toISOString().split("T")[0];
 }
 
+function calculateBookingPrice({
+  offerType,
+  priceUnit,
+  priceAmount,
+  startsAt,
+  endsAt,
+}: {
+  offerType: string | null;
+  priceUnit: string | null;
+  priceAmount: number | null;
+  startsAt?: string | null;
+  endsAt?: string | null;
+}) {
+  const amount = Number(priceAmount || 0);
+
+  if (offerType === "service" && priceUnit === "hour" && startsAt && endsAt) {
+    const minutes = (new Date(endsAt).getTime() - new Date(startsAt).getTime()) / 60000;
+    return Math.max(0, Math.round(amount * (minutes / 60) * 100) / 100);
+  }
+
+  return amount;
+}
+
 async function addSystemMessage({
   bookingId,
   actorId,
@@ -67,7 +90,7 @@ async function loadBookingWithOffer(bookingId: string) {
 
   const { data: offer, error: offerError } = await supabaseAdmin
     .from("offers")
-    .select("id, title, status, offer_type")
+    .select("id, title, status, offer_type, price_unit")
     .eq("id", booking.offer_id)
     .single();
 
@@ -161,6 +184,7 @@ export async function requestBookingServer({
       offer_type,
       pickup_place,
       price_amount,
+      price_unit,
       deposit,
       profiles:profiles!offers_owner_id_fkey (
         is_seed_user
@@ -188,8 +212,9 @@ export async function requestBookingServer({
   }
 
   const isService = offer.offer_type === "service";
+  const isTimedService = isService && offer.price_unit === "hour";
 
-  if (isService) {
+  if (isTimedService) {
     if (!startsAt || !endsAt) {
       throw new Error("Vyber den a čas služby.");
     }
@@ -211,6 +236,11 @@ export async function requestBookingServer({
 
     dateFrom = toIsoDate(startsAt);
     dateTo = toIsoDate(endsAt);
+  } else if (isService) {
+    startsAt = undefined;
+    endsAt = undefined;
+    dateFrom = undefined;
+    dateTo = undefined;
   } else {
     if (!dateFrom || !dateTo) {
       throw new Error("Vyber termín rezervace.");
@@ -258,12 +288,14 @@ export async function requestBookingServer({
     .eq("customer_id", customerId)
     .in("status", ["requested", "approved", "active"]);
 
-  const { data: overlappingBookings, error: overlappingBookingError } = isService
+  const { data: overlappingBookings, error: overlappingBookingError } = isTimedService
     ? await overlappingBookingsQuery
         .not("starts_at", "is", null)
         .lt("starts_at", endsAt!)
         .gt("ends_at", startsAt!)
         .limit(1)
+    : isService
+    ? { data: [], error: null }
     : await overlappingBookingsQuery
         .lte("date_from", dateTo!)
         .gte("date_to", dateFrom!)
@@ -277,12 +309,22 @@ export async function requestBookingServer({
     throw new Error("Na tuto nabídku už máš žádost ve stejném nebo překrývajícím se termínu.");
   }
 
-  await assertOfferAvailableServer({
-    offerId: offer.id,
-    dateFrom,
-    dateTo,
-    startsAt: isService ? startsAt : null,
-    endsAt: isService ? endsAt : null,
+  if (!isService || isTimedService) {
+    await assertOfferAvailableServer({
+      offerId: offer.id,
+      dateFrom,
+      dateTo,
+      startsAt: isTimedService ? startsAt : null,
+      endsAt: isTimedService ? endsAt : null,
+    });
+  }
+
+  const totalPrice = calculateBookingPrice({
+    offerType: offer.offer_type,
+    priceUnit: offer.price_unit,
+    priceAmount: offer.price_amount,
+    startsAt: isTimedService ? startsAt : null,
+    endsAt: isTimedService ? endsAt : null,
   });
 
   const { data: createdBooking, error: bookingError } = await supabaseAdmin
@@ -294,13 +336,13 @@ export async function requestBookingServer({
       status: "requested",
       date_from: dateFrom,
       date_to: dateTo,
-      starts_at: isService ? startsAt : null,
-      ends_at: isService ? endsAt : null,
+      starts_at: isTimedService ? startsAt : null,
+      ends_at: isTimedService ? endsAt : null,
       price_amount: offer.price_amount ?? 0,
-      deposit_amount: offer.deposit ?? 0,
-      total_price: offer.price_amount ?? 0,
+      deposit_amount: isService ? 0 : offer.deposit ?? 0,
+      total_price: totalPrice,
       platform_fee: 0,
-      owner_earnings: offer.price_amount ?? 0,
+      owner_earnings: totalPrice,
       note: note?.trim() || null,
     })
     .select("id")
@@ -313,13 +355,11 @@ export async function requestBookingServer({
   await addSystemMessage({
     bookingId: createdBooking.id,
     actorId: customerId,
-    message: `Žádost o rezervace vytvořena.
+    message: `${isService ? "Žádost o službu vytvořena." : "Žádost o rezervaci vytvořena."}
 
 Nabídka: ${offer.title}
-Termín: ${isService ? `${formatDateTime(startsAt || null)} – ${formatDateTime(endsAt || null)}` : `${formatDate(dateFrom || null)} – ${formatDate(dateTo || null)}`}
-Místo předání: ${offer.pickup_place}
-Cena: ${offer.price_amount || 0} Kč
-Kauce: ${offer.deposit || 0} Kč${note?.trim() ? `\n\nPoznámka: ${note.trim()}` : ""}`,
+${isTimedService ? `Čas: ${formatDateTime(startsAt || null)} – ${formatDateTime(endsAt || null)}\n` : !isService ? `Termín: ${formatDate(dateFrom || null)} – ${formatDate(dateTo || null)}\n` : "Termín: domluvou\n"}${isService ? "Lokalita působení" : "Místo předání"}: ${offer.pickup_place}
+Cena: ${totalPrice} Kč${!isService ? `\nKauce: ${offer.deposit || 0} Kč` : ""}${note?.trim() ? `\n\nPoznámka: ${note.trim()}` : ""}`,
   });
 
   await notifyUserServer({
@@ -328,9 +368,9 @@ Kauce: ${offer.deposit || 0} Kč${note?.trim() ? `\n\nPoznámka: ${note.trim()}`
     offerId: offer.id,
     bookingId: createdBooking.id,
     type: "booking_requested",
-    title: "Nová žádost o rezervace",
-    message: `si chce rezervovat: ${offer.title}`,
-    emailSubject: "Nová žádost o rezervace",
+    title: isService ? "Nová poptávka služby" : "Nová žádost o rezervaci",
+    message: isService ? `má zájem o službu: ${offer.title}` : `si chce rezervovat: ${offer.title}`,
+    emailSubject: isService ? "Nová poptávka služby" : "Nová žádost o rezervaci",
   });
 
   return {
@@ -357,37 +397,45 @@ export async function approveBookingServer({
     throw new Error("Schválit lze pouze novou žádost");
   }
 
-  if (offer.offer_type === "service") {
-    if (!booking.starts_at || !booking.ends_at) {
-      throw new Error("Rezervace nemá vybraný čas.");
-    }
-  } else if (!booking.date_from || !booking.date_to) {
+  const isService = offer.offer_type === "service";
+  const isTimedService = isService && Boolean(booking.starts_at && booking.ends_at);
+
+  if (!isService && (!booking.date_from || !booking.date_to)) {
     throw new Error("Rezervace nemá vybraný termín.");
   }
 
-  await assertOfferAvailableServer({
-    offerId: offer.id,
-    dateFrom: booking.date_from,
-    dateTo: booking.date_to,
-    startsAt: booking.starts_at,
-    endsAt: booking.ends_at,
-    ignoreBookingId: booking.id,
-  });
+  if (!isService || isTimedService) {
+    await assertOfferAvailableServer({
+      offerId: offer.id,
+      dateFrom: booking.date_from,
+      dateTo: booking.date_to,
+      startsAt: booking.starts_at,
+      endsAt: booking.ends_at,
+      ignoreBookingId: booking.id,
+    });
+  }
 
   const { error: updateBookingError } = await supabaseAdmin
     .from("bookings")
-    .update({ status: "approved", approved_at: approvedAt })
+    .update({
+      status: isService ? "active" : "approved",
+      approved_at: approvedAt,
+      handed_over_at: isService ? approvedAt : null,
+    })
     .eq("id", booking.id);
 
   if (updateBookingError) throw new Error(updateBookingError.message);
 
-  await createReservationForBookingServer(booking.id);
+  if (!isService || isTimedService) {
+    await createReservationForBookingServer(booking.id);
+  }
 
   await addSystemMessage({
     bookingId: booking.id,
     actorId,
-    message:
-      "Žádost byla schválena.\n\nMůžete se domluvit na termínu předání.",
+    message: isService
+      ? "Poptávka služby byla schválena.\n\nDomluvte se na detailech provedení služby."
+      : "Žádost byla schválena.\n\nMůžete se domluvit na termínu předání.",
   });
 
   await notifyUserServer({
@@ -396,12 +444,14 @@ export async function approveBookingServer({
     offerId: offer.id,
     bookingId: booking.id,
     type: "booking_approved",
-    title: "Rezervace schválena",
-    message: `${offer.title} byla schválena. Domluvte si předání.`,
-    emailSubject: "Rezervace schválena",
+    title: isService ? "Služba schválena" : "Rezervace schválena",
+    message: isService
+      ? `${offer.title} byla schválena. Domluvte se na detailech služby.`
+      : `${offer.title} byla schválena. Domluvte si předání.`,
+    emailSubject: isService ? "Služba schválena" : "Rezervace schválena",
   });
 
-  return { ok: true, approvedAt };
+  return { ok: true, approvedAt, status: isService ? "active" : "approved" };
 }
 
 export async function rejectBookingServer({
@@ -417,8 +467,8 @@ export async function rejectBookingServer({
     throw new Error("Tuto rezervaci může odmítnout pouze vlastník");
   }
 
-  if (!["requested", "approved"].includes(booking.status)) {
-    throw new Error("Zrušit lze pouze novou nebo schválenou žádost");
+  if (!(offer.offer_type === "service" ? ["requested", "approved", "active"] : ["requested", "approved"]).includes(booking.status)) {
+    throw new Error(offer.offer_type === "service" ? "Zrušit lze pouze novou, schválenou nebo probíhající službu" : "Zrušit lze pouze novou nebo schválenou žádost");
   }
 
   const { error: bookingError } = await supabaseAdmin
@@ -433,7 +483,9 @@ export async function rejectBookingServer({
   await addSystemMessage({
     bookingId: booking.id,
     actorId,
-    message: booking.status === "approved" ? "Schválená rezervace byla zrušena." : "Žádost byla odmítnuta.",
+    message: offer.offer_type === "service"
+      ? (booking.status === "active" || booking.status === "approved" ? "Schválená služba byla zrušena." : "Poptávka služby byla odmítnuta.")
+      : (booking.status === "approved" ? "Schválená rezervace byla zrušena." : "Žádost byla odmítnuta."),
   });
 
   await notifyUserServer({
@@ -462,6 +514,10 @@ export async function startBookingServer({
 
   if (booking.owner_id !== actorId) {
     throw new Error("Předání může potvrdit pouze vlastník");
+  }
+
+  if (offer.offer_type === "service") {
+    throw new Error("U služby se předání nepotvrzuje. Službu rovnou označ jako dokončenou.");
   }
 
   if (booking.status !== "approved") {
@@ -506,11 +562,11 @@ export async function returnBookingServer({
   const { booking, offer } = await loadBookingWithOffer(bookingId);
 
   if (booking.owner_id !== actorId) {
-    throw new Error("Vrácení může potvrdit pouze vlastník");
+    throw new Error(offer.offer_type === "service" ? "Dokončení může potvrdit pouze poskytovatel" : "Vrácení může potvrdit pouze vlastník");
   }
 
   if (booking.status !== "active") {
-    throw new Error("Vrácení lze potvrdit pouze u probíhající rezervace");
+    throw new Error(offer.offer_type === "service" ? "Dokončit lze pouze schválenou/probíhající službu" : "Vrácení lze potvrdit pouze u probíhající rezervace");
   }
 
   const { error: bookingError } = await supabaseAdmin
@@ -525,7 +581,9 @@ export async function returnBookingServer({
   await addSystemMessage({
     bookingId: booking.id,
     actorId,
-    message: "Nabídka byla vrácena. Rezervace byla ukončena.",
+    message: offer.offer_type === "service"
+      ? "Služba byla označena jako dokončená. Rezervace byla ukončena."
+      : "Nabídka byla vrácena. Rezervace byla ukončena.",
   });
 
   await notifyUserServer({
@@ -534,9 +592,11 @@ export async function returnBookingServer({
     offerId: offer.id,
     bookingId: booking.id,
     type: "booking_returned",
-    title: "Rezervace ukončena",
-    message: `${offer.title} byla označena jako vrácená.`,
-    emailSubject: "Rezervace ukončena",
+    title: offer.offer_type === "service" ? "Služba dokončena" : "Rezervace ukončena",
+    message: offer.offer_type === "service"
+      ? `${offer.title} byla označena jako dokončená.`
+      : `${offer.title} byla označena jako vrácená.`,
+    emailSubject: offer.offer_type === "service" ? "Služba dokončena" : "Rezervace ukončena",
   });
 
   const watchersNotified = await notifyAvailabilityWatchers({

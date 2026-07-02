@@ -4,7 +4,7 @@ import { createServerClient } from "@supabase/ssr";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import PrintButton from "@/app/components/PrintButton";
-import { categoryLabels } from "@/lib/constants";
+import { categoryLabels, serviceCategoryLabels } from "@/lib/constants";
 import BackLink from "@/app/components/BackLink";
 
 type Profile = {
@@ -27,6 +27,7 @@ type Booking = {
     price_amount: number | null;
     price_unit: string | null;
     deposit: number | null;
+    offer_type: string | null;
   } | null;
   owner: Profile | null;
   customer: Profile | null;
@@ -99,7 +100,8 @@ export default async function BookingHandoverProtocolPage({ params }: PageProps)
         pickup_place,
         price_amount,
         price_unit,
-        deposit
+        deposit,
+        offer_type
       ),
       owner:profiles!bookings_owner_id_fkey (
         id,
@@ -127,8 +129,11 @@ export default async function BookingHandoverProtocolPage({ params }: PageProps)
     redirect(`/dashboard/bookings/${booking.id}`);
   }
 
+  const isService = booking.offers?.offer_type === "service";
   const categoryLabel = booking.offers?.category
-    ? categoryLabels[booking.offers.category] || booking.offers.category
+    ? isService
+      ? serviceCategoryLabels[booking.offers.category] || booking.offers.category
+      : categoryLabels[booking.offers.category] || booking.offers.category
     : "—";
 
   return (
@@ -145,11 +150,11 @@ export default async function BookingHandoverProtocolPage({ params }: PageProps)
         <header className="mb-6 flex items-start justify-between border-b border-black pb-4">
           <div>
             <p className="text-xs font-black uppercase tracking-[0.28em]">KOLUJ</p>
-            <h1 className="mt-2 text-2xl font-black">Protokol o předání</h1>
+            <h1 className="mt-2 text-2xl font-black">{isService ? "Protokol o provedení služby" : "Protokol o předání"}</h1>
             <p className="mt-2 max-w-[560px] text-[11px] leading-relaxed">
-              Tento protokol potvrzuje fyzické předání předmětu rezervace mezi vlastníkem
-              a rezervujícím. Rezervující podpisem potvrzuje převzetí nabídky, její stav při
-              předání a odpovědnost za její vrácení.
+              {isService
+                ? "Tento protokol potvrzuje provedení služby mezi poskytovatelem a zákazníkem. Zákazník podpisem potvrzuje provedení služby nebo zakázky v dohodnutém rozsahu."
+                : "Tento protokol potvrzuje fyzické předání předmětu rezervace mezi vlastníkem a rezervujícím. Rezervující podpisem potvrzuje převzetí nabídky, její stav při předání a odpovědnost za její vrácení."}
             </p>
           </div>
 
@@ -166,14 +171,14 @@ export default async function BookingHandoverProtocolPage({ params }: PageProps)
             <p><strong>Název nabídky:</strong> {valueOrLine(booking.offers?.title)}</p>
             <p><strong>Kategorie:</strong> {categoryLabel}</p>
             <p><strong>Celková cena rezervaci:</strong> _______________________ Kč</p>
-            <p><strong>Kauce:</strong> {booking.offers?.deposit || 0} Kč</p>
-            <p><strong>Místo předání:</strong> {valueOrLine(booking.offers?.pickup_place)}</p>
+            {!isService && <p><strong>Kauce:</strong> {booking.offers?.deposit || 0} Kč</p>}
+            <p><strong>{isService ? "Lokalita působení" : "Místo předání"}:</strong> {valueOrLine(booking.offers?.pickup_place)}</p>
           </div>
         </section>
 
         <section className="mb-5 grid grid-cols-2 gap-8">
           <div>
-            <h2 className="mb-2 text-sm font-black uppercase">2. Vlastník</h2>
+            <h2 className="mb-2 text-sm font-black uppercase">{isService ? "2. Poskytovatel" : "2. Vlastník"}</h2>
             <div className="space-y-1">
               <p><strong>Jméno:</strong> _______________________</p>
               <p><strong>Telefon:</strong> {valueOrLine(booking.owner?.phone)}</p>
@@ -182,7 +187,7 @@ export default async function BookingHandoverProtocolPage({ params }: PageProps)
           </div>
 
           <div>
-            <h2 className="mb-2 text-sm font-black uppercase">3. Rezervující</h2>
+            <h2 className="mb-2 text-sm font-black uppercase">{isService ? "3. Zákazník" : "3. Rezervující"}</h2>
             <div className="space-y-1">
               <p><strong>Jméno:</strong> _______________________</p>
               <p><strong>Telefon:</strong> {valueOrLine(booking.customer?.phone)}</p>
@@ -192,7 +197,7 @@ export default async function BookingHandoverProtocolPage({ params }: PageProps)
         </section>
 
         <section className="mb-5">
-          <h2 className="mb-2 text-sm font-black uppercase">4. Ověření totožnosti rezervujícího</h2>
+          <h2 className="mb-2 text-sm font-black uppercase">4. Ověření totožnosti</h2>
           <div className="grid grid-cols-2 gap-x-8 gap-y-2">
             <Checkbox label="Totožnost ověřena dle občanského průkazu" />
             <Checkbox label="Totožnost nebyla ověřena" />
@@ -202,14 +207,15 @@ export default async function BookingHandoverProtocolPage({ params }: PageProps)
         </section>
 
         <section className="mb-5">
-          <h2 className="mb-2 text-sm font-black uppercase">5. Stav nabídky při předání</h2>
+          <h2 className="mb-2 text-sm font-black uppercase">{isService ? "5. Provedení služby" : "5. Stav nabídky při předání"}</h2>
           <p className="mb-2">
-            Rezervující potvrzuje, že si nabídku při převzetí prohlédl a přebírá ji ve stavu
-            uvedeném níže.
+            {isService
+              ? "Zákazník potvrzuje, že služba byla provedena v dohodnutém rozsahu uvedeném níže."
+              : "Rezervující potvrzuje, že si nabídku při převzetí prohlédl a přebírá ji ve stavu uvedeném níže."}
           </p>
-          <WriteBox label="Stav nabídky při předání:" height="h-20" />
+          <WriteBox label={isService ? "Rozsah provedené služby:" : "Stav nabídky při předání:"} height="h-20" />
           <div className="mt-2">
-            <WriteBox label="Viditelné vady / opotřebení:" height="h-16" />
+            {!isService && <WriteBox label="Viditelné vady / opotřebení:" height="h-16" />}
           </div>
         </section>
 
@@ -217,7 +223,7 @@ export default async function BookingHandoverProtocolPage({ params }: PageProps)
           <div>
             <h2 className="mb-2 text-sm font-black uppercase">6. Fotodokumentace</h2>
             <div className="space-y-2">
-              <Checkbox label="Fotografie byly pořízeny při předání" />
+              <Checkbox label="Fotografie byly pořízeny" />
               <Checkbox label="Fotografie nebyly pořízeny" />
             </div>
           </div>
@@ -233,12 +239,11 @@ export default async function BookingHandoverProtocolPage({ params }: PageProps)
         </section>
 
         <section className="mb-5">
-          <h2 className="mb-2 text-sm font-black uppercase">8. Prohlášení rezervujícího</h2>
+          <h2 className="mb-2 text-sm font-black uppercase">8. Prohlášení</h2>
           <p className="leading-relaxed">
-            Potvrzuji, že jsem převzal/a uvedenou nabídku ve stavu popsaném v tomto
-            protokolu. Byl/a jsem seznámen/a s jejím používáním a zavazuji se ji vrátit
-            ve sjednaném termínu. Beru na vědomí odpovědnost za škodu způsobenou
-            ztrátou, odcizením nebo poškozením nad rámec běžného opotřebení.
+            {isService
+              ? "Potvrzuji, že služba byla provedena v dohodnutém rozsahu, případné výhrady jsou uvedeny v poznámkách tohoto protokolu."
+              : "Potvrzuji, že jsem převzal/a uvedenou nabídku ve stavu popsaném v tomto protokolu. Byl/a jsem seznámen/a s jejím používáním a zavazuji se ji vrátit ve sjednaném termínu. Beru na vědomí odpovědnost za škodu způsobenou ztrátou, odcizením nebo poškozením nad rámec běžného opotřebení."}
           </p>
         </section>
 
@@ -249,16 +254,17 @@ export default async function BookingHandoverProtocolPage({ params }: PageProps)
 
         <section className="mt-6 grid grid-cols-2 gap-14 text-xs">
           <div>
-            <div className="border-t border-black pt-3">Podpis vlastníka</div>
+            <div className="border-t border-black pt-3">{isService ? "Podpis poskytovatele" : "Podpis vlastníka"}</div>
           </div>
           <div>
-            <div className="border-t border-black pt-3">Podpis rezervujícího</div>
+            <div className="border-t border-black pt-3">{isService ? "Podpis zákazníka" : "Podpis rezervujícího"}</div>
           </div>
         </section>
 
         <footer className="mt-5 border-t border-black pt-2 text-[8px] leading-tight">
-          Tento protokol byl vytvořen prostřednictvím platformy KOLUJ a potvrzuje fyzické
-          předání předmětu rezervace mezi oběma stranami.
+          {isService
+            ? "Tento protokol byl vytvořen prostřednictvím platformy KOLUJ a potvrzuje provedení služby mezi oběma stranami."
+            : "Tento protokol byl vytvořen prostřednictvím platformy KOLUJ a potvrzuje fyzické předání předmětu rezervace mezi oběma stranami."}
         </footer>
       </article>
     </main>

@@ -179,8 +179,8 @@ export default function ItemDetailPage() {
         offerId: item.id,
         dateFrom: item.offer_type === "service" ? null : borrowFrom,
         dateTo: item.offer_type === "service" ? null : borrowTo,
-        startsAt: item.offer_type === "service" ? startsAt : null,
-        endsAt: item.offer_type === "service" ? endsAt : null,
+        startsAt: item.offer_type === "service" && item.price_unit === "hour" ? startsAt : null,
+        endsAt: item.offer_type === "service" && item.price_unit === "hour" ? endsAt : null,
         note: borrowNote,
       }),
     });
@@ -228,6 +228,21 @@ export default function ItemDetailPage() {
 
     return diff >= 0 ? diff + 1 : null;
   }, [borrowFrom, borrowTo]);
+
+
+  const isTimedService = item?.offer_type === "service" && item?.price_unit === "hour";
+  const isRequestOnlyService = item?.offer_type === "service" && item?.price_unit === "piece";
+
+  const selectedServiceMinutes = useMemo(() => {
+    if (!startsAt || !endsAt) return null;
+    const minutes = Math.round((new Date(endsAt).getTime() - new Date(startsAt).getTime()) / 60000);
+    return minutes > 0 ? minutes : null;
+  }, [startsAt, endsAt]);
+
+  const selectedServicePrice = useMemo(() => {
+    if (!item || item.price_unit !== "hour" || !selectedServiceMinutes) return null;
+    return Math.round(Number(item.price_amount || 0) * (selectedServiceMinutes / 60) * 100) / 100;
+  }, [item, selectedServiceMinutes]);
 
   const mapOffers = useMemo(() => {
     if (!item) return [];
@@ -502,10 +517,11 @@ export default function ItemDetailPage() {
                 </p>
               )}
 
+              {(!isRequestOnlyService || isOwner) && (
               <div className="mt-6">
                 <AvailabilityCalendar
                   offerId={item.id}
-                  offerType={item.offer_type}
+                  offerType={isRequestOnlyService ? "item" : item.offer_type}
                   isOwner={Boolean(isOwner)}
                   selectedRange={
                     !isService && borrowFrom && borrowTo
@@ -513,7 +529,7 @@ export default function ItemDetailPage() {
                       : null
                   }
                   selectedSlot={
-                    isService && startsAt && endsAt
+                    isTimedService && startsAt && endsAt
                       ? { startsAt, endsAt }
                       : null
                   }
@@ -527,17 +543,26 @@ export default function ItemDetailPage() {
                   }}
                 />
               </div>
+              )}
 
               <div className="mt-5 rounded-3xl bg-[var(--koluj-bg)] p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="font-black">Vybraný termín</p>
 
-                    {isService && startsAt && endsAt ? (
-                      <p className="mt-3 text-lg font-black">
-                        {formatDateTime(startsAt)} <span className="mx-2">→</span>{" "}
-                        {formatDateTime(endsAt)}
-                      </p>
+                    {isTimedService && startsAt && endsAt ? (
+                      <div className="mt-3 space-y-1">
+                        <p className="text-lg font-black">
+                          {formatDateTime(startsAt)} <span className="mx-2">→</span>{" "}
+                          {formatDateTime(endsAt)}
+                        </p>
+                        {selectedServiceMinutes && (
+                          <p className="font-bold text-[var(--koluj-muted)]">
+                            {selectedServiceMinutes / 60} h
+                            {selectedServicePrice !== null ? ` · celkem ${selectedServicePrice} Kč` : ""}
+                          </p>
+                        )}
+                      </div>
                     ) : !isService && borrowFrom && borrowTo ? (
                       <p className="mt-3 text-lg font-black">
                         {formatDate(borrowFrom)} <span className="mx-2">→</span>{" "}
@@ -545,7 +570,7 @@ export default function ItemDetailPage() {
                       </p>
                     ) : (
                       <p className="mt-3 text-[var(--koluj-muted)]">
-                        {isService ? "Zatím není vybraný žádný čas." : "Zatím není vybraný žádný termín."}
+                        {isRequestOnlyService ? "Termín služby domluvíte ve zprávách po odeslání poptávky." : isService ? "Zatím není vybraný žádný čas." : "Zatím není vybraný žádný termín."}
                       </p>
                     )}
                   </div>
@@ -557,7 +582,7 @@ export default function ItemDetailPage() {
                   )}
                 </div>
 
-                {((isService && startsAt && endsAt) || (!isService && borrowFrom && borrowTo)) && (
+                {((isTimedService && startsAt && endsAt) || (!isService && borrowFrom && borrowTo)) && (
                   <button
                     type="button"
                     onClick={() => {
@@ -608,17 +633,19 @@ export default function ItemDetailPage() {
                     onClick={handleBorrowClick}
                     disabled={
                       submittingBorrowRequest ||
-                      (isService ? !startsAt || !endsAt : !borrowFrom || !borrowTo)
+                      (isTimedService ? !startsAt || !endsAt || startsAt === endsAt : !isService ? !borrowFrom || !borrowTo : false)
                     }
                     className="koluj-button mt-6 w-full px-6 py-4 disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {submittingBorrowRequest
                       ? "Odesílám žádost..."
-                      : isService && startsAt && endsAt
+                      : isTimedService && startsAt && endsAt && startsAt !== endsAt
                       ? "Objednat službu"
+                      : isRequestOnlyService
+                      ? "Odeslat poptávku"
                       : !isService && borrowFrom && borrowTo
                       ? "Půjčit si"
-                      : isService
+                      : isTimedService
                       ? "Vyber čas"
                       : "Vyber termín"}
                   </button>

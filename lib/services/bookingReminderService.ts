@@ -6,7 +6,7 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-type ReminderType = "handover_24h" | "return_24h";
+type ReminderType = "handover_24h" | "return_24h" | "service_start_1h";
 
 type BookingReminderRow = {
   id: string;
@@ -19,32 +19,35 @@ type BookingReminderRow = {
   starts_at: string | null;
   ends_at: string | null;
   offers:
-    | {
-        id: string;
-        title: string | null;
-      }
-    | {
-        id: string;
-        title: string | null;
-      }[]
+    | { id: string; title: string | null; offer_type: string | null }
+    | { id: string; title: string | null; offer_type: string | null }[]
     | null;
-  owner:
-    | {
-        full_name: string | null;
-      }
-    | {
-        full_name: string | null;
-      }[]
-    | null;
-  customer:
-    | {
-        full_name: string | null;
-      }
-    | {
-        full_name: string | null;
-      }[]
-    | null;
+  owner: { full_name: string | null } | { full_name: string | null }[] | null;
+  customer: { full_name: string | null } | { full_name: string | null }[] | null;
 };
+
+const baseSelect = `
+  id,
+  offer_id,
+  owner_id,
+  customer_id,
+  status,
+  date_from,
+  date_to,
+  starts_at,
+  ends_at,
+  offers:offers!bookings_offer_id_fkey (
+    id,
+    title,
+    offer_type
+  ),
+  owner:profiles!bookings_owner_id_fkey (
+    full_name
+  ),
+  customer:profiles!bookings_customer_id_fkey (
+    full_name
+  )
+`;
 
 function getTomorrowIsoDate() {
   const tomorrow = new Date();
@@ -52,19 +55,15 @@ function getTomorrowIsoDate() {
   return tomorrow.toISOString().split("T")[0];
 }
 
-function dayStart(date: string) {
-  return `${date}T00:00:00.000Z`;
-}
-
-function dayAfter(date: string) {
-  const next = new Date(`${date}T00:00:00.000Z`);
-  next.setUTCDate(next.getUTCDate() + 1);
-  return next.toISOString();
-}
-
 function firstOrValue<T>(value: T | T[] | null | undefined): T | null {
   if (Array.isArray(value)) return value[0] || null;
   return value || null;
+}
+
+function hourWindowFromNow() {
+  const from = new Date(Date.now() + 55 * 60 * 1000);
+  const to = new Date(Date.now() + 65 * 60 * 1000);
+  return { from: from.toISOString(), to: to.toISOString() };
 }
 
 async function reserveReminderSlot(bookingId: string, type: ReminderType) {
@@ -74,110 +73,50 @@ async function reserveReminderSlot(bookingId: string, type: ReminderType) {
   });
 
   if (!error) return true;
-
-  if (error.code === "23505") {
-    return false;
-  }
-
+  if (error.code === "23505") return false;
   throw new Error(error.message);
 }
 
-async function loadBookingsForHandoverReminder(targetDate: string) {
-  const baseSelect = `
-      id,
-      offer_id,
-      owner_id,
-      customer_id,
-      status,
-      date_from,
-      date_to,
-      starts_at,
-      ends_at,
-      offers:offers!bookings_offer_id_fkey (
-        id,
-        title
-      ),
-      owner:profiles!bookings_owner_id_fkey (
-        full_name
-      ),
-      customer:profiles!bookings_customer_id_fkey (
-        full_name
-      )
-    `;
+async function loadItemBookingsForHandoverReminder(targetDate: string) {
+  const { data, error } = await supabaseAdmin
+    .from("bookings")
+    .select(baseSelect)
+    .eq("status", "approved")
+    .eq("date_from", targetDate)
+    .is("starts_at", null);
 
-  const [dateBookingsResult, timeBookingsResult] = await Promise.all([
-    supabaseAdmin
-      .from("bookings")
-      .select(baseSelect)
-      .eq("status", "approved")
-      .eq("date_from", targetDate),
-    supabaseAdmin
-      .from("bookings")
-      .select(baseSelect)
-      .eq("status", "approved")
-      .not("starts_at", "is", null)
-      .gte("starts_at", dayStart(targetDate))
-      .lt("starts_at", dayAfter(targetDate)),
-  ]);
-
-  if (dateBookingsResult.error) throw new Error(dateBookingsResult.error.message);
-  if (timeBookingsResult.error) throw new Error(timeBookingsResult.error.message);
-
-  const byId = new Map<string, BookingReminderRow>();
-  [...(dateBookingsResult.data || []), ...(timeBookingsResult.data || [])].forEach((booking) => {
-    byId.set(booking.id, booking as unknown as BookingReminderRow);
-  });
-
-  return Array.from(byId.values());
+  if (error) throw new Error(error.message);
+  return (data || []) as unknown as BookingReminderRow[];
 }
 
-async function loadBookingsForReturnReminder(targetDate: string) {
-  const baseSelect = `
-      id,
-      offer_id,
-      owner_id,
-      customer_id,
-      status,
-      date_from,
-      date_to,
-      starts_at,
-      ends_at,
-      offers:offers!bookings_offer_id_fkey (
-        id,
-        title
-      ),
-      owner:profiles!bookings_owner_id_fkey (
-        full_name
-      ),
-      customer:profiles!bookings_customer_id_fkey (
-        full_name
-      )
-    `;
+async function loadItemBookingsForReturnReminder(targetDate: string) {
+  const { data, error } = await supabaseAdmin
+    .from("bookings")
+    .select(baseSelect)
+    .eq("status", "active")
+    .eq("date_to", targetDate)
+    .is("ends_at", null);
 
-  const [dateBookingsResult, timeBookingsResult] = await Promise.all([
-    supabaseAdmin
-      .from("bookings")
-      .select(baseSelect)
-      .eq("status", "active")
-      .eq("date_to", targetDate),
-    supabaseAdmin
-      .from("bookings")
-      .select(baseSelect)
-      .eq("status", "active")
-      .not("ends_at", "is", null)
-      .gte("ends_at", dayStart(targetDate))
-      .lt("ends_at", dayAfter(targetDate)),
-  ]);
+  if (error) throw new Error(error.message);
+  return (data || []) as unknown as BookingReminderRow[];
+}
 
-  if (dateBookingsResult.error) throw new Error(dateBookingsResult.error.message);
-  if (timeBookingsResult.error) throw new Error(timeBookingsResult.error.message);
+async function loadTimedServiceBookingsForStartReminder() {
+  const { from, to } = hourWindowFromNow();
 
-  const byId = new Map<string, BookingReminderRow>();
-  [...(dateBookingsResult.data || []), ...(timeBookingsResult.data || [])].forEach((booking) => {
-    byId.set(booking.id, booking as unknown as BookingReminderRow);
-  });
+  const { data, error } = await supabaseAdmin
+    .from("bookings")
+    .select(baseSelect)
+    .eq("status", "active")
+    .not("starts_at", "is", null)
+    .gte("starts_at", from)
+    .lt("starts_at", to);
 
-  return Array.from(byId.values());
+  if (error) throw new Error(error.message);
+
+  return ((data || []) as unknown as BookingReminderRow[]).filter(
+    (booking) => firstOrValue(booking.offers)?.offer_type === "service"
+  );
 }
 
 export async function sendBookingRemindersServer() {
@@ -185,8 +124,9 @@ export async function sendBookingRemindersServer() {
 
   let handoverSent = 0;
   let returnSent = 0;
+  let serviceStartSent = 0;
 
-  const handoverBookings = await loadBookingsForHandoverReminder(targetDate);
+  const handoverBookings = await loadItemBookingsForHandoverReminder(targetDate);
 
   for (const booking of handoverBookings) {
     const shouldSend = await reserveReminderSlot(booking.id, "handover_24h");
@@ -224,7 +164,7 @@ export async function sendBookingRemindersServer() {
     handoverSent += 2;
   }
 
-  const returnBookings = await loadBookingsForReturnReminder(targetDate);
+  const returnBookings = await loadItemBookingsForReturnReminder(targetDate);
 
   for (const booking of returnBookings) {
     const shouldSend = await reserveReminderSlot(booking.id, "return_24h");
@@ -260,11 +200,50 @@ export async function sendBookingRemindersServer() {
     returnSent += 2;
   }
 
+  const serviceBookings = await loadTimedServiceBookingsForStartReminder();
+
+  for (const booking of serviceBookings) {
+    const shouldSend = await reserveReminderSlot(booking.id, "service_start_1h");
+    if (!shouldSend) continue;
+
+    const offer = firstOrValue(booking.offers);
+    const owner = firstOrValue(booking.owner);
+    const customer = firstOrValue(booking.customer);
+    const offerTitle = offer?.title || "službu";
+    const ownerName = owner?.full_name || "poskytovatele";
+    const customerName = customer?.full_name || "zákazníka";
+
+    await notifyUserServer({
+      userId: booking.owner_id,
+      actorId: null,
+      bookingId: booking.id,
+      offerId: booking.offer_id,
+      type: "service_start_reminder_1h",
+      title: "Za hodinu začíná služba",
+      message: `Za hodinu začíná služba „${offerTitle}“ pro uživatele ${customerName}.`,
+      emailSubject: "Připomínka služby",
+    });
+
+    await notifyUserServer({
+      userId: booking.customer_id,
+      actorId: null,
+      bookingId: booking.id,
+      offerId: booking.offer_id,
+      type: "service_start_reminder_1h",
+      title: "Za hodinu začíná tvoje služba",
+      message: `Za hodinu začíná tvoje služba „${offerTitle}“ od uživatele ${ownerName}.`,
+      emailSubject: "Připomínka služby",
+    });
+
+    serviceStartSent += 2;
+  }
+
   return {
     ok: true,
     targetDate,
     handoverBookings: handoverBookings.length,
     returnBookings: returnBookings.length,
-    notificationsSent: handoverSent + returnSent,
+    serviceBookings: serviceBookings.length,
+    notificationsSent: handoverSent + returnSent + serviceStartSent,
   };
 }
