@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     return NextResponse.json(result);
   } catch (error: any) {
     return NextResponse.json(
-      { error: error.message || "Půjčku se nepodařilo schválit" },
+      { error: error.message || "Rezervaci se nepodařilo schválit" },
       { status: 400 }
     );
   }

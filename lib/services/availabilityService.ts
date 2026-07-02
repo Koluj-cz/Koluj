@@ -156,7 +156,7 @@ export async function assertOfferAvailableServer({
     const startDate = toIsoDate(startsAt!);
     const endDate = toIsoDate(endsAt!);
 
-    const [bookingResult, blockResult] = await Promise.all([
+    const [bookingResult, timedBlockResult, fullDayBlockResult] = await Promise.all([
       supabaseAdmin
         .from("bookings")
         .select("id")
@@ -170,20 +170,33 @@ export async function assertOfferAvailableServer({
         .from("offer_availability_blocks")
         .select("id")
         .eq("offer_id", offerId)
-        .or(
-          `and(starts_at.not.is.null,starts_at.lt.${endsAt},ends_at.gt.${startsAt}),and(starts_at.is.null,date_from.lte.${endDate},date_to.gte.${startDate})`
-        )
+        .not("starts_at", "is", null)
+        .lt("starts_at", endsAt!)
+        .gt("ends_at", startsAt!)
+        .limit(1),
+      supabaseAdmin
+        .from("offer_availability_blocks")
+        .select("id")
+        .eq("offer_id", offerId)
+        .is("starts_at", null)
+        .lte("date_from", endDate)
+        .gte("date_to", startDate)
         .limit(1),
     ]);
 
     if (bookingResult.error) throw new Error(bookingResult.error.message);
-    if (blockResult.error) throw new Error(blockResult.error.message);
+    if (timedBlockResult.error) throw new Error(timedBlockResult.error.message);
+    if (fullDayBlockResult.error) throw new Error(fullDayBlockResult.error.message);
 
     const overlappingBookings = (bookingResult.data || []).filter(
       (booking) => booking.id !== ignoreBookingId
     );
 
-    if (overlappingBookings.length > 0 || (blockResult.data || []).length > 0) {
+    if (
+      overlappingBookings.length > 0 ||
+      (timedBlockResult.data || []).length > 0 ||
+      (fullDayBlockResult.data || []).length > 0
+    ) {
       throw new Error("Vybraný čas už není dostupný.");
     }
 

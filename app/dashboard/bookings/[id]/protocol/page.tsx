@@ -19,6 +19,11 @@ type Booking = {
   owner_id: string | null;
   customer_id: string | null;
   status: string;
+  date_from: string | null;
+  date_to: string | null;
+  starts_at: string | null;
+  ends_at: string | null;
+  total_price: number | null;
   offers: {
     id: string;
     title: string;
@@ -93,6 +98,11 @@ export default async function BookingHandoverProtocolPage({ params }: PageProps)
       owner_id,
       customer_id,
       status,
+      date_from,
+      date_to,
+      starts_at,
+      ends_at,
+      total_price,
       offers:offers (
         id,
         title,
@@ -170,7 +180,7 @@ export default async function BookingHandoverProtocolPage({ params }: PageProps)
             <p><strong>ID rezervace:</strong> {booking.id}</p>
             <p><strong>Název nabídky:</strong> {valueOrLine(booking.offers?.title)}</p>
             <p><strong>Kategorie:</strong> {categoryLabel}</p>
-            <p><strong>Celková cena rezervaci:</strong> _______________________ Kč</p>
+            <p><strong>{isService ? "Celková cena služby" : "Celková cena rezervace"}:</strong> {booking.total_price ?? "_______________________"} Kč</p>
             {!isService && <p><strong>Kauce:</strong> {booking.offers?.deposit || 0} Kč</p>}
             <p><strong>{isService ? "Lokalita působení" : "Místo předání"}:</strong> {valueOrLine(booking.offers?.pickup_place)}</p>
           </div>
@@ -229,11 +239,21 @@ export default async function BookingHandoverProtocolPage({ params }: PageProps)
           </div>
 
           <div>
-            <h2 className="mb-2 text-sm font-black uppercase">7. Kauce</h2>
+            <h2 className="mb-2 text-sm font-black uppercase">7. {isService ? "Platba / cena" : "Kauce"}</h2>
             <div className="space-y-2">
-              <Checkbox label="Kauce převzata v hotovosti" />
-              <Checkbox label="Kauce uhrazena převodem" />
-              <Checkbox label="Kauce není požadována" />
+              {isService ? (
+                <>
+                  <Checkbox label="Cena uhrazena v hotovosti" />
+                  <Checkbox label="Cena uhrazena převodem" />
+                  <Checkbox label="Cena bude uhrazena později dle dohody" />
+                </>
+              ) : (
+                <>
+                  <Checkbox label="Kauce převzata v hotovosti" />
+                  <Checkbox label="Kauce uhrazena převodem" />
+                  <Checkbox label="Kauce není požadována" />
+                </>
+              )}
             </div>
           </div>
         </section>

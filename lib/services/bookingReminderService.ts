@@ -67,6 +67,16 @@ function hourWindowFromNow() {
 }
 
 async function reserveReminderSlot(bookingId: string, type: ReminderType) {
+  const { data: existing, error: existingError } = await supabaseAdmin
+    .from("booking_reminders")
+    .select("id")
+    .eq("booking_id", bookingId)
+    .eq("type", type)
+    .maybeSingle();
+
+  if (existingError) throw new Error(existingError.message);
+  if (existing) return false;
+
   const { error } = await supabaseAdmin.from("booking_reminders").insert({
     booking_id: bookingId,
     type,

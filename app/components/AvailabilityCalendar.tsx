@@ -59,7 +59,9 @@ const monthNames = [
 ];
 
 const dayLabels = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
-const serviceHours = Array.from({ length: 12 }, (_, index) => 8 + index); // selectable starts/ends 08:00-20:00
+const SERVICE_START_HOUR = 8;
+const SERVICE_END_HOUR = 20;
+const SERVICE_STEP_MINUTES = 30;
 
 function toIsoDate(date: Date) {
   const year = date.getFullYear();
@@ -94,7 +96,9 @@ function formatTime(value: string) {
 }
 
 function formatSlot(slot: SelectedSlot) {
-  return `${formatShortDate(toIsoDate(new Date(slot.startsAt)))} · ${formatTime(slot.startsAt)}–${formatTime(slot.endsAt)}`;
+  return `${formatShortDate(toIsoDate(new Date(slot.startsAt)))} · ${formatTime(
+    slot.startsAt
+  )}–${formatTime(slot.endsAt)}`;
 }
 
 function eachDateInRange(dateFrom: string, dateTo: string) {
@@ -127,20 +131,36 @@ function buildMonthDays(month: Date) {
   return days;
 }
 
-function makeLocalTime(date: string, hour: number) {
+function timeOptions() {
+  const options: string[] = [];
+  const start = SERVICE_START_HOUR * 60;
+  const end = SERVICE_END_HOUR * 60;
+
+  for (let minutes = start; minutes <= end; minutes += SERVICE_STEP_MINUTES) {
+    const hour = Math.floor(minutes / 60);
+    const minute = minutes % 60;
+    options.push(`${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`);
+  }
+
+  return options;
+}
+
+const serviceTimeOptions = timeOptions();
+
+function makeLocalDateTime(date: string, time: string) {
   const [year, month, day] = date.split("-").map(Number);
-  return new Date(year, month - 1, day, hour, 0, 0, 0).toISOString();
+  const [hour, minute] = time.split(":").map(Number);
+  return new Date(year, month - 1, day, hour, minute, 0, 0).toISOString();
 }
 
-function makeLocalSlot(date: string, startHour: number, endHour: number): SelectedSlot {
-  return {
-    startsAt: makeLocalTime(date, startHour),
-    endsAt: makeLocalTime(date, endHour),
-  };
+function timeFromIso(value: string) {
+  const date = new Date(value);
+  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
 }
 
-function getHourFromIso(value: string) {
-  return new Date(value).getHours();
+function minutesFromTime(value: string) {
+  const [hour, minute] = value.split(":").map(Number);
+  return hour * 60 + minute;
 }
 
 function overlaps(aStart: string, aEnd: string, bStart: string, bEnd: string) {
@@ -163,6 +183,8 @@ export default function AvailabilityCalendar({
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
   const [selectedServiceDate, setSelectedServiceDate] = useState(() => toIsoDate(new Date()));
+  const [serviceStartTime, setServiceStartTime] = useState("");
+  const [serviceEndTime, setServiceEndTime] = useState("");
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [blocks, setBlocks] = useState<Block[]>([]);
   const [loading, setLoading] = useState(true);
@@ -171,12 +193,28 @@ export default function AvailabilityCalendar({
 
   const days = useMemo(() => buildMonthDays(visibleMonth), [visibleMonth]);
 
-  const firstVisibleDate = toIsoDate(new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1));
-  const lastVisibleDate = toIsoDate(new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 0));
+  const firstVisibleDate = toIsoDate(
+    new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1)
+  );
+  const lastVisibleDate = toIsoDate(
+    new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 0)
+  );
 
   useEffect(() => {
     loadAvailability();
   }, [offerId, firstVisibleDate, lastVisibleDate]);
+
+  useEffect(() => {
+    if (selectedSlot?.startsAt && selectedSlot?.endsAt) {
+      setSelectedServiceDate(toIsoDate(new Date(selectedSlot.startsAt)));
+      setServiceStartTime(timeFromIso(selectedSlot.startsAt));
+      setServiceEndTime(timeFromIso(selectedSlot.endsAt));
+      return;
+    }
+
+    setServiceStartTime("");
+    setServiceEndTime("");
+  }, [selectedSlot?.startsAt, selectedSlot?.endsAt]);
 
   async function loadAvailability() {
     setLoading(true);
@@ -203,12 +241,14 @@ export default function AvailabilityCalendar({
   const reservationDates = useMemo(() => {
     const dates = new Set<string>();
 
-    reservations.forEach((reservation) => {
-      eachDateInRange(reservation.date_from, reservation.date_to).forEach((date) => dates.add(date));
-    });
+    reservations
+      .filter((reservation) => !reservation.starts_at || !isService)
+      .forEach((reservation) => {
+        eachDateInRange(reservation.date_from, reservation.date_to).forEach((date) => dates.add(date));
+      });
 
     return dates;
-  }, [reservations]);
+  }, [reservations, isService]);
 
   const blockDates = useMemo(() => {
     const dates = new Set<string>();
@@ -255,56 +295,45 @@ export default function AvailabilityCalendar({
     );
   }
 
-  function serviceRangeTouchesBusy(startHour: number, endHour: number) {
-    if (endHour <= startHour) return true;
+  function updateServiceSlot(nextStartTime: string, nextEndTime: string) {
+    setServiceStartTime(nextStartTime);
+    setServiceEndTime(nextEndTime);
 
-    return serviceHours
-      .filter((hour) => hour >= startHour && hour < endHour)
-      .some((hour) => hasBusyServiceSlot(makeLocalSlot(selectedServiceDate, hour, hour + 1)));
-  }
-
-  function handleServiceHourClick(hour: number) {
-    const clickedStart = makeLocalTime(selectedServiceDate, hour);
-    const clickedEnd = makeLocalTime(selectedServiceDate, hour + 1);
-
-    if (!selectedSlot?.startsAt || selectedSlot.endsAt !== selectedSlot.startsAt) {
-      onSlotChange?.({ startsAt: clickedStart, endsAt: clickedStart });
+    if (!nextStartTime || !nextEndTime) {
+      onSlotChange?.(null);
       return;
     }
 
-    const startHour = getHourFromIso(selectedSlot.startsAt);
-    const endHour = hour <= startHour ? hour + 1 : hour + 1;
-
-    if (hour < startHour) {
-      onSlotChange?.({ startsAt: clickedStart, endsAt: clickedEnd });
+    if (minutesFromTime(nextEndTime) <= minutesFromTime(nextStartTime)) {
+      onSlotChange?.(null);
       return;
     }
 
-    if (serviceRangeTouchesBusy(startHour, endHour)) {
+    const slot = {
+      startsAt: makeLocalDateTime(selectedServiceDate, nextStartTime),
+      endsAt: makeLocalDateTime(selectedServiceDate, nextEndTime),
+    };
+
+    if (new Date(slot.startsAt) < new Date()) {
+      toast.error("Začátek služby nemůže být v minulosti.");
+      onSlotChange?.(null);
+      return;
+    }
+
+    if (hasBusyServiceSlot(slot)) {
       toast.error("Vybraný čas obsahuje obsazený nebo blokovaný interval.");
-      onSlotChange?.({ startsAt: clickedStart, endsAt: clickedStart });
+      onSlotChange?.(null);
       return;
     }
 
-    onSlotChange?.({ startsAt: selectedSlot.startsAt, endsAt: makeLocalTime(selectedServiceDate, endHour) });
-  }
-
-  function isServiceHourSelected(hour: number) {
-    if (!selectedSlot?.startsAt || !selectedSlot?.endsAt) return false;
-
-    const startHour = getHourFromIso(selectedSlot.startsAt);
-    const endHour = getHourFromIso(selectedSlot.endsAt);
-
-    if (selectedSlot.startsAt === selectedSlot.endsAt) {
-      return hour === startHour;
-    }
-
-    return hour >= startHour && hour < endHour;
+    onSlotChange?.(slot);
   }
 
   function handleDayClick(date: string) {
     if (isService) {
       setSelectedServiceDate(date);
+      setServiceStartTime("");
+      setServiceEndTime("");
       onSlotChange?.(null);
       return;
     }
@@ -351,7 +380,7 @@ export default function AvailabilityCalendar({
           reason,
         };
 
-    if (isService && (!selectedSlot?.startsAt || !selectedSlot?.endsAt || selectedSlot.startsAt === selectedSlot.endsAt)) return;
+    if (isService && (!selectedSlot?.startsAt || !selectedSlot?.endsAt)) return;
     if (!isService && (!selectedRange?.dateFrom || !selectedRange?.dateTo)) return;
 
     setSavingBlock(true);
@@ -375,6 +404,8 @@ export default function AvailabilityCalendar({
 
     toast.success(isService ? "Čas byl zablokován" : "Termín byl zablokován");
     setReason("");
+    setServiceStartTime("");
+    setServiceEndTime("");
     onRangeChange?.(null);
     onSlotChange?.(null);
     loadAvailability();
@@ -405,6 +436,7 @@ export default function AvailabilityCalendar({
   }
 
   const todayIso = toIsoDate(new Date());
+  const validServiceSlot = Boolean(selectedSlot?.startsAt && selectedSlot?.endsAt);
 
   return (
     <div className="rounded-[28px] bg-[var(--koluj-bg)] p-4">
@@ -493,40 +525,51 @@ export default function AvailabilityCalendar({
         })}
       </div>
 
-      {isService ? (
-        <div className="mt-5">
-          <p className="mb-3 text-sm font-black text-[var(--koluj-muted)]">
-            Vyber začátek a konec · {formatShortDate(selectedServiceDate)}
+      {isService && (
+        <div className="mt-5 rounded-3xl bg-white p-4">
+          <p className="text-sm font-black text-[var(--koluj-muted)]">
+            Vyber čas služby · {formatShortDate(selectedServiceDate)}
           </p>
 
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {serviceHours.map((hour) => {
-              const slot = makeLocalSlot(selectedServiceDate, hour, hour + 1);
-              const busy = hasBusyServiceSlot(slot);
-              const selected = isServiceHourSelected(hour);
-              const isPast = new Date(slot.endsAt) <= new Date();
-              const disabled = busy || isPast;
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <label className="grid gap-2 text-sm font-bold text-[var(--koluj-muted)]">
+              Začátek
+              <select
+                value={serviceStartTime}
+                onChange={(event) => updateServiceSlot(event.target.value, serviceEndTime)}
+                className="koluj-input bg-white"
+              >
+                <option value="">Vyber začátek</option>
+                {serviceTimeOptions.slice(0, -1).map((time) => (
+                  <option key={time} value={time}>
+                    {time}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-              return (
-                <button
-                  key={slot.startsAt}
-                  type="button"
-                  disabled={disabled}
-                  onClick={() => handleServiceHourClick(hour)}
-                  className={`rounded-2xl px-3 py-3 text-sm font-black transition ${
-                    selected
-                      ? "bg-orange-100 text-orange-900 ring-2 ring-orange-300"
-                      : disabled
-                      ? "cursor-not-allowed bg-stone-200 text-stone-500"
-                      : "bg-white text-[var(--koluj-text)] hover:bg-white/80"
-                  }`}
-                >
-                  {`${hour}:00–${hour + 1}:00`}
-                </button>
-              );
-            })}          </div>
+            <label className="grid gap-2 text-sm font-bold text-[var(--koluj-muted)]">
+              Konec
+              <select
+                value={serviceEndTime}
+                onChange={(event) => updateServiceSlot(serviceStartTime, event.target.value)}
+                className="koluj-input bg-white"
+              >
+                <option value="">Vyber konec</option>
+                {serviceTimeOptions.slice(1).map((time) => (
+                  <option key={time} value={time} disabled={serviceStartTime ? minutesFromTime(time) <= minutesFromTime(serviceStartTime) : false}>
+                    {time}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <p className="mt-3 text-xs font-bold text-[var(--koluj-muted)]">
+            Časy jsou po 30 minutách. Vybraný rozsah nesmí zasahovat do obsazeného nebo blokovaného času.
+          </p>
         </div>
-      ) : null}
+      )}
 
       <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-[var(--koluj-muted)]">
         <span className="inline-flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-white" /> Volné</span>
@@ -541,13 +584,9 @@ export default function AvailabilityCalendar({
         </div>
       )}
 
-      {selectedSlot && isService && (
+      {validServiceSlot && selectedSlot && isService && (
         <div className="mt-4 rounded-2xl bg-white p-4 text-sm font-bold text-[var(--koluj-muted)]">
-          {selectedSlot.startsAt === selectedSlot.endsAt ? (
-            <>Začátek vybrán: <span className="font-black text-[var(--koluj-text)]">{formatTime(selectedSlot.startsAt)}</span>. Teď vyber konec.</>
-          ) : (
-            <>Vybraný čas: <span className="font-black text-[var(--koluj-text)]">{formatSlot(selectedSlot)}</span></>
-          )}
+          Vybraný čas: <span className="font-black text-[var(--koluj-text)]">{formatSlot(selectedSlot)}</span>
         </div>
       )}
 
@@ -566,7 +605,7 @@ export default function AvailabilityCalendar({
             disabled={
               savingBlock ||
               (isService
-                ? !selectedSlot?.startsAt || !selectedSlot?.endsAt || selectedSlot.startsAt === selectedSlot.endsAt
+                ? !selectedSlot?.startsAt || !selectedSlot?.endsAt
                 : !selectedRange?.dateFrom || !selectedRange?.dateTo)
             }
             className="koluj-button w-full px-5 py-3 disabled:cursor-not-allowed disabled:opacity-60"

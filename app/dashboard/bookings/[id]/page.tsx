@@ -20,6 +20,11 @@ type Booking = {
   customer_id: string | null;
   status: string;
   created_at: string;
+  date_from?: string | null;
+  date_to?: string | null;
+  starts_at?: string | null;
+  ends_at?: string | null;
+  total_price?: number | null;
   approved_at?: string | null;
   returned_at?: string | null;
   handed_over_at?: string | null;
@@ -254,7 +259,7 @@ export default function BookingDetailPage() {
 
       if (bookingError || !bookingData) {
         console.error("Booking load error:", bookingError);
-        toast.error("Půjčku se nepodařilo načíst");
+        toast.error("Rezervaci se nepodařilo načíst");
         setBooking(null);
         return;
       }
@@ -322,7 +327,7 @@ export default function BookingDetailPage() {
     const result = await response.json().catch(() => null);
 
     if (!response.ok) {
-      toast.error(result?.error || "Půjčku se nepodařilo schválit");
+      toast.error(result?.error || "Rezervaci se nepodařilo schválit");
       setSaving(false);
       return;
     }
@@ -353,7 +358,7 @@ export default function BookingDetailPage() {
     const result = await response.json().catch(() => null);
 
     if (!response.ok) {
-      toast.error(result?.error || "Půjčku se nepodařilo odmítnout");
+      toast.error(result?.error || "Rezervaci se nepodařilo odmítnout");
       setSaving(false);
       return;
     }
@@ -529,7 +534,7 @@ export default function BookingDetailPage() {
                     {otherPerson?.full_name || "Uživatel"}
                   </p>
                   <p className="text-sm text-[var(--koluj-muted)]">
-                    {isOwner ? "Zájemce o rezervace" : "Vlastník nabídky"}
+                    {isOwner ? (isService ? "Zákazník služby" : "Zájemce o rezervaci") : (isService ? "Poskytovatel služby" : "Vlastník nabídky")}
                   </p>
                 </div>
               </div>
@@ -563,21 +568,28 @@ export default function BookingDetailPage() {
                 {booking.approved_at && (
                   <p><strong>Schváleno:</strong> {formatDateTime(booking.approved_at)}</p>
                 )}
-                {booking.handed_over_at && (
+                {!isService && booking.handed_over_at && (
                   <p><strong>Předáno:</strong> {formatDateTime(booking.handed_over_at)}</p>
                 )}
                 {booking.returned_at && (
-                  <p><strong>Vráceno:</strong> {formatDateTime(booking.returned_at)}</p>
+                  <p><strong>{isService ? "Dokončeno" : "Vráceno"}:</strong> {formatDateTime(booking.returned_at)}</p>
                 )}
+                {booking.starts_at && booking.ends_at ? (
+                  <p><strong>Čas služby:</strong> {formatDateTime(booking.starts_at)} – {formatDateTime(booking.ends_at)}</p>
+                ) : booking.date_from && booking.date_to ? (
+                  <p><strong>Termín:</strong> {formatDateTime(booking.date_from)} – {formatDateTime(booking.date_to)}</p>
+                ) : isService ? (
+                  <p><strong>Termín:</strong> domluvou</p>
+                ) : null}
 
                 <p><strong>{isService ? "Lokalita působení" : "Místo předání"}:</strong> {booking.offers?.pickup_place}</p>
                 <p>
-                  <strong>Cena:</strong> {booking.offers?.price_amount || 0} Kč
+                  <strong>Cena:</strong> {booking.total_price ?? booking.offers?.price_amount ?? 0} Kč
                   {booking.offers?.price_unit
                     ? ` / ${translatePriceUnit(booking.offers.price_unit, booking.offers.offer_type)}`
                     : ""}
                 </p>
-                <p><strong>Kauce:</strong> {booking.offers?.deposit || 0} Kč</p>
+                {!isService && <p><strong>Kauce:</strong> {booking.offers?.deposit || 0} Kč</p>}
               </div>
 
               {isOwner && (
@@ -604,13 +616,13 @@ export default function BookingDetailPage() {
             <div className="border-b border-[var(--koluj-border)] bg-[var(--koluj-bg)] p-5">
               {isOwner && booking.status === "requested" && (
                 <div>
-                  <p className="mb-4 font-bold">Máš novou žádost o rezervace.</p>
+                  <p className="mb-4 font-bold">{isService ? "Máš novou poptávku služby." : "Máš novou žádost o rezervaci."}</p>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <button type="button" onClick={approveBooking} disabled={saving} className="koluj-button py-3 disabled:opacity-60">
-                      {saving ? "Ukládám..." : "Schválit žádost"}
+                      {saving ? "Ukládám..." : isService ? "Schválit poptávku" : "Schválit žádost"}
                     </button>
                     <button type="button" onClick={rejectBooking} disabled={saving} className="rounded-2xl border border-red-200 bg-white py-3 font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-60">
-                      Odmítnout žádost
+                      {isService ? "Odmítnout poptávku" : "Odmítnout žádost"}
                     </button>
                   </div>
                 </div>
@@ -749,7 +761,7 @@ export default function BookingDetailPage() {
             {booking.status === "returned" || booking.status === "cancelled" ? (
               <div className="border-t border-[var(--koluj-border)] p-4">
                 <p className="text-center font-bold text-[var(--koluj-muted)]">
-                  Chat je po ukončení rezervace uzamčen.
+                  {isService ? "Chat je po ukončení služby uzamčen." : "Chat je po ukončení rezervace uzamčen."}
                 </p>
               </div>
             ) : (

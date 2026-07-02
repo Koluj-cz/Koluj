@@ -494,9 +494,11 @@ export async function rejectBookingServer({
     offerId: offer.id,
     bookingId: booking.id,
     type: "booking_rejected",
-    title: "Žádost byla odmítnuta",
-    message: `${offer.title} nebyla schválena k rezervaci.`,
-    emailSubject: "Žádost byla odmítnuta",
+    title: offer.offer_type === "service" ? "Poptávka služby byla odmítnuta" : "Žádost byla odmítnuta",
+    message: offer.offer_type === "service"
+      ? `${offer.title} nebyla schválena k provedení.`
+      : `${offer.title} nebyla schválena k rezervaci.`,
+    emailSubject: offer.offer_type === "service" ? "Poptávka služby byla odmítnuta" : "Žádost byla odmítnuta",
   });
 
   return { ok: true };
@@ -517,7 +519,7 @@ export async function startBookingServer({
   }
 
   if (offer.offer_type === "service") {
-    throw new Error("U služby se předání nepotvrzuje. Službu rovnou označ jako dokončenou.");
+    throw new Error("U služby se předání nepotvrzuje. Službu označ jako dokončenou.");
   }
 
   if (booking.status !== "approved") {

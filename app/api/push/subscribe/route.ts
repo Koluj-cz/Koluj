@@ -55,7 +55,7 @@ export async function POST(request: Request) {
         auth: subscription.keys.auth,
       },
       {
-        onConflict: "user_id,endpoint",
+        onConflict: "endpoint",
       }
     );
 
