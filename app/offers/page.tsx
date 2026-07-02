@@ -35,9 +35,17 @@ function getCategoryOptions(offerType: string) {
     };
   }
 
+  if (offerType === "item") {
+    return {
+      all: "Všechny kategorie",
+      ...Object.fromEntries(categories.map((c) => [c, categoryLabels[c]])),
+    };
+  }
+
   return {
     all: "Všechny kategorie",
     ...Object.fromEntries(categories.map((c) => [c, categoryLabels[c]])),
+    ...Object.fromEntries(serviceCategories.map((c) => [c, serviceCategoryLabels[c]])),
   };
 }
 

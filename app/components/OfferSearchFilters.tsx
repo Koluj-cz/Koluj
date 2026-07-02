@@ -46,7 +46,7 @@ export default function OfferSearchFilters({
   onUseLocation,
   locationActive = false,
 }: OfferSearchFiltersProps) {
-  const selectCount = [
+  const controlsCount = [
     onOfferTypeChange,
     onCategoryChange,
     onStatusChange,
@@ -54,27 +54,30 @@ export default function OfferSearchFilters({
   ].filter(Boolean).length;
 
   const gridClass =
-    selectCount >= 4
-      ? "lg:grid-cols-[1fr_180px_220px_220px_200px]"
-      : selectCount === 3
-      ? "lg:grid-cols-[1fr_220px_220px_200px]"
-      : selectCount === 2
-      ? "lg:grid-cols-[1fr_220px_200px]"
-      : selectCount === 1
-      ? "lg:grid-cols-[1fr_220px]"
-      : "lg:grid-cols-1";
+    controlsCount >= 4
+      ? "xl:grid-cols-[minmax(280px,1fr)_180px_230px_210px_190px]"
+      : controlsCount === 3
+        ? "xl:grid-cols-[minmax(280px,1fr)_220px_210px_190px]"
+        : controlsCount === 2
+          ? "xl:grid-cols-[minmax(280px,1fr)_220px_190px]"
+          : controlsCount === 1
+            ? "xl:grid-cols-[minmax(280px,1fr)_220px]"
+            : "xl:grid-cols-1";
+
+  const selectClass =
+    "min-h-[58px] w-full rounded-2xl border border-[var(--koluj-border)] bg-white px-4 font-bold text-[var(--koluj-text)] outline-none transition focus:border-[var(--koluj-green)]";
 
   return (
-    <section className="koluj-card p-3 md:p-4">
+    <section className="rounded-[28px] border border-[var(--koluj-border)] bg-white/80 p-3 shadow-sm backdrop-blur md:p-4">
       <div className={`grid gap-3 ${gridClass}`}>
-        <div className="flex min-h-[58px] items-center gap-3 rounded-2xl border border-[var(--koluj-border)] bg-white px-4">
+        <div className="flex min-h-[58px] items-center gap-3 rounded-2xl border border-[var(--koluj-border)] bg-white px-4 transition focus-within:border-[var(--koluj-green)]">
           <Search size={20} className="shrink-0 text-[var(--koluj-muted)]" />
 
           <input
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder={searchPlaceholder}
-            className="min-w-0 flex-1 bg-transparent py-4 outline-none"
+            className="min-w-0 flex-1 bg-transparent py-4 text-[var(--koluj-text)] outline-none placeholder:text-[var(--koluj-muted)]"
           />
 
           {onUseLocation && (
@@ -97,7 +100,7 @@ export default function OfferSearchFilters({
           <select
             value={offerType}
             onChange={(event) => onOfferTypeChange(event.target.value)}
-            className="koluj-input"
+            className={selectClass}
           >
             {offerTypeOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -111,7 +114,7 @@ export default function OfferSearchFilters({
           <select
             value={category}
             onChange={(event) => onCategoryChange(event.target.value)}
-            className="koluj-input"
+            className={selectClass}
           >
             {categoryOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -125,7 +128,7 @@ export default function OfferSearchFilters({
           <select
             value={status}
             onChange={(event) => onStatusChange(event.target.value)}
-            className="koluj-input"
+            className={selectClass}
           >
             {statusOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -139,7 +142,7 @@ export default function OfferSearchFilters({
           <select
             value={sortBy}
             onChange={(event) => onSortByChange(event.target.value)}
-            className="koluj-input"
+            className={selectClass}
           >
             {sortOptions.map((option) => (
               <option key={option.value} value={option.value}>

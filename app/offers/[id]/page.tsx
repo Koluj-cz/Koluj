@@ -616,7 +616,9 @@ export default function ItemDetailPage() {
                     offerType={isRequestOnlyService ? "item" : item.offer_type}
                     isOwner={Boolean(isOwner)}
                     selectedRange={
-                      !isService && borrowFrom && borrowTo
+                      (!isService || (isRequestOnlyService && Boolean(isOwner))) &&
+                      borrowFrom &&
+                      borrowTo
                         ? { dateFrom: borrowFrom, dateTo: borrowTo }
                         : null
                     }
@@ -679,7 +681,7 @@ export default function ItemDetailPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="font-black">
-                      {isRequestOnlyService ? "Poptávka" : "Vybraný termín"}
+                      {isRequestOnlyService && !isOwner ? "Poptávka" : "Vybraný termín"}
                     </p>
 
                     {isTimedService && startsAt && endsAt ? (
@@ -698,23 +700,25 @@ export default function ItemDetailPage() {
                           </p>
                         )}
                       </div>
-                    ) : !isService && borrowFrom && borrowTo ? (
+                    ) : (!isService || (isRequestOnlyService && Boolean(isOwner))) &&
+                      borrowFrom &&
+                      borrowTo ? (
                       <p className="mt-3 text-lg font-black">
                         {formatDate(borrowFrom)} <span className="mx-2">→</span>{" "}
                         {formatDate(borrowTo)}
                       </p>
                     ) : (
                       <p className="mt-3 text-[var(--koluj-muted)]">
-                        {isRequestOnlyService
+                        {isRequestOnlyService && !isOwner
                           ? "Termín služby domluvíte ve zprávách po odeslání poptávky."
-                          : isService
+                          : isService && !isRequestOnlyService
                             ? "Zatím není vybraný žádný čas."
                             : "Zatím není vybraný žádný termín."}
                       </p>
                     )}
                   </div>
 
-                  {!isService && selectedDays && (
+                  {(!isService || (isRequestOnlyService && Boolean(isOwner))) && selectedDays && (
                     <span className="shrink-0 rounded-full bg-white px-3 py-1 text-sm font-black text-[var(--koluj-green)]">
                       {selectedDays} {selectedDays === 1 ? "den" : "dní"}
                     </span>
@@ -722,7 +726,7 @@ export default function ItemDetailPage() {
                 </div>
 
                 {((isTimedService && startsAt && endsAt) ||
-                  (!isService && borrowFrom && borrowTo)) && (
+                  ((!isService || (isRequestOnlyService && Boolean(isOwner))) && borrowFrom && borrowTo)) && (
                   <button
                     type="button"
                     onClick={() => {

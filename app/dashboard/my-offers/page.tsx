@@ -17,7 +17,37 @@ import AddOfferButton from "@/app/components/AddOfferButton";
 import BackLink from "@/app/components/BackLink";
 import PageLoader from "@/app/components/PageLoader";
 import OfferSearchFilters from "@/app/components/OfferSearchFilters";
+import {
+  categories,
+  categoryLabels,
+  serviceCategories,
+  serviceCategoryLabels,
+  offerTypeLabels,
+} from "@/lib/constants";
 
+
+
+function getCategoryOptions(offerType: string) {
+  if (offerType === "service") {
+    return {
+      all: "Všechny kategorie",
+      ...Object.fromEntries(serviceCategories.map((c) => [c, serviceCategoryLabels[c]])),
+    };
+  }
+
+  if (offerType === "item") {
+    return {
+      all: "Všechny kategorie",
+      ...Object.fromEntries(categories.map((c) => [c, categoryLabels[c]])),
+    };
+  }
+
+  return {
+    all: "Všechny kategorie",
+    ...Object.fromEntries(categories.map((c) => [c, categoryLabels[c]])),
+    ...Object.fromEntries(serviceCategories.map((c) => [c, serviceCategoryLabels[c]])),
+  };
+}
 
 async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
   if (items.length === 0) return items as (T & { is_reserved_today: boolean })[];
@@ -71,6 +101,8 @@ export default function MyOffersPage() {
   const [items, setItems] = useState<Offer[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
+  const [offerType, setOfferType] = useState("all");
+  const [category, setCategory] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
   const [visibleCount, setVisibleCount] = useState(8);
@@ -82,7 +114,7 @@ export default function MyOffersPage() {
 
   useEffect(() => {
     setVisibleCount(8);
-  }, [searchQuery, statusFilter, sortBy]);
+  }, [searchQuery, offerType, category, statusFilter, sortBy]);
 
   async function loadOffers() {
     const {
@@ -197,6 +229,14 @@ export default function MyOffersPage() {
       );
     }
 
+    if (offerType !== "all") {
+      result = result.filter((item) => (item.offer_type || "item") === offerType);
+    }
+
+    if (category !== "all") {
+      result = result.filter((item) => item.category === category);
+    }
+
     if (statusFilter === "available") {
       result = result.filter((item) => item.is_active && !item.is_reserved_today);
     }
@@ -228,7 +268,7 @@ export default function MyOffersPage() {
     }
 
     return result;
-  }, [items, searchQuery, statusFilter, sortBy]);
+  }, [items, searchQuery, offerType, category, statusFilter, sortBy]);
 
   const visibleOffers = filteredOffers.slice(0, visibleCount);
 
@@ -263,6 +303,23 @@ export default function MyOffersPage() {
           <OfferSearchFilters
             search={searchQuery}
             onSearchChange={setSearchQuery}
+            offerType={offerType}
+            onOfferTypeChange={(value) => {
+              setOfferType(value);
+              setCategory("all");
+            }}
+            offerTypeOptions={[
+              { value: "all", label: "Vše" },
+              ...Object.entries(offerTypeLabels).map(([value, label]) => ({
+                value,
+                label,
+              })),
+            ]}
+            category={category}
+            onCategoryChange={setCategory}
+            categoryOptions={Object.entries(getCategoryOptions(offerType)).map(
+              ([value, label]) => ({ value, label })
+            )}
             status={statusFilter}
             onStatusChange={setStatusFilter}
             statusOptions={[
