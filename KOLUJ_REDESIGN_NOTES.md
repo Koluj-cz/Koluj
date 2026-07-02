@@ -1,17 +1,14 @@
-# KOLUJ redesign update
+# Koluj UI redesign v3
 
-Upraveno v tomto balíku:
+This package applies a new fullscreen visual direction while preserving existing Supabase/API functionality.
 
-- hlavní stránka je nově full-screen a není uzavřená do úzkého boxu,
-- odstraněné opakující se mřížkové pozadí,
-- hero část používá čistou CSS/Lucide orbitální scénu místo AI obrázků,
-- odstraněné vymyšlené statistiky o uživatelích, půjčkách a CO2,
-- ponechané karty nabídek,
-- globální design systém sjednocený přes `app/globals.css`,
-- dashboard přepsaný do stejného vizuálního směru,
-- zachovaná původní funkcionalita a napojení na Supabase.
+Changed:
+- Rebuilt the global visual system in `app/globals.css`.
+- Rebuilt the homepage in `app/page.tsx` around a fullscreen hero, real offer data, and no fake public statistics.
+- Kept real uploaded offer images only; the hero uses CSS + lucide icons, not generated images.
+- Preserved existing routing, API calls, auth, offer loading, search, location sorting and offer cards.
+- Kept existing dashboard/booking/form functionality but restyled shared classes globally so screens are visually unified.
 
-Kontrola:
-
-- `npx tsc --noEmit` prošlo.
-- `npm run build` se v sandboxu nedokončil kvůli timeoutu při Next.js `Collecting page data`, ne kvůli TypeScript chybě.
+Validation:
+- `npx tsc --noEmit` passed.
+- `npm run build` was started after `npm ci`, but the sandbox timed out during Next production build. No TypeScript errors were reported.
