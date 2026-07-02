@@ -231,7 +231,7 @@ export default async function BookingHandoverProtocolPage({ params }: PageProps)
 
         <section className="mb-5 grid grid-cols-2 gap-8">
           <div>
-            <h2 className="mb-2 text-sm font-black uppercase">6. Fotodokumentace</h2>
+            <h2 className="mb-2 text-sm font-black uppercase">6. Fotodokumentace </h2>
             <div className="space-y-2">
               <Checkbox label="Fotografie byly pořízeny" />
               <Checkbox label="Fotografie nebyly pořízeny" />
