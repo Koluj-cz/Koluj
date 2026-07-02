@@ -9,7 +9,6 @@ import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
 import PageLoader from "@/app/components/PageLoader";
 import {
-  translatePriceUnit,
   formatDateTime,
   translateBookingStatus,
 } from "@/lib/format";
@@ -584,10 +583,7 @@ export default function BookingDetailPage() {
 
                 <p><strong>{isService ? "Lokalita působení" : "Místo předání"}:</strong> {booking.offers?.pickup_place}</p>
                 <p>
-                  <strong>Cena:</strong> {booking.total_price ?? booking.offers?.price_amount ?? 0} Kč
-                  {booking.offers?.price_unit
-                    ? ` / ${translatePriceUnit(booking.offers.price_unit, booking.offers.offer_type)}`
-                    : ""}
+                  <strong>Cena celkem:</strong> {booking.total_price ?? booking.offers?.price_amount ?? 0} Kč
                 </p>
                 {!isService && <p><strong>Kauce:</strong> {booking.offers?.deposit || 0} Kč</p>}
               </div>

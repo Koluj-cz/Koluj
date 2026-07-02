@@ -7,7 +7,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Package,
-  Trash2,
   X,
 } from "lucide-react";
 import toast from "react-hot-toast";
@@ -269,29 +268,6 @@ export default function DashboardAvailabilityPage() {
     );
   }
 
-  const reservationDates = useMemo(() => {
-    const dates = new Set<string>();
-
-    reservations.forEach((reservation) => {
-      eachDateInRange(reservation.date_from, reservation.date_to).forEach((date) =>
-        dates.add(date)
-      );
-    });
-
-    return dates;
-  }, [reservations]);
-
-  const blockDates = useMemo(() => {
-    const dates = new Set<string>();
-
-    blocks.forEach((block) => {
-      eachDateInRange(block.date_from, block.date_to).forEach((date) =>
-        dates.add(date)
-      );
-    });
-
-    return dates;
-  }, [blocks]);
 
   const selectedDates = useMemo(() => {
     const dates = new Set<string>();
@@ -322,14 +298,6 @@ export default function DashboardAvailabilityPage() {
     [reservations, activeDate]
   );
 
-  const monthBlocks = useMemo(
-    () =>
-      [...blocks].sort(
-        (a, b) =>
-          new Date(a.date_from).getTime() - new Date(b.date_from).getTime()
-      ),
-    [blocks]
-  );
 
   function countBlocksForDate(date: string) {
     return blocks.filter((block) => block.date_from <= date && block.date_to >= date)
@@ -564,13 +532,13 @@ export default function DashboardAvailabilityPage() {
                     <div className="mt-2 space-y-1">
                       {reservationCount > 0 && (
                         <CalendarPill className="bg-red-100 text-red-700">
-                          {reservationCount} rezervace
+                          {reservationCount}× rezervace
                         </CalendarPill>
                       )}
 
                       {blockCount > 0 && (
                         <CalendarPill className="bg-stone-200 text-stone-700">
-                          {blockCount} blokace
+                          {blockCount}× blokace
                         </CalendarPill>
                       )}
 
@@ -720,132 +688,108 @@ export default function DashboardAvailabilityPage() {
               </button>
 
               <p className="mt-4 text-sm leading-relaxed text-[var(--koluj-muted)]">
-                Pokud je některá nabídku v termínu už rezervovaná, server ji přeskočí
+                Pokud je některá nabídka v termínu už rezervovaná, server ji přeskočí
                 a zobrazí ji ve výsledku.
               </p>
-            </div>
 
-            <div className="koluj-card p-6 md:p-8">
-              <h2 className="text-2xl font-black">
-                {formatShortDate(activeDate)}
-              </h2>
-              <p className="mt-2 text-sm font-bold text-[var(--koluj-muted)]">
-                Události vybraného dne
-              </p>
+              <div className="mt-6 rounded-3xl bg-[var(--koluj-bg)] p-5">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
+                      Vybraný den
+                    </p>
+                    <h3 className="mt-1 text-xl font-black">{formatShortDate(activeDate)}</h3>
+                  </div>
 
-              {activeDateReservations.length === 0 && activeDateBlocks.length === 0 ? (
-                <div className="mt-5 rounded-3xl bg-[var(--koluj-bg)] p-5 text-sm font-bold text-[var(--koluj-muted)]">
-                  V tento den nejsou žádné rezervace ani blokace.
+                  <div className="flex shrink-0 gap-2 text-xs font-black">
+                    {activeDateReservations.length > 0 && (
+                      <span className="rounded-full bg-red-100 px-3 py-1 text-red-700">
+                        {activeDateReservations.length}× rezervace
+                      </span>
+                    )}
+                    {activeDateBlocks.length > 0 && (
+                      <span className="rounded-full bg-stone-200 px-3 py-1 text-stone-700">
+                        {activeDateBlocks.length}× blokace
+                      </span>
+                    )}
+                  </div>
                 </div>
-              ) : (
-                <div className="mt-5 space-y-3">
-                  {activeDateReservations.map((reservation) => (
-                    <div
-                      key={reservation.id}
-                      className="rounded-3xl bg-red-50 p-4 text-sm font-bold text-red-700"
-                    >
-                      <p>{reservation.offers?.title || "Nabídka"}</p>
-                      <p className="mt-1 opacity-80">
-                        {formatShortDate(reservation.date_from)} – {formatShortDate(reservation.date_to)}
-                      </p>
-                    </div>
-                  ))}
 
-                  {activeDateBlocks.map((block) => (
-                    <div
-                      key={block.id}
-                      className="rounded-3xl bg-stone-100 p-4"
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <p className="text-sm font-black text-[var(--koluj-text)]">
-                            {block.offers?.title || "Nabídka"}
-                          </p>
-                          <p className="mt-1 text-sm font-bold text-[var(--koluj-muted)]">
-                            {formatShortDate(block.date_from)} – {formatShortDate(block.date_to)}
-                            {block.reason ? ` · ${block.reason}` : ""}
-                          </p>
-                        </div>
-
-                        <button
-                          type="button"
-                          onClick={() => deleteBlock(block.id)}
-                          disabled={deletingBlockId === block.id}
-                          className="shrink-0 rounded-2xl bg-white px-3 py-2 text-xs font-black text-red-600 transition hover:bg-red-50 disabled:opacity-60"
-                        >
-                          {deletingBlockId === block.id ? "Ruším..." : "Uvolnit"}
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </aside>
-        </section>
-
-        {(monthBlocks.length > 0 || lastResult) && (
-          <section className="mt-8 grid gap-8 xl:grid-cols-[1fr_420px]">
-            {monthBlocks.length > 0 && (
-              <div className="koluj-card p-6 md:p-8">
-                <h2 className="text-2xl font-black">Blokace v tomto měsíci</h2>
-                <p className="mt-2 text-[var(--koluj-muted)]">
-                  Stejné blokace vidíš i v kalendáři. Tady je můžeš rychle zrušit.
-                </p>
-
-                <div className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                  {monthBlocks.map((block) => (
-                    <div
-                      key={block.id}
-                      className="rounded-3xl bg-[var(--koluj-bg)] p-4"
-                    >
-                      <p className="font-black">{block.offers?.title || "Nabídka"}</p>
-                      <p className="mt-1 text-sm font-bold text-[var(--koluj-muted)]">
-                        {formatShortDate(block.date_from)} – {formatShortDate(block.date_to)}
-                        {block.reason ? ` · ${block.reason}` : ""}
-                      </p>
-
-                      <button
-                        type="button"
-                        onClick={() => deleteBlock(block.id)}
-                        disabled={deletingBlockId === block.id}
-                        className="mt-4 inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-4 py-3 text-sm font-black text-red-600 transition hover:bg-red-50 disabled:opacity-60"
-                      >
-                        <Trash2 size={16} />
-                        {deletingBlockId === block.id ? "Ruším..." : "Uvolnit"}
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {lastResult && (
-              <div className="koluj-card p-6 md:p-8">
-                <h2 className="text-2xl font-black">Výsledek</h2>
-
-                <p className="mt-4 font-bold text-[var(--koluj-muted)]">
-                  Zablokováno: <span className="text-[var(--koluj-green)]">{lastResult.createdCount}</span>
-                  {" · "}
-                  Přeskočeno: <span className="text-red-600">{lastResult.skippedCount}</span>
-                </p>
-
-                {lastResult.skipped.length > 0 && (
-                  <div className="mt-5 space-y-2">
-                    {lastResult.skipped.map((item) => (
+                {activeDateReservations.length === 0 && activeDateBlocks.length === 0 ? (
+                  <p className="mt-4 text-sm font-bold text-[var(--koluj-muted)]">
+                    V tento den nejsou žádné rezervace ani blokace.
+                  </p>
+                ) : (
+                  <div className="mt-4 space-y-2">
+                    {activeDateReservations.map((reservation) => (
                       <div
-                        key={item.offerId}
-                        className="rounded-2xl bg-red-50 p-4 text-sm font-bold text-red-700"
+                        key={reservation.id}
+                        className="rounded-2xl bg-red-50 px-4 py-3 text-sm font-bold text-red-700"
                       >
-                        {item.title}: {item.reason}
+                        <p>{reservation.offers?.title || "Nabídka"}</p>
+                        <p className="mt-1 text-xs opacity-80">
+                          {formatShortDate(reservation.date_from)} – {formatShortDate(reservation.date_to)}
+                        </p>
+                      </div>
+                    ))}
+
+                    {activeDateBlocks.map((block) => (
+                      <div
+                        key={block.id}
+                        className="rounded-2xl bg-white px-4 py-3 shadow-sm"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-black">
+                              {block.offers?.title || "Nabídka"}
+                            </p>
+                            <p className="mt-1 text-xs font-bold text-[var(--koluj-muted)]">
+                              {formatShortDate(block.date_from)} – {formatShortDate(block.date_to)}
+                              {block.reason ? ` · ${block.reason}` : ""}
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => deleteBlock(block.id)}
+                            disabled={deletingBlockId === block.id}
+                            className="shrink-0 rounded-2xl bg-red-50 px-3 py-2 text-xs font-black text-red-600 transition hover:bg-red-100 disabled:opacity-60"
+                          >
+                            {deletingBlockId === block.id ? "Ruším..." : "Uvolnit"}
+                          </button>
+                        </div>
                       </div>
                     ))}
                   </div>
                 )}
               </div>
-            )}
-          </section>
-        )}
+
+              {lastResult && (
+                <div className="mt-6 rounded-3xl bg-[var(--koluj-bg)] p-5">
+                  <p className="font-black">Výsledek poslední blokace</p>
+                  <p className="mt-2 text-sm font-bold text-[var(--koluj-muted)]">
+                    Zablokováno: <span className="text-[var(--koluj-green)]">{lastResult.createdCount}</span>
+                    {" · "}
+                    Přeskočeno: <span className="text-red-600">{lastResult.skippedCount}</span>
+                  </p>
+
+                  {lastResult.skipped.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      {lastResult.skipped.map((item) => (
+                        <div
+                          key={item.offerId}
+                          className="rounded-2xl bg-red-50 p-3 text-xs font-bold text-red-700"
+                        >
+                          {item.title}: {item.reason}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </aside>
+        </section>
       </div>
     </main>
   );

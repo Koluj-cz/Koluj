@@ -32,10 +32,29 @@ const OffersMap = dynamic(() => import("@/app/components/OffersMap"), {
   ssr: false,
 });
 
+function todayIsoDate() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = `${now.getMonth() + 1}`.padStart(2, "0");
+  const day = `${now.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function isDateInsideBlock(date: string, block: AvailabilityBlock) {
+  return block.date_from <= date && block.date_to >= date;
+}
+
 type ItemImage = {
   id: string;
   image_url: string;
   sort_order: number | null;
+};
+
+type AvailabilityBlock = {
+  id: string;
+  date_from: string;
+  date_to: string;
+  reason: string | null;
 };
 
 type ItemDetail = {
@@ -63,10 +82,12 @@ type ItemDetail = {
     avatar_url: string | null;
     is_verified: boolean | null;
     is_seed_user: boolean | null;
-    profile_ratings?: {
-      rating_avg: number | null;
-      rating_count: number | null;
-    }[] | null;
+    profile_ratings?:
+      | {
+          rating_avg: number | null;
+          rating_count: number | null;
+        }[]
+      | null;
   } | null;
 };
 
@@ -78,6 +99,9 @@ export default function ItemDetailPage() {
   const [item, setItem] = useState<ItemDetail | null>(null);
   const [images, setImages] = useState<ItemImage[]>([]);
   const [selectedImage, setSelectedImage] = useState("");
+  const [availabilityBlocks, setAvailabilityBlocks] = useState<
+    AvailabilityBlock[]
+  >([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -115,7 +139,7 @@ export default function ItemDetailPage() {
               rating_count
             )
           )
-          `
+          `,
         )
         .eq("id", offerId)
         .is("deleted_at", null)
@@ -147,9 +171,23 @@ export default function ItemDetailPage() {
         console.error("Item images load error:", imageError);
       }
 
+      const today = todayIsoDate();
+
+      const { data: blocksData, error: blocksError } = await supabase
+        .from("offer_availability_blocks")
+        .select("id, date_from, date_to, reason")
+        .eq("offer_id", offerId)
+        .gte("date_to", today)
+        .order("date_from", { ascending: true });
+
+      if (blocksError) {
+        console.error("Availability blocks load error:", blocksError);
+      }
+
+      setAvailabilityBlocks((blocksData || []) as AvailabilityBlock[]);
       setImages(imageData || []);
       setSelectedImage(
-        data.primary_image_url || imageData?.[0]?.image_url || ""
+        data.primary_image_url || imageData?.[0]?.image_url || "",
       );
     } catch (error) {
       console.error("Unexpected item detail error:", error);
@@ -168,6 +206,17 @@ export default function ItemDetailPage() {
       return;
     }
 
+    if (
+      item.offer_type === "service" &&
+      item.price_unit === "piece" &&
+      availabilityBlocks.some((block) =>
+        isDateInsideBlock(todayIsoDate(), block),
+      )
+    ) {
+      toast.error("Poskytovatel momentálně nepřijímá nové poptávky.");
+      return;
+    }
+
     setSubmittingBorrowRequest(true);
 
     const response = await fetch("/api/bookings/request", {
@@ -179,8 +228,14 @@ export default function ItemDetailPage() {
         offerId: item.id,
         dateFrom: item.offer_type === "service" ? null : borrowFrom,
         dateTo: item.offer_type === "service" ? null : borrowTo,
-        startsAt: item.offer_type === "service" && item.price_unit === "hour" ? startsAt : null,
-        endsAt: item.offer_type === "service" && item.price_unit === "hour" ? endsAt : null,
+        startsAt:
+          item.offer_type === "service" && item.price_unit === "hour"
+            ? startsAt
+            : null,
+        endsAt:
+          item.offer_type === "service" && item.price_unit === "hour"
+            ? endsAt
+            : null,
         note: borrowNote,
       }),
     });
@@ -223,25 +278,52 @@ export default function ItemDetailPage() {
     const from = new Date(borrowFrom);
     const to = new Date(borrowTo);
     const diff = Math.round(
-      (to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24)
+      (to.getTime() - from.getTime()) / (1000 * 60 * 60 * 24),
     );
 
     return diff >= 0 ? diff + 1 : null;
   }, [borrowFrom, borrowTo]);
 
+  const isTimedService =
+    item?.offer_type === "service" && item?.price_unit === "hour";
+  const isRequestOnlyService =
+    item?.offer_type === "service" && item?.price_unit === "piece";
 
-  const isTimedService = item?.offer_type === "service" && item?.price_unit === "hour";
-  const isRequestOnlyService = item?.offer_type === "service" && item?.price_unit === "piece";
+  const today = todayIsoDate();
+
+  const activeRequestOnlyBlock = useMemo(() => {
+    if (!isRequestOnlyService) return null;
+
+    return (
+      availabilityBlocks.find((block) => isDateInsideBlock(today, block)) ||
+      null
+    );
+  }, [availabilityBlocks, isRequestOnlyService, today]);
+
+  const nextRequestOnlyBlock = useMemo(() => {
+    if (!isRequestOnlyService) return null;
+
+    return activeRequestOnlyBlock || availabilityBlocks[0] || null;
+  }, [activeRequestOnlyBlock, availabilityBlocks, isRequestOnlyService]);
+
+  const isRequestOnlyUnavailable = Boolean(activeRequestOnlyBlock);
 
   const selectedServiceMinutes = useMemo(() => {
     if (!startsAt || !endsAt) return null;
-    const minutes = Math.round((new Date(endsAt).getTime() - new Date(startsAt).getTime()) / 60000);
+    const minutes = Math.round(
+      (new Date(endsAt).getTime() - new Date(startsAt).getTime()) / 60000,
+    );
     return minutes > 0 ? minutes : null;
   }, [startsAt, endsAt]);
 
   const selectedServicePrice = useMemo(() => {
-    if (!item || item.price_unit !== "hour" || !selectedServiceMinutes) return null;
-    return Math.round(Number(item.price_amount || 0) * (selectedServiceMinutes / 60) * 100) / 100;
+    if (!item || item.price_unit !== "hour" || !selectedServiceMinutes)
+      return null;
+    return (
+      Math.round(
+        Number(item.price_amount || 0) * (selectedServiceMinutes / 60) * 100,
+      ) / 100
+    );
   }, [item, selectedServiceMinutes]);
 
   const mapOffers = useMemo(() => {
@@ -294,7 +376,11 @@ export default function ItemDetailPage() {
       <div className="mt-5 grid gap-4 md:grid-cols-2">
         <InfoLine
           icon={<MapPin size={20} />}
-          title={item.offer_type === "service" ? "Lokalita působení" : "Místo předání"}
+          title={
+            item.offer_type === "service"
+              ? "Lokalita působení"
+              : "Místo předání"
+          }
           text={item.pickup_place}
         />
 
@@ -366,13 +452,14 @@ export default function ItemDetailPage() {
     </div>
   );
 
-  const mapCard = item.pickup_latitude && item.pickup_longitude ? (
-    <div className="koluj-card overflow-hidden p-0">
-      <div className="relative h-[320px] lg:h-[420px]">
-        <OffersMap items={mapOffers} userLocation={null} />
+  const mapCard =
+    item.pickup_latitude && item.pickup_longitude ? (
+      <div className="koluj-card overflow-hidden p-0">
+        <div className="relative h-[320px] lg:h-[420px]">
+          <OffersMap items={mapOffers} userLocation={null} />
+        </div>
       </div>
-    </div>
-  ) : null;
+    ) : null;
 
   return (
     <main className="min-h-screen">
@@ -424,7 +511,10 @@ export default function ItemDetailPage() {
 
                   {item.condition && (
                     <span className="inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-3 py-1.5">
-                      <ShieldCheck size={16} className="text-[var(--koluj-green)]" />
+                      <ShieldCheck
+                        size={16}
+                        className="text-[var(--koluj-green)]"
+                      />
                       {conditionLabels[item.condition] || item.condition}
                     </span>
                   )}
@@ -504,11 +594,13 @@ export default function ItemDetailPage() {
                   </p>
                 )}
 
-                {item.deposit !== null && item.deposit !== undefined && (
-                  <p className="mt-3 text-sm font-bold text-[var(--koluj-muted)]">
-                    Kauce: {item.deposit} Kč
-                  </p>
-                )}
+                {!isService &&
+                  item.deposit !== null &&
+                  item.deposit !== undefined && (
+                    <p className="mt-3 text-sm font-bold text-[var(--koluj-muted)]">
+                      Kauce: {item.deposit} Kč
+                    </p>
+                  )}
               </div>
 
               {item.price_note && (
@@ -518,48 +610,91 @@ export default function ItemDetailPage() {
               )}
 
               {(!isRequestOnlyService || isOwner) && (
-              <div className="mt-6">
-                <AvailabilityCalendar
-                  offerId={item.id}
-                  offerType={isRequestOnlyService ? "item" : item.offer_type}
-                  isOwner={Boolean(isOwner)}
-                  selectedRange={
-                    !isService && borrowFrom && borrowTo
-                      ? { dateFrom: borrowFrom, dateTo: borrowTo }
-                      : null
-                  }
-                  selectedSlot={
-                    isTimedService && startsAt && endsAt
-                      ? { startsAt, endsAt }
-                      : null
-                  }
-                  onRangeChange={(range) => {
-                    setBorrowFrom(range?.dateFrom || "");
-                    setBorrowTo(range?.dateTo || "");
-                  }}
-                  onSlotChange={(slot) => {
-                    setStartsAt(slot?.startsAt || "");
-                    setEndsAt(slot?.endsAt || "");
-                  }}
-                />
-              </div>
+                <div className="mt-6">
+                  <AvailabilityCalendar
+                    offerId={item.id}
+                    offerType={isRequestOnlyService ? "item" : item.offer_type}
+                    isOwner={Boolean(isOwner)}
+                    selectedRange={
+                      !isService && borrowFrom && borrowTo
+                        ? { dateFrom: borrowFrom, dateTo: borrowTo }
+                        : null
+                    }
+                    selectedSlot={
+                      isTimedService && startsAt && endsAt
+                        ? { startsAt, endsAt }
+                        : null
+                    }
+                    onRangeChange={(range) => {
+                      setBorrowFrom(range?.dateFrom || "");
+                      setBorrowTo(range?.dateTo || "");
+                    }}
+                    onSlotChange={(slot) => {
+                      setStartsAt(slot?.startsAt || "");
+                      setEndsAt(slot?.endsAt || "");
+                    }}
+                  />
+                </div>
+              )}
+
+              {isRequestOnlyService && !isOwner && (
+                <div className="mt-6 rounded-3xl bg-[var(--koluj-bg)] p-5">
+                  <p className="font-black">Dostupnost</p>
+
+                  {isRequestOnlyUnavailable && activeRequestOnlyBlock ? (
+                    <div className="mt-3 space-y-2">
+                      <p className="font-bold text-red-700">
+                        Poskytovatel momentálně nepřijímá nové poptávky.
+                      </p>
+                      <p className="text-sm font-bold text-[var(--koluj-muted)]">
+                        Nedostupné:{" "}
+                        {formatDate(activeRequestOnlyBlock.date_from)} –{" "}
+                        {formatDate(activeRequestOnlyBlock.date_to)}
+                      </p>
+                      {activeRequestOnlyBlock.reason && (
+                        <p className="text-sm text-[var(--koluj-muted)]">
+                          {activeRequestOnlyBlock.reason}
+                        </p>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="mt-3 space-y-2">
+                      <p className="text-[var(--koluj-muted)]">
+                        Termín služby domluvíte přímo s poskytovatelem po
+                        odeslání poptávky.
+                      </p>
+                      {nextRequestOnlyBlock && (
+                        <p className="text-sm font-bold text-[var(--koluj-muted)]">
+                          Plánovaná nedostupnost:{" "}
+                          {formatDate(nextRequestOnlyBlock.date_from)} –{" "}
+                          {formatDate(nextRequestOnlyBlock.date_to)}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
 
               <div className="mt-5 rounded-3xl bg-[var(--koluj-bg)] p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div>
-                    <p className="font-black">Vybraný termín</p>
+                    <p className="font-black">
+                      {isRequestOnlyService ? "Poptávka" : "Vybraný termín"}
+                    </p>
 
                     {isTimedService && startsAt && endsAt ? (
                       <div className="mt-3 space-y-1">
                         <p className="text-lg font-black">
-                          {formatDateTime(startsAt)} <span className="mx-2">→</span>{" "}
+                          {formatDateTime(startsAt)}{" "}
+                          <span className="mx-2">→</span>{" "}
                           {formatDateTime(endsAt)}
                         </p>
                         {selectedServiceMinutes && (
                           <p className="font-bold text-[var(--koluj-muted)]">
                             {selectedServiceMinutes / 60} h
-                            {selectedServicePrice !== null ? ` · celkem ${selectedServicePrice} Kč` : ""}
+                            {selectedServicePrice !== null
+                              ? ` · celkem ${selectedServicePrice} Kč`
+                              : ""}
                           </p>
                         )}
                       </div>
@@ -570,7 +705,11 @@ export default function ItemDetailPage() {
                       </p>
                     ) : (
                       <p className="mt-3 text-[var(--koluj-muted)]">
-                        {isRequestOnlyService ? "Termín služby domluvíte ve zprávách po odeslání poptávky." : isService ? "Zatím není vybraný žádný čas." : "Zatím není vybraný žádný termín."}
+                        {isRequestOnlyService
+                          ? "Termín služby domluvíte ve zprávách po odeslání poptávky."
+                          : isService
+                            ? "Zatím není vybraný žádný čas."
+                            : "Zatím není vybraný žádný termín."}
                       </p>
                     )}
                   </div>
@@ -582,7 +721,8 @@ export default function ItemDetailPage() {
                   )}
                 </div>
 
-                {((isTimedService && startsAt && endsAt) || (!isService && borrowFrom && borrowTo)) && (
+                {((isTimedService && startsAt && endsAt) ||
+                  (!isService && borrowFrom && borrowTo)) && (
                   <button
                     type="button"
                     onClick={() => {
@@ -612,7 +752,8 @@ export default function ItemDetailPage() {
                 <>
                   <div className="mt-6 grid gap-3">
                     <label className="grid gap-2 text-sm font-bold text-[var(--koluj-muted)]">
-                      Zpráva pro vlastníka <span className="font-normal">(volitelné)</span>
+                      Zpráva pro vlastníka{" "}
+                      <span className="font-normal">(volitelné)</span>
                       <textarea
                         value={borrowNote}
                         maxLength={500}
@@ -633,21 +774,31 @@ export default function ItemDetailPage() {
                     onClick={handleBorrowClick}
                     disabled={
                       submittingBorrowRequest ||
-                      (isTimedService ? !startsAt || !endsAt || startsAt === endsAt : !isService ? !borrowFrom || !borrowTo : false)
+                      isRequestOnlyUnavailable ||
+                      (isTimedService
+                        ? !startsAt || !endsAt || startsAt === endsAt
+                        : !isService
+                          ? !borrowFrom || !borrowTo
+                          : false)
                     }
                     className="koluj-button mt-6 w-full px-6 py-4 disabled:cursor-not-allowed disabled:opacity-70"
                   >
                     {submittingBorrowRequest
                       ? "Odesílám žádost..."
-                      : isTimedService && startsAt && endsAt && startsAt !== endsAt
-                      ? "Objednat službu"
-                      : isRequestOnlyService
-                      ? "Odeslat poptávku"
-                      : !isService && borrowFrom && borrowTo
-                      ? "Půjčit si"
-                      : isTimedService
-                      ? "Vyber čas"
-                      : "Vyber termín"}
+                      : isRequestOnlyUnavailable
+                        ? "Momentálně nedostupné"
+                        : isTimedService &&
+                            startsAt &&
+                            endsAt &&
+                            startsAt !== endsAt
+                          ? "Objednat službu"
+                          : isRequestOnlyService
+                            ? "Odeslat poptávku"
+                            : !isService && borrowFrom && borrowTo
+                              ? "Půjčit si"
+                              : isTimedService
+                                ? "Vyber čas"
+                                : "Vyber termín"}
                   </button>
                 </>
               )}
@@ -657,8 +808,9 @@ export default function ItemDetailPage() {
                   size={20}
                   className="shrink-0 text-[var(--koluj-green)]"
                 />
-                Domluv se s vlastníkem na detailech. Platbu a předání služby nebo věci řešte
-                bezpečně a férově.
+                {isService
+                  ? "Po odeslání poptávky se domluvte s poskytovatelem na průběhu služby, ceně a všech detailech."
+                  : "Domluv se s vlastníkem na detailech. Platbu a předání věci řešte bezpečně a férově."}
               </div>
             </div>
 

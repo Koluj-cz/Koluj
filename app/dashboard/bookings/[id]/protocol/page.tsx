@@ -1,8 +1,6 @@
 import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { createServerClient } from "@supabase/ssr";
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
 import PrintButton from "@/app/components/PrintButton";
 import { categoryLabels, serviceCategoryLabels } from "@/lib/constants";
 import BackLink from "@/app/components/BackLink";
@@ -206,18 +204,20 @@ export default async function BookingHandoverProtocolPage({ params }: PageProps)
           </div>
         </section>
 
-        <section className="mb-5">
-          <h2 className="mb-2 text-sm font-black uppercase">4. Ověření totožnosti</h2>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-2">
-            <Checkbox label="Totožnost ověřena dle občanského průkazu" />
-            <Checkbox label="Totožnost nebyla ověřena" />
-            <p><strong>Číslo OP / poslední 4 znaky:</strong> _______________________</p>
-            <p><strong>Platnost dokladu do:</strong> _______________________</p>
-          </div>
-        </section>
+        {!isService && (
+          <section className="mb-5">
+            <h2 className="mb-2 text-sm font-black uppercase">4. Ověření totožnosti</h2>
+            <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+              <Checkbox label="Totožnost ověřena dle občanského průkazu" />
+              <Checkbox label="Totožnost nebyla ověřena" />
+              <p><strong>Číslo OP / poslední 4 znaky:</strong> _______________________</p>
+              <p><strong>Platnost dokladu do:</strong> _______________________</p>
+            </div>
+          </section>
+        )}
 
         <section className="mb-5">
-          <h2 className="mb-2 text-sm font-black uppercase">{isService ? "5. Provedení služby" : "5. Stav nabídky při předání"}</h2>
+          <h2 className="mb-2 text-sm font-black uppercase">{isService ? "4. Provedení služby" : "5. Stav nabídky při předání"}</h2>
           <p className="mb-2">
             {isService
               ? "Zákazník potvrzuje, že služba byla provedena v dohodnutém rozsahu uvedeném níže. "
@@ -229,37 +229,39 @@ export default async function BookingHandoverProtocolPage({ params }: PageProps)
           </div>
         </section>
 
-        <section className="mb-5 grid grid-cols-2 gap-8">
-          <div>
-            <h2 className="mb-2 text-sm font-black uppercase">6. Fotodokumentace </h2>
-            <div className="space-y-2">
-              <Checkbox label="Fotografie byly pořízeny" />
-              <Checkbox label="Fotografie nebyly pořízeny" />
+        {isService ? (
+          <section className="mb-5">
+            <h2 className="mb-2 text-sm font-black uppercase">5. Platba / cena</h2>
+            <div className="grid grid-cols-2 gap-x-8 gap-y-2">
+              <Checkbox label="Cena uhrazena v hotovosti" />
+              <Checkbox label="Cena uhrazena převodem" />
+              <Checkbox label="Cena bude uhrazena později dle dohody" />
+              <p><strong>Uhrazena částka:</strong> _______________________ Kč</p>
             </div>
-          </div>
+          </section>
+        ) : (
+          <section className="mb-5 grid grid-cols-2 gap-8">
+            <div>
+              <h2 className="mb-2 text-sm font-black uppercase">6. Fotodokumentace</h2>
+              <div className="space-y-2">
+                <Checkbox label="Fotografie byly pořízeny" />
+                <Checkbox label="Fotografie nebyly pořízeny" />
+              </div>
+            </div>
 
-          <div>
-            <h2 className="mb-2 text-sm font-black uppercase">7. {isService ? "Platba / cena" : "Kauce"}</h2>
-            <div className="space-y-2">
-              {isService ? (
-                <>
-                  <Checkbox label="Cena uhrazena v hotovosti" />
-                  <Checkbox label="Cena uhrazena převodem" />
-                  <Checkbox label="Cena bude uhrazena později dle dohody" />
-                </>
-              ) : (
-                <>
-                  <Checkbox label="Kauce převzata v hotovosti" />
-                  <Checkbox label="Kauce uhrazena převodem" />
-                  <Checkbox label="Kauce není požadována" />
-                </>
-              )}
+            <div>
+              <h2 className="mb-2 text-sm font-black uppercase">7. Kauce</h2>
+              <div className="space-y-2">
+                <Checkbox label="Kauce převzata v hotovosti" />
+                <Checkbox label="Kauce uhrazena převodem" />
+                <Checkbox label="Kauce není požadována" />
+              </div>
             </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         <section className="mb-5">
-          <h2 className="mb-2 text-sm font-black uppercase">8. Prohlášení</h2>
+          <h2 className="mb-2 text-sm font-black uppercase">{isService ? "6. Prohlášení" : "8. Prohlášení"}</h2>
           <p className="leading-relaxed">
             {isService
               ? "Potvrzuji, že služba byla provedena v dohodnutém rozsahu, případné výhrady jsou uvedeny v poznámkách tohoto protokolu."
@@ -268,7 +270,7 @@ export default async function BookingHandoverProtocolPage({ params }: PageProps)
         </section>
 
         <section className="mb-8">
-          <h2 className="mb-2 text-sm font-black uppercase">9. Poznámky</h2>
+          <h2 className="mb-2 text-sm font-black uppercase">{isService ? "7. Poznámky" : "9. Poznámky"}</h2>
           <WriteBox label="Další ujednání / poznámky:" height="h-16" />
         </section>
 
