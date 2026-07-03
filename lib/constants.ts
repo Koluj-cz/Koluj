@@ -5,6 +5,12 @@ export const offerTypeLabels: Record<string, string> = {
 
 export const offerTypes = ["item", "service"] as const;
 
+export const offerTypeTabs = [
+  { value: "all", label: "Vše" },
+  { value: "item", label: "Věci" },
+  { value: "service", label: "Služby" },
+] as const;
+
 export const itemPriceUnitLabels: Record<string, string> = {
   day: "za den",
   weekend: "za víkend",

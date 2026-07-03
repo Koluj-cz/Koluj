@@ -5,21 +5,22 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
   ArrowRight,
-  Bike,
-  Briefcase,
-  Drill,
   Leaf,
   LocateFixed,
-  PackageOpen,
   Search,
-  Sprout,
-  Wrench,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
 import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
 import InstallAppButton from "@/app/components/InstallAppButton";
 import { getDistanceKm } from "@/lib/location";
+import {
+  categories as itemCategories,
+  categoryLabels,
+  offerTypeTabs,
+  serviceCategories,
+  serviceCategoryLabels,
+} from "@/lib/constants";
 
 const OffersMap = dynamic(() => import("@/app/components/OffersMap"), { ssr: false });
 
@@ -27,27 +28,10 @@ const ITEMS_PER_PAGE = 10;
 
 type OfferTypeFilter = "all" | "item" | "service";
 
-type CategoryDefinition = {
-  icon: React.ReactNode;
-  label: string;
-  category: string;
-  offerType?: "item" | "service";
-};
-
-const offerTypeTabs: { value: OfferTypeFilter; label: string }[] = [
-  { value: "all", label: "Vše" },
-  { value: "item", label: "Věci" },
-  { value: "service", label: "Služby" },
-];
-
-const categories: CategoryDefinition[] = [
-  { icon: <Drill size={18} />, label: "Dílna", category: "naradi", offerType: "item" },
-  { icon: <Bike size={18} />, label: "Sport", category: "sport", offerType: "item" },
-  { icon: <PackageOpen size={18} />, label: "Věci", category: "veci", offerType: "item" },
-  { icon: <Sprout size={18} />, label: "Zahrada", category: "zahrada", offerType: "service" },
-  { icon: <Wrench size={18} />, label: "Řemesla", category: "remesla", offerType: "service" },
-  { icon: <Briefcase size={18} />, label: "Služby", category: "sluzby", offerType: "service" },
-];
+function getCategoryLabel(category: string, offerType: OfferTypeFilter) {
+  if (offerType === "service") return serviceCategoryLabels[category] || category;
+  return categoryLabels[category] || serviceCategoryLabels[category] || category;
+}
 
 async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
   if (items.length === 0) return items as (T & { is_reserved_today: boolean })[];
@@ -99,8 +83,13 @@ export default function HomePage() {
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const availableCategories = useMemo(() => {
-    if (selectedOfferType === "all") return categories;
-    return categories.filter((category) => category.offerType === selectedOfferType);
+    if (selectedOfferType === "item") return [...itemCategories];
+    if (selectedOfferType === "service") return [...serviceCategories];
+
+    return [
+      ...itemCategories,
+      ...serviceCategories.filter((category) => !itemCategories.includes(category as (typeof itemCategories)[number])),
+    ];
   }, [selectedOfferType]);
 
   useEffect(() => {
@@ -329,8 +318,8 @@ export default function HomePage() {
                 >
                   <option value="">Všechny kategorie</option>
                   {availableCategories.map((category) => (
-                    <option key={`${category.offerType}-${category.category}`} value={category.category}>
-                      {category.label}
+                    <option key={category} value={category}>
+                      {getCategoryLabel(category, selectedOfferType)}
                     </option>
                   ))}
                 </select>
@@ -412,15 +401,13 @@ export default function HomePage() {
 function SidebarFooter() {
   return (
     <div className="koluj-sidebar-footer">
-      <nav className="flex flex-col gap-3 text-sm font-bold text-[var(--koluj-muted)]" aria-label="Právní odkazy">
+      <nav className="koluj-sidebar-footer-links" aria-label="Právní odkazy">
         <Link href="/legal/terms" className="hover:text-[var(--koluj-green)]">Podmínky</Link>
         <Link href="/legal/privacy" className="hover:text-[var(--koluj-green)]">Soukromí</Link>
         <Link href="/legal/cookies" className="hover:text-[var(--koluj-green)]">Cookies</Link>
         <a href="mailto:info@koluj.cz" className="hover:text-[var(--koluj-green)]">Kontakt</a>
-        <span className="mt-3 text-xs font-bold uppercase tracking-[0.18em] text-[var(--koluj-muted)] opacity-60">
-          © {new Date().getFullYear()} Koluj
-        </span>
       </nav>
+      <p className="koluj-sidebar-copyright">© {new Date().getFullYear()} Koluj</p>
     </div>
   );
 }
