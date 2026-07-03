@@ -198,9 +198,9 @@ export default function HomePage() {
           </div>
         </header>
 
-        <section className="relative grid min-h-[calc(100vh-96px)] items-center gap-8 pt-6 pb-8 lg:grid-cols-[0.78fr_1.22fr] lg:pt-8 lg:pb-10">
+        <section className="relative grid min-h-[calc(100vh-96px)] items-start gap-8 pt-2 pb-8 lg:grid-cols-[0.78fr_1.22fr] lg:pt-2 lg:pb-10">
           <div className="relative z-20 max-w-2xl">
-            <h1 className="koluj-heading mt-6">
+            <h1 className="koluj-heading mt-0">
               Sdílej.<br />Půjčuj.<br /><span className="text-[var(--koluj-green)]">Koluj.</span>
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-[var(--koluj-muted)] md:text-2xl">
