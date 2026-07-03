@@ -224,7 +224,12 @@ export default function ProfilePage() {
         <header className="mb-8 flex items-center justify-between">
           <BackLink href="/dashboard">Dashboard</BackLink>
 
-
+          <button
+            onClick={saveProfile}
+            className="hidden lg:block koluj-button px-6 py-3"
+          >
+            Uložit profil
+          </button>
         </header>
 
         <section className="mt-10 px-0 md:mt-16 md:px-8">
@@ -445,15 +450,6 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="lg:hidden">
-            <button
-              onClick={saveProfile}
-              className="koluj-button w-full px-6 py-4"
-            >
-              Uložit profil
-            </button>
-          </div>
-
           <aside className="hidden lg:block">
             <div className="koluj-card sticky top-8 p-8">
               <h2 className="text-2xl font-black">Kontrola profilu</h2>
@@ -473,6 +469,15 @@ export default function ProfilePage() {
             </div>
           </aside>
         </section>
+      </div>
+      <div className="fixed right-4 top-4 z-50 lg:hidden">
+        <button
+          type="button"
+          onClick={saveProfile}
+          className="koluj-button px-6 py-3 shadow-2xl"
+        >
+          Uložit profil
+        </button>
       </div>
     </main>
   );

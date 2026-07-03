@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Baby, Boxes, GraduationCap, Home, Laptop, MapPin, Star, Trees, Truck, Wrench } from "lucide-react";
+import { Baby, Boxes, GraduationCap, Home, Laptop, MapPin, Trees, Truck, Wrench } from "lucide-react";
 import { categoryLabels, serviceCategoryLabels } from "@/lib/constants";
 import { translatePriceUnit } from "@/lib/format";
 
@@ -25,7 +25,10 @@ export type OfferCardOffer = {
     full_name: string | null;
     avatar_url: string | null;
     is_verified: boolean | null;
-    profile_ratings?: { rating_avg: number | null; rating_count: number | null }[] | null;
+    profile_ratings?: {
+      rating_avg: number | null;
+      rating_count: number | null;
+    }[] | null;
   } | null;
 };
 
@@ -36,7 +39,7 @@ type OfferCardProps = {
 };
 
 function ServiceFallbackImage({ category }: { category: string }) {
-  const iconClass = "h-12 w-12 text-[var(--koluj-green)]";
+  const iconClass = "h-16 w-16 text-[var(--koluj-green)]";
   const icon =
     category === "domacnost" ? <Home className={iconClass} /> :
     category === "zahrada" ? <Trees className={iconClass} /> :
@@ -48,8 +51,8 @@ function ServiceFallbackImage({ category }: { category: string }) {
     <Wrench className={iconClass} />;
 
   return (
-    <div className="flex h-full w-full items-center justify-center bg-[var(--koluj-bg-soft)]">
-      <div className="flex h-24 w-24 items-center justify-center rounded-full bg-white">
+    <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-[var(--koluj-bg)] to-white">
+      <div className="flex h-28 w-28 items-center justify-center rounded-full bg-white shadow-sm">
         {icon}
       </div>
     </div>
@@ -57,90 +60,149 @@ function ServiceFallbackImage({ category }: { category: string }) {
 }
 
 function shortPlace(place: string) {
-  return place.split(",").map((part) => part.trim()).filter(Boolean).slice(-2, -1)[0] || place;
+  return (
+    place
+      .split(",")
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .slice(-2, -1)[0] || place
+  );
 }
 
-export default function OfferCard({ item, variant = "public", footer }: OfferCardProps) {
+export default function OfferCard({
+  item,
+  variant = "public",
+  footer,
+}: OfferCardProps) {
   const isReserved = Boolean(item.is_reserved_today);
+  const statusLabel = isReserved ? "Rezervované" : "Volné";
+  const statusClass = isReserved
+    ? "bg-red-100 text-red-700"
+    : "bg-emerald-100 text-emerald-800";
+
   const isService = item.offer_type === "service";
-  const typeLabel = isService ? "Služba" : "Věc";
-  const categoryLabel = isService ? serviceCategoryLabels[item.category] || item.category : categoryLabels[item.category] || item.category;
+  const categoryLabel = isService
+    ? serviceCategoryLabels[item.category] || item.category
+    : categoryLabels[item.category] || item.category;
+
   const ownerName = item.profiles?.full_name || "Uživatel";
   const rating = item.profiles?.profile_ratings?.[0];
-  const ratingText = rating && rating.rating_count ? Number(rating.rating_avg).toFixed(1) : "Nový";
+
+  const ratingText =
+    rating && rating.rating_count
+      ? `★ ${Number(rating.rating_avg).toFixed(1)}`
+      : "★ Nový";
+
   const bookingCount = item.bookings?.length || 0;
 
-  const content = (
-    <article className="group/card flex h-full flex-col overflow-hidden rounded-[28px] border border-[var(--koluj-border-strong)] bg-white transition duration-300 hover:-translate-y-1 hover:border-[rgba(47,93,58,0.28)]">
-      <div className="relative aspect-[4/5] overflow-hidden bg-[var(--koluj-bg-soft)]">
+  const cardContent = (
+    <div className="flex h-full flex-col overflow-hidden rounded-[30px] bg-[var(--koluj-surface)] shadow-[0_16px_40px_rgba(31,31,26,0.12)]">
+      <div className="p-4 sm:p-5">
+        <p className="text-sm font-black text-[var(--koluj-green)]">
+          {categoryLabel}
+        </p>
+
+        <h3 className="mt-1 overflow-hidden whitespace-nowrap text-ellipsis text-[1.75rem] font-extrabold leading-none tracking-[-0.03em]">
+          {item.title}
+        </h3>
+
+        <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-3 text-sm font-bold text-[var(--koluj-muted)]">
+          <span className="flex items-center gap-1.5">
+            <MapPin size={16} />
+            {shortPlace(item.pickup_place)}
+          </span>
+
+          {variant === "public" && (
+            <button
+              type="button"
+              onClick={(event) => {
+                event.preventDefault();
+                event.stopPropagation();
+
+                if (item.owner_id) {
+                  window.location.href = `/users/${item.owner_id}`;
+                }
+              }}
+              className="flex items-center gap-2 text-left transition hover:text-[var(--koluj-green)]"
+            >
+              {item.profiles?.avatar_url ? (
+                <img
+                  src={item.profiles.avatar_url}
+                  alt={ownerName}
+                  className="h-8 w-8 rounded-full object-cover"
+                />
+              ) : (
+                <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-xs font-black text-[var(--koluj-green)]">
+                  {ownerName.charAt(0).toUpperCase()}
+                </div>
+              )}
+
+              <span className="font-black text-[var(--koluj-text)]">
+                {ownerName}
+              </span>
+
+              <span className="font-black text-[var(--koluj-green)]">
+                {ratingText}
+              </span>
+            </button>
+          )}
+
+          {variant === "owner" && (
+            <span className="font-black">{bookingCount} rezervací</span>
+          )}
+        </div>
+      </div>
+
+      <div className="relative h-[260px] overflow-hidden bg-[var(--koluj-bg)] sm:h-[320px]">
         {item.primary_image_url ? (
-          <img src={item.primary_image_url} alt={item.title} className="h-full w-full object-cover transition duration-700 group-hover/card:scale-[1.035]" />
+          <img
+            src={item.primary_image_url}
+            alt={item.title}
+            className="h-full w-full object-cover transition duration-700 group-hover:scale-105"
+          />
         ) : isService ? (
           <ServiceFallbackImage category={item.category} />
         ) : (
-          <div className="flex h-full items-center justify-center text-sm font-semibold text-[var(--koluj-muted)]">Bez fotky</div>
+          <div className="flex h-full items-center justify-center text-sm text-[var(--koluj-muted)]">
+            Bez fotky
+          </div>
         )}
 
-        <div className="absolute inset-x-0 top-0 flex items-start gap-3 p-3">
-          <div className="flex flex-wrap gap-2">
-            <span className="rounded-full bg-white/92 px-3 py-1.5 text-xs font-semibold text-[var(--koluj-ink)] backdrop-blur">{typeLabel}</span>
-            <span className="hidden rounded-full bg-white/80 px-3 py-1.5 text-xs font-semibold text-[var(--koluj-muted)] backdrop-blur sm:inline-flex">{categoryLabel}</span>
+        {item.price_amount && item.price_unit && (
+          <div className="absolute bottom-4 left-4 rounded-2xl bg-[var(--koluj-green)] px-4 py-2 text-sm font-black text-white shadow-lg">
+            {item.price_amount} Kč / {translatePriceUnit(item.price_unit, item.offer_type)}
           </div>
-        </div>
-
-        <div className="absolute bottom-3 left-3 rounded-full bg-white/92 px-3 py-1.5 text-xs font-semibold text-[var(--koluj-green)] backdrop-blur">
-          {isReserved ? "Dnes obsazeno" : "Dnes volné"}
-        </div>
-      </div>
-
-      <div className="flex flex-1 flex-col px-4 pb-4 pt-4">
-        <div className="flex items-start justify-between gap-4">
-          <div className="min-w-0">
-            <h3 className="truncate text-[1.18rem] font-semibold leading-tight tracking-[-0.035em] text-[var(--koluj-ink)]">{item.title}</h3>
-            <p className="mt-1 flex items-center gap-1.5 truncate text-sm text-[var(--koluj-muted)]">
-              <MapPin size={14} />
-              {shortPlace(item.pickup_place)}
-            </p>
-          </div>
-          <div className="shrink-0 text-right">
-            {item.price_amount && item.price_unit ? (
-              <>
-                <p className="text-lg font-extrabold tracking-[-0.04em] text-[var(--koluj-green)]">{item.price_amount} Kč</p>
-                <p className="text-xs text-[var(--koluj-muted)]">/{translatePriceUnit(item.price_unit, item.offer_type)}</p>
-              </>
-            ) : (
-              <p className="text-base font-semibold text-[var(--koluj-ink)]">Dohodou</p>
-            )}
-          </div>
-        </div>
-
-        {variant === "public" ? (
-          <button
-            type="button"
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              if (item.owner_id) window.location.href = `/users/${item.owner_id}`;
-            }}
-            className="mt-3 flex items-center gap-2 text-left text-sm transition hover:text-[var(--koluj-green)]"
-          >
-            {item.profiles?.avatar_url ? (
-              <img src={item.profiles.avatar_url} alt={ownerName} className="h-7 w-7 rounded-full object-cover" />
-            ) : (
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--koluj-green-soft)] text-xs font-semibold text-[var(--koluj-green)]">{ownerName.charAt(0).toUpperCase()}</div>
-            )}
-            <span className="truncate text-[var(--koluj-muted)]">{ownerName}</span>
-            <span className="inline-flex items-center gap-1 font-semibold text-[var(--koluj-ink)]"><Star size={13} fill="currentColor" />{ratingText}</span>
-          </button>
-        ) : (
-          <p className="mt-3 text-sm font-semibold text-[var(--koluj-muted)]">{bookingCount} rezervací</p>
         )}
+
+        <span
+          className={`koluj-status-badge absolute bottom-4 right-4 ${statusClass}`}
+        >
+          {statusLabel}
+        </span>
       </div>
 
-      {footer && <div className="mt-4 border-t border-[var(--koluj-border)] pt-4">{footer}</div>}
-    </article>
+      {footer && (
+        <div className="bg-[var(--koluj-surface)] px-5 py-4">
+          {footer}
+        </div>
+      )}
+    </div>
   );
 
-  if (variant === "owner") return <div className="h-full">{content}</div>;
-  return <Link href={`/offers/${item.id}`} className="block h-full rounded-[28px]">{content}</Link>;
+  if (variant === "owner") {
+    return (
+      <div className="group flex h-full flex-col overflow-hidden rounded-[30px]">
+        {cardContent}
+      </div>
+    );
+  }
+
+  return (
+    <Link
+      href={`/offers/${item.id}`}
+      className="group block h-full overflow-hidden rounded-[30px] transition hover:-translate-y-1"
+    >
+      {cardContent}
+    </Link>
+  );
 }

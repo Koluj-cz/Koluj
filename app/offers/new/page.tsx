@@ -389,9 +389,17 @@ export default function NewItemPage() {
       <div className="koluj-shell">
         <header className="mb-8 flex items-center justify-between">
           <BackLink href="/dashboard">Dashboard</BackLink>
+
+        <button
+          onClick={handleSubmit}
+          disabled={loading}
+          className="hidden lg:block koluj-button px-6 py-3 disabled:opacity-60"
+        >
+          {loading ? "Ukládám..." : "Přidat nabídku"}
+        </button>
         </header>
 
-        <section className="mt-10 px-0 md:mt-16 md:px-8">
+        <section className="mt-16 px-8">
           <h1 className="koluj-heading">
             Přidat nabídku
           </h1>
@@ -401,9 +409,9 @@ export default function NewItemPage() {
           </p>
         </section>
 
-        <section className="mt-10 grid gap-6 px-0 md:mt-14 md:px-8 lg:grid-cols-[1fr_360px]">
+        <section className="mt-14 grid gap-8 px-8 lg:grid-cols-[1fr_360px]">
           <div className="space-y-8">
-            <div className="koluj-card p-5 md:p-8">
+            <div className="koluj-card p-8">
               <SectionTitle icon={<Package size={24} />} title="Co chceš nabídnout?" />
 
               <div className="mt-6 grid gap-3 md:grid-cols-2">
@@ -439,7 +447,7 @@ export default function NewItemPage() {
               </div>
             </div>
 
-            <div className="koluj-card p-5 md:p-8">
+            <div className="koluj-card p-8">
               <SectionTitle icon={<Camera size={24} />} title={form.offer_type === "service" ? "Fotky služby" : "Fotky věci"} />
 
               <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -521,7 +529,7 @@ export default function NewItemPage() {
               )}
             </div>
 
-            <div className="koluj-card p-5 md:p-8">
+            <div className="koluj-card p-8">
               <SectionTitle icon={<Package size={24} />} title="O nabídce" />
 
               <div className="mt-6 space-y-4">
@@ -576,7 +584,7 @@ export default function NewItemPage() {
               </div>
             </div>
 
-            <div className="koluj-card p-5 md:p-8">
+            <div className="koluj-card p-8">
               <SectionTitle title="Cena" />
 
               <div className="mt-6 space-y-4">
@@ -625,7 +633,7 @@ export default function NewItemPage() {
               </div>
             </div>
 
-            <div className="koluj-card p-5 md:p-8">
+            <div className="koluj-card p-8">
               <SectionTitle icon={<MapPin size={24} />} title={form.offer_type === "service" ? "Lokalita působení" : "Předání"} />
 
               <div className="relative mt-6">
@@ -701,7 +709,7 @@ export default function NewItemPage() {
               />
             </div>
 
-            <div className="koluj-card p-5 md:p-8">
+            <div className="koluj-card p-8">
               <SectionTitle title="Dostupnost" />
 
               <div className="mt-6 rounded-3xl border border-[var(--koluj-border)] bg-[var(--koluj-bg)] p-6">
@@ -716,16 +724,6 @@ export default function NewItemPage() {
                 </p>
               </div>
             </div>
-          </div>
-
-          <div className="lg:hidden">
-            <button
-              onClick={handleSubmit}
-              disabled={loading}
-              className="koluj-button w-full px-6 py-4 disabled:opacity-60"
-            >
-              {loading ? "Ukládám..." : "Přidat nabídku"}
-            </button>
           </div>
 
           <aside className="hidden lg:block">
@@ -762,6 +760,16 @@ export default function NewItemPage() {
           </aside>
         </section>
       </div>
+    <div className="fixed right-4 top-4 z-50 lg:hidden">
+      <button
+        type="button"
+        onClick={handleSubmit}
+        disabled={loading}
+        className="koluj-button px-6 py-3 shadow-2xl disabled:opacity-60"
+      >
+        {loading ? "Ukládám..." : "Přidat nabídku"}
+      </button>
+    </div>
     </main>
   );
 }
