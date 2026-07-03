@@ -10,7 +10,13 @@ type BeforeInstallPromptEvent = Event & {
   }>;
 };
 
-export default function InstallAppButton() {
+type InstallAppButtonProps = {
+  iconOnly?: boolean;
+};
+
+export default function InstallAppButton({
+  iconOnly = false,
+}: InstallAppButtonProps) {
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
 
@@ -40,17 +46,27 @@ export default function InstallAppButton() {
 
   if (!deferredPrompt) return null;
 
+  if (iconOnly) {
+    return (
+      <button
+        onClick={installApp}
+        title="Instalovat aplikaci"
+        aria-label="Instalovat aplikaci"
+        className="koluj-button-secondary min-h-[52px] w-[52px] px-0 flex items-center justify-center"
+      >
+        <Download size={20} />
+      </button>
+    );
+  }
+
   return (
     <button
       onClick={installApp}
       title="Instalovat aplikaci"
-      className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--koluj-border)] bg-white px-4 py-3 font-bold text-[var(--koluj-green)] shadow-sm hover:bg-[var(--koluj-bg)]"
+      className="koluj-button-secondary min-h-[52px] px-4"
     >
       <Download size={18} />
-
-      <span className="hidden md:inline">
-        Instalovat aplikaci
-      </span>
+      <span>Instalovat aplikaci</span>
     </button>
   );
 }

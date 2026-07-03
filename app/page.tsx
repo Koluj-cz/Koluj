@@ -7,7 +7,9 @@ import {
   ArrowRight,
   Leaf,
   LocateFixed,
+  Plus,
   Search,
+  User,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
@@ -256,8 +258,11 @@ export default function HomePage() {
             <p className="mt-5 max-w-2xl text-lg leading-relaxed text-[var(--koluj-muted)]">
               Věci i služby, které dávají smysl – pro tebe, pro sousedy i pro planetu.
             </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <a href="#nabidky" className="koluj-button min-h-[52px] px-6">Procházet nabídky <ArrowRight size={18} /></a>
+            <div className="mt-7 flex flex-wrap items-center gap-3">
+              <a href="#nabidky" className="koluj-button min-h-[52px] px-6">
+                Procházet nabídky <ArrowRight size={18} />
+              </a>
+              <InstallAppButton iconOnly />
             </div>
           </div>
         </section>
