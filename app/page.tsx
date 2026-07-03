@@ -1,167 +1,56 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   ArrowRight,
-  Drill,
   Bike,
-  Smartphone,
-  Trees,
-  Camera,
   Boxes,
+  Briefcase,
+  Camera,
+  Drill,
+  Leaf,
   LocateFixed,
-  MapPin,
+  PackageOpen,
+  Plus,
   Search,
-  ShieldCheck,
   Sparkles,
-  Users,
+  Sprout,
   Wrench,
-  GraduationCap,
-  Laptop,
-  Home,
-  Truck,
-  Baby,
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
-import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
 import toast from "react-hot-toast";
+import { supabase } from "@/lib/supabase";
+import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
 import InstallAppButton from "@/app/components/InstallAppButton";
 import { getDistanceKm } from "@/lib/location";
 
-const OffersMap = dynamic(() => import("@/app/components/OffersMap"), {
-  ssr: false,
-});
-
-const DISPLAYED_ITEMS_COUNT = 10;
-const ROTATION_INTERVAL_MS = 3000;
-
+const DISPLAYED_ITEMS_COUNT = 8;
 type OfferTypeFilter = "all" | "item" | "service";
 
 type CategoryDefinition = {
-  icon?: React.ReactNode;
+  icon: React.ReactNode;
   label: string;
   category: string;
   offerType?: "item" | "service";
 };
 
-const itemCategoryChips: CategoryDefinition[] = [
-  {
-    icon: <Drill size={16} />,
-    label: "Nářadí",
-    category: "naradi",
-    offerType: "item",
-  },
-  {
-    icon: <Bike size={16} />,
-    label: "Sport",
-    category: "sport",
-    offerType: "item",
-  },
-  {
-    icon: <Smartphone size={16} />,
-    label: "Elektronika",
-    category: "elektronika",
-    offerType: "item",
-  },
-  {
-    icon: <Sparkles size={16} />,
-    label: "Outdoor",
-    category: "outdoor",
-    offerType: "item",
-  },
-  {
-    icon: <Trees size={16} />,
-    label: "Dům a zahrada",
-    category: "dum_zahrada",
-    offerType: "item",
-  },
-  {
-    icon: <Camera size={16} />,
-    label: "Foto a video",
-    category: "foto_video",
-    offerType: "item",
-  },
-  {
-    icon: <Boxes size={16} />,
-    label: "Ostatní",
-    category: "ostatni",
-    offerType: "item",
-  },
-];
-
-const serviceCategoryChips: CategoryDefinition[] = [
-  {
-    icon: <Wrench size={16} />,
-    label: "Řemesla",
-    category: "remesla",
-    offerType: "service",
-  },
-  {
-    icon: <Home size={16} />,
-    label: "Domácnost",
-    category: "domacnost",
-    offerType: "service",
-  },
-  {
-    icon: <Trees size={16} />,
-    label: "Zahrada",
-    category: "zahrada",
-    offerType: "service",
-  },
-  {
-    icon: <Truck size={16} />,
-    label: "Stěhování",
-    category: "stehovani",
-    offerType: "service",
-  },
-  {
-    icon: <GraduationCap size={16} />,
-    label: "Doučování",
-    category: "doucovani",
-    offerType: "service",
-  },
-  {
-    icon: <Laptop size={16} />,
-    label: "IT",
-    category: "it",
-    offerType: "service",
-  },
-  {
-    icon: <Baby size={16} />,
-    label: "Hlídání",
-    category: "hlidani",
-    offerType: "service",
-  },
-  {
-    icon: <Boxes size={16} />,
-    label: "Ostatní služby",
-    category: "ostatni_sluzby",
-    offerType: "service",
-  },
-];
-
-const mixedCategoryChips: CategoryDefinition[] = [
-  itemCategoryChips[0],
-  itemCategoryChips[1],
-  itemCategoryChips[3],
-  itemCategoryChips[4],
-  serviceCategoryChips[0],
-  serviceCategoryChips[1],
-  serviceCategoryChips[2],
-  serviceCategoryChips[3],
+const categoryChips: CategoryDefinition[] = [
+  { icon: <PackageOpen size={20} />, label: "Věci", category: "", offerType: "item" },
+  { icon: <Briefcase size={20} />, label: "Služby", category: "", offerType: "service" },
+  { icon: <Drill size={20} />, label: "Dílna", category: "naradi", offerType: "item" },
+  { icon: <Bike size={20} />, label: "Sport", category: "sport", offerType: "item" },
+  { icon: <Sprout size={20} />, label: "Zahrada", category: "zahrada", offerType: "service" },
+  { icon: <Wrench size={20} />, label: "Řemesla", category: "remesla", offerType: "service" },
+  { icon: <Boxes size={20} />, label: "Vše", category: "" },
 ];
 
 function getOfferType(item: OfferCardOffer) {
-  return ((item as OfferCardOffer & { offer_type?: string }).offer_type ||
-    "item") as "item" | "service";
+  return ((item as OfferCardOffer & { offer_type?: string }).offer_type || "item") as "item" | "service";
 }
 
 async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
-  if (items.length === 0)
-    return items as (T & { is_reserved_today: boolean })[];
+  if (items.length === 0) return items as (T & { is_reserved_today: boolean })[];
 
   const today = new Date().toISOString().split("T")[0];
   const offerIds = items.map((item) => item.id);
@@ -182,99 +71,41 @@ async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
       .gte("date_to", today),
   ]);
 
-  if (reservationsResult.error) {
-    console.error("Reservations availability error:", reservationsResult.error);
-  }
-
-  if (blocksResult.error) {
-    console.error("Blocks availability error:", blocksResult.error);
-  }
+  if (reservationsResult.error) console.error("Reservations availability error:", reservationsResult.error);
+  if (blocksResult.error) console.error("Blocks availability error:", blocksResult.error);
 
   const reservedIds = new Set([
     ...(reservationsResult.data || []).map((row) => row.offer_id),
     ...(blocksResult.data || []).map((row) => row.offer_id),
   ]);
 
-  return items.map((item) => ({
-    ...item,
-    is_reserved_today: reservedIds.has(item.id),
-  }));
+  return items.map((item) => ({ ...item, is_reserved_today: reservedIds.has(item.id) }));
 }
 
 export default function HomePage() {
-  const [showMap, setShowMap] = useState(false);
-  const [items, setItems] = useState<OfferCardOffer[]>([]);
-  const [displayedItems, setDisplayedItems] = useState<OfferCardOffer[]>([]);
-  const [search, setSearch] = useState("");
-  const [selectedOfferType, setSelectedOfferType] =
-    useState<OfferTypeFilter>("all");
-  const [selectedCategory, setSelectedCategory] = useState("");
-  const [userLocation, setUserLocation] = useState<{
-    latitude: number;
-    longitude: number;
-  } | null>(null);
-
   const router = useRouter();
-
+  const [items, setItems] = useState<OfferCardOffer[]>([]);
+  const [search, setSearch] = useState("");
+  const [selectedOfferType, setSelectedOfferType] = useState<OfferTypeFilter>("all");
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [totalItems, setTotalItems] = useState(0);
-
-  function buildOffersHref() {
-    const params = new URLSearchParams();
-
-    if (search.trim()) {
-      params.set("search", search.trim());
-    }
-
-    if (selectedOfferType !== "all") {
-      params.set("type", selectedOfferType);
-    }
-
-    if (selectedCategory) {
-      params.set("category", selectedCategory);
-    }
-
-    return `/offers${params.toString() ? `?${params.toString()}` : ""}`;
-  }
-
-  function submitSearch() {
-    router.push(buildOffersHref());
-  }
-
-  function selectOfferType(type: OfferTypeFilter) {
-    setSelectedOfferType(type);
-    setSelectedCategory("");
-  }
 
   useEffect(() => {
     loadItems();
     loadUser();
-
-    const media = window.matchMedia("(min-width: 1024px)");
-    setShowMap(media.matches);
-
-    const handleChange = (event: MediaQueryListEvent) => {
-      setShowMap(event.matches);
-    };
-
-    media.addEventListener("change", handleChange);
-
-    return () => media.removeEventListener("change", handleChange);
   }, []);
 
   async function loadUser() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    setIsLoggedIn(!!user);
+    const { data: { user } } = await supabase.auth.getUser();
+    setIsLoggedIn(Boolean(user));
   }
 
   async function loadItems() {
     const { data, count } = await supabase
       .from("offers")
-      .select(
-        `
+      .select(`
         *,
         profiles:profiles!offers_owner_id_fkey (
           full_name,
@@ -285,20 +116,27 @@ export default function HomePage() {
             rating_count
           )
         )
-        `,
-        { count: "exact" },
-      )
+      `, { count: "exact" })
       .eq("is_active", true)
       .is("deleted_at", null)
       .order("created_at", { ascending: false })
       .limit(40);
 
-    const itemsWithAvailability = await attachTodayAvailability(
-      (data || []) as OfferCardOffer[],
-    );
-
+    const itemsWithAvailability = await attachTodayAvailability((data || []) as OfferCardOffer[]);
     setItems(itemsWithAvailability);
     setTotalItems(count || 0);
+  }
+
+  function buildOffersHref() {
+    const params = new URLSearchParams();
+    if (search.trim()) params.set("search", search.trim());
+    if (selectedOfferType !== "all") params.set("type", selectedOfferType);
+    if (selectedCategory) params.set("category", selectedCategory);
+    return `/offers${params.toString() ? `?${params.toString()}` : ""}`;
+  }
+
+  function submitSearch() {
+    router.push(buildOffersHref());
   }
 
   function useMyLocation() {
@@ -307,359 +145,164 @@ export default function HomePage() {
       return;
     }
 
-    toast.loading("Zjišťuji polohu...", {
-      id: "location",
-    });
-
+    toast.loading("Zjišťuji polohu...", { id: "location" });
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        setUserLocation({
-          latitude: position.coords.latitude,
-          longitude: position.coords.longitude,
-        });
-
-        toast.success("Poloha nalezena", {
-          id: "location",
-        });
+        setUserLocation({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+        toast.success("Poloha nalezena", { id: "location" });
       },
-      (error) => {
-        console.error("Geolocation error:", error);
-
-        let message = "Nepodařilo se získat polohu.";
-
-        if (error.code === error.PERMISSION_DENIED) {
-          message = "Poloha není povolená. Povol ji v nastavení prohlížeče.";
-        }
-
-        if (error.code === error.POSITION_UNAVAILABLE) {
-          message = "Poloha není momentálně dostupná.";
-        }
-
-        if (error.code === error.TIMEOUT) {
-          message =
-            "Nepodařilo se získat polohu. Zkontroluj, zda má prohlížeč povolenou polohu a přesnou polohu.";
-        }
-
-        toast.error(message, {
-          id: "location",
-        });
-      },
-      {
-        enableHighAccuracy: false,
-        timeout: 15000,
-        maximumAge: 300000,
-      },
+      () => toast.error("Nepodařilo se získat polohu.", { id: "location" }),
+      { enableHighAccuracy: false, timeout: 15000, maximumAge: 300000 },
     );
   }
 
   const filteredItems = useMemo(() => {
     let result = items;
-
-    if (selectedOfferType !== "all") {
-      result = result.filter(
-        (item) => getOfferType(item) === selectedOfferType,
-      );
-    }
-
-    if (selectedCategory) {
-      result = result.filter((item) => item.category === selectedCategory);
-    }
-
+    if (selectedOfferType !== "all") result = result.filter((item) => getOfferType(item) === selectedOfferType);
+    if (selectedCategory) result = result.filter((item) => item.category === selectedCategory);
     if (search.trim()) {
       const query = search.toLowerCase();
-
-      result = result.filter((item) =>
-        `${item.title} ${item.category} ${item.pickup_place}`
-          .toLowerCase()
-          .includes(query),
-      );
+      result = result.filter((item) => `${item.title} ${item.category} ${item.pickup_place}`.toLowerCase().includes(query));
     }
-
     if (userLocation) {
       result = [...result].sort((a, b) => {
         const aHasLocation = Boolean(a.pickup_latitude && a.pickup_longitude);
         const bHasLocation = Boolean(b.pickup_latitude && b.pickup_longitude);
-
         if (!aHasLocation && !bHasLocation) return 0;
         if (!aHasLocation) return 1;
         if (!bHasLocation) return -1;
-
-        const distanceA = getDistanceKm(
-          userLocation.latitude,
-          userLocation.longitude,
-          a.pickup_latitude!,
-          a.pickup_longitude!,
-        );
-
-        const distanceB = getDistanceKm(
-          userLocation.latitude,
-          userLocation.longitude,
-          b.pickup_latitude!,
-          b.pickup_longitude!,
-        );
-
-        return distanceA - distanceB;
+        return getDistanceKm(userLocation.latitude, userLocation.longitude, a.pickup_latitude!, a.pickup_longitude!) - getDistanceKm(userLocation.latitude, userLocation.longitude, b.pickup_latitude!, b.pickup_longitude!);
       });
     }
-
     return result;
   }, [items, search, selectedOfferType, selectedCategory, userLocation]);
 
-  const visibleCategoryChips =
-    selectedOfferType === "item"
-      ? itemCategoryChips
-      : selectedOfferType === "service"
-        ? serviceCategoryChips
-        : [...itemCategoryChips, ...serviceCategoryChips];
+  const displayedItems = filteredItems.slice(0, DISPLAYED_ITEMS_COUNT);
 
-  useEffect(() => {
-    setDisplayedItems(filteredItems.slice(0, DISPLAYED_ITEMS_COUNT));
-  }, [filteredItems]);
-
-  useEffect(() => {
-    if (filteredItems.length <= DISPLAYED_ITEMS_COUNT) return;
-
-    const interval = setInterval(() => {
-      setDisplayedItems((currentItems) => {
-        if (currentItems.length === 0) {
-          return filteredItems.slice(0, DISPLAYED_ITEMS_COUNT);
-        }
-
-        const currentIds = new Set(currentItems.map((item) => item.id));
-        const candidates = filteredItems.filter(
-          (item) => !currentIds.has(item.id),
-        );
-
-        if (candidates.length === 0) {
-          return filteredItems.slice(0, DISPLAYED_ITEMS_COUNT);
-        }
-
-        const replacement =
-          candidates[Math.floor(Math.random() * candidates.length)];
-
-        const replaceIndex = Math.floor(Math.random() * currentItems.length);
-
-        const nextItems = [...currentItems];
-        nextItems[replaceIndex] = replacement;
-
-        return nextItems;
-      });
-    }, ROTATION_INTERVAL_MS);
-
-    return () => clearInterval(interval);
-  }, [filteredItems]);
+  function selectChip(chip: CategoryDefinition) {
+    setSelectedOfferType(chip.offerType || "all");
+    setSelectedCategory(chip.category);
+  }
 
   return (
-    <main className="min-h-screen">
-      <div className="koluj-shell-wide">
+    <main className="koluj-home min-h-screen overflow-hidden text-[var(--koluj-text)]">
+      <div className="koluj-shell-wide relative z-10">
         <header className="koluj-page-header">
-          <Link href="/" className="koluj-logo">
-            KOLUJ
-          </Link>
+          <Link href="/" className="koluj-logo">KOLUJ</Link>
+
+          <nav className="hidden items-center gap-8 text-sm font-black text-[var(--koluj-muted)] lg:flex">
+            <Link href="/offers" className="text-[var(--koluj-green)]">Nabídky</Link>
+            <a href="#jak" className="hover:text-[var(--koluj-green)]">Jak to funguje</a>
+            <a href="#komunita" className="hover:text-[var(--koluj-green)]">Komunita</a>
+            <a href="/legal/terms" className="hover:text-[var(--koluj-green)]">O nás</a>
+          </nav>
 
           <div className="flex items-center gap-3">
             <InstallAppButton />
-            {isLoggedIn ? (
-              <Link
-                href="/dashboard"
-                className="koluj-button px-5 py-3 md:px-6"
-              >
-                Můj prostor
-              </Link>
-            ) : (
-              <Link href="/login" className="koluj-button px-5 py-3 md:px-6">
-                Přihlášení / registrace
-              </Link>
-            )}
+            <Link href="/offers/new" className="hidden rounded-full bg-[var(--koluj-green)] px-5 py-3 font-black text-white shadow-[var(--koluj-glow)] transition hover:-translate-y-0.5 sm:inline-flex">
+              <Plus size={18} /> Přidat nabídku
+            </Link>
+            <Link href={isLoggedIn ? "/dashboard" : "/login"} className="koluj-button px-5 py-3">
+              {isLoggedIn ? "Můj prostor" : "Přihlásit se"}
+            </Link>
           </div>
         </header>
 
-        <section className="grid items-start gap-8 pt-6 pb-0 md:py-10 lg:grid-cols-[0.95fr_1.05fr]">
-          <div className="flex flex-col lg:h-[430px]">
-            <h1 className="koluj-heading">Půjč si věci. Objednej si služby.</h1>
-
-            <p className="mt-3 max-w-xl text-base leading-snug text-[var(--koluj-muted)] md:text-xl md:leading-relaxed">
-              Vše jednoduše od lidí ve tvém okolí.
+        <section className="relative grid min-h-[calc(100vh-96px)] items-center gap-8 py-8 lg:grid-cols-[0.78fr_1.22fr] lg:py-10">
+          <div className="relative z-20 max-w-2xl">
+            <h1 className="koluj-heading mt-6">
+              Sdílej.<br />Půjčuj.<br /><span className="text-[var(--koluj-green)]">Koluj.</span>
+            </h1>
+            <p className="mt-6 max-w-xl text-lg leading-relaxed text-[var(--koluj-muted)] md:text-2xl">
+              Věci i služby, které dávají smysl – pro tebe, pro sousedy i pro planetu.
             </p>
-
-            <div className="mt-5 hidden flex-wrap gap-2 text-sm font-bold text-[var(--koluj-green)] md:flex">
-              <span className="rounded-full bg-white px-4 py-2 shadow-sm">
-                {totalItems} aktivních nabídek
-              </span>
-              <span className="rounded-full bg-white px-4 py-2 shadow-sm">
-                Věci i služby
-              </span>
-              <span className="rounded-full bg-white px-4 py-2 shadow-sm">
-                Bez prostředníků
-              </span>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/offers" className="koluj-button px-6 py-4">Procházet nabídky <ArrowRight size={18} /></Link>
+              <a href="#jak" className="inline-flex min-h-[54px] items-center justify-center gap-2 rounded-full border border-[var(--koluj-border)] bg-white/86 px-6 py-4 font-black shadow-sm transition hover:-translate-y-0.5 hover:bg-white">
+                Jak to funguje
+              </a>
             </div>
+          </div>
 
-            <div className="mt-8 lg:mt-auto flex max-w-2xl items-center gap-2 rounded-[1.75rem] border border-[var(--koluj-border)] bg-white p-2 shadow-sm">
-              <div className="flex min-w-0 flex-1 items-center gap-3 px-3">
-                <Search
-                  size={20}
-                  className="shrink-0 text-[var(--koluj-muted)]"
-                />
+          <HeroOrbit />
 
+          <div className="relative z-30 col-span-full -mt-2 rounded-[34px] border border-white/80 bg-white/88 p-3 shadow-[0_18px_55px_rgba(40,42,30,0.13)] backdrop-blur-xl md:p-4 lg:-mt-14">
+            <div className="grid gap-3 lg:grid-cols-[minmax(280px,1fr)_150px_170px_170px_150px]">
+              <div className="flex min-h-[62px] items-center gap-3 rounded-full border border-black/[0.08] bg-white px-5 shadow-sm">
+                <Search size={22} className="text-[var(--koluj-muted)]" />
                 <input
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") submitSearch();
-                  }}
-                  placeholder="Co hledáš?"
-                  className="w-full bg-transparent py-3 text-base font-bold outline-none placeholder:font-medium"
+                  onKeyDown={(e) => e.key === "Enter" && submitSearch()}
+                  placeholder="Hledat nabídku..."
+                  className="min-w-0 flex-1 bg-transparent py-4 text-base outline-none placeholder:text-[var(--koluj-muted)] md:text-lg"
                 />
+                <button type="button" onClick={useMyLocation} className={`hidden items-center gap-2 rounded-full px-4 py-3 text-sm font-black sm:flex ${userLocation ? "bg-[var(--koluj-green)] text-white" : "bg-[var(--koluj-bg)] text-[var(--koluj-green)]"}`}>
+                  <LocateFixed size={18} /> Okolo mě
+                </button>
               </div>
-
-              <button
-                type="button"
-                onClick={useMyLocation}
-                aria-label="Moje poloha"
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--koluj-bg)] text-[var(--koluj-green)]"
-              >
-                <LocateFixed size={20} />
-              </button>
-
-              <button
-                type="button"
-                onClick={submitSearch}
-                aria-label="Hledat"
-                className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-[var(--koluj-green)] text-white"
-              >
-                <ArrowRight size={20} />
-              </button>
+              <select value={selectedOfferType} onChange={(e) => { setSelectedOfferType(e.target.value as OfferTypeFilter); setSelectedCategory(""); }} className="min-h-[62px] rounded-full border border-black/[0.08] bg-white px-4 font-black outline-none shadow-sm">
+                <option value="all">Vše</option>
+                <option value="item">Věci</option>
+                <option value="service">Služby</option>
+              </select>
+              <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="min-h-[62px] rounded-full border border-black/[0.08] bg-white px-4 font-black outline-none shadow-sm">
+                <option value="">Všechny kategorie</option>
+                {categoryChips.filter((chip) => chip.category).map((chip) => <option key={chip.label} value={chip.category}>{chip.label}</option>)}
+              </select>
+              <select className="min-h-[62px] rounded-full border border-black/[0.08] bg-white px-4 font-black outline-none shadow-sm" defaultValue="available">
+                <option value="available">Volné</option>
+                <option value="all">Všechny stavy</option>
+              </select>
+              <button type="button" onClick={submitSearch} className="koluj-button px-8 py-4">Hledat</button>
             </div>
           </div>
+        </section>
 
-          {showMap && (
-            <div className="relative h-[430px] overflow-hidden rounded-[2rem] border border-[var(--koluj-border)] bg-white shadow-sm">
-              <OffersMap items={filteredItems} userLocation={userLocation} />
-
-              <button
-                type="button"
-                onClick={useMyLocation}
-                className="absolute bottom-5 right-5 z-[500] flex items-center gap-2 rounded-2xl bg-white px-5 py-3 font-bold shadow-sm"
-              >
-                <LocateFixed size={18} />
-                Moje poloha
+        <section className="relative z-20 -mt-4 flex gap-4 overflow-x-auto pb-2 md:-mt-8">
+          {categoryChips.map((chip) => {
+            const active = selectedOfferType === (chip.offerType || "all") && selectedCategory === chip.category;
+            return (
+              <button key={`${chip.label}-${chip.category}`} type="button" onClick={() => selectChip(chip)} className={`flex min-w-[104px] flex-col items-center gap-2 rounded-[28px] px-5 py-4 font-black transition ${active ? "bg-[var(--koluj-green)] text-white shadow-[var(--koluj-glow)]" : "bg-white/78 text-[var(--koluj-muted)] hover:bg-white"}`}>
+                <span className={`flex h-12 w-12 items-center justify-center rounded-full ${active ? "bg-white/16" : "bg-[var(--koluj-bg)] text-[var(--koluj-green)]"}`}>{chip.icon}</span>
+                {chip.label}
               </button>
+            );
+          })}
+        </section>
+
+        <section className="mt-12">
+          <div className="mb-6 flex items-end justify-between gap-4">
+            <div>
+              <h2 className="koluj-section-title">Právě kolují ✨</h2>
+              <p className="mt-2 text-[var(--koluj-muted)]">
+                {totalItems > 0 ? `${totalItems.toLocaleString("cs-CZ")} aktivních nabídek na KOLUJ.` : "Vybrané nabídky, které jsou právě dostupné."}
+              </p>
             </div>
+            <Link href={buildOffersHref()} className="hidden items-center gap-2 font-black text-[var(--koluj-green)] sm:flex">Zobrazit všechny nabídky <ArrowRight size={18} /></Link>
+          </div>
+
+          {displayedItems.length > 0 ? (
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 2xl:grid-cols-5">
+              {displayedItems.map((item) => <OfferCard key={item.id} item={item} />)}
+            </div>
+          ) : (
+            <div className="koluj-card p-8 text-[var(--koluj-muted)]">Zatím tu nejsou žádné nabídky.</div>
           )}
         </section>
 
-        <section className="mt-4 space-y-3">
-          <div className="flex gap-2 overflow-x-auto pb-1 text-sm font-black md:flex-wrap md:overflow-visible">
-            <OfferTypeButton
-              active={selectedOfferType === "all"}
-              onClick={() => selectOfferType("all")}
-              label="Vše"
-            />
-            <OfferTypeButton
-              active={selectedOfferType === "item"}
-              onClick={() => selectOfferType("item")}
-              label="Věci"
-            />
-            <OfferTypeButton
-              active={selectedOfferType === "service"}
-              onClick={() => selectOfferType("service")}
-              label="Služby"
-            />
+        <section id="komunita" className="mt-12 grid gap-6 lg:grid-cols-[1fr_.8fr]">
+          <div className="overflow-hidden rounded-[38px] border border-white/80 bg-[linear-gradient(135deg,rgba(255,255,255,0.94),rgba(226,234,204,0.58))] p-7 shadow-[0_20px_60px_rgba(40,42,30,0.10)] md:p-10">
+            <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/82 px-4 py-2 text-sm font-black text-[var(--koluj-green)]"><Sparkles size={16} /> Méně kupování. Více sdílení.</p>
+            <h2 className="koluj-section-title max-w-lg">Máš něco, co může ještě posloužit?</h2>
+            <p className="mt-4 max-w-xl text-lg text-[var(--koluj-muted)]">Přidej nabídku a nech věci nebo služby kolovat mezi lidmi poblíž.</p>
+            <Link href="/offers/new" className="koluj-button mt-7 px-7 py-4">Přidat nabídku <Plus size={18} /></Link>
           </div>
 
-          <div className="koluj-categories-mobile lg:grid lg:grid-cols-8 lg:gap-2">
-            <CategoryChip
-              label="Všechny kategorie"
-              active={!selectedCategory}
-              onClick={() => setSelectedCategory("")}
-            />
-            {visibleCategoryChips.map((chip) => (
-              <CategoryChip
-                key={`${chip.offerType || "all"}-${chip.category}`}
-                icon={chip.icon}
-                label={chip.label}
-                active={selectedCategory === chip.category}
-                onClick={() => {
-                  setSelectedCategory(chip.category);
-
-                  if (chip.offerType && selectedOfferType === "all") {
-                    setSelectedOfferType(chip.offerType);
-                  }
-                }}
-              />
-            ))}
-          </div>
-        </section>
-
-        <section id="explore" className="mt-5 md:mt-14">
-          <div className="mb-6 flex items-end justify-between gap-4">
-            <div>
-              <h2 className="koluj-title">Nabídky ve tvém okolí</h2>
-              <p className="mt-2 text-[var(--koluj-muted)]">
-                {filteredItems.length === totalItems
-                  ? `Celkem ${totalItems} aktivních nabídek.`
-                  : `Zobrazeno ${filteredItems.length} z ${totalItems} aktivních nabídek.`}
-              </p>
-            </div>
-
-            <Link
-              href={buildOffersHref()}
-              className="hidden items-center gap-2 font-black text-[var(--koluj-green)] md:flex"
-            >
-              Zobrazit všechny
-              <ArrowRight size={18} />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
-            {displayedItems.map((item) => (
-              <div key={item.id} className="transition duration-300">
-                <OfferCard item={item} />
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-8 flex justify-center md:mt-10">
-            <Link
-              href={buildOffersHref()}
-              className="koluj-button inline-flex items-center gap-2 px-8 py-4"
-            >
-              Zobrazit všechny nabídky
-              <ArrowRight size={18} />
-            </Link>
-          </div>
-        </section>
-
-        <section id="how" className="mt-16">
-          <div className="mb-6">
-            <h2 className="koluj-title">Jak to funguje</h2>
-            <p className="mt-2 text-[var(--koluj-muted)]">
-              Najdi věc nebo službu, domluv se přímo s poskytovatelem a rezervuj
-              si termín.
-            </p>
-          </div>
-
-          <div className="grid gap-5 md:grid-cols-4">
-            <Feature
-              icon={<Search size={28} />}
-              title="1. Najdi nabídku"
-              text="Vyhledej, co zrovna potřebuješ."
-            />
-            <Feature
-              icon={<Users size={28} />}
-              title="2. Domluv termín"
-              text="Napiš poskytovateli a potvrďte si vhodný čas."
-            />
-            <Feature
-              icon={<MapPin size={28} />}
-              title="3. Rezervuj"
-              text="Vyzvedni věc nebo využij službu."
-            />
-            <Feature
-              icon={<ShieldCheck size={28} />}
-              title="4. Ohodnoť zkušenost"
-              text="Po skončení napiš hodnocení a pomoz budovat důvěru."
-            />
+          <div id="jak" className="grid gap-4">
+            <InfoCard icon={<Search />} title="Najdi" text="Vyhledej věc nebo službu ve svém okolí." />
+            <InfoCard icon={<ArrowRight />} title="Domluv se" text="Otevři detail a domluv termín přímo s poskytovatelem." />
+            <InfoCard icon={<Leaf />} title="Nech kolovat" text="Využij, co už existuje, místo zbytečného kupování." />
           </div>
         </section>
       </div>
@@ -667,71 +310,37 @@ export default function HomePage() {
   );
 }
 
-function OfferTypeButton({
-  active,
-  onClick,
-  label,
-}: {
-  active: boolean;
-  onClick: () => void;
-  label: string;
-}) {
+function HeroOrbit() {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`shrink-0 rounded-2xl border px-5 py-3 transition ${
-        active
-          ? "border-[var(--koluj-green)] bg-[var(--koluj-green)] text-white"
-          : "border-[var(--koluj-border)] bg-white text-[var(--koluj-text)] hover:bg-[var(--koluj-bg)]"
-      }`}
-    >
-      {label}
-    </button>
+    <div className="koluj-orbit-card relative z-10 hidden lg:block">
+      <OrbitObject className="left-[12%] top-[30%] h-28 w-28" delay="0s" title="Vrtačka" icon={<Drill />} />
+      <OrbitObject className="left-[43%] top-[18%] h-24 w-24" delay=".7s" title="Židle" icon={<Briefcase />} />
+      <OrbitObject className="right-[17%] top-[20%] h-24 w-24" delay="1.1s" title="Zahrada" icon={<Sprout />} />
+      <OrbitObject className="bottom-[22%] left-[44%] h-28 w-28" delay=".35s" title="Foto" icon={<Camera />} />
+      <OrbitObject className="bottom-[17%] right-[9%] h-32 w-32" delay="1.45s" title="Koloběžka" icon={<Bike />} />
+      <span className="koluj-orbit-leaf left-[30%] top-[18%]" />
+      <span className="koluj-orbit-leaf right-[30%] top-[12%]" style={{ animationDelay: "2s" }} />
+      <span className="koluj-orbit-leaf right-[8%] top-[43%]" style={{ animationDelay: "4s" }} />
+    </div>
   );
 }
 
-function CategoryChip({
-  icon,
-  label,
-  active,
-  onClick,
-}: {
-  icon?: React.ReactNode;
-  label: string;
-  active: boolean;
-  onClick: () => void;
-}) {
+function OrbitObject({ icon, title, className, delay }: { icon: React.ReactNode; title: string; className: string; delay: string }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`koluj-category-chip ${
-        active
-          ? "border-[var(--koluj-green)] bg-[var(--koluj-green)] text-white"
-          : ""
-      }`}
-    >
+    <div className={`koluj-orbit-object ${className}`} style={{ animationDelay: delay }} title={title}>
       {icon}
-      {label}
-    </button>
+    </div>
   );
 }
 
-function Feature({
-  icon,
-  title,
-  text,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  text: string;
-}) {
+function InfoCard({ icon, title, text }: { icon: React.ReactNode; title: string; text: string }) {
   return (
-    <div className="koluj-feature-card">
-      <div className="koluj-feature-icon">{icon}</div>
-      <h3 className="text-xl font-black">{title}</h3>
-      <p className="mt-2 text-[var(--koluj-muted)]">{text}</p>
+    <div className="koluj-card flex items-start gap-4 p-6">
+      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-[var(--koluj-green)]">{icon}</div>
+      <div>
+        <p className="text-xl font-black">{title}</p>
+        <p className="mt-2 text-sm font-bold leading-relaxed text-[var(--koluj-muted)]">{text}</p>
+      </div>
     </div>
   );
 }

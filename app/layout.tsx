@@ -1,34 +1,18 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import { Toaster } from "react-hot-toast";
 import "./globals.css";
 import CookieBanner from "@/app/components/CookieBanner";
 import { Analytics } from "@vercel/analytics/next";
 import UserPresence from "@/app/components/UserPresence";
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
-  subsets: ["latin", "latin-ext"],
-});
+import BottomNav from "@/app/components/BottomNav";
 
 export const metadata = {
   title: {
     default: "KOLUJ",
     template: "%s | KOLUJ",
   },
-  description: "Půjčuj si nabídky od lidí ve svém okolí",
+  description: "Půjčuj si věci a objednávej služby od lidí ve svém okolí",
   manifest: "/manifest.webmanifest",
-  themeColor: "#6b7f32",
+  themeColor: "#5f7f2b",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -36,43 +20,22 @@ export const metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="cs"
-      className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased`}
-    >
+    <html lang="cs" className="h-full antialiased">
       <body className="min-h-full flex flex-col">
         <UserPresence />
         {children}
         <CookieBanner />
-        <footer className="mt-auto border-t border-[var(--koluj-border)]">
+        <BottomNav />
+        <footer className="mt-auto hidden border-t border-[var(--koluj-border)] md:block">
           <div className="koluj-shell flex flex-col gap-4 py-8 text-sm text-[var(--koluj-muted)] md:flex-row md:items-center md:justify-between">
             <p>© {new Date().getFullYear()} KOLUJ</p>
-
-            <div className="flex flex-wrap gap-6">
-              <a href="/legal/terms" className="hover:text-[var(--koluj-green)]">
-                Podmínky
-              </a>
-
-              <a href="/legal/privacy" className="hover:text-[var(--koluj-green)]">
-                Soukromí
-              </a>
-
-              <a href="/legal/cookies" className="hover:text-[var(--koluj-green)]">
-                Cookies
-              </a>
-
-              <a
-                href="mailto:info@koluj.cz"
-                className="hover:text-[var(--koluj-green)]"
-              >
-                Kontakt
-              </a>
+            <div className="flex flex-wrap gap-6 font-bold">
+              <a href="/legal/terms" className="hover:text-[var(--koluj-green)]">Podmínky</a>
+              <a href="/legal/privacy" className="hover:text-[var(--koluj-green)]">Soukromí</a>
+              <a href="/legal/cookies" className="hover:text-[var(--koluj-green)]">Cookies</a>
+              <a href="mailto:info@koluj.cz" className="hover:text-[var(--koluj-green)]">Kontakt</a>
             </div>
           </div>
         </footer>
@@ -81,7 +44,9 @@ export default function RootLayout({
           toastOptions={{
             duration: 3000,
             style: {
-              borderRadius: "12px",
+              borderRadius: "18px",
+              border: "1px solid rgba(50,43,26,0.10)",
+              boxShadow: "0 16px 48px rgba(40,42,30,0.14)",
             },
           }}
         />
