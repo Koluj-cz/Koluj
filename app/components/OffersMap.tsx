@@ -34,9 +34,8 @@ function MapUpdater({ userLocation }: { userLocation: UserLocation }) {
   useEffect(() => {
     if (!userLocation) return;
 
-    map.flyTo([userLocation.latitude, userLocation.longitude], 13, {
-      animate: true,
-      duration: 0.8,
+    map.setView([userLocation.latitude, userLocation.longitude], 13, {
+      animate: false,
     });
 
     setTimeout(() => {

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import { MapPin, ShieldCheck, Star } from "lucide-react";
 import BackLink from "@/app/components/BackLink";
 import { supabase } from "@/lib/supabase";
@@ -237,7 +238,9 @@ export default function UserProfilePage() {
     <main className="min-h-screen">
       <div className="koluj-shell-wide">
         <header className="koluj-page-header">
-          <BackLink href="/offers">Zpět na nabídky</BackLink>
+          <div className="flex items-center gap-3"><Link href="/" className="koluj-logo" aria-label="Koluj domů"><span className="koluj-logo-mark">K</span><span>Koluj</span></Link>
+            <BackLink href="/offers" className="hidden lg:inline-flex">Zpět na nabídky</BackLink>
+          </div>
 
           <AuthHeaderButton />
         </header>

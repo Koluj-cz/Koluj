@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {
   ArrowRight,
   Bike,
@@ -23,6 +24,8 @@ import { supabase } from "@/lib/supabase";
 import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
 import InstallAppButton from "@/app/components/InstallAppButton";
 import { getDistanceKm } from "@/lib/location";
+
+const OffersMap = dynamic(() => import("@/app/components/OffersMap"), { ssr: false });
 
 const DISPLAYED_ITEMS_COUNT = 8;
 type OfferTypeFilter = "all" | "item" | "service";
@@ -214,7 +217,24 @@ export default function HomePage() {
         <div className="koluj-wide-layout">
           <aside className="koluj-wide-sidebar" aria-label="Rychlé filtry">
             <div className="koluj-sidebar-section">
-              <p className="koluj-sidebar-label">Kde hledáte?</p>
+              <p className="koluj-sidebar-label">Hledání</p>
+              <div className="koluj-sidebar-search">
+                <div className="flex min-h-[46px] items-center gap-3 rounded-[14px] border border-[var(--koluj-border)] bg-white px-4">
+                  <Search size={18} className="shrink-0 text-[var(--koluj-muted)]" />
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && submitSearch()}
+                    placeholder="Co hledáte?"
+                    className="min-w-0 flex-1 bg-transparent py-3 text-sm font-bold outline-none placeholder:text-slate-400"
+                  />
+                </div>
+                <button type="button" onClick={submitSearch} className="koluj-button w-full px-4">Hledat</button>
+              </div>
+            </div>
+
+            <div className="koluj-sidebar-section">
+              <p className="koluj-sidebar-label">Poloha</p>
               <button type="button" onClick={useMyLocation} className="koluj-button-secondary w-full justify-start px-4" data-active={Boolean(userLocation)}>
                 <LocateFixed size={18} /> Okolo mě
               </button>
@@ -269,33 +289,9 @@ export default function HomePage() {
             </div>
           </div>
 
-          <HeroIllustration />
-        </section>
-
-        <section className="koluj-searchbar mt-5">
-          <div className="flex min-h-[46px] items-center gap-3 rounded-[14px] border border-[var(--koluj-border)] bg-white px-4">
-            <Search size={20} className="text-[var(--koluj-muted)]" />
-            <input
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && submitSearch()}
-              placeholder="Hledat nabídky..."
-              className="min-w-0 flex-1 bg-transparent py-3 outline-none placeholder:text-slate-400"
-            />
+          <div className="koluj-hero-map" aria-label="Mapa nabídek v okolí">
+            <OffersMap items={filteredItems} userLocation={userLocation} />
           </div>
-          <button type="button" onClick={useMyLocation} className="koluj-button-secondary px-4" data-active={Boolean(userLocation)}>
-            <LocateFixed size={18} /> Okolo mě
-          </button>
-          <select value={selectedOfferType} onChange={(e) => { setSelectedOfferType(e.target.value as OfferTypeFilter); setSelectedCategory(""); }} className="koluj-select font-bold">
-            <option value="all">Věci i služby</option>
-            <option value="item">Věci</option>
-            <option value="service">Služby</option>
-          </select>
-          <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="koluj-select font-bold">
-            <option value="">Kategorie</option>
-            {categoryChips.filter((chip) => chip.category).map((chip) => <option key={chip.label} value={chip.category}>{chip.label}</option>)}
-          </select>
-          <button type="button" onClick={submitSearch} className="koluj-button px-6">Hledat</button>
         </section>
 
         <section className="mt-5 flex gap-3 overflow-x-auto pb-2 koluj-mobile-only">
@@ -350,18 +346,6 @@ export default function HomePage() {
         </div>
       </div>
     </main>
-  );
-}
-
-function HeroIllustration() {
-  return (
-    <div className="koluj-hero-illustration" aria-hidden="true">
-      <span className="koluj-plant koluj-plant-left" />
-      <span className="koluj-plant koluj-plant-right" />
-      <span className="koluj-person koluj-person-left" />
-      <span className="koluj-person koluj-person-right" />
-      <span className="koluj-box-stack"><span /><span /><span /></span>
-    </div>
   );
 }
 

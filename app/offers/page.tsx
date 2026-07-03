@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import {
   LocateFixed,
   Map,
@@ -195,6 +196,10 @@ function ItemsPageContent() {
   }
 
 
+  function submitSearch() {
+    updateUrl({ search });
+  }
+
   function useMyLocation() {
     if (!navigator.geolocation) return;
 
@@ -332,7 +337,9 @@ function ItemsPageContent() {
     <main className="min-h-screen">
       <div className="koluj-wide-frame">
         <header className="koluj-page-header">
-          <BackLink href="/">Zpět na hlavní</BackLink>
+          <div className="flex items-center gap-3"><Link href="/" className="koluj-logo" aria-label="Koluj domů"><span className="koluj-logo-mark">K</span><span>Koluj</span></Link>
+            <BackLink href="/" className="hidden lg:inline-flex">Zpět na hlavní</BackLink>
+          </div>
 
           <AuthHeaderButton />
         </header>
@@ -362,8 +369,8 @@ function ItemsPageContent() {
             search={search}
             onSearchChange={(value) => {
               setSearch(value);
-              updateUrl({ search: value });
             }}
+            onSearchSubmit={submitSearch}
             offerType={offerType}
             onOfferTypeChange={(value) => {
               setOfferType(value);
@@ -414,7 +421,8 @@ function ItemsPageContent() {
             <div className="koluj-wide-filter-card koluj-mobile-only">
               <OfferSearchFilters
                 search={search}
-                onSearchChange={(value) => { setSearch(value); updateUrl({ search: value }); }}
+                onSearchChange={(value) => { setSearch(value); }}
+                onSearchSubmit={submitSearch}
                 offerType={offerType}
                 onOfferTypeChange={(value) => { setOfferType(value); setCategory("all"); updateUrl({ offerType: value, category: "all" }); }}
                 offerTypeOptions={[{ value: "all", label: "Vše" }, ...Object.entries(offerTypeLabels).map(([value, label]) => ({ value, label }))]}

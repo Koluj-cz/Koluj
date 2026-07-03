@@ -423,7 +423,9 @@ export default function DashboardAvailabilityPage() {
     <main className="min-h-screen">
       <div className="koluj-shell-wide">
         <header className="koluj-page-header">
-          <BackLink href="/dashboard">Dashboard</BackLink>
+          <div className="flex items-center gap-3"><Link href="/" className="koluj-logo" aria-label="Koluj domů"><span className="koluj-logo-mark">K</span><span>Koluj</span></Link>
+            <BackLink href="/dashboard" className="hidden lg:inline-flex">Dashboard</BackLink>
+          </div>
 
           <Link href="/dashboard/my-offers" className="koluj-button px-6 py-3">
             Moje nabídky

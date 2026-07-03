@@ -94,7 +94,7 @@ export default function OfferCard({ item, variant = "public", footer }: OfferCar
   const bookingCount = item.bookings?.length || 0;
 
   const content = (
-    <article className="group/card flex h-full flex-col overflow-hidden rounded-[22px] border border-[var(--koluj-border)] bg-white shadow-[var(--koluj-shadow-soft)]">
+    <article className="koluj-offer-card group/card flex h-full flex-col overflow-hidden rounded-[22px] border border-[var(--koluj-border)] bg-white shadow-[var(--koluj-shadow-soft)]">
       <div className="relative h-[190px] overflow-hidden bg-slate-100 sm:h-[210px]">
         {item.primary_image_url ? (
           <img
@@ -175,7 +175,7 @@ export default function OfferCard({ item, variant = "public", footer }: OfferCar
         )}
       </div>
 
-      {footer && <div className="border-t border-[var(--koluj-border)] bg-white/54 px-5 py-4">{footer}</div>}
+      {footer && <div className="bg-white/54 px-5 py-4">{footer}</div>}
     </article>
   );
 

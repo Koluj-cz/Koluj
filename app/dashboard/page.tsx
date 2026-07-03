@@ -54,7 +54,7 @@ export default function DashboardPage() {
       <RestoreAccountOnLogin />
       <div className="koluj-shell-wide">
         <header className="koluj-page-header">
-          <Link href="/" className="koluj-logo">KOLUJ</Link>
+          <Link href="/" className="koluj-logo" aria-label="Koluj domů"><span className="koluj-logo-mark">K</span><span>Koluj</span></Link>
           <AddOfferButton className="koluj-button flex items-center gap-2 px-6 py-3" />
         </header>
 

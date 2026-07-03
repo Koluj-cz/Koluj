@@ -7,6 +7,7 @@ export type SelectOption = { value: string; label: string };
 type OfferSearchFiltersProps = {
   search: string;
   onSearchChange: (value: string) => void;
+  onSearchSubmit?: () => void;
   searchPlaceholder?: string;
   offerType?: string;
   onOfferTypeChange?: (value: string) => void;
@@ -27,6 +28,7 @@ type OfferSearchFiltersProps = {
 export default function OfferSearchFilters({
   search,
   onSearchChange,
+  onSearchSubmit,
   searchPlaceholder = "Hledat nabídku...",
   offerType = "all",
   onOfferTypeChange,
@@ -54,9 +56,17 @@ export default function OfferSearchFilters({
           <input
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
+            onKeyDown={(event) => event.key === "Enter" && onSearchSubmit?.()}
             placeholder={searchPlaceholder}
             className="min-w-0 flex-1 bg-transparent py-3 font-medium text-[var(--koluj-text)] outline-none placeholder:text-slate-400"
           />
+          <button
+            type="button"
+            onClick={onSearchSubmit}
+            className="koluj-button min-h-[38px] shrink-0 px-4 text-sm"
+          >
+            Hledat
+          </button>
           <button
             type="button"
             onClick={onUseLocation}

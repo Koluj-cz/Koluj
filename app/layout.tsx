@@ -28,7 +28,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         {children}
         <CookieBanner />
         <BottomNav />
-        <footer className="mt-auto hidden border-t border-[var(--koluj-border)] md:block">
+        <footer className="mt-auto hidden md:block">
           <div className="koluj-shell flex flex-col gap-4 py-8 text-sm text-[var(--koluj-muted)] md:flex-row md:items-center md:justify-between">
             <p>© {new Date().getFullYear()} KOLUJ</p>
             <div className="flex flex-wrap gap-6 font-bold">

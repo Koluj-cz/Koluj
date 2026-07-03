@@ -284,7 +284,9 @@ export default function MyOffersPage() {
     <main className="min-h-screen">
       <div className="koluj-shell-wide">
         <header className="koluj-page-header">
-          <BackLink href="/dashboard">Dashboard</BackLink>
+          <div className="flex items-center gap-3"><Link href="/" className="koluj-logo" aria-label="Koluj domů"><span className="koluj-logo-mark">K</span><span>Koluj</span></Link>
+            <BackLink href="/dashboard" className="hidden lg:inline-flex">Dashboard</BackLink>
+          </div>
 
           <AddOfferButton
             className="koluj-button flex items-center gap-2 px-6 py-3"
