@@ -71,7 +71,7 @@ export default function OfferCard({ item, variant = "public", footer }: OfferCar
   const bookingCount = item.bookings?.length || 0;
 
   const content = (
-    <article className="group/card flex h-full flex-col overflow-hidden rounded-[28px] bg-transparent transition duration-300 hover:-translate-y-1">
+    <article className="group/card flex h-full flex-col overflow-hidden rounded-[28px] border border-[var(--koluj-border-strong)] bg-white p-2 transition duration-300 hover:-translate-y-1 hover:border-[rgba(47,93,58,0.28)]">
       <div className="relative aspect-[4/5] overflow-hidden rounded-[28px] bg-[var(--koluj-bg-soft)]">
         {item.primary_image_url ? (
           <img src={item.primary_image_url} alt={item.title} className="h-full w-full object-cover transition duration-700 group-hover/card:scale-[1.035]" />
@@ -96,7 +96,7 @@ export default function OfferCard({ item, variant = "public", footer }: OfferCar
         </div>
       </div>
 
-      <div className="flex flex-1 flex-col px-1 pt-4">
+      <div className="flex flex-1 flex-col px-2 pb-2 pt-4">
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0">
             <h3 className="truncate text-[1.18rem] font-semibold leading-tight tracking-[-0.035em] text-[var(--koluj-ink)]">{item.title}</h3>
