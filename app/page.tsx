@@ -7,7 +7,9 @@ import {
   ArrowRight,
   Leaf,
   LocateFixed,
+  Plus,
   Search,
+  User,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
@@ -248,24 +250,6 @@ export default function HomePage() {
   return (
     <main className="koluj-home koluj-home-marketplace min-h-screen text-[var(--koluj-text)]">
       <div className="koluj-wide-frame relative z-10">
-        <header className="koluj-wide-topbar koluj-topbar-clean hidden md:block">
-          <div className="koluj-wide-topbar-inner">
-            <Link href="/" className="koluj-logo koluj-logo-text" aria-label="Koluj domů">
-              Koluj
-            </Link>
-
-            <div className="flex items-center gap-2 sm:gap-3">
-              <InstallAppButton />
-              <Link href={isLoggedIn ? "/dashboard" : "/login"} className="koluj-button-secondary hidden px-4 sm:inline-flex">
-                {isLoggedIn ? "Můj prostor" : "Přihlásit se"}
-              </Link>
-              <Link href="/offers/new" className="koluj-button px-4 sm:px-5">
-                Přidat nabídku
-              </Link>
-            </div>
-          </div>
-        </header>
-
         <section className="koluj-hero-card koluj-home-hero grid gap-6 p-5 md:hidden">
           <div className="flex flex-col justify-center">
             <h1 className="koluj-heading mt-0">
@@ -274,8 +258,13 @@ export default function HomePage() {
             <p className="mt-5 max-w-2xl text-lg leading-relaxed text-[var(--koluj-muted)]">
               Věci i služby, které dávají smysl – pro tebe, pro sousedy i pro planetu.
             </p>
-            <div className="mt-7 flex flex-wrap gap-3">
-              <a href="#nabidky" className="koluj-button min-h-[52px] px-6">Procházet nabídky <ArrowRight size={18} /></a>
+            <div className="mt-7 flex flex-wrap items-center gap-3">
+              <a href="#nabidky" className="koluj-button min-h-[52px] px-6">
+                Procházet nabídky <ArrowRight size={18} />
+              </a>
+              <div className="inline-flex [&_button]:min-h-[52px] [&_button]:w-[52px] [&_button]:px-0 [&_button_span]:sr-only">
+                <InstallAppButton />
+              </div>
             </div>
           </div>
         </section>
@@ -381,8 +370,32 @@ export default function HomePage() {
                 <p className="mt-5 max-w-2xl text-lg leading-relaxed text-[var(--koluj-muted)] md:text-xl">
                   Věci i služby, které dávají smysl – pro tebe, pro sousedy i pro planetu.
                 </p>
-                <div className="mt-7 flex flex-wrap gap-3">
-                  <a href="#nabidky" className="koluj-button min-h-[52px] px-6">Procházet nabídky <ArrowRight size={18} /></a>
+                <div className="mt-7 flex flex-wrap items-center gap-3">
+                  <a href="#nabidky" className="koluj-button min-h-[52px] px-6">
+                    Procházet nabídky <ArrowRight size={18} />
+                  </a>
+
+                  <div className="inline-flex [&_button]:min-h-[52px] [&_button]:w-[52px] [&_button]:px-0 [&_button_span]:sr-only">
+                    <InstallAppButton />
+                  </div>
+
+                  <Link
+                    href={isLoggedIn ? "/dashboard" : "/login"}
+                    className="koluj-button-secondary min-h-[52px] w-[52px] px-0"
+                    aria-label={isLoggedIn ? "Můj prostor" : "Přihlásit se"}
+                    title={isLoggedIn ? "Můj prostor" : "Přihlásit se"}
+                  >
+                    <User size={20} />
+                  </Link>
+
+                  <Link
+                    href="/offers/new"
+                    className="koluj-button min-h-[52px] w-[52px] px-0"
+                    aria-label="Přidat nabídku"
+                    title="Přidat nabídku"
+                  >
+                    <Plus size={22} />
+                  </Link>
                 </div>
               </div>
 
