@@ -152,8 +152,8 @@ export default function OffersMap({
           center={[group.lat, group.lng]}
           radius={group.items.length > 1 ? 22 : 15}
           pathOptions={{
-            color: "#536426",
-            fillColor: "#6B7F32",
+            color: "#16a34a",
+            fillColor: "#16a34a",
             fillOpacity: 0.9,
           }}
         >

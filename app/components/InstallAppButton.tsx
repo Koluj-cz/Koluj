@@ -14,9 +14,7 @@ type InstallAppButtonProps = {
   iconOnly?: boolean;
 };
 
-export default function InstallAppButton({
-  iconOnly = false,
-}: InstallAppButtonProps) {
+export default function InstallAppButton({ iconOnly = false }: InstallAppButtonProps) {
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
 
@@ -52,7 +50,7 @@ export default function InstallAppButton({
         onClick={installApp}
         title="Instalovat aplikaci"
         aria-label="Instalovat aplikaci"
-        className="koluj-button-secondary min-h-[52px] w-[52px] px-0 flex items-center justify-center"
+        className="koluj-button-secondary flex h-[52px] w-[52px] shrink-0 items-center justify-center p-0"
       >
         <Download size={20} />
       </button>
@@ -63,7 +61,7 @@ export default function InstallAppButton({
     <button
       onClick={installApp}
       title="Instalovat aplikaci"
-      className="koluj-button-secondary min-h-[52px] px-4"
+      className="koluj-button-secondary h-[52px] px-4"
     >
       <Download size={18} />
       <span>Instalovat aplikaci</span>
