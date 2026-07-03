@@ -334,7 +334,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="flex flex-wrap gap-4 text-sm font-bold text-[var(--koluj-muted)]">
+              <div className="mt-6 flex flex-wrap gap-4 text-sm font-bold text-[var(--koluj-muted)]">
                 <Link href="/legal/terms" className="hover:text-[var(--koluj-green)]">
                   Podmínky
                 </Link>

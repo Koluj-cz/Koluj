@@ -93,6 +93,21 @@ export default function OfferCard({ item, variant = "public", footer }: OfferCar
   const ratingText = rating && rating.rating_count ? `★ ${Number(rating.rating_avg).toFixed(1)}` : "★ Nový";
   const bookingCount = item.bookings?.length || 0;
 
+  const priceBlock = item.price_amount && item.price_unit ? (
+    <div className="shrink-0 text-right">
+      <p className="text-xl font-black tracking-[-0.04em] text-[var(--koluj-green)]">
+        {item.price_amount} Kč
+      </p>
+      <p className="text-xs font-black text-[var(--koluj-muted)]">
+        / {translatePriceUnit(item.price_unit, item.offer_type)}
+      </p>
+    </div>
+  ) : (
+    <p className="shrink-0 text-right text-lg font-black text-[var(--koluj-ink)]">
+      Dohodou
+    </p>
+  );
+
   const content = (
     <article className="koluj-offer-card group/card flex h-full flex-col overflow-hidden rounded-[22px] border border-[var(--koluj-border)] bg-white shadow-[var(--koluj-shadow-soft)]">
       <div className="relative h-[190px] overflow-hidden bg-slate-100 sm:h-[210px]">
@@ -127,8 +142,8 @@ export default function OfferCard({ item, variant = "public", footer }: OfferCar
       </div>
 
       <div className="flex flex-1 flex-col p-4 sm:p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
             <h3 className="line-clamp-2 text-lg font-black leading-tight tracking-[-0.03em] text-[var(--koluj-ink)]">
               {item.title}
             </h3>
@@ -137,17 +152,8 @@ export default function OfferCard({ item, variant = "public", footer }: OfferCar
               {shortPlace(item.pickup_place)}
             </p>
           </div>
-        </div>
 
-        <div className="mt-auto flex items-end justify-between gap-3 pt-4">
-          {item.price_amount && item.price_unit ? (
-            <div>
-              <p className="text-xl font-black tracking-[-0.04em] text-[var(--koluj-green)]">{item.price_amount} Kč</p>
-              <p className="text-xs font-black text-[var(--koluj-muted)]">/ {translatePriceUnit(item.price_unit, item.offer_type)}</p>
-            </div>
-          ) : (
-            <p className="text-xl font-black text-[var(--koluj-ink)]">Dohodou</p>
-          )}
+          {priceBlock}
         </div>
 
         {variant === "public" ? (
