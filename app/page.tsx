@@ -368,8 +368,30 @@ export default function HomePage() {
                 <p className="mt-5 max-w-2xl text-lg leading-relaxed text-[var(--koluj-muted)] md:text-xl">
                   Věci i služby, které dávají smysl – pro tebe, pro sousedy i pro planetu.
                 </p>
-                <div className="mt-7 flex flex-wrap gap-3">
-                  <a href="#nabidky" className="koluj-button min-h-[52px] px-6">Procházet nabídky <ArrowRight size={18} /></a>
+                <div className="mt-7 flex flex-wrap items-center gap-3">
+                  <a href="#nabidky" className="koluj-button min-h-[52px] px-6">
+                    Procházet nabídky <ArrowRight size={18} />
+                  </a>
+
+                  <InstallAppButton iconOnly />
+
+                  <Link
+                    href={isLoggedIn ? "/dashboard" : "/login"}
+                    className="koluj-button-secondary flex h-[52px] w-[52px] items-center justify-center p-0"
+                    aria-label={isLoggedIn ? "Můj prostor" : "Přihlásit se"}
+                    title={isLoggedIn ? "Můj prostor" : "Přihlásit se"}
+                  >
+                    <User size={20} />
+                  </Link>
+
+                  <Link
+                    href="/offers/new"
+                    className="koluj-button flex h-[52px] w-[52px] items-center justify-center p-0"
+                    aria-label="Přidat nabídku"
+                    title="Přidat nabídku"
+                  >
+                    <Plus size={22} />
+                  </Link>
                 </div>
               </div>
 
