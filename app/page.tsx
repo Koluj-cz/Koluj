@@ -265,11 +265,6 @@ export default function HomePage() {
               Koluj
             </Link>
 
-            <nav className="hidden items-center gap-7 text-sm font-bold text-[var(--koluj-ink)] md:flex">
-              <a href="#nabidky" className="hover:text-[var(--koluj-green)]">Nabídky</a>
-              <a href="#jak" className="hover:text-[var(--koluj-green)]">Jak to funguje</a>
-            </nav>
-
             <div className="flex items-center gap-2 sm:gap-3">
               <InstallAppButton />
               <Link href={isLoggedIn ? "/dashboard" : "/login"} className="koluj-button-secondary hidden px-4 sm:inline-flex">
@@ -284,70 +279,74 @@ export default function HomePage() {
 
         <div className="koluj-wide-layout koluj-home-layout">
           <aside className="koluj-wide-sidebar koluj-home-sidebar" aria-label="Filtry nabídek">
-            <div className="koluj-sidebar-section">
-              <p className="koluj-sidebar-label">Hledání</p>
-              <div className="flex min-h-[48px] items-center gap-2 rounded-[16px] border border-[var(--koluj-border)] bg-white px-4 shadow-sm">
-                <Search size={18} className="shrink-0 text-[var(--koluj-muted)]" />
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Co hledáte?"
-                  className="min-w-0 flex-1 bg-transparent py-3 text-sm font-bold outline-none placeholder:text-slate-400"
-                />
-                <button
-                  type="button"
-                  onClick={useMyLocation}
-                  className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--koluj-green)] hover:bg-[var(--koluj-green-pale)]"
-                  data-active={Boolean(userLocation)}
-                  aria-label="Použít moji polohu"
-                  title="Použít moji polohu"
-                >
-                  <LocateFixed size={18} />
-                </button>
-              </div>
-            </div>
-
-            <div className="koluj-sidebar-section">
-              <p className="koluj-sidebar-label">Typ nabídky</p>
-              <div className="grid grid-cols-3 gap-2">
-                {offerTypeTabs.map((tab) => (
+            <div className="koluj-sidebar-content">
+              <div className="koluj-sidebar-section">
+                <p className="koluj-sidebar-label">Hledání</p>
+                <div className="flex min-h-[48px] items-center gap-2 rounded-[16px] border border-[var(--koluj-border)] bg-white px-4 shadow-sm">
+                  <Search size={18} className="shrink-0 text-[var(--koluj-muted)]" />
+                  <input
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Co hledáte?"
+                    className="min-w-0 flex-1 bg-transparent py-3 text-sm font-bold outline-none placeholder:text-slate-400"
+                  />
                   <button
-                    key={tab.value}
                     type="button"
-                    onClick={() => selectOfferType(tab.value)}
-                    className="koluj-sidebar-tile min-h-[44px]"
-                    data-active={selectedOfferType === tab.value}
+                    onClick={useMyLocation}
+                    className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[var(--koluj-green)] hover:bg-[var(--koluj-green-pale)]"
+                    data-active={Boolean(userLocation)}
+                    aria-label="Použít moji polohu"
+                    title="Použít moji polohu"
                   >
-                    {tab.label}
+                    <LocateFixed size={18} />
                   </button>
-                ))}
+                </div>
+              </div>
+
+              <div className="koluj-sidebar-section">
+                <p className="koluj-sidebar-label">Typ nabídky</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {offerTypeTabs.map((tab) => (
+                    <button
+                      key={tab.value}
+                      type="button"
+                      onClick={() => selectOfferType(tab.value)}
+                      className="koluj-sidebar-tile min-h-[44px]"
+                      data-active={selectedOfferType === tab.value}
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="koluj-sidebar-section">
+                <p className="koluj-sidebar-label">Kategorie</p>
+                <select
+                  value={selectedCategory}
+                  onChange={(event) => setSelectedCategory(event.target.value)}
+                  className="koluj-select font-bold"
+                >
+                  <option value="">Všechny kategorie</option>
+                  {availableCategories.map((category) => (
+                    <option key={`${category.offerType}-${category.category}`} value={category.category}>
+                      {category.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div id="jak" className="koluj-sidebar-section">
+                <p className="koluj-sidebar-label">Jak to funguje</p>
+                <div className="grid gap-3">
+                  <InfoCard icon={<Search />} title="Najdi" text="Vyhledej věc nebo službu ve svém okolí." compact />
+                  <InfoCard icon={<ArrowRight />} title="Domluv se" text="Otevři detail a domluv termín." compact />
+                  <InfoCard icon={<Leaf />} title="Nech kolovat" text="Sdílej věci, které už existují." compact />
+                </div>
               </div>
             </div>
 
-            <div className="koluj-sidebar-section">
-              <p className="koluj-sidebar-label">Kategorie</p>
-              <select
-                value={selectedCategory}
-                onChange={(event) => setSelectedCategory(event.target.value)}
-                className="koluj-select font-bold"
-              >
-                <option value="">Všechny kategorie</option>
-                {availableCategories.map((category) => (
-                  <option key={`${category.offerType}-${category.category}`} value={category.category}>
-                    {category.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div id="jak" className="koluj-sidebar-section">
-              <p className="koluj-sidebar-label">Jak to funguje</p>
-              <div className="grid gap-3">
-                <InfoCard icon={<Search />} title="Najdi" text="Vyhledej věc nebo službu ve svém okolí." compact />
-                <InfoCard icon={<ArrowRight />} title="Domluv se" text="Otevři detail a domluv termín." compact />
-                <InfoCard icon={<Leaf />} title="Nech kolovat" text="Sdílej věci, které už existují." compact />
-              </div>
-            </div>
+            <SidebarFooter />
           </aside>
 
           <div className="koluj-main-wide koluj-home-content">
@@ -361,7 +360,6 @@ export default function HomePage() {
                 </p>
                 <div className="mt-7 flex flex-wrap gap-3">
                   <a href="#nabidky" className="koluj-button min-h-[52px] px-6">Procházet nabídky <ArrowRight size={18} /></a>
-                  <a href="#jak" className="koluj-button-secondary min-h-[52px] px-6">Jak to funguje</a>
                 </div>
               </div>
 
@@ -408,6 +406,22 @@ export default function HomePage() {
         </div>
       </div>
     </main>
+  );
+}
+
+function SidebarFooter() {
+  return (
+    <div className="koluj-sidebar-footer">
+      <nav className="flex flex-col gap-3 text-sm font-bold text-[var(--koluj-muted)]" aria-label="Právní odkazy">
+        <Link href="/legal/terms" className="hover:text-[var(--koluj-green)]">Podmínky</Link>
+        <Link href="/legal/privacy" className="hover:text-[var(--koluj-green)]">Soukromí</Link>
+        <Link href="/legal/cookies" className="hover:text-[var(--koluj-green)]">Cookies</Link>
+        <a href="mailto:info@koluj.cz" className="hover:text-[var(--koluj-green)]">Kontakt</a>
+        <span className="mt-3 text-xs font-bold uppercase tracking-[0.18em] text-[var(--koluj-muted)] opacity-60">
+          © {new Date().getFullYear()} Koluj
+        </span>
+      </nav>
+    </div>
   );
 }
 

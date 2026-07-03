@@ -717,3 +717,36 @@ footer,
   .koluj-hero-map { min-height: 260px; }
   .koluj-searchbar { grid-template-columns: 1fr; }
 }
+
+/* Přidej do app/globals.css */
+
+.koluj-home-sidebar {
+  display: flex;
+  flex-direction: column;
+}
+
+.koluj-sidebar-content {
+  display: grid;
+  gap: 18px;
+}
+
+.koluj-sidebar-footer {
+  margin-top: auto;
+  padding-top: 24px;
+}
+
+@media (min-width: 1024px) {
+  .koluj-home-sidebar {
+    position: sticky;
+    top: 88px;
+    max-height: calc(100vh - 108px);
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 1023px) {
+  .koluj-sidebar-footer {
+    margin-top: 24px;
+    padding-bottom: 88px;
+  }
+}
