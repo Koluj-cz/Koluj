@@ -7,9 +7,7 @@ import {
   ArrowRight,
   Leaf,
   LocateFixed,
-  Plus,
   Search,
-  User,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
@@ -250,7 +248,7 @@ export default function HomePage() {
   return (
     <main className="koluj-home koluj-home-marketplace min-h-screen text-[var(--koluj-text)]">
       <div className="koluj-wide-frame relative z-10">
-        <section className="koluj-hero-card koluj-home-hero grid gap-6 p-5 md:hidden">
+        <section className="koluj-hero-card koluj-home-hero grid gap-6 p-5 min-[1100px]:hidden">
           <div className="flex flex-col justify-center">
             <h1 className="koluj-heading mt-0">
               Sdílej. Půjčuj. <span className="text-[var(--koluj-green)]">Koluj.</span>
@@ -258,13 +256,8 @@ export default function HomePage() {
             <p className="mt-5 max-w-2xl text-lg leading-relaxed text-[var(--koluj-muted)]">
               Věci i služby, které dávají smysl – pro tebe, pro sousedy i pro planetu.
             </p>
-            <div className="mt-7 flex flex-wrap items-center gap-3">
-              <a href="#nabidky" className="koluj-button min-h-[52px] px-6">
-                Procházet nabídky <ArrowRight size={18} />
-              </a>
-              <div className="inline-flex [&_button]:min-h-[52px] [&_button]:w-[52px] [&_button]:px-0 [&_button_span]:sr-only">
-                <InstallAppButton />
-              </div>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <a href="#nabidky" className="koluj-button min-h-[52px] px-6">Procházet nabídky <ArrowRight size={18} /></a>
             </div>
           </div>
         </section>
@@ -362,7 +355,7 @@ export default function HomePage() {
           </aside>
 
           <div className="koluj-main-wide koluj-home-content">
-            <section className="koluj-hero-card koluj-home-hero hidden gap-6 p-5 md:grid md:p-8 xl:grid-cols-[0.7fr_1.3fr] xl:p-8">
+            <section className="koluj-hero-card koluj-home-hero hidden gap-6 p-5 min-[1100px]:grid min-[1100px]:p-8 xl:grid-cols-[0.7fr_1.3fr] xl:p-8">
               <div className="flex flex-col justify-center">
                 <h1 className="koluj-heading mt-0">
                   Sdílej. Půjčuj. <span className="text-[var(--koluj-green)]">Koluj.</span>
@@ -370,32 +363,8 @@ export default function HomePage() {
                 <p className="mt-5 max-w-2xl text-lg leading-relaxed text-[var(--koluj-muted)] md:text-xl">
                   Věci i služby, které dávají smysl – pro tebe, pro sousedy i pro planetu.
                 </p>
-                <div className="mt-7 flex flex-wrap items-center gap-3">
-                  <a href="#nabidky" className="koluj-button min-h-[52px] px-6">
-                    Procházet nabídky <ArrowRight size={18} />
-                  </a>
-
-                  <div className="inline-flex [&_button]:min-h-[52px] [&_button]:w-[52px] [&_button]:px-0 [&_button_span]:sr-only">
-                    <InstallAppButton />
-                  </div>
-
-                  <Link
-                    href={isLoggedIn ? "/dashboard" : "/login"}
-                    className="koluj-button-secondary min-h-[52px] w-[52px] px-0"
-                    aria-label={isLoggedIn ? "Můj prostor" : "Přihlásit se"}
-                    title={isLoggedIn ? "Můj prostor" : "Přihlásit se"}
-                  >
-                    <User size={20} />
-                  </Link>
-
-                  <Link
-                    href="/offers/new"
-                    className="koluj-button min-h-[52px] w-[52px] px-0"
-                    aria-label="Přidat nabídku"
-                    title="Přidat nabídku"
-                  >
-                    <Plus size={22} />
-                  </Link>
+                <div className="mt-7 flex flex-wrap gap-3">
+                  <a href="#nabidky" className="koluj-button min-h-[52px] px-6">Procházet nabídky <ArrowRight size={18} /></a>
                 </div>
               </div>
 

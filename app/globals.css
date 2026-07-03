@@ -393,41 +393,7 @@ img { max-width: 100%; }
   background: linear-gradient(120deg, #ffffff 0%, #f6fdf8 56%, #eefcf2 100%);
   box-shadow: var(--koluj-shadow-soft);
 }
-@media (min-width: 1100px) {
-  .koluj-wide-frame { padding-left: 28px; padding-right: 28px; }
-  .koluj-wide-topbar { margin-left: -28px; margin-right: -28px; padding-left: 28px; padding-right: 28px; }
-  .koluj-wide-layout { grid-template-columns: 300px minmax(0, 1fr); align-items: start; }
-  .koluj-wide-sidebar { position: sticky; top: 92px; max-height: calc(100vh - 112px); overflow: auto; }
-  .koluj-offer-grid-wide { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-@media (min-width: 1400px) {
-  .koluj-wide-layout { grid-template-columns: 320px minmax(0, 1fr); }
-  .koluj-offer-grid-wide { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-}
-@media (min-width: 1640px) {
-  .koluj-offer-grid-wide { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-}
-@media (max-width: 1099px) {
-  .koluj-wide-sidebar { display: none; }
-  .koluj-wide-topbar { position: static; }
-}
-@media (max-width: 720px) {
-  .koluj-wide-frame { padding: 12px 12px 92px; }
-  .koluj-wide-topbar { margin: 0 -12px; padding: 12px; }
-  .koluj-heading { font-size: clamp(2.55rem, 15vw, 4rem); }
-}
-@media (min-width: 1100px) {
-  .koluj-wide-sidebar .koluj-searchbar {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 12px;
-    border: 0;
-    border-radius: 0;
-    padding: 0;
-    box-shadow: none;
-    background: transparent;
-  }
-}
+
 .koluj-wide-filter-card .koluj-searchbar {
   border: 0;
   box-shadow: none;
@@ -510,11 +476,13 @@ img { max-width: 100%; }
   transform: none !important;
 }
 
-/* Final cleanup pass */
+/* Consolidated responsive homepage layout */
+
 .koluj-wide-frame {
   width: 100%;
   max-width: none;
 }
+
 .koluj-wide-topbar,
 .koluj-page-header,
 footer,
@@ -523,10 +491,12 @@ footer,
   border-top: 0 !important;
   border-bottom: 0 !important;
 }
+
 .koluj-page-header { padding-bottom: 0 !important; }
 .koluj-logo { text-transform: none; }
 .koluj-logo .koluj-logo-word { font-size: inherit; }
 .koluj-sidebar-search { display: grid; gap: 10px; }
+
 .koluj-hero-map {
   min-height: 340px;
   overflow: hidden;
@@ -536,6 +506,7 @@ footer,
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.6);
 }
 .koluj-hero-map .leaflet-container { border-radius: 24px; }
+
 .koluj-card,
 .koluj-panel,
 .koluj-feature-card,
@@ -543,78 +514,13 @@ footer,
 .group\/card {
   will-change: auto;
 }
+
 .group\/card:hover,
 .koluj-offer-card:hover {
   border-color: rgba(22, 163, 74, .34) !important;
   box-shadow: 0 20px 48px rgba(15, 23, 42, .11) !important;
 }
-@media (max-width: 1099px) {
-  .koluj-wide-sidebar {
-    display: block;
-    position: static;
-    max-height: none;
-    overflow: visible;
-  }
-}
-@media (min-width: 1100px) {
-  .koluj-wide-layout { grid-template-columns: 320px minmax(0, 1fr); }
-  .koluj-wide-sidebar { top: 82px; }
-}
-@media (min-width: 1500px) {
-  .koluj-wide-layout { grid-template-columns: 340px minmax(0, 1fr); }
-}
-@media (max-width: 760px) {
-  .koluj-shell,
-  .koluj-shell-wide,
-  .koluj-wide-frame {
-    padding-left: 14px !important;
-    padding-right: 14px !important;
-  }
-  .koluj-form-shell,
-  .koluj-detail-shell,
-  .koluj-profile-shell {
-    width: 100%;
-  }
-  .koluj-card,
-  .koluj-panel,
-  .koluj-feature-card,
-  .koluj-wide-filter-card {
-    width: 100%;
-  }
-  .koluj-hero-map { min-height: 260px; }
-  .koluj-searchbar { grid-template-columns: 1fr; }
-}
 
-/* Homepage cleanup */
-
-.koluj-home-sidebar {
-  display: block;
-}
-
-.koluj-sidebar-content {
-  display: grid;
-  gap: 0;
-}
-
-@media (min-width: 1100px) {
-  .koluj-wide-sidebar.koluj-home-sidebar {
-    position: sticky;
-    top: 82px;
-    max-height: none;
-    overflow: visible;
-  }
-}
-
-@media (max-width: 1099px) {
-  .koluj-wide-sidebar.koluj-home-sidebar {
-    display: block;
-    position: static;
-    max-height: none;
-    overflow: visible;
-  }
-}
-
-/* Homepage offer grid fix */
 .koluj-offer-grid-wide {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
@@ -622,8 +528,105 @@ footer,
   align-items: stretch;
 }
 
+.koluj-home-sidebar { display: block; }
+.koluj-sidebar-content { display: grid; gap: 0; }
+
+@media (min-width: 1100px) {
+  .koluj-wide-frame {
+    padding-left: 28px;
+    padding-right: 28px;
+  }
+
+  .koluj-wide-topbar {
+    margin-left: -28px;
+    margin-right: -28px;
+    padding-left: 28px;
+    padding-right: 28px;
+  }
+
+  .koluj-wide-layout {
+    grid-template-columns: 320px minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .koluj-wide-sidebar,
+  .koluj-wide-sidebar.koluj-home-sidebar {
+    position: sticky;
+    top: 24px;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .koluj-wide-sidebar .koluj-searchbar {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 12px;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+    box-shadow: none;
+    background: transparent;
+  }
+
+  .koluj-mobile-only { display: none !important; }
+  .koluj-desktop-mt-0 { margin-top: 0 !important; }
+}
+
 @media (min-width: 1500px) {
+  .koluj-wide-layout {
+    grid-template-columns: 340px minmax(0, 1fr);
+  }
+
   .koluj-offer-grid-wide {
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   }
+}
+
+@media (max-width: 1099px) {
+  .koluj-wide-layout {
+    display: block;
+  }
+
+  .koluj-wide-sidebar,
+  .koluj-wide-sidebar.koluj-home-sidebar {
+    display: block;
+    position: static;
+    max-height: none;
+    overflow: visible;
+    margin-top: 20px;
+  }
+
+  .koluj-wide-topbar {
+    position: static;
+  }
+
+  .koluj-home-content .koluj-home-hero {
+    display: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .koluj-shell,
+  .koluj-shell-wide,
+  .koluj-wide-frame {
+    padding-left: 14px !important;
+    padding-right: 14px !important;
+  }
+
+  .koluj-form-shell,
+  .koluj-detail-shell,
+  .koluj-profile-shell,
+  .koluj-card,
+  .koluj-panel,
+  .koluj-feature-card,
+  .koluj-wide-filter-card {
+    width: 100%;
+  }
+
+  .koluj-heading {
+    font-size: clamp(2.55rem, 15vw, 4rem);
+  }
+
+  .koluj-hero-map { min-height: 260px; }
+  .koluj-searchbar { grid-template-columns: 1fr; }
 }
