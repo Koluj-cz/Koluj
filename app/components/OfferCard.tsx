@@ -120,9 +120,9 @@ export default function OfferCard({ item, variant = "public", footer }: OfferCar
             </span>
           </div>
 
-          <button type="button" aria-label="Uložit" className="flex h-10 w-10 items-center justify-center rounded-full bg-white/82 text-[var(--koluj-text)] shadow-sm backdrop-blur transition hover:scale-105 hover:text-[var(--koluj-green)]">
-            <Heart size={18} />
-          </button>
+          <span className={`koluj-status-badge shrink-0 ${isReserved ? "bg-orange-100 text-orange-700" : "bg-emerald-100 text-emerald-800"}`}>
+            {isReserved ? "Rezervované" : "Volné"}
+          </span>
         </div>
       </div>
 
@@ -137,9 +137,17 @@ export default function OfferCard({ item, variant = "public", footer }: OfferCar
               {shortPlace(item.pickup_place)}
             </p>
           </div>
-          <span className={`koluj-status-badge shrink-0 ${isReserved ? "bg-orange-100 text-orange-700" : "bg-emerald-100 text-emerald-800"}`}>
-            {isReserved ? "Rezerv." : "Volné"}
-          </span>
+        </div>
+
+        <div className="mt-auto flex items-end justify-between gap-3 pt-5">
+          {item.price_amount && item.price_unit ? (
+            <div>
+              <p className="text-xl font-black tracking-[-0.04em] text-[var(--koluj-ink)]">{item.price_amount} Kč</p>
+              <p className="text-xs font-black text-[var(--koluj-muted)]">/ {translatePriceUnit(item.price_unit, item.offer_type)}</p>
+            </div>
+          ) : (
+            <p className="text-xl font-black text-[var(--koluj-ink)]">Dohodou</p>
+          )}
         </div>
 
         {variant === "public" ? (
@@ -165,18 +173,6 @@ export default function OfferCard({ item, variant = "public", footer }: OfferCar
         ) : (
           <p className="mt-4 font-black text-[var(--koluj-muted)]">{bookingCount} rezervací</p>
         )}
-
-        <div className="mt-auto flex items-end justify-between gap-3 pt-5">
-          {item.price_amount && item.price_unit ? (
-            <div>
-              <p className="text-xl font-black tracking-[-0.04em] text-[var(--koluj-ink)]">{item.price_amount} Kč</p>
-              <p className="text-xs font-black text-[var(--koluj-muted)]">/ {translatePriceUnit(item.price_unit, item.offer_type)}</p>
-            </div>
-          ) : (
-            <p className="text-xl font-black text-[var(--koluj-ink)]">Dohodou</p>
-          )}
-          <span className="rounded-full bg-[var(--koluj-bg)] px-3 py-2 text-xs font-black text-[var(--koluj-green)]">Otevřít</span>
-        </div>
       </div>
 
       {footer && <div className="border-t border-[var(--koluj-border)] bg-white/54 px-5 py-4">{footer}</div>}

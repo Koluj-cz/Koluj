@@ -190,25 +190,15 @@ export default function HomePage() {
         <header className="koluj-page-header">
           <Link href="/" className="koluj-logo">KOLUJ</Link>
 
-          <nav className="hidden items-center gap-8 text-sm font-black text-[var(--koluj-muted)] lg:flex">
-            <Link href="/offers" className="text-[var(--koluj-green)]">Nabídky</Link>
-            <a href="#jak" className="hover:text-[var(--koluj-green)]">Jak to funguje</a>
-            <a href="#komunita" className="hover:text-[var(--koluj-green)]">Komunita</a>
-            <a href="/legal/terms" className="hover:text-[var(--koluj-green)]">O nás</a>
-          </nav>
-
           <div className="flex items-center gap-3">
             <InstallAppButton />
-            <Link href="/offers/new" className="hidden rounded-full bg-[var(--koluj-green)] px-5 py-3 font-black text-white shadow-[var(--koluj-glow)] transition hover:-translate-y-0.5 sm:inline-flex">
-              <Plus size={18} /> Přidat nabídku
-            </Link>
             <Link href={isLoggedIn ? "/dashboard" : "/login"} className="koluj-button px-5 py-3">
               {isLoggedIn ? "Můj prostor" : "Přihlásit se"}
             </Link>
           </div>
         </header>
 
-        <section className="relative grid min-h-[calc(100vh-96px)] items-center gap-8 py-8 lg:grid-cols-[0.78fr_1.22fr] lg:py-10">
+        <section className="relative grid min-h-[calc(100vh-96px)] items-center gap-8 pt-6 pb-8 lg:grid-cols-[0.78fr_1.22fr] lg:pt-8 lg:pb-10">
           <div className="relative z-20 max-w-2xl">
             <h1 className="koluj-heading mt-6">
               Sdílej.<br />Půjčuj.<br /><span className="text-[var(--koluj-green)]">Koluj.</span>
@@ -250,17 +240,15 @@ export default function HomePage() {
                 <option value="">Všechny kategorie</option>
                 {categoryChips.filter((chip) => chip.category).map((chip) => <option key={chip.label} value={chip.category}>{chip.label}</option>)}
               </select>
-              <select className="min-h-[62px] rounded-full border border-black/[0.08] bg-white px-4 font-black outline-none shadow-sm" defaultValue="available">
-                <option value="available">Volné</option>
-                <option value="all">Všechny stavy</option>
-              </select>
               <button type="button" onClick={submitSearch} className="koluj-button px-8 py-4">Hledat</button>
             </div>
           </div>
         </section>
 
         <section className="relative z-20 -mt-4 flex gap-4 overflow-x-auto pb-2 md:-mt-8">
-          {categoryChips.map((chip) => {
+          {categoryChips
+          .filter((chip) => ["Vše", "Věci", "Služby"].includes(chip.label))
+          .map((chip) => {
             const active = selectedOfferType === (chip.offerType || "all") && selectedCategory === chip.category;
             return (
               <button key={`${chip.label}-${chip.category}`} type="button" onClick={() => selectChip(chip)} className={`flex min-w-[104px] flex-col items-center gap-2 rounded-[28px] px-5 py-4 font-black transition ${active ? "bg-[var(--koluj-green)] text-white shadow-[var(--koluj-glow)]" : "bg-white/78 text-[var(--koluj-muted)] hover:bg-white"}`}>
@@ -274,7 +262,7 @@ export default function HomePage() {
         <section className="mt-12">
           <div className="mb-6 flex items-end justify-between gap-4">
             <div>
-              <h2 className="koluj-section-title">Právě kolují ✨</h2>
+              <h2 className="koluj-section-title">Právě kolují</h2>
               <p className="mt-2 text-[var(--koluj-muted)]">
                 {totalItems > 0 ? `${totalItems.toLocaleString("cs-CZ")} aktivních nabídek na KOLUJ.` : "Vybrané nabídky, které jsou právě dostupné."}
               </p>
