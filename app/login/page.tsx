@@ -43,7 +43,7 @@ export default function LoginPage() {
 
   return (
     <main className="min-h-screen">
-      <div className="koluj-shell">
+      <div className="koluj-shell-wide">
         <header className="mb-10 flex items-center justify-between">
           <BackLink href="/">Zpět na hlavní stránku</BackLink>
 
@@ -55,7 +55,7 @@ export default function LoginPage() {
           </Link>
         </header>
 
-        <section className="mx-auto max-w-2xl pt-12">
+        <section className="pt-12">
           <div className="koluj-card p-8 md:p-10">
             <div className="flex items-center gap-4">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-[var(--koluj-green)]">

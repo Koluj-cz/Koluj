@@ -122,7 +122,7 @@ export default function BookingsPage() {
 
   return (
     <main className="min-h-screen">
-      <div className="koluj-shell">
+      <div className="koluj-shell-wide">
         <header className="mb-10">
           <BackLink href="/dashboard">Dashboard</BackLink>
         </header>
@@ -185,7 +185,7 @@ export default function BookingsPage() {
         {loading ? (
           <PageLoader />
         ) : (
-          <div className="mt-8 grid gap-8 lg:mt-10 lg:grid-cols-2">
+          <div className="mt-8 grid gap-8 lg:mt-10 xl:grid-cols-3">
             <section
               className={
                 mobileMode === "borrowing" ? "block" : "hidden lg:block"

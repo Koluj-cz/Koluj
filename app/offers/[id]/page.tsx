@@ -488,7 +488,7 @@ export default function ItemDetailPage() {
           )}
         </header>
 
-        <section className="mt-6 grid gap-6 md:mt-10 lg:grid-cols-[1fr_420px] lg:gap-8">
+        <section className="mt-6 grid gap-6 md:mt-10 xl:grid-cols-[minmax(0,1fr)_460px] lg:gap-8">
           <div className="space-y-6">
             <div className="overflow-hidden rounded-[34px] bg-[var(--koluj-surface)] shadow-[0_18px_55px_rgba(31,31,26,0.12)]">
               <div className="border-b border-[var(--koluj-border)] px-5 py-6 md:px-8 md:py-7">

@@ -452,7 +452,7 @@ async function makePrimary(imageUrl: string) {
 
   return (
     <main className="min-h-screen pb-24 lg:pb-0">
-      <div className="koluj-shell">
+      <div className="koluj-shell-wide">
         <header className="mb-8 flex items-center justify-between">
           <BackLink href="/dashboard/my-offers">Moje nabídky</BackLink>
 
@@ -476,7 +476,7 @@ async function makePrimary(imageUrl: string) {
           </p>
         </section>
 
-        <section className="mt-14 grid gap-8 px-8 lg:grid-cols-[1fr_360px]">
+        <section className="mt-14 grid gap-8 px-8 xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="space-y-8">
 
         <div className="koluj-card p-8">

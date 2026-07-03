@@ -282,7 +282,7 @@ export default function MyOffersPage() {
 
   return (
     <main className="min-h-screen">
-      <div className="koluj-shell">
+      <div className="koluj-shell-wide">
         <header className="koluj-page-header">
           <BackLink href="/dashboard">Dashboard</BackLink>
 
@@ -365,7 +365,7 @@ export default function MyOffersPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
               {visibleOffers.map((item) => {
 
                 return (

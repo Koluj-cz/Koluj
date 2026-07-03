@@ -490,7 +490,7 @@ export default function BookingDetailPage() {
   if (!booking) {
     return (
       <main className="min-h-screen">
-        <div className="koluj-shell">
+        <div className="koluj-shell-wide">
           <p>Rezervace nebyla nalezena.</p>
         </div>
       </main>
@@ -507,12 +507,12 @@ export default function BookingDetailPage() {
 
   return (
     <main className="min-h-screen">
-      <div className="koluj-shell">
+      <div className="koluj-shell-wide">
         <header className="mb-10">
           <BackLink href="/dashboard/bookings">Rezervace</BackLink>
         </header>
 
-        <div className="grid gap-8 lg:grid-cols-[360px_1fr]">
+        <div className="grid gap-8 xl:grid-cols-[380px_minmax(0,1fr)]">
           <aside className="space-y-6">
             <div className="koluj-card p-6">
               <div className="flex items-center gap-4">

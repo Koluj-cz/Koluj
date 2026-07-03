@@ -220,7 +220,7 @@ export default function ProfilePage() {
 
   return (
     <main className="min-h-screen pb-24 lg:pb-0">
-      <div className="koluj-shell">
+      <div className="koluj-shell-wide">
         <header className="mb-8 flex items-center justify-between">
           <BackLink href="/dashboard">Dashboard</BackLink>
 
@@ -242,7 +242,7 @@ export default function ProfilePage() {
           </p>
         </section>
 
-        <section className="mt-10 grid gap-6 px-0 md:mt-14 md:px-0 lg:grid-cols-[1fr_360px]">
+        <section className="mt-10 grid gap-6 px-0 md:mt-14 md:px-0 xl:grid-cols-[minmax(0,1fr)_420px]">
           <div className="space-y-8">
             <div className="koluj-card p-5 md:p-8">
               <SectionTitle icon={<Mail size={24} />} title="Přihlášení" />

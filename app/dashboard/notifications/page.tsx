@@ -79,7 +79,7 @@ export default function NotificationsPage() {
 
   return (
     <main className="min-h-screen">
-      <div className="koluj-shell">
+      <div className="koluj-shell-wide">
         <header className="mb-10">
           <BackLink href="/dashboard">Dashboard</BackLink>
         </header>

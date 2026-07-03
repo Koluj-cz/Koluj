@@ -207,7 +207,7 @@ export default function UserProfilePage() {
   if (!profile) {
     return (
       <main className="min-h-screen">
-        <div className="koluj-shell">
+        <div className="koluj-shell-wide">
           <BackLink href="/">Zpět</BackLink>
 
           <div className="koluj-card mt-10 p-8">
@@ -242,7 +242,7 @@ export default function UserProfilePage() {
           <AuthHeaderButton />
         </header>
 
-        <section className="mt-10 grid gap-8 lg:grid-cols-[360px_1fr]">
+        <section className="mt-10 grid gap-8 xl:grid-cols-[380px_minmax(0,1fr)]">
           <aside className="space-y-6">
             <div className="koluj-card p-8">
               <div className="flex items-center gap-5">
