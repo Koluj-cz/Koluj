@@ -248,23 +248,37 @@ export default function HomePage() {
   return (
     <main className="koluj-home koluj-home-marketplace min-h-screen text-[var(--koluj-text)]">
       <div className="koluj-wide-frame relative z-10">
-        <header className="koluj-wide-topbar koluj-topbar-clean">
+        <header className="koluj-wide-topbar koluj-topbar-clean hidden md:block">
           <div className="koluj-wide-topbar-inner">
             <Link href="/" className="koluj-logo koluj-logo-text" aria-label="Koluj domů">
               Koluj
             </Link>
 
-            <div className="hidden items-center gap-3 md:flex">
+            <div className="flex items-center gap-2 sm:gap-3">
               <InstallAppButton />
-              <Link href={isLoggedIn ? "/dashboard" : "/login"} className="koluj-button-secondary px-4">
+              <Link href={isLoggedIn ? "/dashboard" : "/login"} className="koluj-button-secondary hidden px-4 sm:inline-flex">
                 {isLoggedIn ? "Můj prostor" : "Přihlásit se"}
               </Link>
-              <Link href="/offers/new" className="koluj-button px-5">
+              <Link href="/offers/new" className="koluj-button px-4 sm:px-5">
                 Přidat nabídku
               </Link>
             </div>
           </div>
         </header>
+
+        <section className="koluj-hero-card koluj-home-hero grid gap-6 p-5 md:hidden">
+          <div className="flex flex-col justify-center">
+            <h1 className="koluj-heading mt-0">
+              Sdílej. Půjčuj. <span className="text-[var(--koluj-green)]">Koluj.</span>
+            </h1>
+            <p className="mt-5 max-w-2xl text-lg leading-relaxed text-[var(--koluj-muted)]">
+              Věci i služby, které dávají smysl – pro tebe, pro sousedy i pro planetu.
+            </p>
+            <div className="mt-7 flex flex-wrap gap-3">
+              <a href="#nabidky" className="koluj-button min-h-[52px] px-6">Procházet nabídky <ArrowRight size={18} /></a>
+            </div>
+          </div>
+        </section>
 
         <div className="koluj-wide-layout koluj-home-layout">
           <aside className="koluj-wide-sidebar koluj-home-sidebar" aria-label="Filtry nabídek">
@@ -334,7 +348,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="mt-6 flex flex-wrap gap-4 text-sm font-bold text-[var(--koluj-muted)]">
+              <div className="mt-6 hidden flex-wrap gap-4 text-sm font-bold text-[var(--koluj-muted)] md:flex">
                 <Link href="/legal/terms" className="hover:text-[var(--koluj-green)]">
                   Podmínky
                 </Link>
@@ -352,14 +366,14 @@ export default function HomePage() {
                 </a>
               </div>
 
-              <p className="mt-3 text-xs font-bold uppercase tracking-[0.12em] opacity-60">
+              <p className="mt-3 hidden text-xs font-bold uppercase tracking-[0.12em] opacity-60 md:block">
                 © {new Date().getFullYear()} KOLUJ
               </p>
             </div>
           </aside>
 
           <div className="koluj-main-wide koluj-home-content">
-            <section className="koluj-hero-card koluj-home-hero grid gap-6 p-5 md:p-8 xl:grid-cols-[0.7fr_1.3fr] xl:p-8">
+            <section className="koluj-hero-card koluj-home-hero hidden gap-6 p-5 md:grid md:p-8 xl:grid-cols-[0.7fr_1.3fr] xl:p-8">
               <div className="flex flex-col justify-center">
                 <h1 className="koluj-heading mt-0">
                   Sdílej. Půjčuj. <span className="text-[var(--koluj-green)]">Koluj.</span>
@@ -372,7 +386,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="koluj-hero-map hidden md:block" aria-label="Mapa nabídek v okolí">
+              <div className="koluj-hero-map" aria-label="Mapa nabídek v okolí">
                 <OffersMap items={sortedItems} userLocation={userLocation} />
               </div>
             </section>
