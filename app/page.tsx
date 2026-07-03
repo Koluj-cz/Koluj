@@ -254,12 +254,12 @@ export default function HomePage() {
               Koluj
             </Link>
 
-            <div className="flex items-center gap-2 sm:gap-3">
+            <div className="hidden items-center gap-3 md:flex">
               <InstallAppButton />
-              <Link href={isLoggedIn ? "/dashboard" : "/login"} className="koluj-button-secondary hidden px-4 sm:inline-flex">
+              <Link href={isLoggedIn ? "/dashboard" : "/login"} className="koluj-button-secondary px-4">
                 {isLoggedIn ? "Můj prostor" : "Přihlásit se"}
               </Link>
-              <Link href="/offers/new" className="koluj-button px-4 sm:px-5">
+              <Link href="/offers/new" className="koluj-button px-5">
                 Přidat nabídku
               </Link>
             </div>
@@ -325,7 +325,7 @@ export default function HomePage() {
                 </select>
               </div>
 
-              <div id="jak" className="koluj-sidebar-section">
+              <div id="jak" className="koluj-sidebar-section hidden md:block">
                 <p className="koluj-sidebar-label">Jak to funguje</p>
                 <div className="grid gap-3">
                   <InfoCard icon={<Search />} title="Najdi" text="Vyhledej věc nebo službu ve svém okolí." compact />
@@ -372,7 +372,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="koluj-hero-map" aria-label="Mapa nabídek v okolí">
+              <div className="koluj-hero-map hidden md:block" aria-label="Mapa nabídek v okolí">
                 <OffersMap items={sortedItems} userLocation={userLocation} />
               </div>
             </section>
