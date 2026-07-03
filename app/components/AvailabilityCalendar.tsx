@@ -508,7 +508,7 @@ export default function AvailabilityCalendar({
               type="button"
               disabled={disabled}
               onClick={() => handleDayClick(isoDate)}
-              className={`aspect-square rounded-2xl text-sm font-black transition ${className}`}
+              className={`aspect-square rounded-2xl text-sm font-black ${className}`}
               title={
                 reserved
                   ? "Rezervováno"

@@ -256,7 +256,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={logout}
-                className="mt-5 rounded-2xl border border-[var(--koluj-border)] px-5 py-3 font-black transition hover:bg-[var(--koluj-bg)]"
+                className="mt-5 rounded-2xl border border-[var(--koluj-border)] px-5 py-3 font-black hover:bg-[var(--koluj-bg)]"
               >
                 Odhlásit se
               </button>
@@ -276,7 +276,7 @@ export default function ProfilePage() {
                       !profile.email_notifications_enabled,
                   })
                 }
-                className="mt-6 flex w-full items-center justify-between gap-6 rounded-3xl bg-[var(--koluj-bg)] px-5 py-4 text-left transition hover:opacity-90"
+                className="mt-6 flex w-full items-center justify-between gap-6 rounded-3xl bg-[var(--koluj-bg)] px-5 py-4 text-left hover:opacity-90"
               >
                 <div>
                   <p className="font-bold">E-mailové notifikace</p>
@@ -288,7 +288,7 @@ export default function ProfilePage() {
 
                 <div className="flex rounded-2xl bg-white p-1">
                   <span
-                    className={`rounded-xl px-4 py-2 text-sm font-black transition ${
+                    className={`rounded-xl px-4 py-2 text-sm font-black ${
                       profile.email_notifications_enabled
                         ? "bg-[var(--koluj-green)] text-white"
                         : "text-[var(--koluj-muted)]"
@@ -298,7 +298,7 @@ export default function ProfilePage() {
                   </span>
 
                   <span
-                    className={`rounded-xl px-4 py-2 text-sm font-black transition ${
+                    className={`rounded-xl px-4 py-2 text-sm font-black ${
                       !profile.email_notifications_enabled
                         ? "bg-[var(--koluj-green)] text-white"
                         : "text-[var(--koluj-muted)]"
@@ -417,7 +417,7 @@ export default function ProfilePage() {
 
               <button
                 onClick={() => setShowDeleteAccount(true)}
-                className="mt-6 rounded-2xl bg-red-600 px-6 py-3 font-black text-white transition hover:bg-red-700"
+                className="mt-6 rounded-2xl bg-red-600 px-6 py-3 font-black text-white hover:bg-red-700"
               >
                 Deaktivovat účet
               </button>

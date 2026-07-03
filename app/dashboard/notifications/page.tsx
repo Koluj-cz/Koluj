@@ -108,7 +108,7 @@ export default function NotificationsPage() {
               return (
                 <div
                   key={notification.id}
-                  className="koluj-card p-5 transition hover:-translate-y-1"
+                  className="koluj-card p-5"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex gap-4">

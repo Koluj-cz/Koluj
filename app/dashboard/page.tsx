@@ -112,7 +112,7 @@ export default function DashboardPage() {
 
 function DashboardCard({ href, title, icon, text, action }: { href: string; title: string; icon: React.ReactNode; text: string; action: string }) {
   return (
-    <Link href={href} className="koluj-card group min-h-[240px] overflow-hidden p-8 transition hover:-translate-y-1 hover:shadow-[var(--koluj-shadow)]">
+    <Link href={href} className="koluj-card group min-h-[240px] overflow-hidden p-8 hover:shadow-[var(--koluj-shadow)]">
       <div className="flex items-start justify-between gap-6">
         <h2 className="text-3xl font-black tracking-[-0.05em]">{title}</h2>
         <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-[var(--koluj-green)]">{icon}</span>

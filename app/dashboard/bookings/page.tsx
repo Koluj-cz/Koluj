@@ -142,7 +142,7 @@ export default function BookingsPage() {
                 key={status}
                 type="button"
                 onClick={() => setFilter(status)}
-                className={`rounded-2xl px-4 py-2 text-sm font-black transition ${
+                className={`rounded-2xl px-4 py-2 text-sm font-black ${
                   filter === status
                     ? "bg-[var(--koluj-green)] text-white"
                     : "bg-[var(--koluj-bg)] text-[var(--koluj-muted)] hover:text-[var(--koluj-green)]"
@@ -159,7 +159,7 @@ export default function BookingsPage() {
             <button
               type="button"
               onClick={() => setMobileMode("borrowing")}
-              className={`rounded-2xl px-4 py-3 font-black transition ${
+              className={`rounded-2xl px-4 py-3 font-black ${
                 mobileMode === "borrowing"
                   ? "bg-[var(--koluj-green)] text-white"
                   : "bg-white text-[var(--koluj-muted)]"
@@ -171,7 +171,7 @@ export default function BookingsPage() {
             <button
               type="button"
               onClick={() => setMobileMode("lending")}
-              className={`rounded-2xl px-4 py-3 font-black transition ${
+              className={`rounded-2xl px-4 py-3 font-black ${
                 mobileMode === "lending"
                   ? "bg-[var(--koluj-green)] text-white"
                   : "bg-white text-[var(--koluj-muted)]"
@@ -289,7 +289,7 @@ function BookingCard({
   return (
     <Link
       href={`/dashboard/bookings/${booking.id}`}
-      className="koluj-card block p-4 transition hover:-translate-y-1"
+      className="koluj-card block p-4"
     >
       <div className="flex gap-4">
         <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-[var(--koluj-bg)]">

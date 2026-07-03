@@ -415,7 +415,7 @@ export default function ItemDetailPage() {
 
       <Link
         href={`/users/${item.owner_id}`}
-        className="mt-5 flex items-center gap-4 transition hover:opacity-80"
+        className="mt-5 flex items-center gap-4 hover:opacity-80"
       >
         {item.profiles?.avatar_url ? (
           <img
@@ -553,7 +553,7 @@ export default function ItemDetailPage() {
                       key={image.id}
                       type="button"
                       onClick={() => setSelectedImage(image.image_url)}
-                      className={`h-20 w-24 shrink-0 overflow-hidden rounded-2xl border-2 transition ${
+                      className={`h-20 w-24 shrink-0 overflow-hidden rounded-2xl border-2 ${
                         selectedImage === image.image_url
                           ? "border-[var(--koluj-green)]"
                           : "border-transparent opacity-75 hover:opacity-100"

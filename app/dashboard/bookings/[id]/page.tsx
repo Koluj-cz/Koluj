@@ -592,7 +592,7 @@ export default function BookingDetailPage() {
                 <Link
                   href={`/dashboard/bookings/${booking.id}/protocol`}
                   target="_blank"
-                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-[24px] bg-white px-5 py-4 font-black text-[var(--koluj-green)] shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-[24px] bg-white px-5 py-4 font-black text-[var(--koluj-green)] shadow-sm hover:shadow-md"
                 >
                   <Printer size={18} />
                   {isService ? "Vytisknout protokol o provedení služby" : "Vytisknout protokol o předání"}
@@ -617,7 +617,7 @@ export default function BookingDetailPage() {
                     <button type="button" onClick={approveBooking} disabled={saving} className="koluj-button py-3 disabled:opacity-60">
                       {saving ? "Ukládám..." : isService ? "Schválit poptávku" : "Schválit žádost"}
                     </button>
-                    <button type="button" onClick={rejectBooking} disabled={saving} className="rounded-2xl border border-red-200 bg-white py-3 font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-60">
+                    <button type="button" onClick={rejectBooking} disabled={saving} className="rounded-2xl border border-red-200 bg-white py-3 font-bold text-red-600 hover:bg-red-50 disabled:opacity-60">
                       {isService ? "Odmítnout poptávku" : "Odmítnout žádost"}
                     </button>
                   </div>
@@ -645,7 +645,7 @@ export default function BookingDetailPage() {
                       type="button"
                       onClick={rejectBooking}
                       disabled={saving}
-                      className="rounded-2xl border border-red-200 bg-white py-3 font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-60"
+                      className="rounded-2xl border border-red-200 bg-white py-3 font-bold text-red-600 hover:bg-red-50 disabled:opacity-60"
                     >
                       {saving ? "Ukládám..." : "Zrušit rezervaci"}
                     </button>
@@ -661,7 +661,7 @@ export default function BookingDetailPage() {
                       {saving ? "Ukládám..." : isService ? "Potvrdit dokončení" : "Potvrdit vrácení"}
                     </button>
                     {isService && (
-                      <button type="button" onClick={rejectBooking} disabled={saving} className="rounded-2xl border border-red-200 bg-white py-3 font-bold text-red-600 transition hover:bg-red-50 disabled:opacity-60">
+                      <button type="button" onClick={rejectBooking} disabled={saving} className="rounded-2xl border border-red-200 bg-white py-3 font-bold text-red-600 hover:bg-red-50 disabled:opacity-60">
                         {saving ? "Ukládám..." : "Zrušit službu"}
                       </button>
                     )}

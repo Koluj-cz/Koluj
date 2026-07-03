@@ -384,7 +384,7 @@ export default function MyOffersPage() {
                       <div className="grid grid-cols-4 gap-1">
                         <Link
                           href={`/offers/${item.id}`}
-                          className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-green)] transition hover:bg-[var(--koluj-bg)]"
+                          className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-green)] hover:bg-[var(--koluj-bg)]"
                         >
                           <CalendarDays size={18} />
                           Detail
@@ -392,7 +392,7 @@ export default function MyOffersPage() {
 
                         <Link
                           href={`/offers/${item.id}/edit`}
-                          className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-text)] transition hover:bg-[var(--koluj-bg)]"
+                          className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-text)] hover:bg-[var(--koluj-bg)]"
                         >
                           <Pencil size={18} />
                           Upravit
@@ -401,7 +401,7 @@ export default function MyOffersPage() {
                         <button
                           type="button"
                           onClick={() => toggleVisibility(item)}
-                          className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-green)] transition hover:bg-[var(--koluj-bg)]"
+                          className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-green)] hover:bg-[var(--koluj-bg)]"
                         >
                           {item.is_active ? (
                             <>
@@ -420,7 +420,7 @@ export default function MyOffersPage() {
                           type="button"
                           onClick={() => archiveOffer(item)}
                           onMouseLeave={() => setPendingDeleteId(null)}
-                          className={`flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight transition ${
+                          className={`flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight ${
                             pendingDeleteId === item.id
                               ? "bg-red-50 text-red-600"
                               : "text-[var(--koluj-muted)] hover:bg-[var(--koluj-bg)]"
@@ -442,7 +442,7 @@ export default function MyOffersPage() {
             <div className="pt-8 text-center">
               <button
                 onClick={() => setVisibleCount((prev) => prev + 8)}
-                className="rounded-2xl border border-[var(--koluj-border)] bg-[var(--koluj-surface)] px-8 py-4 font-bold transition hover:bg-[var(--koluj-bg)]"
+                className="rounded-2xl border border-[var(--koluj-border)] bg-[var(--koluj-surface)] px-8 py-4 font-bold hover:bg-[var(--koluj-bg)]"
               >
                 Načíst další
               </button>

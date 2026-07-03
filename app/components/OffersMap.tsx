@@ -180,7 +180,7 @@ export default function OffersMap({
                   <Link
                     key={item.id}
                     href={`/offers/${item.id}`}
-                    className="block rounded-xl border border-[var(--koluj-border)] bg-white px-3 py-2 transition hover:bg-[var(--koluj-bg)]"
+                    className="block rounded-xl border border-[var(--koluj-border)] bg-white px-3 py-2 hover:bg-[var(--koluj-bg)]"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <p className="line-clamp-2 text-sm font-black leading-tight">

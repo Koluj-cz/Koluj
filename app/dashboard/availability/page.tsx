@@ -511,7 +511,7 @@ export default function DashboardAvailabilityPage() {
                     key={isoDate}
                     type="button"
                     onClick={() => handleDayClick(isoDate)}
-                    className={`min-h-[96px] bg-white p-2 text-left transition hover:bg-[var(--koluj-bg)] md:min-h-[132px] md:p-3 ${
+                    className={`min-h-[96px] bg-white p-2 text-left hover:bg-[var(--koluj-bg)] md:min-h-[132px] md:p-3 ${
                       selected ? "bg-orange-50 ring-2 ring-inset ring-orange-300" : ""
                     } ${isActive ? "ring-2 ring-inset ring-[var(--koluj-green)]" : ""} ${
                       isPast ? "text-stone-300" : ""
@@ -575,7 +575,7 @@ export default function DashboardAvailabilityPage() {
                 <button
                   type="button"
                   onClick={() => setApplyToAll(true)}
-                  className={`flex-1 rounded-xl px-4 py-2 transition ${
+                  className={`flex-1 rounded-xl px-4 py-2 ${
                     applyToAll
                       ? "bg-white text-[var(--koluj-green)] shadow-sm"
                       : "text-[var(--koluj-muted)]"
@@ -586,7 +586,7 @@ export default function DashboardAvailabilityPage() {
                 <button
                   type="button"
                   onClick={() => setApplyToAll(false)}
-                  className={`flex-1 rounded-xl px-4 py-2 transition ${
+                  className={`flex-1 rounded-xl px-4 py-2 ${
                     !applyToAll
                       ? "bg-white text-[var(--koluj-green)] shadow-sm"
                       : "text-[var(--koluj-muted)]"
@@ -624,7 +624,7 @@ export default function DashboardAvailabilityPage() {
                           key={item.id}
                           type="button"
                           onClick={() => toggleItem(item.id)}
-                          className={`flex w-full items-center gap-3 rounded-2xl p-2 text-left transition ${
+                          className={`flex w-full items-center gap-3 rounded-2xl p-2 text-left ${
                             selected
                               ? "bg-[var(--koluj-bg)]"
                               : "bg-white ring-1 ring-[var(--koluj-border)] hover:bg-[var(--koluj-bg)]"
@@ -753,7 +753,7 @@ export default function DashboardAvailabilityPage() {
                             type="button"
                             onClick={() => deleteBlock(block.id)}
                             disabled={deletingBlockId === block.id}
-                            className="shrink-0 rounded-2xl bg-red-50 px-3 py-2 text-xs font-black text-red-600 transition hover:bg-red-100 disabled:opacity-60"
+                            className="shrink-0 rounded-2xl bg-red-50 px-3 py-2 text-xs font-black text-red-600 hover:bg-red-100 disabled:opacity-60"
                           >
                             {deletingBlockId === block.id ? "Ruším..." : "Uvolnit"}
                           </button>

@@ -430,7 +430,7 @@ export default function NewItemPage() {
                         handover_options: type === "service" ? [] : prev.handover_options,
                       }))
                     }
-                    className={`rounded-3xl px-5 py-4 text-left font-black transition ${
+                    className={`rounded-3xl px-5 py-4 text-left font-black ${
                       form.offer_type === type
                         ? "bg-[var(--koluj-green)] text-white"
                         : "bg-[var(--koluj-bg)] text-[var(--koluj-text)]"
@@ -490,7 +490,7 @@ export default function NewItemPage() {
                 ))}
 
                 {photos.length < 8 && (
-                  <label className="flex h-36 cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-[var(--koluj-border)] bg-[var(--koluj-surface)] text-[var(--koluj-green)] transition hover:bg-[var(--koluj-bg)]">
+                  <label className="flex h-36 cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-[var(--koluj-border)] bg-[var(--koluj-surface)] text-[var(--koluj-green)] hover:bg-[var(--koluj-bg)]">
                     <Plus size={30} />
                     <span className="mt-2 text-sm font-bold">Přidat</span>
                     <input
@@ -521,7 +521,7 @@ export default function NewItemPage() {
 
                   <div className="h-3 overflow-hidden rounded-full bg-[var(--koluj-bg)]">
                     <div
-                      className="h-full rounded-full bg-[var(--koluj-green)] transition-all"
+                      className="h-full rounded-full bg-[var(--koluj-green)]"
                       style={{ width: `${uploadProgress}%` }}
                     />
                   </div>
@@ -688,7 +688,7 @@ export default function NewItemPage() {
                     key={value}
                     type="button"
                     onClick={() => toggleHandoverOption(value)}
-                    className={`flex items-center gap-3 rounded-2xl border px-4 py-3 font-bold transition ${
+                    className={`flex items-center gap-3 rounded-2xl border px-4 py-3 font-bold ${
                       form.handover_options.includes(value)
                         ? "border-[var(--koluj-green)] bg-[var(--koluj-bg)] text-[var(--koluj-green)]"
                         : "border-[var(--koluj-border)] text-[var(--koluj-muted)]"

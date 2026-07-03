@@ -498,7 +498,7 @@ async function makePrimary(imageUrl: string) {
                         handover_options: type === "service" ? [] : prev.handover_options,
                       }))
                     }
-                    className={`rounded-3xl px-5 py-4 text-left font-black transition ${
+                    className={`rounded-3xl px-5 py-4 text-left font-black ${
                       form.offer_type === type
                         ? "bg-[var(--koluj-green)] text-white"
                         : "bg-[var(--koluj-bg)] text-[var(--koluj-text)]"
@@ -610,7 +610,7 @@ async function makePrimary(imageUrl: string) {
 
                 <div className="h-3 overflow-hidden rounded-full bg-[var(--koluj-bg)]">
                   <div
-                    className="h-full rounded-full bg-[var(--koluj-green)] transition-all"
+                    className="h-full rounded-full bg-[var(--koluj-green)]"
                     style={{ width: `${uploadProgress}%` }}
                   />
                 </div>
@@ -777,7 +777,7 @@ async function makePrimary(imageUrl: string) {
                     key={value}
                     type="button"
                     onClick={() => toggleHandoverOption(value)}
-                    className={`flex items-center gap-3 rounded-2xl border px-4 py-3 font-bold transition ${
+                    className={`flex items-center gap-3 rounded-2xl border px-4 py-3 font-bold ${
                       form.handover_options.includes(value)
                         ? "border-[var(--koluj-green)] bg-[var(--koluj-bg)] text-[var(--koluj-green)]"
                         : "border-[var(--koluj-border)] text-[var(--koluj-muted)]"

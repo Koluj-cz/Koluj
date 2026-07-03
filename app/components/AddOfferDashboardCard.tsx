@@ -41,10 +41,10 @@ export default function AddOfferDashboardCard() {
   return (
     <Link
       href={href}
-      className={`koluj-card group relative overflow-hidden p-8 transition ${
+      className={`koluj-card group relative overflow-hidden p-8 ${
         !profileComplete && !loading
           ? "opacity-55 grayscale hover:translate-y-0"
-          : "hover:-translate-y-1"
+          : ""
       }`}
     >
       <div className="flex items-start justify-between gap-6">

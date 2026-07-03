@@ -177,7 +177,7 @@ export default function PushNotificationButton() {
       type="button"
       onClick={togglePushNotifications}
       disabled={saving}
-      className="mt-4 flex w-full items-center justify-between gap-6 rounded-3xl bg-[var(--koluj-bg)] px-5 py-4 text-left transition hover:opacity-90 disabled:opacity-70"
+      className="mt-4 flex w-full items-center justify-between gap-6 rounded-3xl bg-[var(--koluj-bg)] px-5 py-4 text-left hover:opacity-90 disabled:opacity-70"
     >
       <div>
         <p className="font-bold">Push notifikace</p>
@@ -188,7 +188,7 @@ export default function PushNotificationButton() {
 
       <div className="flex rounded-2xl bg-white p-1">
         <span
-          className={`rounded-xl px-4 py-2 text-sm font-black transition ${
+          className={`rounded-xl px-4 py-2 text-sm font-black ${
             enabled
               ? "bg-[var(--koluj-green)] text-white"
               : "text-[var(--koluj-muted)]"
@@ -198,7 +198,7 @@ export default function PushNotificationButton() {
         </span>
 
         <span
-          className={`rounded-xl px-4 py-2 text-sm font-black transition ${
+          className={`rounded-xl px-4 py-2 text-sm font-black ${
             !enabled
               ? "bg-[var(--koluj-green)] text-white"
               : "text-[var(--koluj-muted)]"

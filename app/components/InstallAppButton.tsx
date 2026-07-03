@@ -44,7 +44,7 @@ export default function InstallAppButton() {
     <button
       onClick={installApp}
       title="Instalovat aplikaci"
-      className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--koluj-border)] bg-white px-4 py-3 font-bold text-[var(--koluj-green)] shadow-sm transition hover:bg-[var(--koluj-bg)]"
+      className="flex items-center justify-center gap-2 rounded-2xl border border-[var(--koluj-border)] bg-white px-4 py-3 font-bold text-[var(--koluj-green)] shadow-sm hover:bg-[var(--koluj-bg)]"
     >
       <Download size={18} />
 
