@@ -269,7 +269,7 @@ export default function HomePage() {
         <div className="koluj-wide-layout koluj-home-layout">
           <aside className="koluj-wide-sidebar koluj-home-sidebar" aria-label="Filtry nabídek">
             <div className="koluj-sidebar-content">
-              <div className="koluj-sidebar-section">
+              <div className="koluj-sidebar-section pt-4">
                 <p className="koluj-sidebar-label">Hledání</p>
                 <div className="flex min-h-[48px] items-center gap-2 rounded-[16px] border border-[var(--koluj-border)] bg-white px-4 shadow-sm">
                   <Search size={18} className="shrink-0 text-[var(--koluj-muted)]" />
