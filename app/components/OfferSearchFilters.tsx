@@ -44,24 +44,24 @@ export default function OfferSearchFilters({
   locationActive = false,
 }: OfferSearchFiltersProps) {
   const selectClass =
-    "min-h-[58px] w-full rounded-full border border-black/[0.08] bg-white/86 px-4 font-black text-[var(--koluj-text)] outline-none shadow-sm transition focus:border-[var(--koluj-green)] focus:shadow-[0_0_0_5px_rgba(95,127,43,0.11)] disabled:cursor-not-allowed disabled:opacity-55";
+    "min-h-[56px] w-full rounded-2xl border border-[var(--koluj-border)] bg-white px-4 font-semibold text-[var(--koluj-text)] outline-none transition focus:border-[var(--koluj-green)] focus:shadow-[0_0_0_5px_rgba(47,93,58,0.09)] disabled:cursor-not-allowed disabled:opacity-55";
 
   return (
-    <section className="rounded-[32px] border border-white/70 bg-white/64 p-3 shadow-[0_18px_50px_rgba(40,42,30,0.10)] backdrop-blur-xl md:p-4">
+    <section className="rounded-[28px] border border-[var(--koluj-border)] bg-white p-3 md:p-4">
       <div className="grid gap-3 xl:grid-cols-[minmax(280px,1fr)_180px_230px_210px_190px]">
-        <div className="flex min-h-[58px] items-center gap-3 rounded-full border border-black/[0.08] bg-white/90 px-4 shadow-sm transition focus-within:border-[var(--koluj-green)] focus-within:shadow-[0_0_0_5px_rgba(95,127,43,0.11)]">
+        <div className="flex min-h-[56px] items-center gap-3 rounded-2xl border border-[var(--koluj-border)] bg-white px-4 transition focus-within:border-[var(--koluj-green)] focus-within:shadow-[0_0_0_5px_rgba(47,93,58,0.09)]">
           <Search size={20} className="shrink-0 text-[var(--koluj-muted)]" />
           <input
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
             placeholder={searchPlaceholder}
-            className="min-w-0 flex-1 bg-transparent py-4 font-medium text-[var(--koluj-text)] outline-none placeholder:text-[var(--koluj-muted)]"
+            className="min-w-0 flex-1 bg-transparent py-4 font-normal text-[var(--koluj-text)] outline-none placeholder:text-[var(--koluj-muted)]"
           />
           <button
             type="button"
             onClick={onUseLocation}
             disabled={!onUseLocation}
-            className={`hidden shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-black transition sm:flex ${
+            className={`hidden shrink-0 items-center gap-2 rounded-full px-4 py-2 text-sm font-semibold transition sm:flex ${
               locationActive
                 ? "bg-[var(--koluj-green)] text-white"
                 : "bg-[var(--koluj-bg)] text-[var(--koluj-green)] hover:bg-white disabled:hover:bg-[var(--koluj-bg)]"
@@ -90,7 +90,7 @@ export default function OfferSearchFilters({
         type="button"
         onClick={onUseLocation}
         disabled={!onUseLocation}
-        className={`mt-3 flex w-full items-center justify-center gap-2 rounded-full border px-5 py-3 font-black transition sm:hidden ${
+        className={`mt-3 flex w-full items-center justify-center gap-2 rounded-full border px-5 py-3 font-semibold transition sm:hidden ${
           locationActive
             ? "border-[var(--koluj-green)] bg-[var(--koluj-green)] text-white"
             : "border-[var(--koluj-border)] bg-white/82 text-[var(--koluj-muted)] hover:bg-[var(--koluj-bg)]"
