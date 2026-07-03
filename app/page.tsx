@@ -5,7 +5,6 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
   ArrowRight,
-  Leaf,
   LocateFixed,
   Search,
 } from "lucide-react";
@@ -325,17 +324,18 @@ export default function HomePage() {
                 </select>
               </div>
 
-              <div id="jak" className="koluj-sidebar-section">
-                <p className="koluj-sidebar-label">Jak to funguje</p>
-                <div className="grid gap-3">
-                  <InfoCard icon={<Search />} title="Najdi" text="Vyhledej věc nebo službu ve svém okolí." compact />
-                  <InfoCard icon={<ArrowRight />} title="Domluv se" text="Otevři detail a domluv termín." compact />
-                  <InfoCard icon={<Leaf />} title="Nech kolovat" text="Sdílej věci, které už existují." compact />
+              <div className="koluj-sidebar-section">
+                <div className="flex flex-col gap-2 text-sm font-bold text-[var(--koluj-muted)]">
+                  <Link href="/legal/terms" className="hover:text-[var(--koluj-green)]">Podmínky</Link>
+                  <Link href="/legal/privacy" className="hover:text-[var(--koluj-green)]">Soukromí</Link>
+                  <Link href="/legal/cookies" className="hover:text-[var(--koluj-green)]">Cookies</Link>
+                  <a href="mailto:info@koluj.cz" className="hover:text-[var(--koluj-green)]">Kontakt</a>
+                  <span className="pt-2 text-xs font-bold uppercase tracking-[0.12em] opacity-60">
+                    © {new Date().getFullYear()} Koluj
+                  </span>
                 </div>
               </div>
             </div>
-
-            <SidebarFooter />
           </aside>
 
           <div className="koluj-main-wide koluj-home-content">
@@ -398,38 +398,3 @@ export default function HomePage() {
   );
 }
 
-function SidebarFooter() {
-  return (
-    <div className="koluj-sidebar-footer">
-      <nav className="koluj-sidebar-footer-links" aria-label="Právní odkazy">
-        <Link href="/legal/terms" className="hover:text-[var(--koluj-green)]">Podmínky</Link>
-        <Link href="/legal/privacy" className="hover:text-[var(--koluj-green)]">Soukromí</Link>
-        <Link href="/legal/cookies" className="hover:text-[var(--koluj-green)]">Cookies</Link>
-        <a href="mailto:info@koluj.cz" className="hover:text-[var(--koluj-green)]">Kontakt</a>
-      </nav>
-      <p className="koluj-sidebar-copyright">© {new Date().getFullYear()} Koluj</p>
-    </div>
-  );
-}
-
-function InfoCard({
-  icon,
-  title,
-  text,
-  compact = false,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  text: string;
-  compact?: boolean;
-}) {
-  return (
-    <div className={`koluj-card flex items-start gap-4 ${compact ? "p-4" : "p-5"}`}>
-      <div className="koluj-icon-bubble shrink-0">{icon}</div>
-      <div>
-        <p className={compact ? "font-black" : "text-xl font-black"}>{title}</p>
-        <p className="mt-1 text-sm font-bold leading-relaxed text-[var(--koluj-muted)]">{text}</p>
-      </div>
-    </div>
-  );
-}
