@@ -185,8 +185,9 @@ export default function HomePage() {
 
   return (
     <main className="koluj-home min-h-screen overflow-hidden text-[var(--koluj-text)]">
-      <div className="koluj-shell-wide relative z-10">
-        <header className="koluj-page-header border-b border-[var(--koluj-border)] pb-4">
+      <div className="koluj-wide-frame relative z-10">
+        <header className="koluj-wide-topbar">
+          <div className="koluj-wide-topbar-inner">
           <Link href="/" className="koluj-logo" aria-label="Koluj domů">
             <span className="koluj-logo-mark">K</span>
             <span>Koluj</span>
@@ -207,9 +208,54 @@ export default function HomePage() {
               Přidat nabídku
             </Link>
           </div>
+          </div>
         </header>
 
-        <section className="koluj-hero-card mt-6 grid gap-8 p-5 md:p-8 lg:grid-cols-[1fr_0.9fr] lg:p-10">
+        <div className="koluj-wide-layout">
+          <aside className="koluj-wide-sidebar" aria-label="Rychlé filtry">
+            <div className="koluj-sidebar-section">
+              <p className="koluj-sidebar-label">Kde hledáte?</p>
+              <button type="button" onClick={useMyLocation} className="koluj-button-secondary w-full justify-start px-4" data-active={Boolean(userLocation)}>
+                <LocateFixed size={18} /> Okolo mě
+              </button>
+            </div>
+
+            <div className="koluj-sidebar-section">
+              <p className="koluj-sidebar-label">Typ nabídky</p>
+              <div className="koluj-sidebar-grid">
+                <button type="button" onClick={() => { setSelectedOfferType("item"); setSelectedCategory(""); }} className="koluj-sidebar-tile" data-active={selectedOfferType === "item"}>Věci</button>
+                <button type="button" onClick={() => { setSelectedOfferType("service"); setSelectedCategory(""); }} className="koluj-sidebar-tile" data-active={selectedOfferType === "service"}>Služby</button>
+              </div>
+            </div>
+
+            <div className="koluj-sidebar-section">
+              <p className="koluj-sidebar-label">Kategorie</p>
+              <select value={selectedCategory} onChange={(e) => setSelectedCategory(e.target.value)} className="koluj-select font-bold">
+                <option value="">Všechny kategorie</option>
+                {categoryChips.filter((chip) => chip.category).map((chip) => <option key={chip.label} value={chip.category}>{chip.label}</option>)}
+              </select>
+            </div>
+
+            <div className="koluj-sidebar-section">
+              <p className="koluj-sidebar-label">Rychlé filtry</p>
+              <div className="grid gap-2">
+                <span className="koluj-sidebar-chip">Dostupné hned</span>
+                <span className="koluj-sidebar-chip">V okolí</span>
+                <span className="koluj-sidebar-chip">Věci i služby</span>
+              </div>
+            </div>
+
+            <div className="koluj-sidebar-section">
+              <div className="koluj-sidebar-cta">
+                <p className="text-lg font-black text-[var(--koluj-ink)]">Přidejte nabídku</p>
+                <p className="mt-2 text-sm font-bold leading-relaxed text-[var(--koluj-muted)]">Máte věc nebo službu, kterou můžete nabídnout ostatním?</p>
+                <Link href="/offers/new" className="koluj-button mt-4 min-h-[42px] px-4 text-sm">Přidat nabídku</Link>
+              </div>
+            </div>
+          </aside>
+
+          <div className="koluj-main-wide">
+        <section className="koluj-hero-card grid gap-8 p-5 md:p-8 xl:grid-cols-[1fr_0.95fr] xl:p-12">
           <div className="flex flex-col justify-center">
             <h1 className="koluj-heading mt-0">
               Sdílej. Půjčuj. <span className="text-[var(--koluj-green)]">Koluj.</span>
@@ -252,7 +298,7 @@ export default function HomePage() {
           <button type="button" onClick={submitSearch} className="koluj-button px-6">Hledat</button>
         </section>
 
-        <section className="mt-5 flex gap-3 overflow-x-auto pb-2">
+        <section className="mt-5 flex gap-3 overflow-x-auto pb-2 koluj-mobile-only">
           {categoryChips
           .filter((chip) => ["Vše", "Věci", "Služby"].includes(chip.label))
           .map((chip) => {
@@ -278,7 +324,7 @@ export default function HomePage() {
           </div>
 
           {displayedItems.length > 0 ? (
-            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="koluj-offer-grid-wide">
               {displayedItems.map((item) => <OfferCard key={item.id} item={item} />)}
             </div>
           ) : (
@@ -286,7 +332,7 @@ export default function HomePage() {
           )}
         </section>
 
-        <section id="komunita" className="mt-10 grid gap-6 lg:grid-cols-[1fr_.8fr]">
+        <section id="komunita" className="mt-10 grid gap-6 xl:grid-cols-[1fr_.8fr]">
           <div className="koluj-card overflow-hidden p-7 md:p-10">
             <p className="mb-3 inline-flex items-center gap-2 rounded-full bg-[var(--koluj-green-pale)] px-4 py-2 text-sm font-black text-[var(--koluj-green)]"><Sparkles size={16} /> Méně kupování. Více sdílení.</p>
             <h2 className="koluj-section-title max-w-lg">Máš něco, co může ještě posloužit?</h2>
@@ -300,6 +346,8 @@ export default function HomePage() {
             <InfoCard icon={<Leaf />} title="Nech kolovat" text="Využij, co už existuje, místo zbytečného kupování." />
           </div>
         </section>
+          </div>
+        </div>
       </div>
     </main>
   );

@@ -330,7 +330,7 @@ function ItemsPageContent() {
 
   return (
     <main className="min-h-screen">
-      <div className="koluj-shell-wide">
+      <div className="koluj-wide-frame">
         <header className="koluj-page-header">
           <BackLink href="/">Zpět na hlavní</BackLink>
 
@@ -355,8 +355,10 @@ function ItemsPageContent() {
           </div>
         </section>
 
-        <div className="mt-8 md:mt-10">
-          <OfferSearchFilters
+        <div className="koluj-wide-layout mt-8 md:mt-10">
+          <aside className="koluj-wide-sidebar" aria-label="Filtry nabídek">
+            <p className="koluj-sidebar-label">Filtry nabídek</p>
+            <OfferSearchFilters
             search={search}
             onSearchChange={(value) => {
               setSearch(value);
@@ -406,9 +408,31 @@ function ItemsPageContent() {
             onUseLocation={useMyLocation}
             locationActive={Boolean(userLocation)}
           />
-        </div>
+          </aside>
 
-        <section className="mt-10">
+          <div className="koluj-main-wide">
+            <div className="koluj-wide-filter-card koluj-mobile-only">
+              <OfferSearchFilters
+                search={search}
+                onSearchChange={(value) => { setSearch(value); updateUrl({ search: value }); }}
+                offerType={offerType}
+                onOfferTypeChange={(value) => { setOfferType(value); setCategory("all"); updateUrl({ offerType: value, category: "all" }); }}
+                offerTypeOptions={[{ value: "all", label: "Vše" }, ...Object.entries(offerTypeLabels).map(([value, label]) => ({ value, label }))]}
+                category={category}
+                onCategoryChange={(value) => { setCategory(value); updateUrl({ category: value }); }}
+                categoryOptions={Object.entries(getCategoryOptions(offerType)).map(([value, label]) => ({ value, label }))}
+                status={status}
+                onStatusChange={(value) => { setStatus(value); updateUrl({ status: value }); }}
+                statusOptions={Object.entries(statusOptions).map(([value, label]) => ({ value, label }))}
+                sortBy={sortBy}
+                onSortByChange={(value) => { setSortBy(value); updateUrl({ sortBy: value }); }}
+                sortOptions={[{ value: "newest", label: "Nejnovější" }, { value: "oldest", label: "Nejstarší" }, { value: "az", label: "Název A–Z" }, { value: "za", label: "Název Z–A" }]}
+                onUseLocation={useMyLocation}
+                locationActive={Boolean(userLocation)}
+              />
+            </div>
+
+        <section className="mt-10 koluj-desktop-mt-0">
           <div className="mb-6 flex flex-col justify-between gap-4 md:flex-row md:items-end">
             <div>
               <h2 className="koluj-title">
@@ -476,7 +500,7 @@ function ItemsPageContent() {
             </div>
           ) : (
             <>
-              <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+              <div className="koluj-offer-grid-wide">
                 {visibleItems.map((item) => (
                   <OfferCard key={item.id} item={item} />
                 ))}
@@ -496,6 +520,8 @@ function ItemsPageContent() {
             </>
           )}
         </section>
+          </div>
+        </div>
       </div>
     </main>
   );
