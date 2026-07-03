@@ -334,17 +334,27 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="koluj-sidebar-section">
-                <div className="flex flex-col gap-2 text-sm font-bold text-[var(--koluj-muted)]">
-                  <Link href="/legal/terms" className="hover:text-[var(--koluj-green)]">Podmínky</Link>
-                  <Link href="/legal/privacy" className="hover:text-[var(--koluj-green)]">Soukromí</Link>
-                  <Link href="/legal/cookies" className="hover:text-[var(--koluj-green)]">Cookies</Link>
-                  <a href="mailto:info@koluj.cz" className="hover:text-[var(--koluj-green)]">Kontakt</a>
-                  <span className="pt-2 text-xs font-bold uppercase tracking-[0.12em] opacity-60">
-                    © {new Date().getFullYear()} Koluj
-                  </span>
-                </div>
+              <div className="flex flex-wrap gap-4 text-sm font-bold text-[var(--koluj-muted)]">
+                <Link href="/legal/terms" className="hover:text-[var(--koluj-green)]">
+                  Podmínky
+                </Link>
+
+                <Link href="/legal/privacy" className="hover:text-[var(--koluj-green)]">
+                  Soukromí
+                </Link>
+
+                <Link href="/legal/cookies" className="hover:text-[var(--koluj-green)]">
+                  Cookies
+                </Link>
+
+                <a href="mailto:info@koluj.cz" className="hover:text-[var(--koluj-green)]">
+                  Kontakt
+                </a>
               </div>
+
+              <p className="mt-3 text-xs font-bold uppercase tracking-[0.12em] opacity-60">
+                © {new Date().getFullYear()} KOLUJ
+              </p>
             </div>
           </aside>
 
