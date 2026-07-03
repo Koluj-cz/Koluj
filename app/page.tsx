@@ -3,13 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { ArrowRight, LocateFixed, Plus, Search } from "lucide-react";
+import { ArrowRight, LocateFixed, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
 import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
-import InstallAppButton from "@/app/components/InstallAppButton";
 import { getDistanceKm } from "@/lib/location";
+import AddOfferButton from "@/app/components/AddOfferButton";
 
 const OffersMap = dynamic(() => import("@/app/components/OffersMap"), {
   ssr: false,
@@ -155,34 +155,25 @@ export default function HomePage() {
         <header className="koluj-page-header">
           <Link href="/" className="koluj-logo">KOLUJ</Link>
 
-          <nav className="hidden items-center gap-8 text-sm font-semibold text-[var(--koluj-muted)] lg:flex">
-            <Link href="/offers" className="text-[var(--koluj-green)]">Nabídky</Link>
-            <a href="#mapa" className="hover:text-[var(--koluj-green)]">Mapa</a>
-            <a href="#nabidky" className="hover:text-[var(--koluj-green)]">Nové nabídky</a>
-          </nav>
-
           <div className="flex items-center gap-3">
-            <InstallAppButton />
-            <Link href="/offers/new" className="hidden rounded-full bg-[var(--koluj-green)] px-5 py-3 font-semibold text-white transition hover:-translate-y-0.5 sm:inline-flex">
-              <Plus size={18} /> Přidat nabídku
-            </Link>
+            <AddOfferButton className="koluj-button hidden items-center gap-2 px-6 py-3 sm:inline-flex" />
             <Link href={isLoggedIn ? "/dashboard" : "/login"} className="koluj-button px-5 py-3">
               {isLoggedIn ? "Můj prostor" : "Přihlásit se"}
             </Link>
           </div>
         </header>
 
-        <section className="grid min-h-[calc(100vh-96px)] items-center gap-8 py-10 lg:grid-cols-[0.86fr_1.14fr]">
+        <section className="grid items-center gap-7 pb-8 pt-4 md:pt-6 lg:grid-cols-[0.9fr_1.1fr] lg:pb-10 lg:pt-8">
           <div className="max-w-2xl">
-            <h1 className="koluj-heading mt-4">
+            <h1 className="koluj-heading">
               Sdílej.<br />Půjčuj.<br /><span className="text-[var(--koluj-green)]">Koluj.</span>
             </h1>
             <p className="mt-5 max-w-xl text-lg leading-relaxed text-[var(--koluj-muted)] md:text-2xl">
               Věci a služby od lidí poblíž.
             </p>
 
-            <div className="mt-8 space-y-4">
-              <div className="flex min-h-[62px] items-center gap-3 rounded-[24px] border border-[var(--koluj-border-strong)] bg-white px-4 shadow-sm md:max-w-xl">
+            <div className="mt-7 space-y-4">
+              <div className="flex min-h-[60px] items-center gap-2 rounded-[24px] border border-[var(--koluj-border-strong)] bg-white px-3 shadow-sm md:max-w-xl">
                 <Search size={22} className="shrink-0 text-[var(--koluj-muted)]" />
                 <input
                   value={search}
@@ -191,10 +182,16 @@ export default function HomePage() {
                   placeholder="Co hledáš?"
                   className="min-w-0 flex-1 bg-transparent py-4 text-base outline-none placeholder:text-[var(--koluj-muted)] md:text-lg"
                 />
-                <button type="button" onClick={useMyLocation} className={`inline-flex items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold ${userLocation ? "bg-[var(--koluj-green)] text-white" : "bg-[var(--koluj-green-soft)] text-[var(--koluj-green)]"}`}>
+                <button type="button" onClick={useMyLocation} className={`hidden items-center gap-2 rounded-full px-4 py-3 text-sm font-semibold sm:inline-flex ${userLocation ? "bg-[var(--koluj-green)] text-white" : "bg-[var(--koluj-green-soft)] text-[var(--koluj-green)]"}`}>
                   <LocateFixed size={17} /> Okolo mě
                 </button>
+                <button type="button" onClick={submitSearch} className="koluj-button min-h-0 px-4 py-3 text-sm sm:px-5">
+                  <span className="hidden sm:inline">Hledat</span><ArrowRight size={17} />
+                </button>
               </div>
+              <button type="button" onClick={useMyLocation} className={`inline-flex w-full items-center justify-center gap-2 rounded-full px-4 py-3 text-sm font-semibold sm:hidden ${userLocation ? "bg-[var(--koluj-green)] text-white" : "bg-[var(--koluj-green-soft)] text-[var(--koluj-green)]"}`}>
+                <LocateFixed size={17} /> Okolo mě
+              </button>
 
               <div className="flex flex-wrap gap-2">
                 {([
@@ -213,18 +210,15 @@ export default function HomePage() {
                 ))}
               </div>
 
-              <button type="button" onClick={submitSearch} className="koluj-button px-7 py-4">
-                Hledat <ArrowRight size={18} />
-              </button>
             </div>
           </div>
 
-          <div id="mapa" className="koluj-card h-[360px] overflow-hidden p-2 md:h-[520px] lg:h-[680px]">
+          <div id="mapa" className="koluj-card h-[260px] overflow-hidden p-2 md:h-[320px] lg:h-[380px]">
             <OffersMap items={filteredItems} userLocation={userLocation} />
           </div>
         </section>
 
-        <section id="nabidky" className="mt-4 md:mt-10">
+        <section id="nabidky" className="mt-2 md:mt-8">
           <div className="mb-6 flex items-end justify-between gap-4">
             <div>
               <h2 className="koluj-section-title">Nedávno přidané</h2>
@@ -242,6 +236,26 @@ export default function HomePage() {
           ) : (
             <div className="koluj-card p-8 text-[var(--koluj-muted)]">Zatím tu nejsou žádné nabídky.</div>
           )}
+        </section>
+
+        <section className="mt-14 pb-8 lg:mt-18">
+          <div className="mb-6">
+            <p className="text-sm font-bold uppercase tracking-[0.16em] text-[var(--koluj-green)]">Jak to funguje</p>
+            <h2 className="koluj-section-title mt-2">Jednoduše. Lokálně. Bez bazaru.</h2>
+          </div>
+          <div className="grid gap-5 md:grid-cols-3">
+          {[
+            ["1", "Najdi poblíž", "Vyhledej věc nebo službu a podívej se, kde je k dispozici."],
+            ["2", "Pošli žádost", "U věcí vybereš termín, u služeb odešleš jednoduchou poptávku."],
+            ["3", "Domluvte se", "Po schválení se otevře chat pro předání nebo provedení služby."],
+          ].map(([number, title, text]) => (
+            <div key={number} className="rounded-[28px] border border-[var(--koluj-border)] bg-white p-6">
+              <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--koluj-green-soft)] text-sm font-bold text-[var(--koluj-green)]">{number}</span>
+              <h3 className="mt-5 text-2xl font-semibold tracking-[-0.045em] text-[var(--koluj-ink)]">{title}</h3>
+              <p className="mt-3 leading-relaxed text-[var(--koluj-muted)]">{text}</p>
+            </div>
+          ))}
+          </div>
         </section>
       </div>
     </main>
