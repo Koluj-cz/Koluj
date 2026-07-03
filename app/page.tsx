@@ -5,6 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
   ArrowRight,
+  Leaf,
   LocateFixed,
   Search,
 } from "lucide-react";
@@ -324,6 +325,15 @@ export default function HomePage() {
                 </select>
               </div>
 
+              <div id="jak" className="koluj-sidebar-section">
+                <p className="koluj-sidebar-label">Jak to funguje</p>
+                <div className="grid gap-3">
+                  <InfoCard icon={<Search />} title="Najdi" text="Vyhledej věc nebo službu ve svém okolí." compact />
+                  <InfoCard icon={<ArrowRight />} title="Domluv se" text="Otevři detail a domluv termín." compact />
+                  <InfoCard icon={<Leaf />} title="Nech kolovat" text="Sdílej věci, které už existují." compact />
+                </div>
+              </div>
+
               <div className="koluj-sidebar-section">
                 <div className="flex flex-col gap-2 text-sm font-bold text-[var(--koluj-muted)]">
                   <Link href="/legal/terms" className="hover:text-[var(--koluj-green)]">Podmínky</Link>
@@ -398,3 +408,24 @@ export default function HomePage() {
   );
 }
 
+function InfoCard({
+  icon,
+  title,
+  text,
+  compact = false,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  text: string;
+  compact?: boolean;
+}) {
+  return (
+    <div className={`koluj-card flex items-start gap-4 ${compact ? "p-4" : "p-5"}`}>
+      <div className="koluj-icon-bubble shrink-0">{icon}</div>
+      <div>
+        <p className={compact ? "font-black" : "text-xl font-black"}>{title}</p>
+        <p className="mt-1 text-sm font-bold leading-relaxed text-[var(--koluj-muted)]">{text}</p>
+      </div>
+    </div>
+  );
+}
