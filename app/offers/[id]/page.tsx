@@ -474,7 +474,7 @@ export default function ItemDetailPage() {
                   href={`/offers/${item.id}/edit`}
                   className="koluj-header-button"
                 >
-                  <Edit size={18} />
+                  <Edit size={17} />
                   Upravit nabídku
                 </Link>
               ) : (
@@ -483,9 +483,9 @@ export default function ItemDetailPage() {
               </Link>
               )
             ) : (
-            <Link href="/login" className="koluj-header-button">
-              Přihlásit se
-            </Link>
+              <Link href="/login" className="koluj-header-button">
+                Přihlásit se
+              </Link>
             )}
           </div>
         </section>
