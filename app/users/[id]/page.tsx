@@ -199,7 +199,7 @@ export default function UserProfilePage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen">
+      <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
         <PageLoader />
       </main>
     );
@@ -207,8 +207,8 @@ export default function UserProfilePage() {
 
   if (!profile) {
     return (
-      <main className="min-h-screen">
-        <div className="koluj-shell-wide">
+      <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
+        <div className="koluj-wide-frame relative z-10">
           <BackLink href="/">Zpět</BackLink>
 
           <div className="koluj-card mt-10 p-8">
@@ -235,17 +235,16 @@ export default function UserProfilePage() {
   const hasMoreReviews = visibleReviewsCount < reviews.length;
 
   return (
-    <main className="min-h-screen">
-      <div className="koluj-shell-wide">
-        <header className="koluj-page-header">
-          <div className="flex items-center gap-3"><Link href="/" className="koluj-logo" aria-label="Koluj domů"><span className="koluj-logo-mark">K</span><span>Koluj</span></Link>
-            <BackLink href="/offers" className="hidden lg:inline-flex">Zpět na nabídky</BackLink>
+    <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
+      <div className="koluj-wide-frame relative z-10">
+        <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <BackLink href="/">Domů</BackLink>
+            <AuthHeaderButton />
           </div>
+        </section>
 
-          <AuthHeaderButton />
-        </header>
-
-        <section className="mt-10 grid gap-8 xl:grid-cols-[380px_minmax(0,1fr)]">
+        <section className="mt-6 grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
           <aside className="space-y-6">
             <div className="koluj-card p-8">
               <div className="flex items-center gap-5">

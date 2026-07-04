@@ -451,35 +451,26 @@ async function makePrimary(imageUrl: string) {
   }
 
   return (
-    <main className="min-h-screen pb-24 lg:pb-0">
-      <div className="koluj-shell-wide">
-        <header className="mb-8 flex items-center justify-between">
-          <BackLink href="/dashboard/my-offers">Moje nabídky</BackLink>
+    <main className="koluj-home min-h-screen pb-24 text-[var(--koluj-text)] lg:pb-0">
+      <div className="koluj-wide-frame relative z-10">
+        <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
+          <div className="flex flex-wrap items-center gap-3">
+            <BackLink href="/dashboard/my-offers">Moje nabídky</BackLink>
+            <p className="koluj-pill w-fit bg-[var(--koluj-green-pale)] text-[var(--koluj-green)]">
+              Můj prostor
+            </p>
+          </div>
 
-          <button
-            onClick={saveItem}
-            disabled={saving}
-            className="hidden lg:flex koluj-button items-center gap-2 px-6 py-3 disabled:opacity-60"
-          >
-            <Save size={18} />
-            {saving ? "Ukládám..." : "Uložit změny"}
-          </button>
-        </header>
+          <h1 className="koluj-heading mt-6">Upravit nabídku</h1>
 
-        <section className="mt-16 px-8">
-          <h1 className="koluj-heading">
-            Upravit nabídku
-          </h1>
-
-          <p className="mt-6 max-w-2xl text-2xl leading-relaxed text-[var(--koluj-muted)]">
+          <p className="mt-5 max-w-2xl text-lg leading-relaxed text-[var(--koluj-muted)] md:text-xl">
             Uprav informace, cenu a základní nastavení nabídky.
           </p>
         </section>
-
-        <section className="mt-14 grid gap-8 px-8 xl:grid-cols-[minmax(0,1fr)_420px]">
+<section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
         <div className="space-y-8">
 
-        <div className="koluj-card p-8">
+        <div className="koluj-card p-5 md:p-8">
               <SectionTitle icon={<Package size={24} />} title="Co chceš nabídnout?" />
 
               <div className="mt-6 grid gap-3 md:grid-cols-2">
@@ -515,7 +506,7 @@ async function makePrimary(imageUrl: string) {
               </div>
         </div>
 
-        <div className="koluj-card p-8">
+        <div className="koluj-card p-5 md:p-8">
         <SectionTitle
             icon={<Camera size={24} />}
             title={form.offer_type === "service" ? "Fotky služby" : "Fotky věci"}
@@ -617,7 +608,7 @@ async function makePrimary(imageUrl: string) {
               </div>
             )}
         </div>
-            <div className="koluj-card p-8">
+            <div className="koluj-card p-5 md:p-8">
               <SectionTitle icon={<Package size={24} />} title="O nabídce" />
 
               <div className="mt-6 space-y-4">
@@ -672,7 +663,7 @@ async function makePrimary(imageUrl: string) {
               </div>
             </div>
 
-            <div className="koluj-card p-8">
+            <div className="koluj-card p-5 md:p-8">
             <SectionTitle title="Cena" />
 
             <div className="mt-6 space-y-4">
@@ -721,7 +712,7 @@ async function makePrimary(imageUrl: string) {
             </div>
             </div>
 
-            <div className="koluj-card p-8">
+            <div className="koluj-card p-5 md:p-8">
               <SectionTitle icon={<MapPin size={24} />} title={form.offer_type === "service" ? "Lokalita působení" : "Předání"} />
 
               <div className="relative mt-6">
@@ -798,7 +789,7 @@ async function makePrimary(imageUrl: string) {
               />
             </div>
 
-            <div className="koluj-card p-8">
+            <div className="koluj-card p-5 md:p-8">
               <SectionTitle title="Dostupnost" />
 
               <div className="mt-6 rounded-3xl border border-[var(--koluj-border)] bg-[var(--koluj-bg)] p-6">

@@ -65,8 +65,8 @@ export default function AuthCallbackPage() {
   }, []);
 
   return (
-    <main className="min-h-screen">
-      <div className="koluj-shell flex min-h-screen items-center justify-center">
+    <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
+      <div className="koluj-wide-frame flex min-h-screen items-center justify-center">
         <div className="koluj-card p-10 text-center">
           <h1 className="text-3xl font-black">Přihlašuji...</h1>
 

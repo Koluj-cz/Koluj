@@ -327,22 +327,27 @@ function ItemsPageContent() {
 
   if (loading) {
     return (
-      <main className="min-h-screen">
+      <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
         <PageLoader />
       </main>
     );
   }
 
   return (
-    <main className="min-h-screen">
+    <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
       <div className="koluj-wide-frame">
-        <header className="koluj-page-header">
-          <div className="flex items-center gap-3"><Link href="/" className="koluj-logo" aria-label="Koluj domů"><span className="koluj-logo-mark">K</span><span>Koluj</span></Link>
-            <BackLink href="/" className="hidden lg:inline-flex">Zpět na hlavní</BackLink>
+        <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <BackLink href="/">Domů</BackLink>
+            <AuthHeaderButton />
           </div>
 
-          <AuthHeaderButton />
-        </header>
+          <h1 className="koluj-heading mt-6">Nabídky</h1>
+
+          <p className="mt-5 max-w-2xl text-lg leading-relaxed text-[var(--koluj-muted)] md:text-xl">
+            Procházej věci a služby, které právě kolují.
+          </p>
+        </section>
 
         <section className="mt-10 md:mt-12">
           <h1 className="koluj-heading">Všechny nabídky</h1>

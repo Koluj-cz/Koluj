@@ -37,9 +37,7 @@ export default function InstallAppButton({ iconOnly = false }: InstallAppButtonP
 
     const choice = await deferredPrompt.userChoice;
 
-    if (choice.outcome === "accepted") {
-      setDeferredPrompt(null);
-    }
+    if (choice.outcome === "accepted") setDeferredPrompt(null);
   }
 
   if (!deferredPrompt) return null;

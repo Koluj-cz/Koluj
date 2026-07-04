@@ -37,7 +37,6 @@ const navItems = [
     match: (pathname: string) =>
       pathname === "/dashboard" ||
       pathname.startsWith("/profile") ||
-      pathname.startsWith("/dashboard/notifications") ||
       pathname.startsWith("/dashboard/availability"),
   },
 ];

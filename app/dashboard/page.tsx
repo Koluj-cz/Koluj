@@ -2,33 +2,20 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, Bell, CalendarOff, Heart, Handshake, Package, User } from "lucide-react";
+import { ArrowRight, CalendarOff, Heart, Handshake, Package, User } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import RestoreAccountOnLogin from "@/app/components/RestoreAccountOnLogin";
+import BackLink from "@/app/components/BackLink";
+import NotificationBell from "@/app/components/NotificationBell";
 
 export default function DashboardPage() {
   const [fullName, setFullName] = useState("");
   const [profileComplete, setProfileComplete] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
-  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   useEffect(() => {
     loadProfile();
-    loadUnreadNotifications();
   }, []);
-
-  async function loadUnreadNotifications() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
-
-    const { count } = await supabase
-      .from("notifications")
-      .select("id", { count: "exact", head: true })
-      .eq("user_id", user.id)
-      .eq("is_read", false);
-
-    setUnreadNotifications(count || 0);
-  }
 
   async function loadProfile() {
     const { data: { user } } = await supabase.auth.getUser();
@@ -55,9 +42,15 @@ export default function DashboardPage() {
       <div className="koluj-wide-frame relative z-10">
         <section className="koluj-hero-card grid gap-6 p-5 md:p-8 xl:grid-cols-[0.8fr_1.2fr] xl:p-10">
           <div className="flex flex-col justify-center">
-            <p className="koluj-pill w-fit bg-[var(--koluj-green-pale)] text-[var(--koluj-green)]">
-              Můj prostor
-            </p>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-3">
+                <BackLink href="/">Domů</BackLink>
+                <p className="koluj-pill w-fit bg-[var(--koluj-green-pale)] text-[var(--koluj-green)]">
+                  Můj prostor
+                </p>
+              </div>
+              <NotificationBell />
+            </div>
 
             <h1 className="koluj-heading mt-6 max-w-[12ch]">
               {fullName ? `Ahoj, ${fullName.split(" ")[0]}.` : "Vítej zpět."}
@@ -119,13 +112,6 @@ export default function DashboardPage() {
             icon={<CalendarOff />}
             text="Zablokuj termíny pro jednu nebo více nabídek."
             action="Nastavit"
-          />
-          <DashboardCard
-            href="/dashboard/notifications"
-            title={unreadNotifications > 0 ? `Notifikace (${unreadNotifications})` : "Notifikace"}
-            icon={<Bell />}
-            text="Nové žádosti, zprávy a důležité události."
-            action="Zobrazit"
           />
           <DashboardCard
             href="/profile"

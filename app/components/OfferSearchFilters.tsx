@@ -1,13 +1,12 @@
 "use client";
 
-import { LocateFixed, Search } from "lucide-react";
+import { Search } from "lucide-react";
 
 export type SelectOption = { value: string; label: string };
 
 type OfferSearchFiltersProps = {
   search: string;
   onSearchChange: (value: string) => void;
-  onSearchSubmit?: () => void;
   searchPlaceholder?: string;
   offerType?: string;
   onOfferTypeChange?: (value: string) => void;
@@ -28,7 +27,6 @@ type OfferSearchFiltersProps = {
 export default function OfferSearchFilters({
   search,
   onSearchChange,
-  onSearchSubmit,
   searchPlaceholder = "Hledat nabídku...",
   offerType = "all",
   onOfferTypeChange,
@@ -42,65 +40,39 @@ export default function OfferSearchFilters({
   sortBy = "newest",
   onSortByChange,
   sortOptions = [{ value: "newest", label: "Nejnovější" }],
-  onUseLocation,
-  locationActive = false,
 }: OfferSearchFiltersProps) {
   const selectClass =
-    "koluj-select font-bold disabled:cursor-not-allowed disabled:opacity-55";
+    "h-[58px] w-full rounded-[22px] border border-[var(--koluj-border)] bg-white px-4 font-bold text-[var(--koluj-text)] outline-none shadow-sm focus:border-[var(--koluj-green)] focus:shadow-[0_0_0_4px_rgba(95,127,43,0.10)] disabled:cursor-not-allowed disabled:opacity-55";
 
   return (
-    <section className="koluj-searchbar">
-      <div className="contents">
-        <div className="flex min-h-[46px] items-center gap-3 rounded-[14px] border border-[var(--koluj-border)] bg-white px-4">
-          <Search size={20} className="shrink-0 text-[var(--koluj-muted)]" />
+    <section className="koluj-card p-3 md:p-4">
+      <div className="grid gap-3 xl:grid-cols-[minmax(280px,1fr)_170px_220px_210px_190px]">
+        <div className="flex h-[58px] min-w-0 items-center gap-3 rounded-[22px] border border-[var(--koluj-border)] bg-white px-4 shadow-sm focus-within:border-[var(--koluj-green)] focus-within:shadow-[0_0_0_4px_rgba(95,127,43,0.10)]">
+          <Search size={21} className="shrink-0 text-[var(--koluj-muted)]" />
           <input
             value={search}
             onChange={(event) => onSearchChange(event.target.value)}
-            onKeyDown={(event) => event.key === "Enter" && onSearchSubmit?.()}
             placeholder={searchPlaceholder}
-            className="min-w-0 flex-1 bg-transparent py-3 font-medium text-[var(--koluj-text)] outline-none placeholder:text-slate-400"
+            className="min-w-0 flex-1 bg-transparent py-4 text-base font-bold text-[var(--koluj-text)] outline-none placeholder:text-slate-400"
           />
-          <button
-            type="button"
-            onClick={onSearchSubmit}
-            className="koluj-button min-h-[38px] shrink-0 px-4 text-sm"
-          >
-            Hledat
-          </button>
-          <button
-            type="button"
-            onClick={onUseLocation}
-            disabled={!onUseLocation}
-            className="hidden shrink-0 items-center gap-2 rounded-xl px-3 py-2 text-sm font-black text-[var(--koluj-green)] sm:flex disabled:cursor-not-allowed disabled:opacity-55"
-          >
-            <LocateFixed size={16} />
-            Okolo mě
-          </button>
         </div>
 
-        <select value={offerType} onChange={(e) => onOfferTypeChange?.(e.target.value)} disabled={!onOfferTypeChange} className={selectClass}>
+        <select value={offerType} onChange={(event) => onOfferTypeChange?.(event.target.value)} disabled={!onOfferTypeChange} className={selectClass}>
           {offerTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </select>
-        <select value={category} onChange={(e) => onCategoryChange?.(e.target.value)} disabled={!onCategoryChange} className={selectClass}>
+
+        <select value={category} onChange={(event) => onCategoryChange?.(event.target.value)} disabled={!onCategoryChange} className={selectClass}>
           {categoryOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </select>
-        <select value={status} onChange={(e) => onStatusChange?.(e.target.value)} disabled={!onStatusChange} className={selectClass}>
+
+        <select value={status} onChange={(event) => onStatusChange?.(event.target.value)} disabled={!onStatusChange} className={selectClass}>
           {statusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </select>
-        <select value={sortBy} onChange={(e) => onSortByChange?.(e.target.value)} disabled={!onSortByChange} className={selectClass}>
+
+        <select value={sortBy} onChange={(event) => onSortByChange?.(event.target.value)} disabled={!onSortByChange} className={selectClass}>
           {sortOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
         </select>
       </div>
-
-      <button
-        type="button"
-        onClick={onUseLocation}
-        disabled={!onUseLocation}
-        className="mt-3 flex w-full items-center justify-center gap-2 rounded-[14px] border border-[var(--koluj-border)] bg-white px-5 py-3 font-black text-[var(--koluj-muted)] sm:hidden disabled:cursor-not-allowed disabled:opacity-55"
-      >
-        <LocateFixed size={18} />
-        Okolo mě
-      </button>
     </section>
   );
 }

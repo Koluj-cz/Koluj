@@ -2,11 +2,11 @@ import BackLink from "@/app/components/BackLink";
 
 export default function CookiesPage() {
   return (
-    <main className="min-h-screen">
-      <div className="koluj-shell-wide py-12">
+    <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
+      <div className="koluj-wide-frame relative z-10 py-8 md:py-10">
         <BackLink href="/">Zpět na hlavní stránku</BackLink>
 
-        <section className="koluj-card mt-10 p-6 md:p-10">
+        <section className="koluj-hero-card mt-6 p-6 md:p-10">
           <p className="text-sm font-black uppercase tracking-widest text-[var(--koluj-green)]">
             Právní informace
           </p>

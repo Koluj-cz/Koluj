@@ -385,33 +385,26 @@ export default function NewItemPage() {
   }
 
   return (
-    <main className="min-h-screen pb-24 lg:pb-0">
-      <div className="koluj-shell-wide">
-        <header className="mb-8 flex items-center justify-between">
-          <BackLink href="/dashboard">Dashboard</BackLink>
+    <main className="koluj-home min-h-screen pb-24 text-[var(--koluj-text)] lg:pb-0">
+      <div className="koluj-wide-frame relative z-10">
+        <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
+          <div className="flex flex-wrap items-center gap-3">
+            <BackLink href="/dashboard">Dashboard</BackLink>
+            <p className="koluj-pill w-fit bg-[var(--koluj-green-pale)] text-[var(--koluj-green)]">
+              Můj prostor
+            </p>
+          </div>
 
-        <button
-          onClick={handleSubmit}
-          disabled={loading}
-          className="hidden lg:block koluj-button px-6 py-3 disabled:opacity-60"
-        >
-          {loading ? "Ukládám..." : "Přidat nabídku"}
-        </button>
-        </header>
+          <h1 className="koluj-heading mt-6">Přidat nabídku</h1>
 
-        <section className="mt-16 px-8">
-          <h1 className="koluj-heading">
-            Přidat nabídku
-          </h1>
-
-          <p className="mt-6 max-w-2xl text-2xl leading-relaxed text-[var(--koluj-muted)]">
+          <p className="mt-5 max-w-2xl text-lg leading-relaxed text-[var(--koluj-muted)] md:text-xl">
             Vyplň jen to důležité. Nabídnout můžeš věc i službu.
           </p>
         </section>
 
-        <section className="mt-14 grid gap-8 px-8 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
           <div className="space-y-8">
-            <div className="koluj-card p-8">
+            <div className="koluj-card p-5 md:p-8">
               <SectionTitle icon={<Package size={24} />} title="Co chceš nabídnout?" />
 
               <div className="mt-6 grid gap-3 md:grid-cols-2">
@@ -447,7 +440,7 @@ export default function NewItemPage() {
               </div>
             </div>
 
-            <div className="koluj-card p-8">
+            <div className="koluj-card p-5 md:p-8">
               <SectionTitle icon={<Camera size={24} />} title={form.offer_type === "service" ? "Fotky služby" : "Fotky věci"} />
 
               <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
@@ -529,7 +522,7 @@ export default function NewItemPage() {
               )}
             </div>
 
-            <div className="koluj-card p-8">
+            <div className="koluj-card p-5 md:p-8">
               <SectionTitle icon={<Package size={24} />} title="O nabídce" />
 
               <div className="mt-6 space-y-4">
@@ -584,7 +577,7 @@ export default function NewItemPage() {
               </div>
             </div>
 
-            <div className="koluj-card p-8">
+            <div className="koluj-card p-5 md:p-8">
               <SectionTitle title="Cena" />
 
               <div className="mt-6 space-y-4">
@@ -633,7 +626,7 @@ export default function NewItemPage() {
               </div>
             </div>
 
-            <div className="koluj-card p-8">
+            <div className="koluj-card p-5 md:p-8">
               <SectionTitle icon={<MapPin size={24} />} title={form.offer_type === "service" ? "Lokalita působení" : "Předání"} />
 
               <div className="relative mt-6">
@@ -709,7 +702,7 @@ export default function NewItemPage() {
               />
             </div>
 
-            <div className="koluj-card p-8">
+            <div className="koluj-card p-5 md:p-8">
               <SectionTitle title="Dostupnost" />
 
               <div className="mt-6 rounded-3xl border border-[var(--koluj-border)] bg-[var(--koluj-bg)] p-6">

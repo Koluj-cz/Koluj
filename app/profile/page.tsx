@@ -7,6 +7,7 @@ import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import PageLoader from "@/app/components/PageLoader";
 import PushNotificationButton from "@/app/components/PushNotificationButton";
+import BackLink from "@/app/components/BackLink";
 
 type PlaceSuggestion = {
   name: string;
@@ -221,9 +222,12 @@ export default function ProfilePage() {
     <main className="koluj-home min-h-screen pb-24 text-[var(--koluj-text)] lg:pb-0">
       <div className="koluj-wide-frame relative z-10">
         <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
-          <p className="koluj-pill w-fit bg-[var(--koluj-green-pale)] text-[var(--koluj-green)]">
-            Můj prostor
-          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <BackLink href="/dashboard">Dashboard</BackLink>
+            <p className="koluj-pill w-fit bg-[var(--koluj-green-pale)] text-[var(--koluj-green)]">
+              Můj prostor
+            </p>
+          </div>
 
           <h1 className="koluj-heading mt-6">Profil</h1>
 

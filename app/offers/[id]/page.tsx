@@ -344,7 +344,7 @@ export default function ItemDetailPage() {
 
   if (loading) {
     return (
-      <main className="min-h-screen">
+      <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
         <PageLoader />
       </main>
     );
@@ -462,33 +462,33 @@ export default function ItemDetailPage() {
     ) : null;
 
   return (
-    <main className="min-h-screen">
-      <div className="koluj-shell-wide">
-        <header className="koluj-page-header">
-          <div className="flex items-center gap-3"><Link href="/" className="koluj-logo" aria-label="Koluj domů"><span className="koluj-logo-mark">K</span><span>Koluj</span></Link>
-            <BackLink href="/offers" className="hidden lg:inline-flex">Zpět na nabídky</BackLink>
-          </div>
+    <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
+      <div className="koluj-wide-frame relative z-10">
+        <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <BackLink href="/">Domů</BackLink>
 
-          {currentUserId ? (
-            isOwner ? (
-              <Link
-                href={`/offers/${item.id}/edit`}
-                className="koluj-button flex items-center gap-2 px-6 py-3"
-              >
-                <Edit size={18} />
-                Upravit nabídku
-              </Link>
+            {currentUserId ? (
+              isOwner ? (
+                <Link
+                  href={`/offers/${item.id}/edit`}
+                  className="koluj-button flex min-h-[52px] items-center gap-2 px-6"
+                >
+                  <Edit size={18} />
+                  Upravit nabídku
+                </Link>
+              ) : (
+                <Link href="/dashboard" className="koluj-button min-h-[52px] px-6">
+                  Můj prostor
+                </Link>
+              )
             ) : (
-              <Link href="/dashboard" className="koluj-button px-6 py-3">
-                Můj prostor
+              <Link href="/login" className="koluj-button min-h-[52px] px-6">
+                Přihlásit se
               </Link>
-            )
-          ) : (
-            <Link href="/login" className="koluj-button px-6 py-3">
-              Přihlásit se
-            </Link>
-          )}
-        </header>
+            )}
+          </div>
+        </section>
 
         <section className="mt-6 grid gap-6 md:mt-10 xl:grid-cols-[minmax(0,1fr)_460px] lg:gap-8">
           <div className="space-y-6">

@@ -15,6 +15,7 @@ import { supabase } from "@/lib/supabase";
 import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
 import PageLoader from "@/app/components/PageLoader";
 import OfferSearchFilters from "@/app/components/OfferSearchFilters";
+import BackLink from "@/app/components/BackLink";
 import {
   categories,
   categoryLabels,
@@ -282,9 +283,12 @@ export default function MyOffersPage() {
     <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
       <div className="koluj-wide-frame relative z-10">
         <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
-          <p className="koluj-pill w-fit bg-[var(--koluj-green-pale)] text-[var(--koluj-green)]">
-            Můj prostor
-          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <BackLink href="/dashboard">Dashboard</BackLink>
+            <p className="koluj-pill w-fit bg-[var(--koluj-green-pale)] text-[var(--koluj-green)]">
+              Můj prostor
+            </p>
+          </div>
 
           <h1 className="koluj-heading mt-6">Moje nabídky</h1>
 
