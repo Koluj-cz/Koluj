@@ -40,7 +40,7 @@ export default function DashboardPage() {
       <RestoreAccountOnLogin />
 
       <div className="koluj-wide-frame relative z-10">
-        <section className="koluj-hero-card grid gap-6 p-5 md:p-8 xl:grid-cols-[0.8fr_1.2fr] xl:p-10">
+        <section className="koluj-hero-card koluj-hero-card-popover grid gap-6 p-5 md:p-8 xl:grid-cols-[0.8fr_1.2fr] xl:p-10">
           <div className="flex flex-col justify-center">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-3">

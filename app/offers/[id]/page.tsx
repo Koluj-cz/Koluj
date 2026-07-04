@@ -472,18 +472,18 @@ export default function ItemDetailPage() {
               isOwner ? (
                 <Link
                   href={`/offers/${item.id}/edit`}
-                  className="koluj-button flex min-h-[52px] items-center gap-2 px-6"
+                  className="koluj-header-button"
                 >
                   <Edit size={18} />
                   Upravit nabídku
                 </Link>
               ) : (
-                <Link href="/dashboard" className="koluj-button min-h-[52px] px-6">
-                  Můj prostor
-                </Link>
+              <Link href="/dashboard" className="koluj-header-button">
+                Můj prostor
+              </Link>
               )
             ) : (
-              <Link href="/login" className="koluj-button min-h-[52px] px-6">
+              <Link href="/login" className="koluj-header-button">
                 Přihlásit se
               </Link>
             )}

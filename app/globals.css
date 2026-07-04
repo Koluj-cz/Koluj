@@ -412,6 +412,10 @@ img { max-width: 100%; }
   box-shadow: var(--koluj-shadow-soft);
 }
 
+.koluj-hero-card.koluj-hero-card-popover {
+  overflow: visible;
+}
+
 .koluj-wide-filter-card .koluj-searchbar {
   border: 0;
   box-shadow: none;
