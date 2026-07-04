@@ -33,6 +33,7 @@ export default function BottomNav() {
           <Link
             key={item.href}
             href={item.href}
+            prefetch={false}
             aria-label={item.label}
             title={item.label}
             data-primary={item.primary ? "true" : undefined}
