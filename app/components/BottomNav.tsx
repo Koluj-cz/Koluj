@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { CalendarDays, Home, Package, Plus, User } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 
@@ -54,6 +54,7 @@ function loginRedirectHref(targetHref: string) {
 
 export default function BottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isLoggedIn, setIsLoggedIn] = useState<boolean | null>(null);
 
   useEffect(() => {
@@ -88,40 +89,42 @@ export default function BottomNav() {
     };
   }, []);
 
-  useEffect(() => {
-    let mounted = true;
+  async function handleProtectedClick(
+    event: React.MouseEvent<HTMLAnchorElement>,
+    targetHref: string,
+    isProtected: boolean,
+  ) {
+    if (!isProtected) return;
 
-    async function syncSessionAfterRouteChange() {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession();
+    event.preventDefault();
 
-      if (mounted) {
-        setIsLoggedIn(Boolean(session));
-      }
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (session) {
+      setIsLoggedIn(true);
+      router.push(targetHref);
+      return;
     }
 
-    syncSessionAfterRouteChange();
-
-    return () => {
-      mounted = false;
-    };
-  }, [pathname]);
+    setIsLoggedIn(false);
+    router.push(loginRedirectHref(targetHref));
+  }
 
   return (
     <nav className="koluj-bottom-nav" aria-label="Mobilní navigace">
       {navItems.map((item) => {
         const Icon = item.icon;
         const isActive = item.match(pathname);
-        const href =
-          item.protected && isLoggedIn === false
-            ? loginRedirectHref(item.href)
-            : item.href;
 
         return (
           <Link
             key={item.href}
-            href={href}
+            href={item.href}
+            onClick={(event) =>
+              handleProtectedClick(event, item.href, item.protected)
+            }
             aria-label={item.label}
             title={item.label}
             data-primary={item.primary ? "true" : undefined}

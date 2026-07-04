@@ -29,7 +29,7 @@ body {
   color: var(--koluj-text);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   overflow-x: hidden;
-  background: var(--koluj-bg-soft);
+  background: #fff;
 }
 ::selection { background: rgba(22, 163, 74, .18); }
 a { color: inherit; text-decoration: none; }
