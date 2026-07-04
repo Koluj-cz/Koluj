@@ -2,7 +2,15 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, CalendarOff, Heart, Handshake, Package, Plus, User, Wrench } from "lucide-react";
+import {
+  ArrowRight,
+  CalendarOff,
+  Heart,
+  Handshake,
+  Package,
+  Plus,
+  User,
+} from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import RestoreAccountOnLogin from "@/app/components/RestoreAccountOnLogin";
 import BackLink from "@/app/components/BackLink";
@@ -18,7 +26,10 @@ export default function DashboardPage() {
   }, []);
 
   async function loadProfile() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     if (!user) {
       setLoadingProfile(false);
       return;
@@ -31,7 +42,9 @@ export default function DashboardPage() {
       .single();
 
     setFullName(data?.full_name || "");
-    setProfileComplete(Boolean(data?.full_name && data?.city && data?.latitude && data?.longitude));
+    setProfileComplete(
+      Boolean(data?.full_name && data?.city && data?.latitude && data?.longitude)
+    );
     setLoadingProfile(false);
   }
 
@@ -40,76 +53,45 @@ export default function DashboardPage() {
       <RestoreAccountOnLogin />
 
       <div className="koluj-wide-frame relative z-10">
-      <section className="koluj-hero-card koluj-hero-card-popover p-5 md:p-8 xl:p-10">
-        <div className="mb-8 flex items-center justify-between gap-3">
-          <BackLink href="/">Domů</BackLink>
-          <NotificationBell />
-        </div>
-
-        <div className="grid gap-8 xl:grid-cols-[0.8fr_1.2fr]">
-          <div className="flex flex-col justify-center">
-            <h1 className="koluj-heading max-w-[12ch]">
-              {fullName ? `Ahoj, ${fullName.split(" ")[0]}.` : "Vítej zpět."}
-            </h1>
-
-            <p className="mt-5 max-w-2xl text-lg leading-relaxed text-[var(--koluj-muted)] md:text-xl">
-              Spravuj nabídky, rezervace, dostupnost i profil na jednom přehledném místě.
-            </p>
+        <section className="koluj-hero-card koluj-hero-card-popover p-5 md:p-8 xl:p-10">
+          <div className="mb-8 flex items-center justify-between gap-3">
+            <BackLink href="/">Domů</BackLink>
+            <NotificationBell />
           </div>
 
-          <div className="koluj-card p-6 md:p-8">
-            <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
-              Nová nabídka
-            </p>
+          <div className="grid gap-8 xl:grid-cols-[0.8fr_1.2fr]">
+            <div className="flex flex-col justify-center">
+              <h1 className="koluj-heading max-w-[12ch]">
+                {fullName ? `Ahoj, ${fullName.split(" ")[0]}.` : "Vítej zpět."}
+              </h1>
 
-            <h2 className="mt-3 text-2xl font-black tracking-[-0.04em] text-[var(--koluj-ink)] md:text-3xl">
-              Přidej věc nebo službu, která může kolovat.
-            </h2>
-
-            <p className="mt-3 text-[var(--koluj-muted)]">
-              Vytvoř novou nabídku, spravuj svoje věci a sleduj rezervace z jednoho místa.
-            </p>
-
-            <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-              <Link href="/offers/new?type=item" className="koluj-header-button justify-start">
-                <Package size={17} />
-                Přidat věc
-              </Link>
-
-              <Link href="/offers/new?type=service" className="koluj-header-button justify-start">
-                <Wrench size={17} />
-                Přidat službu
-              </Link>
-
-              <Link href="/dashboard/my-offers" className="koluj-header-button justify-start">
-                <Package size={17} />
-                Moje nabídky
-              </Link>
-
-              <Link href="/dashboard/bookings" className="koluj-header-button justify-start">
-                <Handshake size={17} />
-                Rezervace
-              </Link>
-
-              <Link href="/dashboard/availability" className="koluj-header-button justify-start">
-                <CalendarOff size={17} />
-                Dostupnost
-              </Link>
-
-              <Link href="/profile" className="koluj-header-button justify-start">
-                <User size={17} />
-                Profil
-              </Link>
+              <p className="mt-5 max-w-2xl text-lg leading-relaxed text-[var(--koluj-muted)] md:text-xl">
+                Spravuj nabídky, rezervace, dostupnost i profil na jednom přehledném místě.
+              </p>
             </div>
 
-            {!loadingProfile && !profileComplete && (
-              <Link href="/profile" className="koluj-button mt-6 min-h-[52px] px-6">
-                Dokončit profil <ArrowRight size={18} />
-              </Link>
-            )}
+            <div className="koluj-card flex flex-col justify-center p-6 md:p-8">
+              <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
+                Přehled účtu
+              </p>
+
+              <h2 className="mt-3 text-2xl font-black tracking-[-0.04em] text-[var(--koluj-ink)] md:text-3xl">
+                Vše důležité pro kolování.
+              </h2>
+
+              <p className="mt-3 text-[var(--koluj-muted)]">
+                Zkontroluj rezervace, uprav nabídky, nastav dostupnost nebo doplň profil.
+                Novou nabídku přidáš samostatnou kartou níže.
+              </p>
+
+              {!loadingProfile && !profileComplete && (
+                <Link href="/profile" className="koluj-button mt-6 w-fit min-h-[52px] px-6">
+                  Dokončit profil <ArrowRight size={18} />
+                </Link>
+              )}
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
         {!loadingProfile && !profileComplete && (
           <section className="koluj-card mt-6 p-5 md:p-6">
@@ -122,12 +104,22 @@ export default function DashboardPage() {
 
         <section className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           <DashboardCard
+            href="/offers/new"
+            title="Přidat nabídku"
+            icon={<Plus />}
+            text="Vytvoř novou věc nebo službu, kterou můžeš nabídnout ostatním."
+            action="Přidat"
+            featured
+          />
+
+          <DashboardCard
             href="/dashboard/my-offers"
             title="Moje nabídky"
             icon={<Package />}
             text="Zobraz a spravuj věci a služby, které nabízíš."
             action="Otevřít"
           />
+
           <DashboardCard
             href="/dashboard/bookings"
             title="Rezervace"
@@ -135,6 +127,7 @@ export default function DashboardPage() {
             text="Schvaluj žádosti, řeš domluvu a stav rezervací."
             action="Spravovat"
           />
+
           <DashboardCard
             href="/dashboard/availability"
             title="Dostupnost"
@@ -142,6 +135,7 @@ export default function DashboardPage() {
             text="Zablokuj termíny pro jednu nebo více nabídek."
             action="Nastavit"
           />
+
           <DashboardCard
             href="/profile"
             title="Profil"
@@ -155,9 +149,11 @@ export default function DashboardPage() {
               <span className="koluj-icon-bubble">
                 <Heart size={26} />
               </span>
+
               <h2 className="mt-5 text-2xl font-black tracking-[-0.04em] text-[var(--koluj-ink)] md:text-3xl">
                 Tip
               </h2>
+
               <p className="mt-3 leading-relaxed text-[var(--koluj-muted)]">
                 Aktuální fotky a jasný popis výrazně zvyšují šanci na rezervaci.
               </p>
@@ -167,7 +163,6 @@ export default function DashboardPage() {
       </div>
     </main>
   );
-
 }
 
 function DashboardCard({
@@ -176,23 +171,28 @@ function DashboardCard({
   icon,
   text,
   action,
+  featured = false,
 }: {
   href: string;
   title: string;
   icon: React.ReactNode;
   text: string;
   action: string;
+  featured?: boolean;
 }) {
   return (
     <Link
       href={href}
-      className="koluj-card group flex min-h-[210px] flex-col justify-between overflow-hidden p-6 hover:border-[var(--koluj-green)] md:p-8"
+      className={`koluj-card group flex min-h-[210px] flex-col justify-between overflow-hidden p-6 hover:border-[var(--koluj-green)] md:p-8 ${
+        featured ? "bg-gradient-to-br from-white to-[var(--koluj-green-pale)]" : ""
+      }`}
     >
       <div>
         <div className="flex items-start justify-between gap-5">
           <h2 className="text-2xl font-black tracking-[-0.04em] text-[var(--koluj-ink)] md:text-3xl">
             {title}
           </h2>
+
           <span className="koluj-icon-bubble shrink-0">
             {icon}
           </span>
