@@ -1,9 +1,21 @@
 import { NextResponse } from "next/server";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
+import { errorMessage } from "@/lib/security";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { requestBookingServer } from "@/lib/services/bookingService";
 
 export async function POST(request: Request) {
+  const rate = checkRateLimit({
+    key: `booking-request:${getClientIp(request)}`,
+    limit: 20,
+    windowMs: 60 * 1000,
+  });
+
+  if (!rate.allowed) {
+    return rateLimitResponse(rate.resetAt);
+  }
+
   const cookieStore = await cookies();
 
   const supabase = createServerClient(
@@ -28,6 +40,7 @@ export async function POST(request: Request) {
   }
 
   const { offerId, dateFrom, dateTo, startsAt, endsAt, note } = await request.json();
+  const normalizedNote = typeof note === "string" ? note.trim().slice(0, 500) : "";
 
   if (!offerId) {
     return NextResponse.json({ error: "Missing offerId" }, { status: 400 });
@@ -41,13 +54,13 @@ export async function POST(request: Request) {
       dateTo,
       startsAt,
       endsAt,
-      note,
+      note: normalizedNote,
     });
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
-      { error: error.message || "Žádost se nepodařilo vytvořit" },
+      { error: errorMessage(error, "Žádost se nepodařilo vytvořit") },
       { status: 400 }
     );
   }

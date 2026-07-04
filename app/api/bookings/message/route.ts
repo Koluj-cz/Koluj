@@ -1,9 +1,21 @@
 import { NextResponse } from "next/server";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
+import { errorMessage } from "@/lib/security";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
 import { sendBookingMessageServer } from "@/lib/services/bookingService";
 
 export async function POST(request: Request) {
+  const rate = checkRateLimit({
+    key: `booking-message:${getClientIp(request)}`,
+    limit: 60,
+    windowMs: 60 * 1000,
+  });
+
+  if (!rate.allowed) {
+    return rateLimitResponse(rate.resetAt);
+  }
+
   const cookieStore = await cookies();
 
   const supabase = createServerClient(
@@ -28,22 +40,27 @@ export async function POST(request: Request) {
   }
 
   const { bookingId, message } = await request.json();
+  const normalizedMessage = typeof message === "string" ? message.trim() : "";
 
-  if (!bookingId || !message) {
+  if (!bookingId || !normalizedMessage) {
     return NextResponse.json({ error: "Missing data" }, { status: 400 });
+  }
+
+  if (normalizedMessage.length > 1000) {
+    return NextResponse.json({ error: "Zpráva je příliš dlouhá" }, { status: 400 });
   }
 
   try {
     const result = await sendBookingMessageServer({
       bookingId,
       actorId: user.id,
-      message,
+      message: normalizedMessage,
     });
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
-      { error: error.message || "Zprávu se nepodařilo odeslat" },
+      { error: errorMessage(error, "Zprávu se nepodařilo odeslat") },
       { status: 400 }
     );
   }

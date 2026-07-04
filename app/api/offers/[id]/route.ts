@@ -1,0 +1,202 @@
+import { NextResponse } from "next/server";
+import { randomUUID } from "crypto";
+import { requireUser, createSupabaseAdminClient } from "@/lib/supabase/server";
+import { sanitizeRichText, errorMessage } from "@/lib/security";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
+
+type UpdatePayload = {
+  offer_type: string;
+  title: string;
+  description: string;
+  category: string;
+  condition?: string | null;
+  price_amount: string;
+  price_unit: string;
+  price_note?: string | null;
+  deposit?: string | null;
+  pickup_place: string;
+  pickup_latitude: number | null;
+  pickup_longitude: number | null;
+  handover_options: string[];
+  contact_note?: string | null;
+  is_active?: boolean;
+};
+
+function storagePathFromPublicUrl(url: string | null) {
+  const marker = "/storage/v1/object/public/offers/";
+  if (!url || !url.includes(marker)) return null;
+  return url.split(marker)[1] || null;
+}
+
+export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const rate = checkRateLimit({
+    key: `offers:update:${id}:${getClientIp(request)}`,
+    limit: 60,
+    windowMs: 60 * 60 * 1000,
+  });
+
+  if (!rate.allowed) {
+    return rateLimitResponse(rate.resetAt);
+  }
+
+  try {
+    const { user } = await requireUser();
+    const supabaseAdmin = createSupabaseAdminClient();
+    const formData = await request.formData();
+    const rawPayload = formData.get("payload");
+
+    if (typeof rawPayload !== "string") {
+      throw new Error("Chybí data nabídky");
+    }
+
+    const payload = JSON.parse(rawPayload) as UpdatePayload;
+    const newPhotos = formData.getAll("photos").filter((value): value is File => value instanceof File);
+
+    const { data: existingOffer, error: existingError } = await supabaseAdmin
+      .from("offers")
+      .select("id, owner_id, primary_image_url")
+      .eq("id", id)
+      .single();
+
+    if (existingError || !existingOffer) {
+      throw new Error("Nabídka nebyla nalezena");
+    }
+
+    if (existingOffer.owner_id !== user.id) {
+      throw new Error("Tuhle nabídku může upravit pouze vlastník");
+    }
+
+    const { data: existingImages, error: imagesError } = await supabaseAdmin
+      .from("offer_images")
+      .select("id, image_url, sort_order")
+      .eq("offer_id", id)
+      .order("sort_order", { ascending: true });
+
+    if (imagesError) {
+      throw new Error(imagesError.message);
+    }
+
+    if (newPhotos.length > 8 || (existingImages?.length || 0) + newPhotos.length > 8) {
+      throw new Error("Můžeš mít maximálně 8 fotek");
+    }
+
+    for (const photo of newPhotos) {
+      if (photo.size > 15 * 1024 * 1024) {
+        throw new Error("Jedna z fotek je větší než 15 MB");
+      }
+    }
+
+    const offerType = payload.offer_type === "service" ? "service" : "item";
+
+    if (offerType === "item" && (existingImages?.length || 0) + newPhotos.length === 0) {
+      throw new Error("Nahraj alespoň jednu fotku věci");
+    }
+
+    if (!payload.title?.trim() || payload.title.trim().length > 120) {
+      throw new Error("Vyplň název nabídky do 120 znaků");
+    }
+
+    if (!payload.description?.trim() || payload.description.length > 8000) {
+      throw new Error("Vyplň popis nabídky");
+    }
+
+    if (!payload.category) throw new Error("Vyber kategorii");
+    if (offerType === "item" && !payload.condition) throw new Error("Vyber stav nabídky");
+    if (!payload.pickup_place?.trim() || !payload.pickup_latitude || !payload.pickup_longitude) throw new Error("Vyber lokalitu z našeptávače");
+    if (offerType === "item" && (!Array.isArray(payload.handover_options) || payload.handover_options.length === 0)) throw new Error("Vyber alespoň jednu možnost předání");
+
+    const priceAmount = Number(payload.price_amount);
+    if (!Number.isFinite(priceAmount) || priceAmount < 0) throw new Error("Vyplň platnou cenu");
+
+    const { error: updateError } = await supabaseAdmin
+      .from("offers")
+      .update({
+        offer_type: offerType,
+        title: payload.title.trim(),
+        description: sanitizeRichText(payload.description),
+        category: payload.category,
+        condition: offerType === "item" ? payload.condition : null,
+        price_amount: priceAmount,
+        price_unit: payload.price_unit,
+        price_note: payload.price_note?.trim() || null,
+        deposit: offerType === "item" && payload.deposit ? Number(payload.deposit) : null,
+        pickup_place: payload.pickup_place.trim(),
+        pickup_latitude: payload.pickup_latitude,
+        pickup_longitude: payload.pickup_longitude,
+        handover_options: offerType === "item" ? payload.handover_options : [],
+        contact_note: payload.contact_note?.trim() || null,
+        is_active: payload.is_active ?? true,
+      })
+      .eq("id", id);
+
+    if (updateError) throw new Error(updateError.message);
+
+    const currentCount = existingImages?.length || 0;
+    let firstNewImageUrl: string | null = null;
+
+    for (let index = 0; index < newPhotos.length; index++) {
+      const photo = newPhotos[index];
+      const filePath = `${user.id}/${id}/${Date.now()}-${index}-${randomUUID()}.webp`;
+
+      const { error: uploadError } = await supabaseAdmin.storage
+        .from("offers")
+        .upload(filePath, photo, {
+          contentType: photo.type || "image/webp",
+          upsert: false,
+        });
+
+      if (uploadError) throw new Error(uploadError.message);
+
+      const { data: publicUrl } = supabaseAdmin.storage.from("offers").getPublicUrl(filePath);
+      if (index === 0) firstNewImageUrl = publicUrl.publicUrl;
+
+      const { error: imageError } = await supabaseAdmin.from("offer_images").insert({
+        offer_id: id,
+        image_url: publicUrl.publicUrl,
+        sort_order: currentCount + index,
+      });
+
+      if (imageError) throw new Error(imageError.message);
+    }
+
+    if (!existingOffer.primary_image_url && firstNewImageUrl) {
+      await supabaseAdmin.from("offers").update({ primary_image_url: firstNewImageUrl }).eq("id", id);
+    }
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    const message = errorMessage(error, "Změny se nepodařilo uložit");
+    const status = message === "Unauthorized" ? 401 : 400;
+    return NextResponse.json({ error: message }, { status });
+  }
+}
+
+export async function DELETE(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  try {
+    const { user } = await requireUser();
+    const supabaseAdmin = createSupabaseAdminClient();
+
+    const { data: offer, error } = await supabaseAdmin
+      .from("offers")
+      .select("id, owner_id, primary_image_url")
+      .eq("id", id)
+      .single();
+
+    if (error || !offer) throw new Error("Nabídka nebyla nalezena");
+    if (offer.owner_id !== user.id) throw new Error("Tuhle nabídku může smazat pouze vlastník");
+
+    const { data: images } = await supabaseAdmin.from("offer_images").select("image_url").eq("offer_id", id);
+    const paths = (images || []).map((image) => storagePathFromPublicUrl(image.image_url)).filter(Boolean) as string[];
+    if (paths.length > 0) await supabaseAdmin.storage.from("offers").remove(paths);
+    await supabaseAdmin.from("offer_images").delete().eq("offer_id", id);
+    await supabaseAdmin.from("offers").delete().eq("id", id);
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    const message = errorMessage(error, "Nabídku se nepodařilo smazat");
+    const status = message === "Unauthorized" ? 401 : 400;
+    return NextResponse.json({ error: message }, { status });
+  }
+}

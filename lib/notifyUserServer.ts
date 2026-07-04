@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 import webpush from "web-push";
+import { escapeHtml } from "@/lib/security";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -143,17 +144,23 @@ export async function notifyUserServer({
     ? "Otevřít nabídku"
     : "Otevřít notifikace";
 
+  const safeActorName = escapeHtml(actorName);
+  const safeMessage = escapeHtml(message);
+  const safeTitle = escapeHtml(emailSubject || title);
+  const safeButtonText = escapeHtml(buttonText);
+  const safeFullUrl = escapeHtml(fullUrl);
+
   await resend.emails.send({
     from: "Koluj <noreply@koluj.cz>",
     to: recipientEmail,
-    subject: emailSubject || title,
+    subject: safeTitle,
     html: `
       <div style="font-family: Arial, sans-serif; line-height: 1.6;">
         <h1 style="color:#6b842c;">Koluj</h1>
-        <p><strong>${actorName}</strong> ${message}</p>
+        <p><strong>${safeActorName}</strong> ${safeMessage}</p>
         <p>
-          <a href="${fullUrl}" style="display:inline-block;background:#6b842c;color:white;padding:12px 18px;border-radius:12px;text-decoration:none;font-weight:bold;">
-            ${buttonText}
+          <a href="${safeFullUrl}" style="display:inline-block;background:#6b842c;color:white;padding:12px 18px;border-radius:12px;text-decoration:none;font-weight:bold;">
+            ${safeButtonText}
           </a>
         </p>
       </div>

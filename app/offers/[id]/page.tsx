@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import PageLoader from "@/app/components/PageLoader";
@@ -418,9 +419,11 @@ export default function ItemDetailPage() {
         className="mt-5 flex items-center gap-4 hover:opacity-80"
       >
         {item.profiles?.avatar_url ? (
-          <img
+          <Image
             src={item.profiles.avatar_url}
             alt={ownerName}
+            width={56}
+            height={56}
             className="h-14 w-14 rounded-full object-cover"
           />
         ) : (
@@ -525,19 +528,24 @@ export default function ItemDetailPage() {
 
               {selectedImage ? (
                 <div className="relative flex h-[360px] items-center justify-center overflow-hidden bg-[var(--koluj-bg)] md:h-[560px]">
-                  <img
+                  <Image
                     src={selectedImage}
                     alt=""
                     aria-hidden="true"
-                    className="absolute inset-0 h-full w-full scale-110 object-cover opacity-35 blur-2xl"
+                    fill
+                    sizes="100vw"
+                    className="scale-110 object-cover opacity-35 blur-2xl"
                   />
 
                   <div className="absolute inset-0 bg-white/20" />
 
-                  <img
+                  <Image
                     src={selectedImage}
                     alt={item.title}
-                    className="relative z-10 h-full max-h-[360px] w-full object-contain p-5 md:max-h-[560px] md:p-8"
+                    fill
+                    sizes="(max-width: 1280px) 100vw, 70vw"
+                    className="relative z-10 object-contain p-5 md:p-8"
+                    priority
                   />
                 </div>
               ) : item.offer_type !== "service" ? (
@@ -561,9 +569,11 @@ export default function ItemDetailPage() {
                           : "border-transparent opacity-75 hover:opacity-100"
                       }`}
                     >
-                      <img
+                      <Image
                         src={image.image_url}
                         alt=""
+                        width={96}
+                        height={80}
                         className="h-full w-full object-cover"
                       />
                     </button>

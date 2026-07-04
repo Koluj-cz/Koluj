@@ -212,176 +212,89 @@ export default function NewItemPage() {
 
   async function handleSubmit() {
     setLoading(true);
-    if (photos.some((photo) => photo.size > 15 * 1024 * 1024)) {
-      toast.error("Fotka je příliš velká. Maximum je 15 MB.");
-      setLoading(false);
-      return;
-    }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    try {
+      if (photos.some((photo) => photo.size > 15 * 1024 * 1024)) {
+        throw new Error("Fotka je příliš velká. Maximum je 15 MB.");
+      }
 
-    if (!user) {
-      toast.error("Musíš být přihlášený");
-      setLoading(false);
-      return;
-    }
+      if (form.offer_type === "item" && photos.length === 0) {
+        throw new Error("Nahraj alespoň jednu fotku věci");
+      }
 
-    if (form.offer_type === "item" && photos.length === 0) {
-      toast.error("Nahraj alespoň jednu fotku věci");
-      setLoading(false);
-      return;
-    }
+      if (!form.title.trim()) {
+        throw new Error("Vyplň název nabídky");
+      }
 
-    if (!form.title.trim()) {
-      toast.error("Vyplň název nabídky");
-      setLoading(false);
-      return;
-    }
+      if (!form.category) {
+        throw new Error("Vyber kategorii");
+      }
 
-    if (!form.category) {
-      toast.error("Vyber kategorii");
-      setLoading(false);
-      return;
-    }
+      if (form.offer_type === "item" && !form.condition) {
+        throw new Error("Vyber stav nabídky");
+      }
 
-    if (form.offer_type === "item" && !form.condition) {
-      toast.error("Vyber stav nabídky");
-      setLoading(false);
-      return;
-    }
+      if (!form.description.trim()) {
+        throw new Error("Vyplň popis");
+      }
 
-    if (!form.description.trim()) {
-      toast.error("Vyplň popis");
-      setLoading(false);
-      return;
-    }
+      if (!form.price_amount.trim()) {
+        throw new Error("Vyplň cenu");
+      }
 
-    if (!form.price_amount.trim()) {
-      toast.error("Vyplň cenu");
-      setLoading(false);
-      return;
-    }
+      if (!form.price_unit) {
+        throw new Error("Vyber jednotku ceny");
+      }
 
-    if (!form.price_unit) {
-      toast.error("Vyber jednotku ceny");
-      setLoading(false);
-      return;
-    }
+      if (!form.pickup_place.trim() || !form.pickup_latitude || !form.pickup_longitude) {
+        throw new Error(
+          form.offer_type === "service"
+            ? "Vyber lokalitu působení z našeptávače nebo zvol celou ČR"
+            : "Vyber místo předání z našeptávače"
+        );
+      }
 
-    if (!form.pickup_place.trim() || !form.pickup_latitude || !form.pickup_longitude) {
-      toast.error(
-        form.offer_type === "service"
-          ? "Vyber lokalitu působení z našeptávače nebo zvol celou ČR"
-          : "Vyber místo předání z našeptávače"
-      );
-      setLoading(false);
-      return;
-    }
+      if (form.offer_type === "item" && form.handover_options.length === 0) {
+        throw new Error("Vyber alespoň jednu možnost předání");
+      }
 
-    if (form.offer_type === "item" && form.handover_options.length === 0) {
-      toast.error("Vyber alespoň jednu možnost předání");
-      setLoading(false);
-      return;
-    }
+      const formData = new FormData();
+      formData.append("payload", JSON.stringify(form));
+      formData.append("mainPhotoIndex", String(mainPhotoIndex));
 
-
-    const { data: item, error: itemError } = await supabase
-      .from("offers")
-      .insert({
-        owner_id: user.id,
-        offer_type: form.offer_type,
-        title: form.title,
-        description: form.description,
-        category: form.category,
-        condition: form.offer_type === "item" ? form.condition : null,
-        price_amount: Number(form.price_amount),
-        price_unit: form.price_unit,
-        price_note: form.price_note || null,
-        deposit: form.offer_type === "item" && form.deposit ? Number(form.deposit) : null,
-        pickup_place: form.pickup_place,
-        pickup_latitude: form.pickup_latitude,
-        pickup_longitude: form.pickup_longitude,
-        handover_options:
-          form.offer_type === "item" ? form.handover_options : [],
-        contact_note: form.contact_note,
-        is_active: true,
-      })
-      .select()
-      .single();
-
-    if (itemError || !item) {
-      toast.error(itemError?.message || "Nepodařilo se uložit nabídku");
-      setLoading(false);
-      return;
-    }
-
-    if (photos.length > 0) {
       const safeMainPhotoIndex =
-        mainPhotoIndex >= 0 && mainPhotoIndex < photos.length
-          ? mainPhotoIndex
-          : 0;
-
+        mainPhotoIndex >= 0 && mainPhotoIndex < photos.length ? mainPhotoIndex : 0;
       const orderedPhotos = [...photos];
       const [mainPhoto] = orderedPhotos.splice(safeMainPhotoIndex, 1);
+      const finalPhotos = mainPhoto ? [mainPhoto, ...orderedPhotos] : orderedPhotos;
 
-      if (!mainPhoto) {
-        toast.error("Fotku se nepodařilo načíst. Zkus ji vybrat znovu.");
-        setLoading(false);
-        return;
+      setUploadingPhotos(finalPhotos.length > 0);
+      setUploadProgress(finalPhotos.length > 0 ? 20 : 0);
+
+      finalPhotos.forEach((photo) => {
+        formData.append("photos", photo);
+      });
+
+      const response = await fetch("/api/offers", {
+        method: "POST",
+        body: formData,
+      });
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(result?.error || "Nepodařilo se uložit nabídku");
       }
 
-      const finalPhotos = [mainPhoto, ...orderedPhotos];
-
-      let primaryImageUrl = "";
-
-      setUploadingPhotos(true);
-      setUploadProgress(0);
-      for (let index = 0; index < finalPhotos.length; index++) {
-        const photo = finalPhotos[index];
-        const filePath = `${user.id}/${item.id}/${index}.webp`;
-
-        const { error: uploadError } = await supabase.storage
-          .from("offers")
-          .upload(filePath, photo);
-
-        if (uploadError) {
-          await supabase
-            .from("offers")
-            .delete()
-            .eq("id", item.id);
-
-          toast.error("Nepodařilo se nahrát fotku");
-          setLoading(false);
-          return;
-        }
-
-        const { data: publicUrl } = supabase.storage
-          .from("offers")
-          .getPublicUrl(filePath);
-
-        if (index === 0) {
-          primaryImageUrl = publicUrl.publicUrl;
-        }
-
-        await supabase.from("offer_images").insert({
-          offer_id: item.id,
-          image_url: publicUrl.publicUrl,
-          sort_order: index,
-        });
-        setUploadProgress(Math.round(((index + 1) / finalPhotos.length) * 100));
-      }
+      setUploadProgress(100);
+      toast.success("Nabídka byla přidána");
+      router.push("/dashboard/my-offers");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Nepodařilo se uložit nabídku");
+    } finally {
       setUploadingPhotos(false);
-
-      await supabase
-        .from("offers")
-        .update({ primary_image_url: primaryImageUrl })
-        .eq("id", item.id);
+      setLoading(false);
     }
-
-    toast.success("Nabídka byla přidána");
-    router.push("/dashboard/my-offers");
   }
 
   return (

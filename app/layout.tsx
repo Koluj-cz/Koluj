@@ -7,8 +7,8 @@ import BottomNav from "@/app/components/BottomNav";
 
 export const metadata = {
   title: {
-    default: "Koluj",
-    template: "%s | Koluj",
+    default: "KOLUJ",
+    template: "%s | KOLUJ",
   },
   description: "Půjčuj si věci a objednávej služby od lidí ve svém okolí",
   manifest: "/manifest.webmanifest",
@@ -16,7 +16,7 @@ export const metadata = {
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Koluj",
+    title: "KOLUJ",
   },
 };
 

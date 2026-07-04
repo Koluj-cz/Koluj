@@ -233,74 +233,52 @@ export default function EditItemPage() {
   }
 
 async function deleteImage(imageId: string, imageUrl: string) {
-  const { error: deleteDbError } = await supabase
-    .from("offer_images")
-    .delete()
-    .eq("id", imageId);
+  const response = await fetch(`/api/offers/${offerId}/images/${imageId}`, {
+    method: "DELETE",
+  });
 
-  if (deleteDbError) {
-    toast.error(deleteDbError.message);
+  const result = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    toast.error(result?.error || "Fotku se nepodařilo smazat");
     return;
   }
 
-  const marker = "/storage/v1/object/public/offers/";
-  const storagePath = imageUrl.includes(marker)
-    ? imageUrl.split(marker)[1]
-    : null;
-
-  if (storagePath) {
-    const { error: storageError } = await supabase.storage
-      .from("offers")
-      .remove([storagePath]);
-
-    if (storageError) {
-      toast.error(storageError.message);
-      return;
-    }
-  }
-
-  const remainingImages = images.filter((img) => img.id !== imageId);
-  setImages(remainingImages);
+  setImages((prev) => prev.filter((img) => img.id !== imageId));
 
   if (primaryImageUrl === imageUrl) {
-    const nextPrimary = remainingImages[0]?.image_url || null;
-
-    await supabase
-      .from("offers")
-      .update({
-        primary_image_url: nextPrimary,
-      })
-      .eq("id", offerId);
-
-    setPrimaryImageUrl(nextPrimary || "");
+    setPrimaryImageUrl(result?.primaryImageUrl || "");
   }
 
   toast.success("Fotka smazána");
 }
 
 async function makePrimary(imageUrl: string) {
-  const { error } = await supabase
-    .from("offers")
-    .update({
-      primary_image_url: imageUrl,
-    })
-    .eq("id", offerId);
+  const response = await fetch(`/api/offers/${offerId}/primary-image`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ imageUrl }),
+  });
 
-  if (error) {
-    toast.error(error.message);
+  const result = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    toast.error(result?.error || "Hlavní fotku se nepodařilo nastavit");
     return;
   }
 
   toast.success("Hlavní fotka nastavena");
-
-  setPrimaryImageUrl(imageUrl);
+  setPrimaryImageUrl(result?.primaryImageUrl || imageUrl);
 }
 
   async function saveItem() {
     if (form.offer_type === "item" && images.length + newPhotos.length === 0) {
-    toast.error("Nahraj alespoň jednu fotku věci");
-    return;
+      toast.error("Nahraj alespoň jednu fotku věci");
+      return;
     }
+
     if (!form.title.trim()) {
       toast.error("Vyplň název nabídky");
       return;
@@ -322,15 +300,13 @@ async function makePrimary(imageUrl: string) {
     }
 
     if (!form.price_amount.trim()) {
-    toast.error("Vyplň cenu");
-    setLoading(false);
-    return;
+      toast.error("Vyplň cenu");
+      return;
     }
 
     if (!form.price_unit) {
-    toast.error("Vyber jednotku ceny");
-    setLoading(false);
-    return;
+      toast.error("Vyber jednotku ceny");
+      return;
     }
 
     if (!form.pickup_place.trim() || !form.pickup_latitude || !form.pickup_longitude) {
@@ -347,99 +323,39 @@ async function makePrimary(imageUrl: string) {
       return;
     }
 
-    
     setSaving(true);
 
-    const { error } = await supabase
-      .from("offers")
-      .update({
-        offer_type: form.offer_type,
-        title: form.title,
-        description: form.description,
-        category: form.category,
-        condition: form.offer_type === "item" ? form.condition : null,
-        price_amount: Number(form.price_amount),
-        price_unit: form.price_unit,
-        price_note: form.price_note || null,
-        deposit: form.offer_type === "item" && form.deposit ? Number(form.deposit) : null,
-        pickup_place: form.pickup_place,
-        pickup_latitude: form.pickup_latitude,
-        pickup_longitude: form.pickup_longitude,
-        handover_options:
-          form.offer_type === "item" ? form.handover_options : [],
-        contact_note: form.contact_note,
-        is_active: form.is_active,
-      })
-      .eq("id", offerId);
+    try {
+      const formData = new FormData();
+      formData.append("payload", JSON.stringify(form));
 
-        if (error) {
-        toast.error(error.message);
-        setSaving(false);
-        return;
-        }
+      newPhotos.forEach((photo) => {
+        formData.append("photos", photo);
+      });
 
-        if (newPhotos.length > 0) {
-        const {
-            data: { user },
-        } = await supabase.auth.getUser();
+      setUploadingPhotos(newPhotos.length > 0);
+      setUploadProgress(newPhotos.length > 0 ? 20 : 0);
 
-        if (!user) {
-            toast.error("Nejsi přihlášený");
-            setSaving(false);
-            return;
-        }
+      const response = await fetch(`/api/offers/${offerId}`, {
+        method: "PATCH",
+        body: formData,
+      });
 
-        const currentCount = images.length;
-        
-        setUploadingPhotos(true);
-        setUploadProgress(0);
-        for (let index = 0; index < newPhotos.length; index++) {
-            const photo = newPhotos[index];
-            const filePath = `${user.id}/${offerId}/${Date.now()}-${index}.webp`;
+      const result = await response.json().catch(() => null);
 
-            const { error: uploadError } = await supabase.storage
-            .from("offers")
-            .upload(filePath, photo);
+      if (!response.ok) {
+        throw new Error(result?.error || "Změny se nepodařilo uložit");
+      }
 
-            if (uploadError) {
-            toast.error(uploadError.message);
-            setSaving(false);
-            return;
-            }
-
-            const { data: publicUrl } = supabase.storage
-            .from("offers")
-            .getPublicUrl(filePath);
-
-            const sortOrder = currentCount + index;
-
-            const { error: imageError } = await supabase.from("offer_images").insert({
-            offer_id: offerId,
-            image_url: publicUrl.publicUrl,
-            sort_order: sortOrder,
-            });
-
-            if (imageError) {
-            toast.error(imageError.message);
-            setSaving(false);
-            return;
-            }
-
-            if (images.length === 0 && index === 0) {
-            await supabase
-                .from("offers")
-                .update({
-                primary_image_url: publicUrl.publicUrl,
-                })
-                .eq("id", offerId);
-            }
-            setUploadProgress(Math.round(((index + 1) / newPhotos.length) * 100));
-        }
-        }
-        setUploadingPhotos(false);
-        setSaving(false);
-        toast.success("Změny uloženy");
-        router.push("/dashboard/my-offers");
+      setUploadProgress(100);
+      toast.success("Změny uloženy");
+      router.push("/dashboard/my-offers");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Změny se nepodařilo uložit");
+    } finally {
+      setUploadingPhotos(false);
+      setSaving(false);
+    }
   }
 
   if (loading) {

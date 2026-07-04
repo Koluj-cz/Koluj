@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   Baby,
@@ -112,10 +113,12 @@ export default function OfferCard({ item, variant = "public", footer }: OfferCar
     <article className="koluj-offer-card group/card flex h-full flex-col overflow-hidden rounded-[22px] border border-[var(--koluj-border)] bg-white shadow-[var(--koluj-shadow-soft)]">
       <div className="relative h-[190px] overflow-hidden bg-slate-100 sm:h-[210px]">
         {item.primary_image_url ? (
-          <img
+          <Image
             src={item.primary_image_url}
             alt={item.title}
-            className="h-full w-full object-cover"
+            fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1280px) 50vw, 25vw"
+            className="object-cover"
           />
         ) : isService ? (
           <ServiceFallbackImage category={item.category} />
@@ -173,7 +176,7 @@ export default function OfferCard({ item, variant = "public", footer }: OfferCar
             className="mt-4 flex items-center gap-2 text-left hover:text-[var(--koluj-green)]"
           >
             {item.profiles?.avatar_url ? (
-              <img src={item.profiles.avatar_url} alt={ownerName} className="h-8 w-8 rounded-full object-cover ring-2 ring-white" />
+              <Image src={item.profiles.avatar_url} alt={ownerName} width={32} height={32} className="h-8 w-8 rounded-full object-cover ring-2 ring-white" />
             ) : (
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-[var(--koluj-green-soft)] text-xs font-black text-[var(--koluj-green)]">
                 {ownerName.charAt(0).toUpperCase()}
