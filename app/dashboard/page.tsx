@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, CalendarOff, Heart, Handshake, Package, User } from "lucide-react";
+import { ArrowRight, CalendarOff, Heart, Handshake, Package, Plus, User, Wrench } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import RestoreAccountOnLogin from "@/app/components/RestoreAccountOnLogin";
 import BackLink from "@/app/components/BackLink";
@@ -40,16 +40,15 @@ export default function DashboardPage() {
       <RestoreAccountOnLogin />
 
       <div className="koluj-wide-frame relative z-10">
-        <section className="koluj-hero-card koluj-hero-card-popover grid gap-6 p-5 md:p-8 xl:grid-cols-[0.8fr_1.2fr] xl:p-10">
-          <div className="flex flex-col justify-center">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap items-center gap-3">
-                <BackLink href="/">Domů</BackLink>
-              </div>
-              <NotificationBell />
-            </div>
+      <section className="koluj-hero-card koluj-hero-card-popover p-5 md:p-8 xl:p-10">
+        <div className="mb-8 flex items-center justify-between gap-3">
+          <BackLink href="/">Domů</BackLink>
+          <NotificationBell />
+        </div>
 
-            <h1 className="koluj-heading mt-6 max-w-[12ch]">
+        <div className="grid gap-8 xl:grid-cols-[0.8fr_1.2fr]">
+          <div className="flex flex-col justify-center">
+            <h1 className="koluj-heading max-w-[12ch]">
               {fullName ? `Ahoj, ${fullName.split(" ")[0]}.` : "Vítej zpět."}
             </h1>
 
@@ -58,26 +57,59 @@ export default function DashboardPage() {
             </p>
           </div>
 
-          <div className="koluj-card flex flex-col justify-between p-6 md:p-8">
-            <div>
-              <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
-                Přehled účtu
-              </p>
-              <h2 className="mt-3 text-2xl font-black tracking-[-0.04em] text-[var(--koluj-ink)] md:text-3xl">
-                Vše důležité pro kolování.
-              </h2>
-              <p className="mt-3 text-[var(--koluj-muted)]">
-                Zkontroluj nové rezervace, uprav svoje nabídky nebo doplň profil, aby se s tebou lidem lépe domlouvalo.
-              </p>
+          <div className="koluj-card p-6 md:p-8">
+            <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
+              Nová nabídka
+            </p>
+
+            <h2 className="mt-3 text-2xl font-black tracking-[-0.04em] text-[var(--koluj-ink)] md:text-3xl">
+              Přidej věc nebo službu, která může kolovat.
+            </h2>
+
+            <p className="mt-3 text-[var(--koluj-muted)]">
+              Vytvoř novou nabídku, spravuj svoje věci a sleduj rezervace z jednoho místa.
+            </p>
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              <Link href="/offers/new?type=item" className="koluj-header-button justify-start">
+                <Package size={17} />
+                Přidat věc
+              </Link>
+
+              <Link href="/offers/new?type=service" className="koluj-header-button justify-start">
+                <Wrench size={17} />
+                Přidat službu
+              </Link>
+
+              <Link href="/dashboard/my-offers" className="koluj-header-button justify-start">
+                <Package size={17} />
+                Moje nabídky
+              </Link>
+
+              <Link href="/dashboard/bookings" className="koluj-header-button justify-start">
+                <Handshake size={17} />
+                Rezervace
+              </Link>
+
+              <Link href="/dashboard/availability" className="koluj-header-button justify-start">
+                <CalendarOff size={17} />
+                Dostupnost
+              </Link>
+
+              <Link href="/profile" className="koluj-header-button justify-start">
+                <User size={17} />
+                Profil
+              </Link>
             </div>
 
             {!loadingProfile && !profileComplete && (
-              <Link href="/profile" className="koluj-button mt-6 w-fit min-h-[52px] px-6">
+              <Link href="/profile" className="koluj-button mt-6 min-h-[52px] px-6">
                 Dokončit profil <ArrowRight size={18} />
               </Link>
             )}
           </div>
-        </section>
+        </div>
+      </section>
 
         {!loadingProfile && !profileComplete && (
           <section className="koluj-card mt-6 p-5 md:p-6">
