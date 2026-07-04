@@ -3,16 +3,16 @@
 
 :root {
   --koluj-bg: #f8fafc;
-  --koluj-bg-soft: #F5F8EF;
+  --koluj-bg-soft: #f0fdf4;
   --koluj-surface: #ffffff;
-  --koluj-surface-soft: #F7FAF2;
+  --koluj-surface-soft: #f7fbf8;
   --koluj-text: #111827;
   --koluj-ink: #0f172a;
   --koluj-muted: #64748b;
   --koluj-green: #16a34a;
   --koluj-green-dark: #15803d;
-  --koluj-green-soft: #E8F0DA;
-  --koluj-green-pale: #F5F8EF;
+  --koluj-green-soft: #dcfce7;
+  --koluj-green-pale: #f0fdf4;
   --koluj-border: #e5e7eb;
   --koluj-border-strong: #d1d5db;
   --koluj-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);

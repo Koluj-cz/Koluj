@@ -45,9 +45,6 @@ export default function DashboardPage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap items-center gap-3">
                 <BackLink href="/">Domů</BackLink>
-                <p className="koluj-pill w-fit bg-[var(--koluj-green-pale)] text-[var(--koluj-green)]">
-                  Můj prostor
-                </p>
               </div>
               <NotificationBell />
             </div>

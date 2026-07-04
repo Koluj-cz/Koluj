@@ -424,9 +424,6 @@ export default function DashboardAvailabilityPage() {
         <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
           <div className="flex flex-wrap items-center gap-3">
             <BackLink href="/dashboard">Dashboard</BackLink>
-            <p className="koluj-pill w-fit bg-[var(--koluj-green-pale)] text-[var(--koluj-green)]">
-              Můj prostor
-            </p>
           </div>
 
           <h1 className="koluj-heading mt-6">Dostupnost</h1>
