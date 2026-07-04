@@ -59,7 +59,7 @@ export default function BottomNav() {
   useEffect(() => {
     let mounted = true;
 
-    async function loadSession() {
+    async function syncSession() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -69,7 +69,7 @@ export default function BottomNav() {
       }
     }
 
-    loadSession();
+    syncSession();
 
     const {
       data: { subscription },
@@ -77,11 +77,36 @@ export default function BottomNav() {
       setIsLoggedIn(Boolean(session));
     });
 
+    window.addEventListener("focus", syncSession);
+    document.addEventListener("visibilitychange", syncSession);
+
     return () => {
       mounted = false;
       subscription.unsubscribe();
+      window.removeEventListener("focus", syncSession);
+      document.removeEventListener("visibilitychange", syncSession);
     };
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function syncSessionAfterRouteChange() {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      if (mounted) {
+        setIsLoggedIn(Boolean(session));
+      }
+    }
+
+    syncSessionAfterRouteChange();
+
+    return () => {
+      mounted = false;
+    };
+  }, [pathname]);
 
   return (
     <nav className="koluj-bottom-nav" aria-label="Mobilní navigace">

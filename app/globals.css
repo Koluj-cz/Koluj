@@ -3,16 +3,16 @@
 
 :root {
   --koluj-bg: #f8fafc;
-  --koluj-bg-soft: #f0fdf4;
+  --koluj-bg-soft: #F0FDF4;
   --koluj-surface: #ffffff;
-  --koluj-surface-soft: #f7fbf8;
+  --koluj-surface-soft: #F7FBF8;
   --koluj-text: #111827;
   --koluj-ink: #0f172a;
   --koluj-muted: #64748b;
-  --koluj-green: #16a34a;
-  --koluj-green-dark: #15803d;
-  --koluj-green-soft: #dcfce7;
-  --koluj-green-pale: #f0fdf4;
+  --koluj-green: #16A34A;
+  --koluj-green-dark: #15803D;
+  --koluj-green-soft: #DCFCE7;
+  --koluj-green-pale: #F0FDF4;
   --koluj-border: #e5e7eb;
   --koluj-border-strong: #d1d5db;
   --koluj-shadow: 0 18px 45px rgba(15, 23, 42, 0.08);
@@ -29,9 +29,9 @@ body {
   color: var(--koluj-text);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
   overflow-x: hidden;
-  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 48%, #F7FAF2 100%);
+  background: var(--koluj-bg-soft);
 }
-::selection { background: rgba(95, 127, 43, .18); }
+::selection { background: rgba(22, 163, 74, .18); }
 a { color: inherit; text-decoration: none; }
 button, input, textarea, select { font: inherit; }
 button { cursor: pointer; }
@@ -135,7 +135,7 @@ img { max-width: 100%; }
   color: #fff;
   padding: 0 18px;
   font-weight: 850;
-  box-shadow: 0 12px 26px rgba(95, 127, 43, .22);
+  box-shadow: 0 12px 26px rgba(22, 163, 74, .22);
 }
 .koluj-button:hover { background: var(--koluj-green-dark); border-color: var(--koluj-green-dark); }
 .koluj-button-secondary {
@@ -187,7 +187,7 @@ img { max-width: 100%; }
 }
 .koluj-input::placeholder { color: #94a3b8; }
 .koluj-input:focus,
-.koluj-select:focus { border-color: var(--koluj-green); box-shadow: 0 0 0 4px rgba(95,127,43,.10); }
+.koluj-select:focus { border-color: var(--koluj-green); box-shadow: 0 0 0 4px rgba(22,163,74,.10); }
 .koluj-pill,
 .koluj-chip {
   display: inline-flex;
@@ -243,7 +243,7 @@ img { max-width: 100%; }
   font-weight: 850;
   line-height: 1;
 }
-.koluj-status-available { background: #E8F0DA; color: #3F561B; }
+.koluj-status-available { background: #DCFCE7; color: #166534; }
 .koluj-status-reserved { background: #fee2e2; color: #991b1b; }
 .koluj-status-borrowed { background: #dbeafe; color: #1e40af; }
 
@@ -309,15 +309,10 @@ img { max-width: 100%; }
 }
 @media (min-width: 900px) { .koluj-bottom-nav { display:none; } }
 
-.koluj-home { min-height: 100vh; background: linear-gradient(180deg,#fff 0%,#f8fafc 62%,#F5F8EF 100%); }
-.koluj-hero-card {
-  overflow: hidden;
-  border: 1px solid var(--koluj-border);
-  border-radius: 28px;
-  background: linear-gradient(135deg, #ffffff 0%, #ffffff 48%, #F5F8EF 100%);
-  box-shadow: var(--koluj-shadow-soft);
+.koluj-home {
+  min-height: 100vh;
+  background: transparent;
 }
-
 /* Wide desktop composition */
 .koluj-wide-frame {
   width: min(100%, 1680px);
@@ -405,7 +400,7 @@ img { max-width: 100%; }
   overflow: hidden;
   border: 1px solid var(--koluj-border);
   border-radius: 22px;
-  background: linear-gradient(140deg, #ffffff 0%, #F5F8EF 100%);
+  background: linear-gradient(140deg, #ffffff 0%, #F0FDF4 100%);
   padding: 18px;
 }
 .koluj-main-wide { min-width: 0; }
@@ -413,7 +408,7 @@ img { max-width: 100%; }
   overflow: hidden;
   border: 1px solid var(--koluj-border);
   border-radius: 28px;
-  background: linear-gradient(120deg, #ffffff 0%, #F7FAF2 56%, #F5F8EF 100%);
+  background: linear-gradient(120deg, #ffffff 0%, #F7FBF8 56%, #F0FDF4 100%);
   box-shadow: var(--koluj-shadow-soft);
 }
 
@@ -425,78 +420,6 @@ img { max-width: 100%; }
 @media (min-width: 1100px) {
   .koluj-mobile-only { display: none !important; }
   .koluj-desktop-mt-0 { margin-top: 0 !important; }
-}
-
-/* App-wide wide redesign: shared desktop composition */
-.koluj-shell-wide {
-  width: min(100%, 1680px);
-}
-@media (min-width: 1180px) {
-  .koluj-shell-wide { padding-left: 42px; padding-right: 42px; }
-}
-@media (min-width: 1440px) {
-  .koluj-shell-wide { padding-left: 54px; padding-right: 54px; }
-}
-@media (min-width: 1280px) {
-  .koluj-app-split,
-  .koluj-form-shell,
-  .koluj-detail-shell,
-  .koluj-profile-shell {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 420px;
-    align-items: start;
-    gap: 32px;
-  }
-  .koluj-dashboard-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-}
-@media (min-width: 1536px) {
-  .koluj-dashboard-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-  .koluj-form-shell,
-  .koluj-detail-shell,
-  .koluj-profile-shell { grid-template-columns: minmax(0, 1fr) 460px; }
-}
-.koluj-card,
-.koluj-panel,
-.koluj-feature-card,
-.koluj-header,
-.koluj-wide-filter-card {
-  border-color: #e6ebef;
-}
-.koluj-card:hover,
-.koluj-feature-card:hover,
-.koluj-panel:hover {
-  box-shadow: var(--koluj-shadow-soft);
-}
-.koluj-page-header {
-  border-bottom: 1px solid var(--koluj-border);
-  padding-bottom: 16px;
-}
-@media (min-width: 1100px) {
-  .koluj-page-header {
-    min-height: 74px;
-    padding-bottom: 18px;
-  }
-}
-.koluj-wide-page-title {
-  display: grid;
-  gap: 16px;
-}
-@media (min-width: 1100px) {
-  .koluj-wide-page-title {
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: end;
-  }
-}
-/* Ensure generated code remains motionless even when components use Tailwind transition classes. */
-.transition,
-.transition-all,
-.transition-colors,
-.duration-150,
-.duration-200,
-.duration-300,
-.hover\:scale-105:hover {
-  transition: none !important;
-  transform: none !important;
 }
 
 /* Consolidated responsive homepage layout */
@@ -525,7 +448,7 @@ footer,
   overflow: hidden;
   border: 1px solid var(--koluj-border);
   border-radius: 24px;
-  background: #F0F5E8;
+  background: #ECFDF5;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.6);
 }
 .koluj-hero-map .leaflet-container { border-radius: 24px; }
@@ -540,7 +463,7 @@ footer,
 
 .group\/card:hover,
 .koluj-offer-card:hover {
-  border-color: rgba(95, 127, 43, .34) !important;
+  border-color: rgba(22, 163, 74, .34) !important;
   box-shadow: 0 20px 48px rgba(15, 23, 42, .11) !important;
 }
 
@@ -719,18 +642,6 @@ footer,
     max-height: min(620px, calc(100vh - 120px));
     border-radius: 28px;
   }
-}
-
-/* Map cluster brand override */
-.koluj-map-count,
-.marker-cluster,
-.marker-cluster div {
-  background-color: var(--koluj-green) !important;
-  border-color: var(--koluj-green-dark) !important;
-}
-
-.marker-cluster span {
-  color: #fff !important;
 }
 
 @keyframes koluj-loader-spin {

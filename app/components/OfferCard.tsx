@@ -127,7 +127,13 @@ export default function OfferCard({ item, variant = "public", footer }: OfferCar
 
         <div className="absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-3">
           <div className="flex flex-wrap gap-2">
-            <span className={`rounded-full px-3 py-1 text-xs font-black shadow-sm ${isService ? "bg-emerald-50 text-[var(--koluj-green)]" : "bg-white text-[var(--koluj-green)]"}`}>
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-black shadow-sm ${
+                isService
+                  ? "bg-violet-100 text-violet-700"
+                  : "bg-sky-100 text-sky-700"
+              }`}
+            >
               {typeLabel}
             </span>
             <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-[var(--koluj-muted)] shadow-sm">
