@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
-import { useEffect } from "react";
 import imageCompression from "browser-image-compression";
 import RichTextEditor from "@/app/components/RichTextEditor";
 import BackLink from "@/app/components/BackLink";
@@ -44,36 +43,6 @@ type PlaceSuggestion = {
 
 export default function NewItemPage() {
   const router = useRouter();
-
-  useEffect(() => {
-    checkProfile();
-  }, []);
-
-  async function checkProfile() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      router.push("/login");
-      return;
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("full_name, city")
-      .eq("id", user.id)
-      .single();
-
-    const profileComplete =
-      !!profile?.full_name &&
-      !!profile?.city;
-
-    if (!profileComplete) {
-      toast.error("Nejdříve dokonči svůj profil");
-      router.push("/profile");
-    }
-  }
 
   const [loading, setLoading] = useState(false);
   const [photos, setPhotos] = useState<File[]>([]);
