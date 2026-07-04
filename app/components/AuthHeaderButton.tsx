@@ -32,9 +32,9 @@ export default function AuthHeaderButton({ className = "" }: Props) {
   return (
     <Link
       href={isLoggedIn ? "/dashboard" : "/login"}
-      className={className || "koluj-button px-6 py-3"}
+      className={`koluj-header-button ${className}`}
     >
-      {isLoggedIn ? "Můj prostor" : "Přihlášení / registrace"}
+      {isLoggedIn ? "Můj prostor" : "Přihlášení"}
     </Link>
   );
 }

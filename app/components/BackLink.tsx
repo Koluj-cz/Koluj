@@ -13,12 +13,9 @@ export default function BackLink({
   className = "",
 }: BackLinkProps) {
   return (
-    <Link
-      href={href}
-      className={`inline-flex h-[52px] items-center gap-2 border border-[var(--koluj-border)] bg-white px-5 text-sm font-black text-[var(--koluj-green)] hover:border-[var(--koluj-green)] ${className}`}
-    >
+    <Link href={href} className={`koluj-header-button ${className}`}>
       <ArrowLeft size={17} />
-      <span className="leading-none">{children}</span>
+      <span>{children}</span>
     </Link>
   );
 }

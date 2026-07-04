@@ -657,3 +657,22 @@ footer,
 .koluj-loader-ring {
   animation: koluj-loader-spin .9s linear infinite !important;
 }
+
+.koluj-header-button {
+  display: inline-flex;
+  height: 52px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid var(--koluj-border);
+  background: #fff;
+  padding: 0 20px;
+  color: var(--koluj-text);
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+.koluj-header-button:hover {
+  border-color: var(--koluj-green);
+  color: var(--koluj-green);
+}
