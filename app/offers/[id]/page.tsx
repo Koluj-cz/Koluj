@@ -24,6 +24,7 @@ import {
   ShieldCheck,
   Star,
   Eye,
+  Info,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
@@ -361,7 +362,7 @@ export default function ItemDetailPage() {
     <div className="koluj-card p-6 md:p-8">
       <h2 className="text-2xl font-black">Předání</h2>
 
-      <div className="mt-5 grid gap-4 md:grid-cols-2">
+      <div className="mt-5 grid gap-4">
         <InfoLine
           icon={<MapPin size={20} />}
           title={
@@ -443,7 +444,11 @@ export default function ItemDetailPage() {
   const mapCard =
     item.pickup_latitude && item.pickup_longitude ? (
       <div className="koluj-card overflow-hidden p-0">
-        <div className="relative h-[320px] lg:h-[420px]">
+        <div className="border-b border-[var(--koluj-border)] px-5 py-4 md:px-6">
+          <h2 className="text-xl font-black">Lokalita</h2>
+        </div>
+
+        <div className="relative h-[300px] lg:h-[340px]">
           <OffersMap items={mapOffers} userLocation={null} />
         </div>
       </div>
@@ -477,37 +482,101 @@ export default function ItemDetailPage() {
             )}
           </div>
 
-          <div className="mt-8 grid gap-8 xl:grid-cols-[minmax(0,1.05fr)_420px] xl:items-end">
-            <div>
-              <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
-                {item.offer_type === "service"
-                  ? serviceCategoryLabels[item.category] || item.category
-                  : categoryLabels[item.category] || item.category}
-              </p>
+          <div className="mt-8">
+            <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
+              {item.offer_type === "service"
+                ? serviceCategoryLabels[item.category] || item.category
+                : categoryLabels[item.category] || item.category}
+            </p>
 
-              <h1 className="koluj-heading mt-4 max-w-[14ch]">
-                {item.title}
-              </h1>
+            <h1 className="koluj-heading mt-4 max-w-[14ch]">
+              {item.title}
+            </h1>
 
-              <div className="mt-5 flex flex-wrap gap-2 text-sm font-bold text-[var(--koluj-muted)] md:text-base">
+            <div className="mt-5 flex flex-wrap gap-2 text-sm font-bold text-[var(--koluj-muted)] md:text-base">
+              <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5">
+                <Star size={16} className="text-[var(--koluj-green)]" />
+                {ratingText}
+                {ratingCountText && <span>{ratingCountText}</span>}
+              </span>
+
+              {item.condition && (
                 <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5">
-                  <Star size={16} className="text-[var(--koluj-green)]" />
-                  {ratingText}
-                  {ratingCountText && <span>{ratingCountText}</span>}
+                  <ShieldCheck
+                    size={16}
+                    className="text-[var(--koluj-green)]"
+                  />
+                  {conditionLabels[item.condition] || item.condition}
                 </span>
+              )}
+            </div>
+          </div>
+        </section>
 
-                {item.condition && (
-                  <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5">
-                    <ShieldCheck
-                      size={16}
-                      className="text-[var(--koluj-green)]"
+        <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px] lg:gap-8">
+          <div className="space-y-6">
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
+              {selectedImage ? (
+                <div className="koluj-card overflow-hidden p-0">
+                  <div className="relative flex h-[320px] items-center justify-center overflow-hidden bg-[var(--koluj-bg)] md:h-[430px]">
+                    <img
+                      src={selectedImage}
+                      alt=""
+                      aria-hidden="true"
+                      className="absolute inset-0 h-full w-full scale-110 object-cover opacity-25 blur-2xl"
                     />
-                    {conditionLabels[item.condition] || item.condition}
-                  </span>
-                )}
+
+                    <div className="absolute inset-0 bg-white/30" />
+
+                    <img
+                      src={selectedImage}
+                      alt={item.title}
+                      className="relative z-10 h-full max-h-[300px] w-full object-contain p-5 md:max-h-[410px] md:p-8"
+                    />
+                  </div>
+
+                  {images.length > 1 && (
+                    <div className="grid grid-cols-2 gap-3 border-t border-[var(--koluj-border)] bg-white p-4 sm:grid-cols-3 md:grid-cols-4 lg:flex lg:overflow-x-auto">
+                      {images.map((image) => (
+                        <button
+                          key={image.id}
+                          type="button"
+                          onClick={() => setSelectedImage(image.image_url)}
+                          className={`h-20 overflow-hidden rounded-2xl border-2 lg:w-24 lg:shrink-0 ${
+                            selectedImage === image.image_url
+                              ? "border-[var(--koluj-green)]"
+                              : "border-[var(--koluj-border)] opacity-75 hover:opacity-100"
+                          }`}
+                        >
+                          <img
+                            src={image.image_url}
+                            alt=""
+                            className="h-full w-full object-cover"
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : item.offer_type !== "service" ? (
+                <div className="koluj-card flex h-[320px] items-center justify-center text-[var(--koluj-muted)] md:h-[430px]">
+                  Bez fotky
+                </div>
+              ) : null}
+
+              <div className="grid gap-6">
+                <OfferInfoCard item={item} />
+                {ownerCard}
               </div>
             </div>
 
+            <div className="grid gap-6 xl:grid-cols-2">
+              <MetaAndDescriptionCard item={item} />
+              {handoverCard}
+            </div>
+          </div>
+
+          <aside className="flex min-w-0 flex-col gap-5 md:gap-6 xl:sticky xl:top-8 xl:self-start">
             <div className="koluj-card p-5 md:p-6">
               <p className="text-sm font-bold text-[var(--koluj-muted)]">
                 Cena
@@ -537,68 +606,7 @@ export default function ItemDetailPage() {
                 </p>
               )}
             </div>
-          </div>
-        </section>
 
-        <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px] lg:gap-8">
-          <div className="space-y-6">
-            {selectedImage ? (
-              <div className="koluj-card overflow-hidden p-0">
-                <div className="relative flex h-[360px] items-center justify-center overflow-hidden bg-[var(--koluj-bg)] md:h-[560px]">
-                  <img
-                    src={selectedImage}
-                    alt=""
-                    aria-hidden="true"
-                    className="absolute inset-0 h-full w-full scale-110 object-cover opacity-35 blur-2xl"
-                  />
-
-                  <div className="absolute inset-0 bg-white/20" />
-
-                  <img
-                    src={selectedImage}
-                    alt={item.title}
-                    className="relative z-10 h-full max-h-[360px] w-full object-contain p-5 md:max-h-[560px] md:p-8"
-                  />
-                </div>
-
-                {images.length > 1 && (
-                  <div className="flex gap-3 overflow-x-auto border-t border-[var(--koluj-border)] bg-white p-4">
-                    {images.map((image) => (
-                      <button
-                        key={image.id}
-                        type="button"
-                        onClick={() => setSelectedImage(image.image_url)}
-                        className={`h-20 w-24 shrink-0 overflow-hidden rounded-2xl border-2 ${
-                          selectedImage === image.image_url
-                            ? "border-[var(--koluj-green)]"
-                            : "border-transparent opacity-75 hover:opacity-100"
-                        }`}
-                      >
-                        <img
-                          src={image.image_url}
-                          alt=""
-                          className="h-full w-full object-cover"
-                        />
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : item.offer_type !== "service" ? (
-              <div className="koluj-card flex h-[360px] items-center justify-center text-[var(--koluj-muted)] md:h-[520px]">
-                Bez fotky
-              </div>
-            ) : null}
-
-            <div className="grid gap-6 xl:grid-cols-2">
-              <MetaAndDescriptionCard item={item} />
-              {handoverCard}
-            </div>
-
-            {mapCard}
-          </div>
-
-          <aside className="min-w-0 space-y-5 md:space-y-6 xl:sticky xl:top-8 xl:self-start">
             <div className="koluj-card p-5 md:p-6">
               {(!isRequestOnlyService || isOwner) && (
                 <AvailabilityCalendar
@@ -807,13 +815,56 @@ export default function ItemDetailPage() {
               </div>
             </div>
 
-            {ownerCard}
+            <div className="order-last xl:order-none">
+              {mapCard}
+            </div>
           </aside>
         </section>
       </div>
     </main>
   );
+}
 
+function OfferInfoCard({ item }: { item: ItemDetail }) {
+  const isService = item.offer_type === "service";
+
+  return (
+    <div className="koluj-card p-6 md:p-8">
+      <h2 className="text-2xl font-black">O nabídce</h2>
+
+      <div className="mt-5 grid gap-4">
+        <InfoLine
+          icon={<Info size={20} />}
+          title="Kategorie"
+          text={
+            isService
+              ? serviceCategoryLabels[item.category] || item.category
+              : categoryLabels[item.category] || item.category
+          }
+        />
+
+        {item.condition && (
+          <InfoLine
+            icon={<ShieldCheck size={20} />}
+            title="Stav"
+            text={conditionLabels[item.condition] || item.condition}
+          />
+        )}
+
+        <InfoLine
+          icon={<CalendarDays size={20} />}
+          title="Přidáno"
+          text={formatDate(item.created_at)}
+        />
+
+        <InfoLine
+          icon={<Eye size={20} />}
+          title="Zobrazení"
+          text={`${item.views_count || 0}`}
+        />
+      </div>
+    </div>
+  );
 }
 
 function MetaAndDescriptionCard({ item }: { item: ItemDetail }) {
