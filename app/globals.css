@@ -41,7 +41,6 @@ img { max-width: 100%; }
   *, *::before, *::after { scroll-behavior: auto !important; }
 }
 *, *::before, *::after {
-  animation: none !important;
   transition: none !important;
 }
 
@@ -732,4 +731,18 @@ footer,
 
 .marker-cluster span {
   color: #fff !important;
+}
+
+@keyframes koluj-loader-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.koluj-loader-ring {
+  animation: koluj-loader-spin .9s linear infinite !important;
 }
