@@ -1,24 +1,69 @@
+"use client";
+
 import Link from "next/link";
-import { CalendarDays, Home, Plus, Search, User } from "lucide-react";
+import { CalendarDays, Home, Package, Plus, User } from "lucide-react";
+import { usePathname } from "next/navigation";
+
+const navItems = [
+  {
+    href: "/",
+    label: "Domů",
+    icon: Home,
+    match: (pathname: string) => pathname === "/",
+  },
+  {
+    href: "/dashboard/my-offers",
+    label: "Moje předměty",
+    icon: Package,
+    match: (pathname: string) => pathname.startsWith("/dashboard/my-offers"),
+  },
+  {
+    href: "/offers/new",
+    label: "Přidat nabídku",
+    icon: Plus,
+    primary: true,
+    match: (pathname: string) => pathname.startsWith("/offers/new"),
+  },
+  {
+    href: "/dashboard/bookings",
+    label: "Rezervace",
+    icon: CalendarDays,
+    match: (pathname: string) => pathname.startsWith("/dashboard/bookings"),
+  },
+  {
+    href: "/dashboard",
+    label: "Můj prostor",
+    icon: User,
+    match: (pathname: string) =>
+      pathname === "/dashboard" ||
+      pathname.startsWith("/profile") ||
+      pathname.startsWith("/dashboard/notifications") ||
+      pathname.startsWith("/dashboard/availability"),
+  },
+];
 
 export default function BottomNav() {
+  const pathname = usePathname();
+
   return (
     <nav className="koluj-bottom-nav" aria-label="Mobilní navigace">
-      <Link href="/">
-        <Home size={19} />
-      </Link>
-      <Link href="/offers">
-        <Search size={20} />
-      </Link>
-      <Link href="/offers/new" data-primary="true" aria-label="Přidat nabídku">
-        <Plus size={27} />
-      </Link>
-      <Link href="/dashboard/bookings">
-        <CalendarDays size={20} />
-      </Link>
-      <Link href="/dashboard">
-        <User size={20} />
-      </Link>
+      {navItems.map((item) => {
+        const Icon = item.icon;
+        const isActive = item.match(pathname);
+
+        return (
+          <Link
+            key={item.href}
+            href={item.href}
+            aria-label={item.label}
+            title={item.label}
+            data-primary={item.primary ? "true" : undefined}
+            data-active={isActive ? "true" : undefined}
+          >
+            <Icon size={item.primary ? 28 : 21} strokeWidth={item.primary ? 2.4 : 2.2} />
+          </Link>
+        );
+      })}
     </nav>
   );
 }

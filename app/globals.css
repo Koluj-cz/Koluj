@@ -282,8 +282,32 @@ img { max-width: 100%; }
   border: 1px solid var(--koluj-border);
   box-shadow: 0 14px 36px rgba(15,23,42,.14);
 }
-.koluj-bottom-nav a { display:flex; min-height:46px; align-items:center; justify-content:center; border-radius:16px; color:var(--koluj-muted); font-size:12px; font-weight:800; }
-.koluj-bottom-nav a[data-primary="true"] { background:var(--koluj-green); color:#fff; box-shadow:0 10px 20px rgba(22,163,74,.22); }
+.koluj-bottom-nav a {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 16px;
+  color: var(--koluj-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+.koluj-bottom-nav a:hover,
+.koluj-bottom-nav a[data-active="true"] {
+  background: var(--koluj-green-pale);
+  color: var(--koluj-green);
+}
+.koluj-bottom-nav a[data-primary="true"] {
+  min-height: 52px;
+  background: var(--koluj-green);
+  color: #fff;
+  box-shadow: 0 10px 20px rgba(22,163,74,.22);
+}
+.koluj-bottom-nav a[data-primary="true"]:hover,
+.koluj-bottom-nav a[data-primary="true"][data-active="true"] {
+  background: var(--koluj-green-dark);
+  color: #fff;
+}
 @media (min-width: 900px) { .koluj-bottom-nav { display:none; } }
 
 .koluj-home { min-height: 100vh; background: linear-gradient(180deg,#fff 0%,#f8fafc 62%,#f0fdf4 100%); }
