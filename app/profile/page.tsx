@@ -222,8 +222,16 @@ export default function ProfilePage() {
     <main className="koluj-home min-h-screen pb-24 text-[var(--koluj-text)] lg:pb-0">
       <div className="koluj-wide-frame relative z-10">
         <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <BackLink href="/dashboard">Dashboard</BackLink>
+
+            <button
+              type="button"
+              onClick={saveProfile}
+              className="koluj-header-button"
+            >
+              Uložit profil
+            </button>
           </div>
 
           <h1 className="koluj-heading mt-6">Profil</h1>
@@ -232,12 +240,6 @@ export default function ProfilePage() {
             Vyplň základní údaje, aby ostatní věděli, s kým si nabídku předávají.
           </p>
 
-          <button
-            onClick={saveProfile}
-            className="koluj-button mt-7 w-fit min-h-[52px] px-6"
-          >
-            Uložit profil
-          </button>
         </section>
 
         <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">

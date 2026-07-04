@@ -474,7 +474,7 @@ export default function ItemDetailPage() {
                   href={`/offers/${item.id}/edit`}
                   className="koluj-header-button"
                 >
-                  <Edit size={18} />
+                  <Edit size={17} />
                   Upravit nabídku
                 </Link>
               ) : (

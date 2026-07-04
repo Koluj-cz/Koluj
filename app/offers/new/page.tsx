@@ -388,8 +388,18 @@ export default function NewItemPage() {
     <main className="koluj-home min-h-screen pb-24 text-[var(--koluj-text)] lg:pb-0">
       <div className="koluj-wide-frame relative z-10">
         <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             <BackLink href="/dashboard">Dashboard</BackLink>
+
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={loading}
+              className="koluj-header-button disabled:opacity-60"
+            >
+              <Plus size={17} />
+              {loading ? "Ukládám..." : "Přidat nabídku"}
+            </button>
           </div>
 
           <h1 className="koluj-heading mt-6">Přidat nabídku</h1>
@@ -750,16 +760,6 @@ export default function NewItemPage() {
           </aside>
         </section>
       </div>
-    <div className="fixed right-4 top-4 z-50 lg:hidden">
-      <button
-        type="button"
-        onClick={handleSubmit}
-        disabled={loading}
-        className="koluj-button px-6 py-3 shadow-2xl disabled:opacity-60"
-      >
-        {loading ? "Ukládám..." : "Přidat nabídku"}
-      </button>
-    </div>
     </main>
   );
 }
