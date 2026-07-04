@@ -356,18 +356,6 @@ export default function ItemDetailPage() {
   const ownerInitial = ownerName.charAt(0).toUpperCase();
   const isService = item.offer_type === "service";
 
-  const descriptionCard = item.description ? (
-    <div className="koluj-card p-6 md:p-8">
-      <h2 className="text-2xl font-black">Popis</h2>
-
-      <div
-        className="koluj-rich-text mt-3 text-lg leading-relaxed text-[var(--koluj-muted)]"
-        dangerouslySetInnerHTML={{
-          __html: item.description,
-        }}
-      />
-    </div>
-  ) : null;
 
   const handoverCard = (
     <div className="koluj-card p-6 md:p-8">
@@ -478,9 +466,9 @@ export default function ItemDetailPage() {
                   Upravit nabídku
                 </Link>
               ) : (
-              <Link href="/dashboard" className="koluj-header-button">
-                Můj prostor
-              </Link>
+                <Link href="/dashboard" className="koluj-header-button">
+                  Můj prostor
+                </Link>
               )
             ) : (
               <Link href="/login" className="koluj-header-button">
@@ -488,42 +476,74 @@ export default function ItemDetailPage() {
               </Link>
             )}
           </div>
+
+          <div className="mt-8 grid gap-8 xl:grid-cols-[minmax(0,1.05fr)_420px] xl:items-end">
+            <div>
+              <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
+                {item.offer_type === "service"
+                  ? serviceCategoryLabels[item.category] || item.category
+                  : categoryLabels[item.category] || item.category}
+              </p>
+
+              <h1 className="koluj-heading mt-4 max-w-[14ch]">
+                {item.title}
+              </h1>
+
+              <div className="mt-5 flex flex-wrap gap-2 text-sm font-bold text-[var(--koluj-muted)] md:text-base">
+                <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5">
+                  <Star size={16} className="text-[var(--koluj-green)]" />
+                  {ratingText}
+                  {ratingCountText && <span>{ratingCountText}</span>}
+                </span>
+
+                {item.condition && (
+                  <span className="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1.5">
+                    <ShieldCheck
+                      size={16}
+                      className="text-[var(--koluj-green)]"
+                    />
+                    {conditionLabels[item.condition] || item.condition}
+                  </span>
+                )}
+              </div>
+            </div>
+
+            <div className="koluj-card p-5 md:p-6">
+              <p className="text-sm font-bold text-[var(--koluj-muted)]">
+                Cena
+              </p>
+
+              <p className="mt-2 text-4xl font-black tracking-[-0.04em] text-[var(--koluj-ink)]">
+                {item.price_amount ? `${item.price_amount} Kč` : "Dohodou"}
+              </p>
+
+              {item.price_unit && (
+                <p className="mt-1 font-black text-[var(--koluj-green)]">
+                  za {translatePriceUnit(item.price_unit, item.offer_type)}
+                </p>
+              )}
+
+              {!isService &&
+                item.deposit !== null &&
+                item.deposit !== undefined && (
+                  <p className="mt-3 text-sm font-bold text-[var(--koluj-muted)]">
+                    Kauce: {item.deposit} Kč
+                  </p>
+                )}
+
+              {item.price_note && (
+                <p className="mt-4 rounded-2xl border border-[var(--koluj-border)] bg-white px-4 py-3 text-sm text-[var(--koluj-muted)]">
+                  {item.price_note}
+                </p>
+              )}
+            </div>
+          </div>
         </section>
 
-        <section className="mt-6 grid gap-6 md:mt-10 xl:grid-cols-[minmax(0,1fr)_460px] lg:gap-8">
+        <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px] lg:gap-8">
           <div className="space-y-6">
-            <div className="overflow-hidden rounded-[34px] bg-[var(--koluj-surface)] shadow-[0_18px_55px_rgba(31,31,26,0.12)]">
-              <div className="border-b border-[var(--koluj-border)] px-5 py-6 md:px-8 md:py-7">
-                <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
-                  {item.offer_type === "service"
-                    ? serviceCategoryLabels[item.category] || item.category
-                    : categoryLabels[item.category] || item.category}
-                </p>
-
-                <h1 className="mt-4 max-w-4xl text-4xl font-black leading-none tracking-tight md:text-6xl">
-                  {item.title}
-                </h1>
-
-                <div className="mt-5 flex flex-wrap gap-2 text-sm font-bold text-[var(--koluj-muted)] md:text-base">
-                  <span className="inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-3 py-1.5">
-                    <Star size={16} className="text-[var(--koluj-green)]" />
-                    {ratingText}
-                    {ratingCountText && <span>{ratingCountText}</span>}
-                  </span>
-
-                  {item.condition && (
-                    <span className="inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-3 py-1.5">
-                      <ShieldCheck
-                        size={16}
-                        className="text-[var(--koluj-green)]"
-                      />
-                      {conditionLabels[item.condition] || item.condition}
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              {selectedImage ? (
+            {selectedImage ? (
+              <div className="koluj-card overflow-hidden p-0">
                 <div className="relative flex h-[360px] items-center justify-center overflow-hidden bg-[var(--koluj-bg)] md:h-[560px]">
                   <img
                     src={selectedImage}
@@ -540,109 +560,76 @@ export default function ItemDetailPage() {
                     className="relative z-10 h-full max-h-[360px] w-full object-contain p-5 md:max-h-[560px] md:p-8"
                   />
                 </div>
-              ) : item.offer_type !== "service" ? (
-                <div className="relative flex h-[360px] items-center justify-center overflow-hidden bg-[var(--koluj-bg)] md:h-[560px]">
-                  <div className="flex h-full items-center justify-center text-[var(--koluj-muted)]">
-                    Bez fotky
+
+                {images.length > 1 && (
+                  <div className="flex gap-3 overflow-x-auto border-t border-[var(--koluj-border)] bg-white p-4">
+                    {images.map((image) => (
+                      <button
+                        key={image.id}
+                        type="button"
+                        onClick={() => setSelectedImage(image.image_url)}
+                        className={`h-20 w-24 shrink-0 overflow-hidden rounded-2xl border-2 ${
+                          selectedImage === image.image_url
+                            ? "border-[var(--koluj-green)]"
+                            : "border-transparent opacity-75 hover:opacity-100"
+                        }`}
+                      >
+                        <img
+                          src={image.image_url}
+                          alt=""
+                          className="h-full w-full object-cover"
+                        />
+                      </button>
+                    ))}
                   </div>
-                </div>
-              ) : null}
+                )}
+              </div>
+            ) : item.offer_type !== "service" ? (
+              <div className="koluj-card flex h-[360px] items-center justify-center text-[var(--koluj-muted)] md:h-[520px]">
+                Bez fotky
+              </div>
+            ) : null}
 
-              {images.length > 1 && (
-                <div className="flex gap-3 overflow-x-auto border-t border-[var(--koluj-border)] bg-[var(--koluj-surface)] p-4">
-                  {images.map((image) => (
-                    <button
-                      key={image.id}
-                      type="button"
-                      onClick={() => setSelectedImage(image.image_url)}
-                      className={`h-20 w-24 shrink-0 overflow-hidden rounded-2xl border-2 ${
-                        selectedImage === image.image_url
-                          ? "border-[var(--koluj-green)]"
-                          : "border-transparent opacity-75 hover:opacity-100"
-                      }`}
-                    >
-                      <img
-                        src={image.image_url}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            <div className="hidden space-y-6 lg:block">
+            <div className="grid gap-6 xl:grid-cols-2">
               <MetaAndDescriptionCard item={item} />
               {handoverCard}
-              {mapCard}
             </div>
+
+            {mapCard}
           </div>
 
-          <aside className="min-w-0 space-y-5 md:space-y-6">
-            <div className="koluj-card p-5 md:p-8">
-              <div className="rounded-3xl bg-[var(--koluj-bg)] p-5">
-                <p className="text-sm font-bold text-[var(--koluj-muted)]">
-                  Cena
-                </p>
-
-                <p className="mt-2 text-4xl font-black">
-                  {item.price_amount ? `${item.price_amount} Kč` : "Dohodou"}
-                </p>
-
-                {item.price_unit && (
-                  <p className="mt-1 font-bold text-[var(--koluj-green)]">
-                    za {translatePriceUnit(item.price_unit, item.offer_type)}
-                  </p>
-                )}
-
-                {!isService &&
-                  item.deposit !== null &&
-                  item.deposit !== undefined && (
-                    <p className="mt-3 text-sm font-bold text-[var(--koluj-muted)]">
-                      Kauce: {item.deposit} Kč
-                    </p>
-                  )}
-              </div>
-
-              {item.price_note && (
-                <p className="mt-5 rounded-2xl border border-[var(--koluj-border)] p-4 text-sm text-[var(--koluj-muted)]">
-                  {item.price_note}
-                </p>
-              )}
-
+          <aside className="min-w-0 space-y-5 md:space-y-6 xl:sticky xl:top-8 xl:self-start">
+            <div className="koluj-card p-5 md:p-6">
               {(!isRequestOnlyService || isOwner) && (
-                <div className="mt-6">
-                  <AvailabilityCalendar
-                    offerId={item.id}
-                    offerType={isRequestOnlyService ? "item" : item.offer_type}
-                    isOwner={Boolean(isOwner)}
-                    selectedRange={
-                      (!isService || (isRequestOnlyService && Boolean(isOwner))) &&
-                      borrowFrom &&
-                      borrowTo
-                        ? { dateFrom: borrowFrom, dateTo: borrowTo }
-                        : null
-                    }
-                    selectedSlot={
-                      isTimedService && startsAt && endsAt
-                        ? { startsAt, endsAt }
-                        : null
-                    }
-                    onRangeChange={(range) => {
-                      setBorrowFrom(range?.dateFrom || "");
-                      setBorrowTo(range?.dateTo || "");
-                    }}
-                    onSlotChange={(slot) => {
-                      setStartsAt(slot?.startsAt || "");
-                      setEndsAt(slot?.endsAt || "");
-                    }}
-                  />
-                </div>
+                <AvailabilityCalendar
+                  offerId={item.id}
+                  offerType={isRequestOnlyService ? "item" : item.offer_type}
+                  isOwner={Boolean(isOwner)}
+                  selectedRange={
+                    (!isService || (isRequestOnlyService && Boolean(isOwner))) &&
+                    borrowFrom &&
+                    borrowTo
+                      ? { dateFrom: borrowFrom, dateTo: borrowTo }
+                      : null
+                  }
+                  selectedSlot={
+                    isTimedService && startsAt && endsAt
+                      ? { startsAt, endsAt }
+                      : null
+                  }
+                  onRangeChange={(range) => {
+                    setBorrowFrom(range?.dateFrom || "");
+                    setBorrowTo(range?.dateTo || "");
+                  }}
+                  onSlotChange={(slot) => {
+                    setStartsAt(slot?.startsAt || "");
+                    setEndsAt(slot?.endsAt || "");
+                  }}
+                />
               )}
 
               {isRequestOnlyService && !isOwner && (
-                <div className="mt-6 rounded-3xl bg-[var(--koluj-bg)] p-5">
+                <div className="rounded-3xl bg-[var(--koluj-bg)] p-5">
                   <p className="font-black">Dostupnost</p>
 
                   {isRequestOnlyUnavailable && activeRequestOnlyBlock ? (
@@ -744,16 +731,6 @@ export default function ItemDetailPage() {
                 )}
               </div>
 
-              {isOwner && (
-                <Link
-                  href={`/offers/${item.id}/edit`}
-                  className="koluj-button mt-6 flex w-full items-center justify-center gap-2 px-6 py-4"
-                >
-                  <Edit size={18} />
-                  Upravit vlastní nabídku
-                </Link>
-              )}
-
               {!isOwner && (
                 <>
                   <div className="mt-6 grid gap-3">
@@ -809,6 +786,16 @@ export default function ItemDetailPage() {
                 </>
               )}
 
+              {isOwner && (
+                <Link
+                  href={`/offers/${item.id}/edit`}
+                  className="koluj-button mt-6 flex w-full items-center justify-center gap-2 px-6 py-4"
+                >
+                  <Edit size={18} />
+                  Upravit vlastní nabídku
+                </Link>
+              )}
+
               <div className="mt-6 flex gap-3 rounded-2xl bg-[var(--koluj-bg)] p-4 text-sm font-bold text-[var(--koluj-muted)]">
                 <ShieldCheck
                   size={20}
@@ -820,19 +807,13 @@ export default function ItemDetailPage() {
               </div>
             </div>
 
-            <div className="hidden lg:block">{ownerCard}</div>
+            {ownerCard}
           </aside>
         </section>
-
-        <div className="mt-6 space-y-6 lg:hidden">
-          <MetaAndDescriptionCard item={item} />
-          {handoverCard}
-          {ownerCard}
-          {mapCard}
-        </div>
       </div>
     </main>
   );
+
 }
 
 function MetaAndDescriptionCard({ item }: { item: ItemDetail }) {
