@@ -13,8 +13,6 @@ import {
 import toast from "react-hot-toast";
 import { supabase } from "@/lib/supabase";
 import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
-import AddOfferButton from "@/app/components/AddOfferButton";
-import BackLink from "@/app/components/BackLink";
 import PageLoader from "@/app/components/PageLoader";
 import OfferSearchFilters from "@/app/components/OfferSearchFilters";
 import {
@@ -281,27 +279,21 @@ export default function MyOffersPage() {
   }
 
   return (
-    <main className="min-h-screen">
-      <div className="koluj-shell-wide">
-        <header className="koluj-page-header">
-          <div className="flex items-center gap-3"><Link href="/" className="koluj-logo" aria-label="Koluj domů"><span className="koluj-logo-mark">K</span><span>Koluj</span></Link>
-            <BackLink href="/dashboard" className="hidden lg:inline-flex">Dashboard</BackLink>
-          </div>
+    <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
+      <div className="koluj-wide-frame relative z-10">
+        <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
+          <p className="koluj-pill w-fit bg-[var(--koluj-green-pale)] text-[var(--koluj-green)]">
+            Můj prostor
+          </p>
 
-          <AddOfferButton
-            className="koluj-button flex items-center gap-2 px-6 py-3"
-          />
-        </header>
+          <h1 className="koluj-heading mt-6">Moje nabídky</h1>
 
-        <section className="mt-12">
-          <h1 className="koluj-heading">Moje nabídky</h1>
-
-          <p className="mt-6 max-w-2xl text-2xl leading-relaxed text-[var(--koluj-muted)]">
+          <p className="mt-5 max-w-2xl text-lg leading-relaxed text-[var(--koluj-muted)] md:text-xl">
             Spravuj své nabídky, sleduj jejich stav a rezervace.
           </p>
         </section>
 
-        <section className="mt-12">
+        <section className="mt-6">
           <OfferSearchFilters
             search={searchQuery}
             onSearchChange={setSearchQuery}
@@ -367,7 +359,7 @@ export default function MyOffersPage() {
               </p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4 2xl:grid-cols-5">
+            <div className="koluj-offer-grid-wide">
               {visibleOffers.map((item) => {
 
                 return (
@@ -444,7 +436,7 @@ export default function MyOffersPage() {
             <div className="pt-8 text-center">
               <button
                 onClick={() => setVisibleCount((prev) => prev + 8)}
-                className="rounded-2xl border border-[var(--koluj-border)] bg-[var(--koluj-surface)] px-8 py-4 font-bold hover:bg-[var(--koluj-bg)]"
+                className="koluj-button-secondary min-h-[52px] px-8"
               >
                 Načíst další
               </button>

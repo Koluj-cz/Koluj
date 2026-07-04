@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { CalendarDays } from "lucide-react";
-import BackLink from "@/app/components/BackLink";
 import { supabase } from "@/lib/supabase";
 import PageLoader from "@/app/components/PageLoader";
 import {
@@ -121,21 +120,21 @@ export default function BookingsPage() {
   }, [lending, filter]);
 
   return (
-    <main className="min-h-screen">
-      <div className="koluj-shell-wide">
-        <header className="mb-10">
-          <BackLink href="/dashboard">Dashboard</BackLink>
-        </header>
+    <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
+      <div className="koluj-wide-frame relative z-10">
+        <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
+          <p className="koluj-pill w-fit bg-[var(--koluj-green-pale)] text-[var(--koluj-green)]">
+            Můj prostor
+          </p>
 
-        <div>
-          <h1 className="koluj-heading">Rezervace</h1>
+          <h1 className="koluj-heading mt-6">Rezervace</h1>
 
-          <p className="mt-4 text-lg text-[var(--koluj-muted)]">
+          <p className="mt-5 max-w-2xl text-lg leading-relaxed text-[var(--koluj-muted)] md:text-xl">
             Přehled nabídek, které si rezervuješ nebo rezervuješ ostatním.
           </p>
-        </div>
+        </section>
 
-        <section className="koluj-card mt-10 p-4">
+        <section className="koluj-card mt-6 p-4">
           <div className="flex flex-wrap gap-2">
             {(Object.keys(bookingStatusLabels) as BookingStatus[]).map((status) => (
               <button
@@ -185,7 +184,7 @@ export default function BookingsPage() {
         {loading ? (
           <PageLoader />
         ) : (
-          <div className="mt-8 grid gap-8 lg:mt-10 xl:grid-cols-3">
+          <div className="mt-8 grid gap-6 lg:mt-10 xl:grid-cols-2">
             <section
               className={
                 mobileMode === "borrowing" ? "block" : "hidden lg:block"
@@ -289,7 +288,7 @@ function BookingCard({
   return (
     <Link
       href={`/dashboard/bookings/${booking.id}`}
-      className="koluj-card block p-4"
+      className="koluj-card block p-4 hover:border-[var(--koluj-green)]"
     >
       <div className="flex gap-4">
         <div className="h-24 w-24 shrink-0 overflow-hidden rounded-2xl bg-[var(--koluj-bg)]">

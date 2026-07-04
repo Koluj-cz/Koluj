@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Mail, MapPin, Phone, User } from "lucide-react";
-import BackLink from "@/app/components/BackLink";
 import { supabase } from "@/lib/supabase";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
@@ -219,30 +218,28 @@ export default function ProfilePage() {
     /iPad|iPhone|iPod/.test(navigator.userAgent);
 
   return (
-    <main className="min-h-screen pb-24 lg:pb-0">
-      <div className="koluj-shell-wide">
-        <header className="mb-8 flex items-center justify-between">
-          <BackLink href="/dashboard">Dashboard</BackLink>
+    <main className="koluj-home min-h-screen pb-24 text-[var(--koluj-text)] lg:pb-0">
+      <div className="koluj-wide-frame relative z-10">
+        <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
+          <p className="koluj-pill w-fit bg-[var(--koluj-green-pale)] text-[var(--koluj-green)]">
+            Můj prostor
+          </p>
+
+          <h1 className="koluj-heading mt-6">Profil</h1>
+
+          <p className="mt-5 max-w-2xl text-lg leading-relaxed text-[var(--koluj-muted)] md:text-xl">
+            Vyplň základní údaje, aby ostatní věděli, s kým si nabídku předávají.
+          </p>
 
           <button
             onClick={saveProfile}
-            className="hidden lg:block koluj-button px-6 py-3"
+            className="koluj-button mt-7 w-fit min-h-[52px] px-6"
           >
             Uložit profil
           </button>
-        </header>
-
-        <section className="mt-10 px-0 md:mt-16 md:px-8">
-          <h1 className="koluj-heading">
-            Profil
-          </h1>
-
-          <p className="mt-4 max-w-2xl text-lg leading-relaxed text-[var(--koluj-muted)] md:mt-6 md:text-2xl">
-            Vyplň základní údaje, aby ostatní věděli, s kým si nabídku předávají.
-          </p>
         </section>
 
-        <section className="mt-10 grid gap-6 px-0 md:mt-14 md:px-0 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
           <div className="space-y-8">
             <div className="koluj-card p-5 md:p-8">
               <SectionTitle icon={<Mail size={24} />} title="Přihlášení" />
@@ -470,15 +467,7 @@ export default function ProfilePage() {
           </aside>
         </section>
       </div>
-      <div className="fixed right-4 top-4 z-50 lg:hidden">
-        <button
-          type="button"
-          onClick={saveProfile}
-          className="koluj-button px-6 py-3 shadow-2xl"
-        >
-          Uložit profil
-        </button>
-      </div>
+
     </main>
   );
 }

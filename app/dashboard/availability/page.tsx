@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import {
   Check,
   ChevronLeft,
@@ -10,7 +9,6 @@ import {
   X,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import BackLink from "@/app/components/BackLink";
 import PageLoader from "@/app/components/PageLoader";
 import { supabase } from "@/lib/supabase";
 
@@ -420,28 +418,22 @@ export default function DashboardAvailabilityPage() {
   }
 
   return (
-    <main className="min-h-screen">
-      <div className="koluj-shell-wide">
-        <header className="koluj-page-header">
-          <div className="flex items-center gap-3"><Link href="/" className="koluj-logo" aria-label="Koluj domů"><span className="koluj-logo-mark">K</span><span>Koluj</span></Link>
-            <BackLink href="/dashboard" className="hidden lg:inline-flex">Dashboard</BackLink>
-          </div>
+    <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
+      <div className="koluj-wide-frame relative z-10">
+        <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
+          <p className="koluj-pill w-fit bg-[var(--koluj-green-pale)] text-[var(--koluj-green)]">
+            Můj prostor
+          </p>
 
-          <Link href="/dashboard/my-offers" className="koluj-button px-6 py-3">
-            Moje nabídky
-          </Link>
-        </header>
+          <h1 className="koluj-heading mt-6">Dostupnost</h1>
 
-        <section className="mt-12 px-2 md:px-0">
-          <h1 className="koluj-heading">Dostupnost</h1>
-
-          <p className="mt-6 max-w-3xl text-2xl leading-relaxed text-[var(--koluj-muted)]">
+          <p className="mt-5 max-w-3xl text-lg leading-relaxed text-[var(--koluj-muted)] md:text-xl">
             Spravuj dostupnost všech nabídek v jednom kalendáři. Vyber termín,
             zvol nabídky a ulož blokaci.
           </p>
         </section>
 
-        <section className="mt-12 grid gap-8 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
           <div className="koluj-card overflow-hidden p-0">
             <div className="flex flex-col gap-4 border-b border-[var(--koluj-border)] p-5 md:flex-row md:items-center md:justify-between md:p-6">
               <div className="flex items-center gap-3">

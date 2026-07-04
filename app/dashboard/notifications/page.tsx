@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Bell } from "lucide-react";
-import BackLink from "@/app/components/BackLink";
 import { supabase } from "@/lib/supabase";
 import PageLoader from "@/app/components/PageLoader";
 
@@ -78,20 +77,22 @@ export default function NotificationsPage() {
   }
 
   return (
-    <main className="min-h-screen">
-      <div className="koluj-shell-wide">
-        <header className="mb-10">
-          <BackLink href="/dashboard">Dashboard</BackLink>
-        </header>
+    <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
+      <div className="koluj-wide-frame relative z-10">
+        <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
+          <p className="koluj-pill w-fit bg-[var(--koluj-green-pale)] text-[var(--koluj-green)]">
+            Můj prostor
+          </p>
 
-        <div className="flex items-center gap-3">
-          <Bell size={32} />
-          <h1 className="koluj-heading">Notifikace</h1>
-        </div>
+          <div className="mt-6 flex items-center gap-3">
+            <Bell size={32} />
+            <h1 className="koluj-heading">Notifikace</h1>
+          </div>
 
-        <p className="mt-4 text-[var(--koluj-muted)]">
-          Zobrazeno {notifications.length} z {totalCount}
-        </p>
+          <p className="mt-5 text-lg leading-relaxed text-[var(--koluj-muted)] md:text-xl">
+            Zobrazeno {notifications.length} z {totalCount}
+          </p>
+        </section>
 
         {loading ? (
           <PageLoader />
@@ -108,7 +109,7 @@ export default function NotificationsPage() {
               return (
                 <div
                   key={notification.id}
-                  className="koluj-card p-5"
+                  className="koluj-card p-5 hover:border-[var(--koluj-green)]"
                 >
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex gap-4">
