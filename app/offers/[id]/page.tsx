@@ -481,7 +481,7 @@ export default function ItemDetailPage() {
                   Upravit nabídku
                 </Link>
               ) : (
-              <Link href="/dashboard" className="koluj-header-button">
+              <Link href="/dashboard" prefetch={false} className="koluj-header-button">
                 Můj prostor
               </Link>
               )

@@ -386,6 +386,7 @@ export default function HomePage() {
 
                   <Link
                     href="/offers/new"
+                    prefetch={false}
                     className="koluj-button flex h-[52px] w-[52px] shrink-0 items-center justify-center p-0"
                     aria-label="Přidat nabídku"
                     title="Přidat nabídku"
