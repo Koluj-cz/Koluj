@@ -13,7 +13,6 @@ import {
   Plus,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { supabase } from "@/lib/supabase";
 import imageCompression from "browser-image-compression";
 import RichTextEditor from "@/app/components/RichTextEditor";
 import PageLoader from "@/app/components/PageLoader";
@@ -98,14 +97,22 @@ export default function EditItemPage() {
   }
 
   async function loadItem() {
-    const { data, error } = await supabase
-      .from("offers")
-      .select("*")
-      .eq("id", offerId)
-      .single();
+    const response = await fetch(`/api/offers/${offerId}`, {
+      cache: "no-store",
+    });
 
-    if (error || !data) {
-      toast.error("Nabídku se nepodařilo načíst");
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok || !result?.item) {
+      toast.error(result?.error || "Nabídku se nepodařilo načíst");
+      router.push("/dashboard/my-offers");
+      return;
+    }
+
+    const data = result.item;
+
+    if (data.owner_id !== result.currentUserId) {
+      toast.error("Tuhle nabídku může upravit pouze vlastník");
       router.push("/dashboard/my-offers");
       return;
     }
@@ -139,17 +146,11 @@ export default function EditItemPage() {
       is_active: data.is_active ?? true,
     });
 
-    
     setPrimaryImageUrl(data.primary_image_url || "");
-
-    const { data: imageData } = await supabase
-    .from("offer_images")
-    .select("*")
-    .eq("offer_id", offerId)
-    .order("sort_order");
-    setImages(imageData || []);
+    setImages(result.images || []);
     setLoading(false);
   }
+
 
   async function searchPlaces(value: string) {
     setForm({

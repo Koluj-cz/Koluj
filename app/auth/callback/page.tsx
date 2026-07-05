@@ -16,7 +16,7 @@ export default function AuthCallbackPage() {
         const { error } = await supabase.auth.exchangeCodeForSession(code);
 
         if (error) {
-          window.location.href = "/login";
+          window.location.replace("/login");
           return;
         }
       }
@@ -26,39 +26,23 @@ export default function AuthCallbackPage() {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        window.location.href = "/login";
+        window.location.replace("/login");
         return;
       }
 
-      await supabase.from("profiles").upsert(
-        {
-          id: user.id,
-          email: user.email,
-        },
-        {
-          onConflict: "id",
-        }
-      );
+      const profileResponse = await fetch("/api/auth/ensure-profile", {
+        method: "POST",
+      });
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("full_name, city, latitude, longitude")
-        .eq("id", user.id)
-        .single();
+      const profileResult = await profileResponse.json().catch(() => null);
+      const profileComplete = Boolean(profileResponse.ok && profileResult?.profileComplete);
 
-      const profileComplete = Boolean(
-        profile?.full_name &&
-          profile?.city &&
-          profile?.latitude &&
-          profile?.longitude
-      );
-
-      if (redirectTo) {
-        window.location.href = redirectTo;
+      if (redirectTo && redirectTo.startsWith("/") && !redirectTo.startsWith("//")) {
+        window.location.replace(redirectTo);
         return;
       }
 
-      window.location.href = profileComplete ? "/dashboard" : "/profile";
+      window.location.replace(profileComplete ? "/dashboard" : "/profile");
     }
 
     handleCallback();

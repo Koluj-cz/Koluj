@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { Bell, X } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import { formatDateTime } from "@/lib/format";
 
 type Notification = {
@@ -59,46 +58,23 @@ export default function NotificationBell() {
   async function loadNotifications(markAsRead: boolean) {
     setLoading(true);
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const response = await fetch(
+      `/api/notifications${markAsRead ? "?markAsRead=true" : ""}`,
+      { cache: "no-store" },
+    );
 
-    if (!user) {
+    if (!response.ok) {
+      setNotifications([]);
+      setUnreadCount(0);
       setLoading(false);
       return;
     }
 
-    const { data } = await supabase
-      .from("notifications")
-      .select(`
-        *,
-        actor:profiles!notifications_actor_id_fkey (
-          full_name,
-          avatar_url
-        )
-      `)
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(LIMIT);
-
-    const loadedNotifications = (data || []) as unknown as Notification[];
+    const result = await response.json().catch(() => null);
+    const loadedNotifications = (result?.notifications || []) as Notification[];
 
     setNotifications(loadedNotifications);
-    setUnreadCount(loadedNotifications.filter((notification) => !notification.is_read).length);
-
-    if (markAsRead) {
-      await supabase
-        .from("notifications")
-        .update({ is_read: true })
-        .eq("user_id", user.id)
-        .eq("is_read", false);
-
-      setUnreadCount(0);
-      setNotifications((current) =>
-        current.map((notification) => ({ ...notification, is_read: true }))
-      );
-    }
-
+    setUnreadCount(Number(result?.unreadCount || 0));
     setLoading(false);
   }
 

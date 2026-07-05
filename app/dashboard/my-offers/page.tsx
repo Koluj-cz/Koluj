@@ -11,7 +11,6 @@ import {
   Trash2,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { supabase } from "@/lib/supabase";
 import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
 import PageLoader from "@/app/components/PageLoader";
 import OfferSearchFilters from "@/app/components/OfferSearchFilters";
@@ -48,48 +47,6 @@ function getCategoryOptions(offerType: string) {
   };
 }
 
-async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
-  if (items.length === 0) return items as (T & { is_reserved_today: boolean })[];
-
-  const today = new Date().toISOString().split("T")[0];
-  const offerIds = items.map((item) => item.id);
-
-  const [reservationsResult, blocksResult] = await Promise.all([
-    supabase
-      .from("offer_reservations")
-      .select("offer_id")
-      .in("offer_id", offerIds)
-      .eq("status", "active")
-      .lte("date_from", today)
-      .gte("date_to", today),
-    supabase
-      .from("offer_availability_blocks")
-      .select("offer_id")
-      .in("offer_id", offerIds)
-      .lte("date_from", today)
-      .gte("date_to", today),
-  ]);
-
-  if (reservationsResult.error) {
-    console.error("Reservations availability error:", reservationsResult.error);
-  }
-
-  if (blocksResult.error) {
-    console.error("Blocks availability error:", blocksResult.error);
-  }
-
-  const reservedIds = new Set([
-    ...(reservationsResult.data || []).map((row) => row.offer_id),
-    ...(blocksResult.data || []).map((row) => row.offer_id),
-  ]);
-
-  return items.map((item) => ({
-    ...item,
-    is_reserved_today: reservedIds.has(item.id),
-  }));
-}
-
-
 type Offer = OfferCardOffer & {
   is_active: boolean;
   deleted_at: string | null;
@@ -116,52 +73,41 @@ export default function MyOffersPage() {
   }, [searchQuery, offerType, category, statusFilter, sortBy]);
 
   async function loadOffers() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const response = await fetch("/api/dashboard/my-offers", {
+      cache: "no-store",
+    });
 
-    if (!user) {
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      toast.error(result?.error || "Nabídky se nepodařilo načíst");
       setLoading(false);
       return;
     }
 
-    const { data, error } = await supabase
-      .from("offers")
-      .select(`
-        *,
-        bookings:bookings!bookings_offer_id_fkey (
-          id,
-          owner_earnings
-        )
-      `)
-      .eq("owner_id", user.id)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      toast.error(error.message);
-      setLoading(false);
-      return;
-    }
-
-    const itemsWithAvailability = await attachTodayAvailability(
-      ((data || []) as Offer[])
-    );
-
-    setItems(itemsWithAvailability);
+    setItems((result?.offers || []) as Offer[]);
     setLoading(false);
   }
+
 
   async function toggleVisibility(item: Offer) {
     const nextValue = !item.is_active;
 
-    const { error } = await supabase
-      .from("offers")
-      .update({ is_active: nextValue })
-      .eq("id", item.id);
+    const response = await fetch("/api/dashboard/my-offers", {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        offerId: item.id,
+        isActive: nextValue,
+      }),
+    });
 
-    if (error) {
-      toast.error(error.message);
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      toast.error(result?.error || "Nabídku se nepodařilo upravit");
       return;
     }
 
@@ -175,6 +121,7 @@ export default function MyOffersPage() {
 
     toast.success(nextValue ? "Nabídka je znovu viditelná" : "Nabídka je skrytá");
   }
+
 
   async function archiveOffer(item: Offer) {
     if (pendingDeleteId !== item.id) {

@@ -11,7 +11,6 @@ import {
   Plus,
   User,
 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import RestoreAccountOnLogin from "@/app/components/RestoreAccountOnLogin";
 import BackLink from "@/app/components/BackLink";
 import NotificationBell from "@/app/components/NotificationBell";
@@ -26,25 +25,16 @@ export default function DashboardPage() {
   }, []);
 
   async function loadProfile() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const response = await fetch("/api/me", { cache: "no-store" });
+    const result = await response.json().catch(() => null);
 
-    if (!user) {
+    if (!response.ok) {
       setLoadingProfile(false);
       return;
     }
 
-    const { data } = await supabase
-      .from("profiles")
-      .select("full_name, city, latitude, longitude")
-      .eq("id", user.id)
-      .single();
-
-    setFullName(data?.full_name || "");
-    setProfileComplete(
-      Boolean(data?.full_name && data?.city && data?.latitude && data?.longitude)
-    );
+    setFullName(result?.profile?.full_name || "");
+    setProfileComplete(Boolean(result?.profileComplete));
     setLoadingProfile(false);
   }
 
@@ -85,7 +75,7 @@ export default function DashboardPage() {
               </p>
 
               {!loadingProfile && !profileComplete && (
-                <Link href="/profile" className="koluj-button mt-6 w-fit min-h-[52px] px-6">
+                <Link href="/profile" prefetch={false} className="koluj-button mt-6 w-fit min-h-[52px] px-6">
                   Dokončit profil <ArrowRight size={18} />
                 </Link>
               )}
@@ -183,6 +173,7 @@ function DashboardCard({
   return (
     <Link
       href={href}
+      prefetch={href.startsWith("/dashboard") || href.startsWith("/profile") || href.startsWith("/offers/new") ? false : undefined}
       className={`koluj-card group flex min-h-[210px] flex-col justify-between overflow-hidden p-6 hover:border-[var(--koluj-green)] md:p-8 ${
         featured ? "bg-gradient-to-br from-white to-[var(--koluj-green-pale)]" : ""
       }`}

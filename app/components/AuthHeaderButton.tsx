@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { supabase } from "@/lib/supabase";
 
 type Props = {
   className?: string;
@@ -14,11 +13,8 @@ export default function AuthHeaderButton({ className = "" }: Props) {
 
   useEffect(() => {
     async function loadUser() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      setIsLoggedIn(!!user);
+      const response = await fetch("/api/me", { cache: "no-store" });
+      setIsLoggedIn(response.ok);
       setLoading(false);
     }
 
@@ -32,6 +28,7 @@ export default function AuthHeaderButton({ className = "" }: Props) {
   return (
     <Link
       href={isLoggedIn ? "/dashboard" : "/login"}
+      prefetch={false}
       className={`koluj-header-button ${className}`}
     >
       {isLoggedIn ? "Můj prostor" : "Přihlášení"}

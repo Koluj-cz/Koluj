@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { MapPin, ShieldCheck, Star } from "lucide-react";
 import BackLink from "@/app/components/BackLink";
-import { supabase } from "@/lib/supabase";
 import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
 import { useParams } from "next/navigation";
 import AuthHeaderButton from "@/app/components/AuthHeaderButton";
@@ -136,66 +135,24 @@ export default function UserProfilePage() {
   }, [items, offerSearch, offerType, category, sortBy]);
 
   async function loadProfile() {
-    const { data: profileData, error: profileError } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
+    const response = await fetch(`/api/users/${userId}`, {
+      cache: "no-store",
+    });
 
-    if (profileError || !profileData) {
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok || !result?.profile) {
       setLoading(false);
       return;
     }
 
-    const { data: ratingData } = await supabase
-      .from("profile_ratings")
-      .select("rating_avg, rating_count")
-      .eq("profile_id", userId)
-      .maybeSingle();
-
-    const { data: reviewsData } = await supabase
-      .from("reviews")
-      .select(`
-        id,
-        rating,
-        comment,
-        created_at,
-        reviewer:profiles!reviews_reviewer_id_fkey (
-          full_name,
-          avatar_url
-        ),
-        offers:offers (
-          title
-        )
-      `)
-      .eq("reviewed_user_id", userId)
-      .order("created_at", { ascending: false });
-
-    const { data: itemsData } = await supabase
-      .from("offers")
-      .select(`
-        *,
-        profiles:profiles!offers_owner_id_fkey (
-          full_name,
-          avatar_url,
-          is_verified,
-          profile_ratings (
-            rating_avg,
-            rating_count
-          )
-        )
-      `)
-      .eq("owner_id", userId)
-      .eq("is_active", true)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false });
-
-    setProfile(profileData as Profile);
-    setRating(ratingData || null);
-    setReviews((reviewsData || []) as unknown as Review[]);
-    setItems((itemsData || []) as OfferCardOffer[]);
+    setProfile(result.profile as Profile);
+    setRating(result.rating || null);
+    setReviews((result.reviews || []) as unknown as Review[]);
+    setItems((result.offers || []) as OfferCardOffer[]);
     setLoading(false);
   }
+
 
   if (loading) {
     return (

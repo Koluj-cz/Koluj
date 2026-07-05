@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { CalendarDays } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import PageLoader from "@/app/components/PageLoader";
 import {
   bookingStatusLabels,
@@ -60,53 +59,29 @@ export default function BookingsPage() {
   }, [borrowingPage, lendingPage]);
 
   async function loadBookings() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const params = new URLSearchParams({
+      borrowingPage: String(borrowingPage),
+      lendingPage: String(lendingPage),
+    });
 
-    if (!user) {
+    const response = await fetch(`/api/dashboard/bookings?${params.toString()}`, {
+      cache: "no-store",
+    });
+
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok) {
       setLoading(false);
       return;
     }
 
-    const selectQuery = `
-      *,
-      offers:offers (
-        id,
-        title,
-        primary_image_url
-      ),
-      owner:profiles!bookings_owner_id_fkey (
-        full_name
-      ),
-      customer:profiles!bookings_customer_id_fkey (
-        full_name
-      )
-    `;
-
-    const borrowingQuery = supabase
-      .from("bookings")
-      .select(selectQuery, { count: "exact" })
-      .eq("customer_id", user.id)
-      .order("created_at", { ascending: false })
-      .range(0, borrowingPage * PAGE_SIZE - 1);
-
-    const lendingQuery = supabase
-      .from("bookings")
-      .select(selectQuery, { count: "exact" })
-      .eq("owner_id", user.id)
-      .order("created_at", { ascending: false })
-      .range(0, lendingPage * PAGE_SIZE - 1);
-
-    const { data: borrowingData, count: borrowingCount } = await borrowingQuery;
-    const { data: lendingData, count: lendingCount } = await lendingQuery;
-
-    setBorrowing((borrowingData || []) as Booking[]);
-    setLending((lendingData || []) as Booking[]);
-    setBorrowingTotal(borrowingCount || 0);
-    setLendingTotal(lendingCount || 0);
+    setBorrowing((result?.borrowing || []) as Booking[]);
+    setLending((result?.lending || []) as Booking[]);
+    setBorrowingTotal(Number(result?.borrowingTotal || 0));
+    setLendingTotal(Number(result?.lendingTotal || 0));
     setLoading(false);
   }
+
 
   const filteredBorrowing = useMemo(() => {
     if (filter === "all") return borrowing;

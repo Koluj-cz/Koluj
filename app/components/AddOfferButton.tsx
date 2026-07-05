@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Lock, Plus } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 
 type Props = {
   variant?: "button" | "card";
@@ -17,24 +16,14 @@ export default function AddOfferButton({
   const [profileComplete, setProfileComplete] = useState(false);
 
   useEffect(() => {
-    loadProfile();
+    async function loadProfileState() {
+      const response = await fetch("/api/me", { cache: "no-store" });
+      const result = await response.json().catch(() => null);
+      setProfileComplete(Boolean(response.ok && result?.profileComplete));
+    }
+
+    loadProfileState();
   }, []);
-
-  async function loadProfile() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) return;
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("full_name, city")
-      .eq("id", user.id)
-      .single();
-
-    setProfileComplete(!!profile?.full_name && !!profile?.city);
-  }
 
   const href = profileComplete ? "/offers/new" : "/profile";
   const icon = profileComplete ? <Plus size={18} /> : <Lock size={18} />;
@@ -42,7 +31,7 @@ export default function AddOfferButton({
 
   if (variant === "card") {
     return (
-      <Link href={href} className={className}>
+      <Link href={href} prefetch={false} className={className}>
         {icon}
         <span>{label}</span>
       </Link>
@@ -50,7 +39,7 @@ export default function AddOfferButton({
   }
 
   return (
-    <Link href={href} className={className}>
+    <Link href={href} prefetch={false} className={className}>
       {icon}
       {label}
     </Link>

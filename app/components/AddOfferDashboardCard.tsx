@@ -3,44 +3,28 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Lock, Plus } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 
 export default function AddOfferDashboardCard() {
   const [profileComplete, setProfileComplete] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    loadProfile();
-  }, []);
-
-  async function loadProfile() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
+    async function loadProfileState() {
+      const response = await fetch("/api/me", { cache: "no-store" });
+      const result = await response.json().catch(() => null);
+      setProfileComplete(Boolean(response.ok && result?.profileComplete));
       setLoading(false);
-      return;
     }
 
-    const { data } = await supabase
-      .from("profiles")
-      .select("full_name, city, latitude, longitude")
-      .eq("id", user.id)
-      .single();
-
-    setProfileComplete(
-      Boolean(data?.full_name && data?.city && data?.latitude && data?.longitude)
-    );
-
-    setLoading(false);
-  }
+    loadProfileState();
+  }, []);
 
   const href = profileComplete ? "/offers/new" : "/profile";
 
   return (
     <Link
       href={href}
+      prefetch={false}
       className={`koluj-card group relative overflow-hidden p-8 ${
         !profileComplete && !loading
           ? "opacity-55 grayscale hover:translate-y-0"

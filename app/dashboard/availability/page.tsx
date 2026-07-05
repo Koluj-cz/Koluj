@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import PageLoader from "@/app/components/PageLoader";
-import { supabase } from "@/lib/supabase";
 import BackLink from "@/app/components/BackLink";
 
 type OwnerItem = {
@@ -170,74 +169,53 @@ export default function DashboardAvailabilityPage() {
   }, [items, firstVisibleDate, lastVisibleDate]);
 
   async function loadItems() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const params = new URLSearchParams({
+      dateFrom: firstVisibleDate,
+      dateTo: lastVisibleDate,
+    });
 
-    if (!user) {
+    const response = await fetch(`/api/dashboard/availability?${params.toString()}`, {
+      cache: "no-store",
+    });
+
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      toast.error(result?.error || "Dostupnost se nepodařilo načíst");
       setLoading(false);
       return;
     }
 
-    const { data, error } = await supabase
-      .from("offers")
-      .select("id, title, primary_image_url, is_active")
-      .eq("owner_id", user.id)
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false });
-
-    if (error) {
-      toast.error(error.message);
-      setLoading(false);
-      return;
-    }
-
-    const loadedItems = (data || []) as OwnerItem[];
-
+    const loadedItems = (result?.items || []) as OwnerItem[];
     setItems(loadedItems);
     setSelectedItemIds(loadedItems.map((item) => item.id));
+    setBlocks((result?.blocks || []) as unknown as OwnerBlock[]);
+    setReservations((result?.reservations || []) as unknown as OwnerReservation[]);
     setLoading(false);
   }
 
-  async function loadAvailability() {
-    const offerIds = items.map((item) => item.id);
 
-    if (offerIds.length === 0) {
-      setBlocks([]);
-      setReservations([]);
+  async function loadAvailability() {
+    const params = new URLSearchParams({
+      dateFrom: firstVisibleDate,
+      dateTo: lastVisibleDate,
+    });
+
+    const response = await fetch(`/api/dashboard/availability?${params.toString()}`, {
+      cache: "no-store",
+    });
+
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      toast.error(result?.error || "Dostupnost se nepodařilo načíst");
       return;
     }
 
-    const [blocksResult, reservationsResult] = await Promise.all([
-      supabase
-        .from("offer_availability_blocks")
-        .select("id, offer_id, date_from, date_to, reason, offers:offers(title)")
-        .in("offer_id", offerIds)
-        .lte("date_from", lastVisibleDate)
-        .gte("date_to", firstVisibleDate)
-        .order("date_from", { ascending: true }),
-      supabase
-        .from("offer_reservations")
-        .select("id, offer_id, booking_id, date_from, date_to, status, offers:offers(title)")
-        .in("offer_id", offerIds)
-        .eq("status", "active")
-        .lte("date_from", lastVisibleDate)
-        .gte("date_to", firstVisibleDate)
-        .order("date_from", { ascending: true }),
-    ]);
-
-    if (blocksResult.error) {
-      toast.error(blocksResult.error.message);
-    } else {
-      setBlocks((blocksResult.data || []) as unknown as OwnerBlock[]);
-    }
-
-    if (reservationsResult.error) {
-      toast.error(reservationsResult.error.message);
-    } else {
-      setReservations((reservationsResult.data || []) as unknown as OwnerReservation[]);
-    }
+    setBlocks((result?.blocks || []) as unknown as OwnerBlock[]);
+    setReservations((result?.reservations || []) as unknown as OwnerReservation[]);
   }
+
 
   function toggleItem(offerId: string) {
     setSelectedItemIds((current) =>

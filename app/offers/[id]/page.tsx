@@ -27,7 +27,6 @@ import {
   Eye,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { supabase } from "@/lib/supabase";
 
 const OffersMap = dynamic(() => import("@/app/components/OffersMap"), {
   ssr: false,
@@ -119,91 +118,40 @@ export default function ItemDetailPage() {
 
   async function loadPage() {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const response = await fetch(`/api/offers/${offerId}`, {
+        cache: "no-store",
+      });
 
-      setCurrentUserId(user?.id || null);
+      const result = await response.json().catch(() => null);
 
-      const { data, error } = await supabase
-        .from("offers")
-        .select(
-          `
-          *,
-          profiles:profiles!offers_owner_id_fkey (
-            full_name,
-            avatar_url,
-            is_verified,
-            is_seed_user,
-            profile_ratings (
-              rating_avg,
-              rating_count
-            )
-          )
-          `,
-        )
-        .eq("id", offerId)
-        .is("deleted_at", null)
-        .single();
-
-      if (error || !data) {
-        console.error("Item load error:", error);
-        toast.error("Nabídku se nepodařilo načíst");
-        router.push("/offers");
+      if (!response.ok || !result?.item) {
+        toast.error(result?.error || "Nabídku se nepodařilo načíst");
+        router.push("/");
         return;
       }
 
-      await supabase.rpc("increment_offer_views", {
-        offer_id_input: offerId,
-      });
-
-      setItem({
-        ...(data as ItemDetail),
-        views_count: Number(data.views_count || 0) + 1,
-      });
-
-      const { data: imageData, error: imageError } = await supabase
-        .from("offer_images")
-        .select("*")
-        .eq("offer_id", offerId)
-        .order("sort_order", { ascending: true });
-
-      if (imageError) {
-        console.error("Item images load error:", imageError);
-      }
-
-      const today = todayIsoDate();
-
-      const { data: blocksData, error: blocksError } = await supabase
-        .from("offer_availability_blocks")
-        .select("id, date_from, date_to, reason")
-        .eq("offer_id", offerId)
-        .gte("date_to", today)
-        .order("date_from", { ascending: true });
-
-      if (blocksError) {
-        console.error("Availability blocks load error:", blocksError);
-      }
-
-      setAvailabilityBlocks((blocksData || []) as AvailabilityBlock[]);
-      setImages(imageData || []);
+      setCurrentUserId(result.currentUserId || null);
+      setItem(result.item as ItemDetail);
+      setAvailabilityBlocks((result.availabilityBlocks || []) as AvailabilityBlock[]);
+      setImages(result.images || []);
       setSelectedImage(
-        data.primary_image_url || imageData?.[0]?.image_url || "",
+        result.item.primary_image_url || result.images?.[0]?.image_url || "",
       );
     } catch (error) {
       console.error("Unexpected item detail error:", error);
       toast.error("Detail nabídky se nepodařilo načíst");
-      router.push("/offers");
+      router.push("/");
     } finally {
       setLoading(false);
     }
   }
 
+
   async function handleBorrowClick() {
     if (!item || submittingBorrowRequest) return;
 
     if (!currentUserId) {
-      router.push("/login");
+      router.push(`/login?redirectTo=${encodeURIComponent(`/offers/${item.id}`)}`);
       return;
     }
 

@@ -12,7 +12,6 @@ import {
   User,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { supabase } from "@/lib/supabase";
 import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
 import InstallAppButton from "@/app/components/InstallAppButton";
 import { getDistanceKm } from "@/lib/location";
@@ -33,39 +32,6 @@ type OfferTypeFilter = "all" | "item" | "service";
 function getCategoryLabel(category: string, offerType: OfferTypeFilter) {
   if (offerType === "service") return serviceCategoryLabels[category] || category;
   return categoryLabels[category] || serviceCategoryLabels[category] || category;
-}
-
-async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
-  if (items.length === 0) return items as (T & { is_reserved_today: boolean })[];
-
-  const today = new Date().toISOString().split("T")[0];
-  const offerIds = items.map((item) => item.id);
-
-  const [reservationsResult, blocksResult] = await Promise.all([
-    supabase
-      .from("offer_reservations")
-      .select("offer_id")
-      .in("offer_id", offerIds)
-      .eq("status", "active")
-      .lte("date_from", today)
-      .gte("date_to", today),
-    supabase
-      .from("offer_availability_blocks")
-      .select("offer_id")
-      .in("offer_id", offerIds)
-      .lte("date_from", today)
-      .gte("date_to", today),
-  ]);
-
-  if (reservationsResult.error) console.error("Reservations availability error:", reservationsResult.error);
-  if (blocksResult.error) console.error("Blocks availability error:", blocksResult.error);
-
-  const reservedIds = new Set([
-    ...(reservationsResult.data || []).map((row) => row.offer_id),
-    ...(blocksResult.data || []).map((row) => row.offer_id),
-  ]);
-
-  return items.map((item) => ({ ...item, is_reserved_today: reservedIds.has(item.id) }));
 }
 
 export default function HomePage() {
@@ -104,11 +70,8 @@ export default function HomePage() {
   }, []);
 
   async function loadUser() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    setIsLoggedIn(Boolean(user));
+    const response = await fetch("/api/me", { cache: "no-store" });
+    setIsLoggedIn(response.ok);
   }
 
   const loadItems = useCallback(
@@ -122,58 +85,35 @@ export default function HomePage() {
       loadingRef.current = true;
       setIsLoading(true);
 
-      let query = supabase
-        .from("offers")
-        .select(
-          `
-          *,
-          profiles:profiles!offers_owner_id_fkey (
-            full_name,
-            avatar_url,
-            is_verified,
-            profile_ratings (
-              rating_avg,
-              rating_count
-            )
-          )
-        `,
-          { count: "exact" },
-        )
-        .eq("is_active", true)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false })
-        .range(from, to);
+      const params = new URLSearchParams({
+        page: String(nextPage),
+        limit: String(ITEMS_PER_PAGE),
+        offerType: selectedOfferType,
+      });
 
-      if (selectedOfferType !== "all") {
-        query = query.eq("offer_type", selectedOfferType);
-      }
+      if (selectedCategory) params.set("category", selectedCategory);
+      if (debouncedSearch) params.set("q", debouncedSearch);
 
-      if (selectedCategory) {
-        query = query.eq("category", selectedCategory);
-      }
+      const response = await fetch(`/api/offers/public?${params.toString()}`, {
+        cache: "no-store",
+      });
 
-      if (debouncedSearch) {
-        const normalizedSearch = debouncedSearch.replaceAll(",", " ");
-        query = query.or(
-          `title.ilike.%${normalizedSearch}%,description.ilike.%${normalizedSearch}%,category.ilike.%${normalizedSearch}%,pickup_place.ilike.%${normalizedSearch}%`,
-        );
-      }
+      const result = await response.json().catch(() => null);
 
-      const { data, count, error } = await query;
-
-      if (error) {
-        console.error("Offers load error:", error);
-        toast.error("Nepodařilo se načíst nabídky.");
+      if (!response.ok) {
+        console.error("Offers load error:", result?.error);
+        toast.error(result?.error || "Nepodařilo se načíst nabídky.");
         setIsLoading(false);
         loadingRef.current = false;
         return;
       }
 
-      const itemsWithAvailability = await attachTodayAvailability((data || []) as OfferCardOffer[]);
+      const itemsWithAvailability = (result?.offers || []) as OfferCardOffer[];
+      const count = Number(result?.count || 0);
 
       setItems((currentItems) => (reset ? itemsWithAvailability : [...currentItems, ...itemsWithAvailability]));
-      setTotalItems(count || 0);
-      setHasMoreItems(to + 1 < (count || 0));
+      setTotalItems(count);
+      setHasMoreItems(to + 1 < count);
       setPage(nextPage + 1);
       setIsLoading(false);
       loadingRef.current = false;
@@ -377,6 +317,7 @@ export default function HomePage() {
 
                   <Link
                     href={isLoggedIn ? "/dashboard" : "/login"}
+                    prefetch={false}
                     className="koluj-button-secondary flex h-[52px] w-[52px] shrink-0 items-center justify-center p-0"
                     aria-label={isLoggedIn ? "Můj prostor" : "Přihlásit se"}
                     title={isLoggedIn ? "Můj prostor" : "Přihlásit se"}

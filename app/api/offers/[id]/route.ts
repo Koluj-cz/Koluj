@@ -28,6 +28,82 @@ function storagePathFromPublicUrl(url: string | null) {
   return url.split(marker)[1] || null;
 }
 
+
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+
+  try {
+    const supabaseAdmin = createSupabaseAdminClient();
+    const { user } = await requireUser().catch(() => ({ user: null as any }));
+
+    const { data, error } = await supabaseAdmin
+      .from("offers")
+      .select(
+        `
+        *,
+        profiles:profiles!offers_owner_id_fkey (
+          full_name,
+          avatar_url,
+          is_verified,
+          is_seed_user,
+          profile_ratings (
+            rating_avg,
+            rating_count
+          )
+        )
+      `,
+      )
+      .eq("id", id)
+      .is("deleted_at", null)
+      .single();
+
+    if (error || !data) {
+      throw new Error("Nabídka nebyla nalezena");
+    }
+
+    if (data.is_active !== true && data.owner_id !== user?.id) {
+      throw new Error("Nabídka není dostupná");
+    }
+
+    await supabaseAdmin.rpc("increment_offer_views", {
+      offer_id_input: id,
+    });
+
+    const { data: imageData, error: imageError } = await supabaseAdmin
+      .from("offer_images")
+      .select("*")
+      .eq("offer_id", id)
+      .order("sort_order", { ascending: true });
+
+    if (imageError) throw new Error(imageError.message);
+
+    const today = new Date().toISOString().split("T")[0];
+
+    const { data: blocksData, error: blocksError } = await supabaseAdmin
+      .from("offer_availability_blocks")
+      .select("id, date_from, date_to, reason")
+      .eq("offer_id", id)
+      .gte("date_to", today)
+      .order("date_from", { ascending: true });
+
+    if (blocksError) throw new Error(blocksError.message);
+
+    return NextResponse.json({
+      item: {
+        ...data,
+        views_count: Number(data.views_count || 0) + 1,
+      },
+      images: imageData || [],
+      availabilityBlocks: blocksData || [],
+      currentUserId: user?.id || null,
+    });
+  } catch (error) {
+    const message = errorMessage(error, "Nabídku se nepodařilo načíst");
+    const status = message === "Unauthorized" ? 401 : 400;
+    return NextResponse.json({ error: message }, { status });
+  }
+}
+
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const rate = checkRateLimit({

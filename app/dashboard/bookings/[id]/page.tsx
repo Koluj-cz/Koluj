@@ -6,7 +6,6 @@ import Link from "next/link";
 import { Printer, Send } from "lucide-react";
 import BackLink from "@/app/components/BackLink";
 import toast from "react-hot-toast";
-import { supabase } from "@/lib/supabase";
 import PageLoader from "@/app/components/PageLoader";
 import {
   formatDateTime,
@@ -94,114 +93,24 @@ export default function BookingDetailPage() {
   useEffect(() => {
     loadBooking();
 
-    const messagesChannel = supabase
-      .channel(`booking-messages-${bookingId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "INSERT",
-          schema: "public",
-          table: "booking_messages",
-          filter: `booking_id=eq.${bookingId}`,
-        },
-        async (payload) => {
-          const shouldScroll = isNearBottom();
-
-          const { data } = await supabase
-            .from("booking_messages")
-            .select(`
-              *,
-              profiles (
-                full_name
-              )
-            `)
-            .eq("id", payload.new.id)
-            .single();
-
-          if (!data) return;
-
-          setMessages((current) => {
-            const exists = current.some((msg) => msg.id === data.id);
-
-            if (exists) {
-              return current;
-            }
-
-            return [...current, data as Message];
-          });
-
-          if (shouldScroll) {
-            scrollMessagesToBottom("smooth");
-          }
-        }
-      )
-      .subscribe();
-
-    const bookingChannel = supabase
-      .channel(`booking-status-${bookingId}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "bookings",
-          filter: `id=eq.${bookingId}`,
-        },
-        () => {
-          loadBooking(false);
-        }
-      )
-      .subscribe();
-
-    const messagesInterval = setInterval(async () => {
+    const interval = setInterval(async () => {
       const shouldScroll = isNearBottom();
-
-      const { data } = await supabase
-        .from("booking_messages")
-        .select(`
-          *,
-          profiles (
-            full_name
-          )
-        `)
-        .eq("booking_id", bookingId)
-        .order("created_at");
-
-      if (!data) return;
-
-      
-      setMessages((current) => {
-        const currentIds = current.map((msg) => msg.id).join(",");
-        const nextIds = data.map((msg) => msg.id).join(",");
-
-        if (currentIds === nextIds) {
-          return current;
-        }
-
-        return data as Message[];
-      });
-
-      if (shouldScroll) {
-        scrollMessagesToBottom("smooth");
-      }
+      await loadBooking(false);
+      if (shouldScroll) scrollMessagesToBottom("smooth");
     }, 5000);
 
-    return () => {
-      clearInterval(messagesInterval);
-      supabase.removeChannel(messagesChannel);
-      supabase.removeChannel(bookingChannel);
-    };
+    return () => clearInterval(interval);
   }, [bookingId]);
+
 
   async function updatePresence() {
     if (!userId) return;
 
-    await supabase.from("booking_participant_presence").upsert({
-      booking_id: bookingId,
-      user_id: userId,
-      last_seen_at: new Date().toISOString(),
+    await fetch(`/api/bookings/${bookingId}/presence`, {
+      method: "POST",
     });
   }
+
 
   useEffect(() => {
     if (!userId) return;
@@ -217,77 +126,22 @@ export default function BookingDetailPage() {
 
   async function loadBooking(shouldScrollToBottom = true) {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      const response = await fetch(`/api/bookings/${bookingId}`, {
+        cache: "no-store",
+      });
 
-      if (!user) {
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok || !result?.booking) {
+        toast.error(result?.error || "Rezervaci se nepodařilo načíst");
         setBooking(null);
         return;
       }
 
-      setUserId(user.id);
-
-      const { data: bookingData, error: bookingError } = await supabase
-        .from("bookings")
-        .select(`
-          *,
-          offers:offers (
-            id,
-            title,
-            primary_image_url,
-            pickup_place,
-            price_amount,
-            price_unit,
-            deposit,
-            offer_type
-          ),
-          owner:profiles!bookings_owner_id_fkey (
-            id,
-            full_name,
-            avatar_url
-          ),
-          customer:profiles!bookings_customer_id_fkey (
-            id,
-            full_name,
-            avatar_url
-          )
-        `)
-        .eq("id", bookingId)
-        .single();
-
-      if (bookingError || !bookingData) {
-        console.error("Booking load error:", bookingError);
-        toast.error("Rezervaci se nepodařilo načíst");
-        setBooking(null);
-        return;
-      }
-
-      const { data: existingReview } = await supabase
-        .from("reviews")
-        .select("id")
-        .eq("booking_id", bookingId)
-        .eq("reviewer_id", user.id)
-        .maybeSingle();
-
-      const { data: messagesData, error: messagesError } = await supabase
-        .from("booking_messages")
-        .select(`
-          *,
-          profiles (
-            full_name
-          )
-        `)
-        .eq("booking_id", bookingId)
-        .order("created_at");
-
-      if (messagesError) {
-        console.error("Messages load error:", messagesError);
-      }
-
-      setReviewSent(!!existingReview);
-      setBooking(bookingData as Booking);
-      setMessages((messagesData || []) as Message[]);
+      setUserId(result.userId || null);
+      setReviewSent(Boolean(result.reviewed));
+      setBooking(result.booking as Booking);
+      setMessages((result.messages || []) as Message[]);
 
       if (shouldScrollToBottom) {
         setTimeout(() => scrollMessagesToBottom("auto"), 100);
@@ -301,16 +155,6 @@ export default function BookingDetailPage() {
     }
   }
 
-  async function addSystemMessage(text: string) {
-    if (!userId) return;
-
-    await supabase.from("booking_messages").insert({
-      booking_id: bookingId,
-      sender_id: userId,
-      is_system: true,
-      message: text,
-    });
-  }
 
   async function approveBooking() {
     if (!booking) return;
@@ -453,31 +297,33 @@ export default function BookingDetailPage() {
   }
 
   async function submitReview() {
-    if (!booking || !userId || rating === 0) return;
+    if (!booking || rating === 0) return;
 
-    const reviewedUserId =
-      booking.owner_id === userId ? booking.customer_id : booking.owner_id;
-
-    const { error } = await supabase.from("reviews").insert({
-      booking_id: booking.id,
-      offer_id: booking.offers?.id,
-      reviewer_id: userId,
-      reviewed_user_id: reviewedUserId,
-      rating,
-      comment: reviewText,
+    const response = await fetch("/api/reviews", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        bookingId: booking.id,
+        rating,
+        comment: reviewText,
+      }),
     });
 
-    if (error) {
-      toast.error(error.message);
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      toast.error(result?.error || "Hodnocení se nepodařilo uložit");
       return;
     }
 
-    await addSystemMessage("Hodnocení bylo odesláno.");
-
     toast.success("Děkujeme za hodnocení");
     setReviewSent(true);
+    await loadBooking(false);
     scrollMessagesToBottom("smooth");
   }
+
 
   if (loading) {
     return (
