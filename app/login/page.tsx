@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Mail } from "lucide-react";
 import BackLink from "@/app/components/BackLink";
@@ -15,6 +15,14 @@ function safeRedirectTo(value: string | null) {
 }
 
 export default function LoginPage() {
+  return (
+    <Suspense fallback={null}>
+      <LoginPageContent />
+    </Suspense>
+  );
+}
+
+function LoginPageContent() {
   const searchParams = useSearchParams();
   const redirectTo = useMemo(
     () => safeRedirectTo(searchParams.get("redirectTo")),
@@ -75,9 +83,7 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <h1 className="text-4xl font-black">
-                  Přihlášení
-                </h1>
+                <h1 className="text-4xl font-black">Přihlášení</h1>
 
                 <p className="mt-1 text-[var(--koluj-muted)]">
                   Jednoduše pomocí e-mailu
