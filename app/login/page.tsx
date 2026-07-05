@@ -14,6 +14,16 @@ function safeRedirectTo(value: string | null) {
   return value;
 }
 
+function getAppOrigin() {
+  const configuredOrigin = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
+
+  if (configuredOrigin) {
+    return configuredOrigin;
+  }
+
+  return window.location.origin;
+}
+
 export default function LoginPage() {
   return (
     <Suspense fallback={null}>
@@ -43,7 +53,7 @@ function LoginPageContent() {
 
     setLoading(true);
 
-    const callbackUrl = new URL("/auth/callback", window.location.origin);
+    const callbackUrl = new URL("/auth/callback", getAppOrigin());
 
     if (redirectTo) {
       callbackUrl.searchParams.set("redirectTo", redirectTo);
