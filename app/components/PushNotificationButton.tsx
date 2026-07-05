@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { supabase } from "@/lib/supabase";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -72,15 +71,6 @@ export default function PushNotificationButton() {
         applicationServerKey: urlBase64ToUint8Array(publicKey),
       });
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        toast.error("Pro zapnutí notifikací se přihlas.");
-        return;
-      }
-
       const response = await fetch("/api/push/subscribe", {
         method: "POST",
         headers: {
@@ -99,13 +89,6 @@ export default function PushNotificationButton() {
         return;
       }
 
-      await supabase
-        .from("profiles")
-        .update({
-          push_notifications_enabled: true,
-        })
-        .eq("id", user.id);
-
       setEnabled(true);
       toast.success("Push notifikace jsou zapnuté.");
       } catch (error) {
@@ -117,18 +100,6 @@ export default function PushNotificationButton() {
 
           if (subscription) {
             await subscription.unsubscribe();
-          }
-          const {
-            data: { user },
-          } = await supabase.auth.getUser();
-
-          if (user) {
-            await supabase
-              .from("profiles")
-              .update({
-                push_notifications_enabled: false,
-              })
-              .eq("id", user.id);
           }
         } catch {}
 
@@ -147,7 +118,21 @@ export default function PushNotificationButton() {
       const subscription = await registration?.pushManager.getSubscription();
 
       if (subscription) {
+        await fetch("/api/push/subscribe", {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            endpoint: subscription.endpoint,
+          }),
+        });
+
         await subscription.unsubscribe();
+      } else {
+        await fetch("/api/push/subscribe", {
+          method: "DELETE",
+        });
       }
 
       setEnabled(false);

@@ -12,7 +12,6 @@ import {
   X,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { supabase } from "@/lib/supabase";
 import imageCompression from "browser-image-compression";
 import RichTextEditor from "@/app/components/RichTextEditor";
 import BackLink from "@/app/components/BackLink";

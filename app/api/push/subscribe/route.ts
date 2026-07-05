@@ -1,67 +1,115 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { requireUser, createSupabaseAdminClient } from "@/lib/supabase/server";
+import { errorMessage } from "@/lib/security";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
 
 export async function POST(request: Request) {
-  const cookieStore = await cookies();
+  const rate = checkRateLimit({
+    key: `push:subscribe:${getClientIp(request)}`,
+    limit: 20,
+    windowMs: 60 * 60 * 1000,
+  });
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll() {},
-      },
+  if (!rate.allowed) {
+    return rateLimitResponse(rate.resetAt);
+  }
+
+  try {
+    const { user } = await requireUser();
+    const supabaseAdmin = createSupabaseAdminClient();
+
+    const { subscription, userAgent } = await request.json();
+
+    if (
+      !subscription?.endpoint ||
+      !subscription?.keys?.p256dh ||
+      !subscription?.keys?.auth
+    ) {
+      return NextResponse.json(
+        { error: "Missing subscription data" },
+        { status: 400 },
+      );
     }
-  );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    const { error } = await supabaseAdmin
+      .from("push_subscriptions")
+      .upsert(
+        {
+          user_id: user.id,
+          endpoint: subscription.endpoint,
+          p256dh: subscription.keys.p256dh,
+          auth: subscription.keys.auth,
+          user_agent: typeof userAgent === "string" ? userAgent.slice(0, 500) : null,
+          updated_at: new Date().toISOString(),
+        },
+        {
+          onConflict: "endpoint",
+        },
+      );
 
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    await supabaseAdmin
+      .from("profiles")
+      .update({
+        push_notifications_enabled: true,
+      })
+      .eq("id", user.id);
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    const message = errorMessage(error, "Notifikace se nepodařilo uložit");
+    const status = message === "Unauthorized" ? 401 : 400;
+    return NextResponse.json({ error: message }, { status });
+  }
+}
+
+export async function DELETE(request: Request) {
+  const rate = checkRateLimit({
+    key: `push:delete:${getClientIp(request)}`,
+    limit: 30,
+    windowMs: 60 * 60 * 1000,
+  });
+
+  if (!rate.allowed) {
+    return rateLimitResponse(rate.resetAt);
   }
 
-  const { subscription } = await request.json();
+  try {
+    const { user } = await requireUser();
+    const supabaseAdmin = createSupabaseAdminClient();
 
-  if (
-    !subscription?.endpoint ||
-    !subscription?.keys?.p256dh ||
-    !subscription?.keys?.auth
-  ) {
-    return NextResponse.json(
-      { error: "Missing subscription data" },
-      { status: 400 }
-    );
+    const body = await request.json().catch(() => null);
+    const endpoint = typeof body?.endpoint === "string" ? body.endpoint : null;
+
+    let query = supabaseAdmin
+      .from("push_subscriptions")
+      .delete()
+      .eq("user_id", user.id);
+
+    if (endpoint) {
+      query = query.eq("endpoint", endpoint);
+    }
+
+    const { error } = await query;
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    await supabaseAdmin
+      .from("profiles")
+      .update({
+        push_notifications_enabled: false,
+      })
+      .eq("id", user.id);
+
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    const message = errorMessage(error, "Notifikace se nepodařilo vypnout");
+    const status = message === "Unauthorized" ? 401 : 400;
+    return NextResponse.json({ error: message }, { status });
   }
-
-  const { error } = await supabaseAdmin
-    .from("push_subscriptions")
-    .upsert(
-      {
-        user_id: user.id,
-        endpoint: subscription.endpoint,
-        p256dh: subscription.keys.p256dh,
-        auth: subscription.keys.auth,
-      },
-      {
-        onConflict: "endpoint",
-      }
-    );
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json({ ok: true });
 }

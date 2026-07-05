@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { Mail, MapPin, Phone, User } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import PageLoader from "@/app/components/PageLoader";
@@ -44,52 +43,47 @@ export default function ProfilePage() {
   }, []);
 
   async function loadProfile() {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    
-    if (!user) {
-      setLoading(false);
-      return;
-    }
-
-    let { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single();
-
-    if (!data) {
-      await supabase.from("profiles").insert({
-        id: user.id,
-        email: user.email,
+    try {
+      const response = await fetch("/api/profile", {
+        method: "GET",
+        cache: "no-store",
       });
 
-      const response = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
+      if (response.status === 401) {
+        window.location.href = "/login?redirectTo=/profile";
+        return;
+      }
 
-      data = response.data;
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok || !result?.profile) {
+        toast.error(result?.error || "Profil se nepodařilo načíst");
+        return;
+      }
+
+      const data = result.profile;
+
+      setProfile({
+        full_name: data.full_name || "",
+        city: data.city || "",
+        phone: data.phone || "",
+        bio: data.bio || "",
+        email: data.email || "",
+        latitude: data.latitude || null,
+        longitude: data.longitude || null,
+        email_notifications_enabled:
+          data.email_notifications_enabled ?? true,
+        marketing_notifications_enabled:
+          data.marketing_notifications_enabled ?? false,
+      });
+    } catch (error) {
+      console.error(error);
+      toast.error("Profil se nepodařilo načíst");
+    } finally {
+      setLoading(false);
     }
-
-    setProfile({
-      full_name: data.full_name || "",
-      city: data.city || "",
-      phone: data.phone || "",
-      bio: data.bio || "",
-      email: data.email || user.email || "",
-      latitude: data.latitude || null,
-      longitude: data.longitude || null,
-      email_notifications_enabled:
-        data.email_notifications_enabled ?? true,
-      marketing_notifications_enabled:
-        data.marketing_notifications_enabled ?? false,
-    });
-
-    setLoading(false);
   }
+
 
   async function searchPlaces(value: string) {
     setProfile({
@@ -137,18 +131,12 @@ export default function ProfilePage() {
       return;
     }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      toast.error("Nejsi přihlášený");
-      return;
-    }
-
-    const { error } = await supabase
-      .from("profiles")
-      .update({
+    const response = await fetch("/api/profile", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
         full_name: profile.full_name,
         city: profile.city,
         phone: profile.phone,
@@ -157,14 +145,15 @@ export default function ProfilePage() {
         longitude: profile.longitude,
         email_notifications_enabled:
           profile.email_notifications_enabled,
-
         marketing_notifications_enabled:
           profile.marketing_notifications_enabled,
-      })
-      .eq("id", user.id);
+      }),
+    });
 
-    if (error) {
-      toast.error(error.message);
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      toast.error(result?.error || "Profil se nepodařilo uložit");
       return;
     }
 
@@ -186,7 +175,9 @@ export default function ProfilePage() {
         return;
       }
 
-      await supabase.auth.signOut();
+      await fetch("/api/auth/signout", {
+        method: "POST",
+      });
 
       toast.success("Účet byl deaktivován");
       window.location.href = "/";
@@ -199,7 +190,14 @@ export default function ProfilePage() {
   }
 
   async function logout() {
-    await supabase.auth.signOut();
+    const response = await fetch("/api/auth/signout", {
+      method: "POST",
+    });
+
+    if (!response.ok) {
+      toast.error("Odhlášení se nepodařilo");
+      return;
+    }
 
     toast.success("Byl jsi odhlášen");
 
