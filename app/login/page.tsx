@@ -1,13 +1,26 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Mail } from "lucide-react";
 import BackLink from "@/app/components/BackLink";
 import { supabase } from "@/lib/supabase";
 import toast from "react-hot-toast";
 
+function safeRedirectTo(value: string | null) {
+  if (!value) return null;
+  if (!value.startsWith("/")) return null;
+  if (value.startsWith("//")) return null;
+  return value;
+}
+
 export default function LoginPage() {
+  const searchParams = useSearchParams();
+  const redirectTo = useMemo(
+    () => safeRedirectTo(searchParams.get("redirectTo")),
+    [searchParams],
+  );
+
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -22,10 +35,16 @@ export default function LoginPage() {
 
     setLoading(true);
 
+    const callbackUrl = new URL("/auth/callback", window.location.origin);
+
+    if (redirectTo) {
+      callbackUrl.searchParams.set("redirectTo", redirectTo);
+    }
+
     const { error } = await supabase.auth.signInWithOtp({
       email: normalizedEmail,
       options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: callbackUrl.toString(),
       },
     });
 
