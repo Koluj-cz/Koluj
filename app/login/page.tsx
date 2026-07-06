@@ -4,7 +4,6 @@ import { Suspense, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Mail } from "lucide-react";
 import BackLink from "@/app/components/BackLink";
-import { supabase } from "@/lib/supabase";
 import toast from "react-hot-toast";
 
 function safeRedirectTo(value: string | null) {
@@ -12,16 +11,6 @@ function safeRedirectTo(value: string | null) {
   if (!value.startsWith("/")) return null;
   if (value.startsWith("//")) return null;
   return value;
-}
-
-function getAppOrigin() {
-  const configuredOrigin = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "");
-
-  if (configuredOrigin) {
-    return configuredOrigin;
-  }
-
-  return window.location.origin;
 }
 
 export default function LoginPage() {
@@ -40,10 +29,12 @@ function LoginPageContent() {
   );
 
   const [email, setEmail] = useState("");
+  const [token, setToken] = useState("");
   const [sent, setSent] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loadingSend, setLoadingSend] = useState(false);
+  const [loadingVerify, setLoadingVerify] = useState(false);
 
-  async function handleLogin() {
+  async function sendLoginEmail() {
     const normalizedEmail = email.trim().toLowerCase();
 
     if (!normalizedEmail) {
@@ -51,31 +42,77 @@ function LoginPageContent() {
       return;
     }
 
-    setLoading(true);
+    setLoadingSend(true);
 
-    const callbackUrl = new URL("/auth/callback", getAppOrigin());
+    try {
+      const response = await fetch("/api/auth/otp/send", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: normalizedEmail,
+          redirectTo,
+        }),
+      });
 
-    if (redirectTo) {
-      callbackUrl.searchParams.set("redirectTo", redirectTo);
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(result?.error || "Přihlašovací e-mail se nepodařilo odeslat");
+      }
+
+      setEmail(normalizedEmail);
+      setSent(true);
+      toast.success("Přihlašovací e-mail byl odeslán.");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Přihlašovací e-mail se nepodařilo odeslat");
+    } finally {
+      setLoadingSend(false);
     }
+  }
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email: normalizedEmail,
-      options: {
-        emailRedirectTo: callbackUrl.toString(),
-      },
-    });
+  async function verifyLoginCode() {
+    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedToken = token.trim().replace(/\s+/g, "");
 
-    setLoading(false);
-
-    if (error) {
-      toast.error(error.message);
+    if (!normalizedEmail) {
+      toast.error("Zadej e-mail");
       return;
     }
 
-    setEmail(normalizedEmail);
-    setSent(true);
-    toast.success("Přihlašovací odkaz byl odeslán.");
+    if (!normalizedToken) {
+      toast.error("Zadej kód z e-mailu");
+      return;
+    }
+
+    setLoadingVerify(true);
+
+    try {
+      const response = await fetch("/api/auth/otp/verify", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: normalizedEmail,
+          token: normalizedToken,
+          redirectTo,
+        }),
+      });
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(result?.error || "Kód se nepodařilo ověřit");
+      }
+
+      window.location.replace(result?.redirectTo || "/dashboard");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Kód se nepodařilo ověřit");
+    } finally {
+      setLoadingVerify(false);
+    }
   }
 
   return (
@@ -96,7 +133,7 @@ function LoginPageContent() {
                 <h1 className="text-4xl font-black">Přihlášení</h1>
 
                 <p className="mt-1 text-[var(--koluj-muted)]">
-                  Jednoduše pomocí e-mailu
+                  Pomocí e-mailu přes Supabase
                 </p>
               </div>
             </div>
@@ -104,8 +141,8 @@ function LoginPageContent() {
             {!sent ? (
               <>
                 <p className="mt-8 text-lg leading-relaxed text-[var(--koluj-muted)]">
-                  Zadej svůj e-mail a pošleme ti bezpečný odkaz pro
-                  přihlášení. Pokud ještě účet nemáš, automaticky ho vytvoříme.
+                  Zadej svůj e-mail a pošleme ti přihlašovací e-mail. Ve webu
+                  můžeš kliknout na odkaz, v nainstalované aplikaci zadej kód.
                 </p>
 
                 <div className="mt-8">
@@ -119,20 +156,21 @@ function LoginPageContent() {
                     onChange={(event) => setEmail(event.target.value)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter") {
-                        handleLogin();
+                        sendLoginEmail();
                       }
                     }}
                     className="koluj-input"
+                    autoComplete="email"
                   />
                 </div>
 
                 <button
                   type="button"
-                  onClick={handleLogin}
-                  disabled={loading || !email.trim()}
+                  onClick={sendLoginEmail}
+                  disabled={loadingSend || !email.trim()}
                   className="koluj-button mt-8 w-full py-4 disabled:opacity-50"
                 >
-                  {loading ? "Odesílám odkaz..." : "Pokračovat e-mailem"}
+                  {loadingSend ? "Odesílám..." : "Pokračovat e-mailem"}
                 </button>
               </>
             ) : (
@@ -142,19 +180,52 @@ function LoginPageContent() {
                 </h2>
 
                 <p className="mt-3 leading-relaxed text-[var(--koluj-muted)]">
-                  Zkontroluj svou schránku a klikni na přihlašovací odkaz.
+                  Ve webu můžeš kliknout na přihlašovací odkaz. V nainstalované
+                  aplikaci zadej kód z e-mailu, aby session vznikla přímo v PWA.
                 </p>
 
                 <p className="mt-3 rounded-2xl bg-white px-4 py-3 text-sm font-black">
                   {email}
                 </p>
 
+                <div className="mt-5">
+                  <label className="mb-2 block text-sm font-bold">
+                    Přihlašovací kód
+                  </label>
+
+                  <input
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    value={token}
+                    onChange={(event) => setToken(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        verifyLoginCode();
+                      }
+                    }}
+                    placeholder="Např. 123456"
+                    className="koluj-input text-center text-2xl font-black tracking-[0.3em]"
+                  />
+                </div>
+
                 <button
                   type="button"
-                  onClick={() => setSent(false)}
+                  onClick={verifyLoginCode}
+                  disabled={loadingVerify || !token.trim()}
+                  className="koluj-button mt-6 w-full py-4 disabled:opacity-50"
+                >
+                  {loadingVerify ? "Ověřuji..." : "Přihlásit se kódem"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSent(false);
+                    setToken("");
+                  }}
                   className="mt-5 font-bold text-[var(--koluj-green)]"
                 >
-                  Zadat jiný e-mail
+                  Poslat e-mail znovu
                 </button>
               </div>
             )}

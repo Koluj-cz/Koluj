@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
 const CANONICAL_ORIGIN =
-  process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://koluj.cz";
+  process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://www.koluj.cz";
 
 function safeRedirectTo(value: string | null) {
   if (!value) return null;
