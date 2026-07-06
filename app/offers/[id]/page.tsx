@@ -423,6 +423,7 @@ export default function ItemDetailPage() {
               isOwner ? (
                 <Link
                   href={`/offers/${item.id}/edit`}
+                  prefetch={false}
                   className="koluj-header-button"
                 >
                   <Edit size={17} />
@@ -475,13 +476,13 @@ export default function ItemDetailPage() {
               </div>
 
               {selectedImage ? (
-                <div className="relative flex h-[360px] items-center justify-center overflow-hidden bg-[var(--koluj-bg)] md:h-[560px]">
+                <div className="relative flex h-[320px] items-center justify-center overflow-hidden bg-[var(--koluj-bg)] sm:h-[380px] md:h-[560px]">
                   <Image
                     src={selectedImage}
                     alt=""
                     aria-hidden="true"
                     fill
-                    sizes="100vw"
+                    sizes="(max-width: 1280px) 100vw, 70vw"
                     className="scale-110 object-cover opacity-35 blur-2xl"
                   />
 
@@ -497,7 +498,7 @@ export default function ItemDetailPage() {
                   />
                 </div>
               ) : item.offer_type !== "service" ? (
-                <div className="relative flex h-[360px] items-center justify-center overflow-hidden bg-[var(--koluj-bg)] md:h-[560px]">
+                <div className="relative flex h-[320px] items-center justify-center overflow-hidden bg-[var(--koluj-bg)] sm:h-[380px] md:h-[560px]">
                   <div className="flex h-full items-center justify-center text-[var(--koluj-muted)]">
                     Bez fotky
                   </div>
@@ -505,23 +506,24 @@ export default function ItemDetailPage() {
               ) : null}
 
               {images.length > 1 && (
-                <div className="flex gap-3 overflow-x-auto border-t border-[var(--koluj-border)] bg-[var(--koluj-surface)] p-4">
-                  {images.map((image) => (
+                <div className="grid grid-cols-3 gap-3 border-t border-[var(--koluj-border)] bg-[var(--koluj-surface)] p-4 sm:grid-cols-4 lg:flex lg:overflow-x-auto">
+                  {images.map((image, index) => (
                     <button
                       key={image.id}
                       type="button"
                       onClick={() => setSelectedImage(image.image_url)}
-                      className={`h-20 w-24 shrink-0 overflow-hidden rounded-2xl border-2 ${
+                      className={`aspect-[6/5] min-w-0 overflow-hidden rounded-2xl border-2 lg:h-20 lg:w-24 lg:shrink-0 ${
                         selectedImage === image.image_url
                           ? "border-[var(--koluj-green)]"
                           : "border-transparent opacity-75 hover:opacity-100"
                       }`}
+                      aria-label={`Zobrazit fotku ${index + 1}`}
                     >
                       <Image
                         src={image.image_url}
                         alt=""
-                        width={96}
-                        height={80}
+                        width={144}
+                        height={120}
                         className="h-full w-full object-cover"
                       />
                     </button>
@@ -705,6 +707,7 @@ export default function ItemDetailPage() {
               {isOwner && (
                 <Link
                   href={`/offers/${item.id}/edit`}
+                  prefetch={false}
                   className="koluj-button mt-6 flex w-full items-center justify-center gap-2 px-6 py-4"
                 >
                   <Edit size={18} />

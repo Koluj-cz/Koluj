@@ -143,7 +143,7 @@ export default async function BookingHandoverProtocolPage({ params }: PageProps)
       <article className="mx-auto max-w-[794px] bg-white p-8 text-[9px] leading-tight text-black shadow-sm print:m-0 print:max-w-none print:p-0 print:text-[8.5px] print:shadow-none">
         <header className="mb-6 flex items-start justify-between border-b border-black pb-4">
           <div>
-            <p className="text-xs font-black uppercase tracking-[0.28em]">KOLUJ</p>
+            <p className="text-xs font-black uppercase tracking-[0.28em]">Koluj</p>
             <h1 className="mt-2 text-2xl font-black">{isService ? "Protokol o provedení služby" : "Protokol o předání"}</h1>
             <p className="mt-2 max-w-[560px] text-[11px] leading-relaxed">
               {isService
@@ -271,8 +271,8 @@ export default async function BookingHandoverProtocolPage({ params }: PageProps)
 
         <footer className="mt-5 border-t border-black pt-2 text-[8px] leading-tight">
           {isService
-            ? "Tento protokol byl vytvořen prostřednictvím platformy KOLUJ a potvrzuje provedení služby mezi oběma stranami."
-            : "Tento protokol byl vytvořen prostřednictvím platformy KOLUJ a potvrzuje fyzické předání předmětu rezervace mezi oběma stranami."}
+            ? "Tento protokol byl vytvořen prostřednictvím platformy Koluj a potvrzuje provedení služby mezi oběma stranami."
+            : "Tento protokol byl vytvořen prostřednictvím platformy Koluj a potvrzuje fyzické předání předmětu rezervace mezi oběma stranami."}
         </footer>
       </article>
     </main>

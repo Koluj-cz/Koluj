@@ -578,18 +578,6 @@ export default function AvailabilityCalendar({
         <span className="inline-flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-orange-100" /> Vybráno</span>
       </div>
 
-      {selectedRange?.dateFrom && selectedRange?.dateTo && !isService && (
-        <div className="mt-4 rounded-2xl bg-white p-4 text-sm font-bold text-[var(--koluj-muted)]">
-          Vybraný termín: <span className="font-black text-[var(--koluj-text)]">{formatShortDate(selectedRange.dateFrom)} – {formatShortDate(selectedRange.dateTo)}</span>
-        </div>
-      )}
-
-      {validServiceSlot && selectedSlot && isService && (
-        <div className="mt-4 rounded-2xl bg-white p-4 text-sm font-bold text-[var(--koluj-muted)]">
-          Vybraný čas: <span className="font-black text-[var(--koluj-text)]">{formatSlot(selectedSlot)}</span>
-        </div>
-      )}
-
       {isOwner && (
         <div className="mt-4 space-y-3">
           <input
