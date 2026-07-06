@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { createSupabaseAdminClient } from "@/lib/supabase/server";
 
 const forbiddenPatterns = [
   /heil\s+hitler/i,
@@ -54,7 +54,11 @@ export async function isEmailBlocked(email: string) {
   const normalizedEmail = email.toLowerCase().trim();
   const domain = normalizedEmail.split("@")[1];
 
-  const { data } = await supabase
+  if (!domain) return false;
+
+  const supabaseAdmin = createSupabaseAdminClient();
+
+  const { data } = await supabaseAdmin
     .from("email_blacklist")
     .select("id")
     .or(`email.eq.${normalizedEmail},domain.eq.${domain}`)
@@ -66,7 +70,8 @@ export async function isEmailBlocked(email: string) {
 export function containsForbiddenText(text: string) {
   const normalizedText = text.toLowerCase();
 
-  return forbiddenWords.some((word) =>
-    normalizedText.includes(word)
+  return (
+    forbiddenPatterns.some((pattern) => pattern.test(normalizedText)) ||
+    forbiddenWords.some((word) => normalizedText.includes(word))
   );
 }

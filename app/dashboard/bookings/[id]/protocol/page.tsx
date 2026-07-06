@@ -1,9 +1,8 @@
-import { cookies } from "next/headers";
 import { notFound, redirect } from "next/navigation";
-import { createServerClient } from "@supabase/ssr";
 import PrintButton from "@/app/components/PrintButton";
 import { categoryLabels, serviceCategoryLabels } from "@/lib/constants";
 import BackLink from "@/app/components/BackLink";
+import { requireUser } from "@/lib/supabase/server";
 
 type Profile = {
   id: string;
@@ -66,28 +65,15 @@ function WriteBox({ label, height = "h-16" }: { label: string; height?: string }
 
 export default async function BookingHandoverProtocolPage({ params }: PageProps) {
   const { id } = await params;
-  const cookieStore = await cookies();
+  let auth: Awaited<ReturnType<typeof requireUser>>;
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll() {},
-      },
-    }
-  );
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
+  try {
+    auth = await requireUser();
+  } catch {
+    redirect(`/login?redirectTo=/dashboard/bookings/${id}/protocol`);
   }
+
+  const { supabase, user } = auth;
 
   const { data, error } = await supabase
     .from("bookings")

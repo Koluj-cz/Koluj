@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
+import { requireUser } from "@/lib/supabase/server";
 import { deleteAvailabilityBlockServer } from "@/lib/services/availabilityService";
 
 export async function DELETE(
@@ -8,28 +7,8 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; blockId: string }> }
 ) {
   const { blockId } = await params;
-  const cookieStore = await cookies();
+  const { user } = await requireUser();
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll() {},
-      },
-    }
-  );
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   try {
     const result = await deleteAvailabilityBlockServer({

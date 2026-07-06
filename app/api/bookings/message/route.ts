@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
+import { requireUser } from "@/lib/supabase/server";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
 import { errorMessage } from "@/lib/security";
-import { cookies } from "next/headers";
-import { createServerClient } from "@supabase/ssr";
 import { sendBookingMessageServer } from "@/lib/services/bookingService";
 
 export async function POST(request: Request) {
@@ -15,29 +14,8 @@ export async function POST(request: Request) {
   if (!rate.allowed) {
     return rateLimitResponse(rate.resetAt);
   }
+  const { user } = await requireUser();
 
-  const cookieStore = await cookies();
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll() {},
-      },
-    }
-  );
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
 
   const { bookingId, message } = await request.json();
   const normalizedMessage = typeof message === "string" ? message.trim() : "";
