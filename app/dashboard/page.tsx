@@ -75,7 +75,11 @@ export default function DashboardPage() {
               </p>
 
               {!loadingProfile && !profileComplete && (
-                <Link href="/profile" prefetch={false} className="koluj-button mt-6 w-fit min-h-[52px] px-6">
+                <Link
+                  href="/profile"
+                  prefetch={false}
+                  className="koluj-button mt-6 w-fit min-h-[52px] px-6"
+                >
                   Dokončit profil <ArrowRight size={18} />
                 </Link>
               )}
@@ -86,7 +90,9 @@ export default function DashboardPage() {
         {!loadingProfile && !profileComplete && (
           <section className="koluj-card mt-6 p-5 md:p-6">
             <p className="text-base leading-relaxed text-[var(--koluj-muted)] md:text-lg">
-              <span className="font-black text-[var(--koluj-green)]">Dokonči profil:</span>{" "}
+              <span className="font-black text-[var(--koluj-green)]">
+                Dokonči profil:
+              </span>{" "}
               doplň jméno a lokalitu, aby lidé věděli, s kým a kde se domlouvají.
             </p>
           </section>
@@ -150,6 +156,8 @@ export default function DashboardPage() {
             </div>
           </div>
         </section>
+
+        <DashboardFooter />
       </div>
     </main>
   );
@@ -170,10 +178,15 @@ function DashboardCard({
   action: string;
   featured?: boolean;
 }) {
+  const isProtectedHref =
+    href.startsWith("/dashboard") ||
+    href.startsWith("/profile") ||
+    href.startsWith("/offers/new");
+
   return (
     <Link
       href={href}
-      prefetch={href.startsWith("/dashboard") || href.startsWith("/profile") || href.startsWith("/offers/new") ? false : undefined}
+      prefetch={isProtectedHref ? false : undefined}
       className={`koluj-card group flex min-h-[210px] flex-col justify-between overflow-hidden p-6 hover:border-[var(--koluj-green)] md:p-8 ${
         featured ? "bg-gradient-to-br from-white to-[var(--koluj-green-pale)]" : ""
       }`}
@@ -184,9 +197,7 @@ function DashboardCard({
             {title}
           </h2>
 
-          <span className="koluj-icon-bubble shrink-0">
-            {icon}
-          </span>
+          <span className="koluj-icon-bubble shrink-0">{icon}</span>
         </div>
 
         <p className="mt-5 leading-relaxed text-[var(--koluj-muted)] md:text-lg">
@@ -198,5 +209,33 @@ function DashboardCard({
         {action} <ArrowRight size={17} />
       </p>
     </Link>
+  );
+}
+
+function DashboardFooter() {
+  return (
+    <footer className="koluj-card mt-8 p-5 md:mt-10 md:p-6">
+      <div className="flex flex-wrap gap-x-5 gap-y-3 text-sm font-black text-[var(--koluj-muted)]">
+        <Link href="/legal/terms" className="hover:text-[var(--koluj-green)]">
+          Podmínky
+        </Link>
+
+        <Link href="/legal/privacy" className="hover:text-[var(--koluj-green)]">
+          Soukromí
+        </Link>
+
+        <Link href="/legal/cookies" className="hover:text-[var(--koluj-green)]">
+          Cookies
+        </Link>
+
+        <a href="mailto:info@koluj.cz" className="hover:text-[var(--koluj-green)]">
+          Kontakt
+        </a>
+      </div>
+
+      <p className="mt-4 text-xs font-bold uppercase tracking-[0.14em] text-[var(--koluj-muted)] opacity-70">
+        © {new Date().getFullYear()} Koluj
+      </p>
+    </footer>
   );
 }

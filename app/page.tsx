@@ -294,7 +294,7 @@ export default function HomePage() {
               </div>
 
               <p className="mt-3 hidden text-xs font-bold uppercase tracking-[0.12em] opacity-60 md:block">
-                © {new Date().getFullYear()} KOLUJ
+                © {new Date().getFullYear()} Koluj
               </p>
             </div>
           </aside>
