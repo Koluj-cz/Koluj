@@ -407,7 +407,7 @@ async function makePrimary(imageUrl: string) {
   }
 
   return (
-    <main className="koluj-home min-h-screen pb-[calc(7.5rem+env(safe-area-inset-bottom))] text-[var(--koluj-text)] xl:pb-0">
+    <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
       <div className="koluj-wide-frame relative z-10">
         <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -765,11 +765,23 @@ async function makePrimary(imageUrl: string) {
                   schvalovat rezervace a sledovat obsazené dny.
                 </p>
               </div>
+            <div className="xl:hidden">
+              <button
+                type="button"
+                onClick={saveItem}
+                disabled={saving}
+                className="koluj-button w-full px-6 py-4 disabled:opacity-60"
+              >
+                <Save size={18} />
+                {saving ? "Ukládám..." : "Uložit změny"}
+              </button>
+            </div>
+
             </div>
           </div>
 
           <aside className="hidden self-start xl:block">
-            <div className="koluj-card sticky top-6 max-h-[calc(100vh-3rem)] overflow-auto p-8">
+            <div className="koluj-card sticky top-24 p-8">
               <h2 className="text-2xl font-black">Kontrola</h2>
 
               <ul className="mt-6 space-y-4 text-[var(--koluj-muted)]">
@@ -801,18 +813,6 @@ async function makePrimary(imageUrl: string) {
             </div>
           </aside>
         </section>
-      </div>
-
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--koluj-border)] bg-white/95 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 shadow-[0_-16px_40px_rgba(31,31,26,0.14)] backdrop-blur xl:hidden">
-        <button
-          type="button"
-          onClick={saveItem}
-          disabled={saving}
-          className="koluj-button w-full px-6 py-4 disabled:opacity-60"
-        >
-          <Save size={18} />
-          {saving ? "Ukládám..." : "Uložit změny"}
-        </button>
       </div>
     </main>
   );

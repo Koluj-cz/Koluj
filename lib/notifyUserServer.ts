@@ -3,6 +3,8 @@ import { Resend } from "resend";
 import webpush from "web-push";
 import { escapeHtml } from "@/lib/security";
 
+const KOLUJ_GREEN = "#16A34A";
+
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
@@ -49,15 +51,15 @@ export async function notifyUserServer({
     message,
   });
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
 
   const targetUrl =
     url ||
     (bookingId
       ? `/dashboard/bookings/${bookingId}`
       : offerId
-      ? `/offers/${offerId}`
-      : "/dashboard/notifications");
+        ? `/offers/${offerId}`
+        : "/dashboard/notifications");
 
   const fullUrl = `${appUrl}${targetUrl}`;
 
@@ -72,6 +74,11 @@ export async function notifyUserServer({
 
     actorName = actorProfile?.full_name || "Uživatel";
   }
+
+  const pushBody =
+    actorId && actorName !== "Uživatel"
+      ? `${actorName} ${message}`
+      : message;
 
   if (sendPush) {
     const vapidEmail = process.env.VAPID_EMAIL;
@@ -103,7 +110,7 @@ export async function notifyUserServer({
               },
               JSON.stringify({
                 title,
-                body: message,
+                body: pushBody,
                 url: targetUrl,
               })
             );
@@ -141,8 +148,8 @@ export async function notifyUserServer({
   const buttonText = bookingId
     ? "Otevřít rezervaci"
     : offerId
-    ? "Otevřít nabídku"
-    : "Otevřít notifikace";
+      ? "Otevřít nabídku"
+      : "Otevřít notifikace";
 
   const safeActorName = escapeHtml(actorName);
   const safeMessage = escapeHtml(message);
@@ -155,11 +162,15 @@ export async function notifyUserServer({
     to: recipientEmail,
     subject: safeTitle,
     html: `
-      <div style="font-family: Arial, sans-serif; line-height: 1.6;">
-        <h1 style="color:#6b842c;">Koluj</h1>
-        <p><strong>${safeActorName}</strong> ${safeMessage}</p>
-        <p>
-          <a href="${safeFullUrl}" style="display:inline-block;background:#6b842c;color:white;padding:12px 18px;border-radius:12px;text-decoration:none;font-weight:bold;">
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #0f172a;">
+        <h1 style="color:${KOLUJ_GREEN}; margin:0 0 24px 0;">Koluj</h1>
+
+        <p style="font-size:16px; margin:0 0 16px 0;">
+          <strong>${safeActorName}</strong> ${safeMessage}
+        </p>
+
+        <p style="margin:0;">
+          <a href="${safeFullUrl}" style="display:inline-block;background:${KOLUJ_GREEN};color:white;padding:12px 18px;border-radius:12px;text-decoration:none;font-weight:bold;">
             ${safeButtonText}
           </a>
         </p>
