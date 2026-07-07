@@ -628,6 +628,7 @@ export default function NewItemPage() {
                   které dny jsou volné a které obsazené.
                 </p>
               </div>
+            </div>
             <div className="xl:hidden">
               <button
                 type="button"
@@ -640,11 +641,10 @@ export default function NewItemPage() {
               </button>
             </div>
 
-            </div>
           </div>
 
           <aside className="hidden self-start xl:block">
-            <div className="koluj-card sticky top-24 p-8">
+            <div className="koluj-card p-8">
               <h2 className="text-2xl font-black">Kontrola před uložením</h2>
 
               <ul className="mt-6 space-y-4 text-[var(--koluj-muted)]">

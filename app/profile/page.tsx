@@ -507,7 +507,7 @@ export default function ProfilePage() {
           </div>
 
           <aside className="hidden self-start xl:block">
-            <div className="koluj-card sticky top-24 p-8">
+            <div className="koluj-card p-8">
               <h2 className="text-2xl font-black">Kontrola profilu</h2>
 
               <ul className="mt-6 space-y-4 text-[var(--koluj-muted)]">

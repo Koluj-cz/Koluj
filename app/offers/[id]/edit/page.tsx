@@ -765,6 +765,7 @@ async function makePrimary(imageUrl: string) {
                   schvalovat rezervace a sledovat obsazené dny.
                 </p>
               </div>
+            </div>
             <div className="xl:hidden">
               <button
                 type="button"
@@ -777,11 +778,10 @@ async function makePrimary(imageUrl: string) {
               </button>
             </div>
 
-            </div>
           </div>
 
           <aside className="hidden self-start xl:block">
-            <div className="koluj-card sticky top-24 p-8">
+            <div className="koluj-card p-8">
               <h2 className="text-2xl font-black">Kontrola</h2>
 
               <ul className="mt-6 space-y-4 text-[var(--koluj-muted)]">
