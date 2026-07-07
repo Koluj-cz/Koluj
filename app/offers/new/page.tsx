@@ -295,16 +295,6 @@ export default function NewItemPage() {
         <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <BackLink href="/dashboard">Dashboard</BackLink>
-
-            <button
-              type="button"
-              onClick={handleSubmit}
-              disabled={loading}
-              className="koluj-header-button disabled:opacity-60"
-            >
-              <Plus size={17} />
-              {loading ? "Ukládám..." : "Přidat nabídku"}
-            </button>
           </div>
 
           <h1 className="koluj-heading mt-6">Přidat nabídku</h1>
@@ -314,7 +304,7 @@ export default function NewItemPage() {
           </p>
         </section>
 
-        <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-8">
             <div className="koluj-card p-5 md:p-8">
               <SectionTitle icon={<Package size={24} />} title="Co chceš nabídnout?" />
@@ -644,7 +634,7 @@ export default function NewItemPage() {
           </div>
 
           <aside className="hidden self-start xl:block">
-            <div className="koluj-card p-8">
+            <div className="koluj-card sticky top-28 p-8">
               <h2 className="text-2xl font-black">Kontrola před uložením</h2>
 
               <ul className="mt-6 space-y-4 text-[var(--koluj-muted)]">

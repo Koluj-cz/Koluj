@@ -268,15 +268,6 @@ export default function ProfilePage() {
               <ArrowLeft size={17} />
               Dashboard
             </Link>
-
-            <button
-              type="button"
-              onClick={saveProfile}
-              disabled={saving}
-              className="koluj-header-button disabled:opacity-60"
-            >
-              {saving ? "Ukládám..." : "Uložit profil"}
-            </button>
           </div>
 
           <h1 className="koluj-heading mt-6">Profil</h1>
@@ -287,7 +278,7 @@ export default function ProfilePage() {
 
         </section>
 
-        <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+        <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-8">
             <div className="koluj-card p-5 md:p-8">
               <SectionTitle icon={<Mail size={24} />} title="Přihlášení" />
@@ -507,7 +498,7 @@ export default function ProfilePage() {
           </div>
 
           <aside className="hidden self-start xl:block">
-            <div className="koluj-card p-8">
+            <div className="koluj-card sticky top-28 p-8">
               <h2 className="text-2xl font-black">Kontrola profilu</h2>
 
               <ul className="mt-6 space-y-4 text-[var(--koluj-muted)]">

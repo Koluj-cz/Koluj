@@ -412,16 +412,6 @@ async function makePrimary(imageUrl: string) {
         <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <BackLink href="/dashboard/my-offers">Moje nabídky</BackLink>
-
-            <button
-              type="button"
-              onClick={saveItem}
-              disabled={saving}
-              className="koluj-header-button disabled:opacity-60"
-            >
-              <Save size={17} />
-              {saving ? "Ukládám..." : "Uložit změny"}
-            </button>
           </div>
 
           <h1 className="koluj-heading mt-6">Upravit nabídku</h1>
@@ -430,7 +420,7 @@ async function makePrimary(imageUrl: string) {
             Uprav informace, cenu a základní nastavení nabídky.
           </p>
         </section>
-<section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_420px]">
+<section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
         <div className="space-y-8">
 
         <div className="koluj-card p-5 md:p-8">
@@ -781,7 +771,7 @@ async function makePrimary(imageUrl: string) {
           </div>
 
           <aside className="hidden self-start xl:block">
-            <div className="koluj-card p-8">
+            <div className="koluj-card sticky top-28 p-8">
               <h2 className="text-2xl font-black">Kontrola</h2>
 
               <ul className="mt-6 space-y-4 text-[var(--koluj-muted)]">
