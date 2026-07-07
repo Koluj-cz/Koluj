@@ -1,12 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Mail, MapPin, Phone, User } from "lucide-react";
+import { ArrowLeft, Mail, MapPin, Phone, User } from "lucide-react";
 import toast from "react-hot-toast";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import PageLoader from "@/app/components/PageLoader";
 import PushNotificationButton from "@/app/components/PushNotificationButton";
-import BackLink from "@/app/components/BackLink";
 
 type PlaceSuggestion = {
   name: string;
@@ -145,39 +145,46 @@ export default function ProfilePage() {
 
     setSaving(true);
 
-    const response = await fetch("/api/profile", {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        full_name: profile.full_name,
-        city: profile.city,
-        phone: profile.phone,
-        bio: profile.bio,
-        latitude: profile.latitude,
-        longitude: profile.longitude,
-        email_notifications_enabled:
-          profile.email_notifications_enabled,
-        marketing_notifications_enabled:
-          profile.marketing_notifications_enabled,
-      }),
-    });
+    try {
+      const response = await fetch("/api/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          full_name: profile.full_name,
+          city: profile.city,
+          phone: profile.phone,
+          bio: profile.bio,
+          latitude: profile.latitude,
+          longitude: profile.longitude,
+          email_notifications_enabled:
+            profile.email_notifications_enabled,
+          marketing_notifications_enabled:
+            profile.marketing_notifications_enabled,
+        }),
+      });
 
-    const result = await response.json().catch(() => null);
+      const result = await response.json().catch(() => null);
 
-    if (!response.ok) {
+      if (!response.ok) {
+        toast.error(result?.error || "Profil se nepodařilo uložit");
+        return;
+      }
+
+      setInitialSnapshot(JSON.stringify(profile));
+      toast.success("Profil uložen");
+    } catch (error) {
+      console.error(error);
+      toast.error("Profil se nepodařilo uložit");
+    } finally {
       setSaving(false);
-      toast.error(result?.error || "Profil se nepodařilo uložit");
-      return;
     }
-
-    setInitialSnapshot(JSON.stringify(profile));
-    setSaving(false);
-    toast.success("Profil uložen");
   }
 
   async function deactivateAccount() {
+    if (!confirmNavigation()) return;
+
     setDeletingAccount(true);
 
     try {
@@ -196,6 +203,7 @@ export default function ProfilePage() {
         method: "POST",
       });
 
+      setAllowNavigation(true);
       toast.success("Účet byl deaktivován");
       window.location.href = "/";
     } catch (error) {
@@ -207,6 +215,8 @@ export default function ProfilePage() {
   }
 
   async function logout() {
+    if (!confirmNavigation()) return;
+
     const response = await fetch("/api/auth/signout", {
       method: "POST",
     });
@@ -216,9 +226,16 @@ export default function ProfilePage() {
       return;
     }
 
+    setAllowNavigation(true);
     toast.success("Byl jsi odhlášen");
 
     router.push("/");
+  }
+
+  function confirmNavigation() {
+    if (!hasUnsavedChanges || allowNavigation) return true;
+
+    return window.confirm("Máš neuložené změny. Opravdu chceš odejít?");
   }
 
   if (loading) {
@@ -234,11 +251,23 @@ export default function ProfilePage() {
     /iPad|iPhone|iPod/.test(navigator.userAgent);
 
   return (
-    <main className="koluj-home min-h-screen pb-24 text-[var(--koluj-text)] lg:pb-0">
+    <main className="koluj-home min-h-screen pb-[calc(7.5rem+env(safe-area-inset-bottom))] text-[var(--koluj-text)] xl:pb-0">
       <div className="koluj-wide-frame relative z-10">
         <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <BackLink href="/dashboard">Dashboard</BackLink>
+            <Link
+              href="/dashboard"
+              prefetch={false}
+              onClick={(event) => {
+                if (!confirmNavigation()) {
+                  event.preventDefault();
+                }
+              }}
+              className="koluj-header-button"
+            >
+              <ArrowLeft size={17} />
+              Dashboard
+            </Link>
 
             <button
               type="button"
@@ -466,8 +495,8 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <aside className="hidden self-start lg:block">
-            <div className="koluj-card sticky top-24 p-8">
+          <aside className="hidden self-start xl:block">
+            <div className="koluj-card sticky top-6 p-8">
               <h2 className="text-2xl font-black">Kontrola profilu</h2>
 
               <ul className="mt-6 space-y-4 text-[var(--koluj-muted)]">
@@ -488,7 +517,7 @@ export default function ProfilePage() {
         </section>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--koluj-border)] bg-white/95 p-4 shadow-[0_-16px_40px_rgba(31,31,26,0.14)] backdrop-blur lg:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--koluj-border)] bg-white/95 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 shadow-[0_-16px_40px_rgba(31,31,26,0.14)] backdrop-blur xl:hidden">
         <button
           type="button"
           onClick={saveProfile}

@@ -290,7 +290,7 @@ export default function NewItemPage() {
   }
 
   return (
-    <main className="koluj-home min-h-screen pb-24 text-[var(--koluj-text)] lg:pb-0">
+    <main className="koluj-home min-h-screen pb-[calc(7.5rem+env(safe-area-inset-bottom))] text-[var(--koluj-text)] xl:pb-0">
       <div className="koluj-wide-frame relative z-10">
         <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -631,8 +631,8 @@ export default function NewItemPage() {
             </div>
           </div>
 
-          <aside className="hidden self-start lg:block">
-            <div className="koluj-card sticky top-24 p-8">
+          <aside className="hidden self-start xl:block">
+            <div className="koluj-card sticky top-6 max-h-[calc(100vh-3rem)] overflow-auto p-8">
               <h2 className="text-2xl font-black">Kontrola před uložením</h2>
 
               <ul className="mt-6 space-y-4 text-[var(--koluj-muted)]">
@@ -666,7 +666,7 @@ export default function NewItemPage() {
         </section>
       </div>
 
-      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--koluj-border)] bg-white/95 p-4 shadow-[0_-16px_40px_rgba(31,31,26,0.14)] backdrop-blur lg:hidden">
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--koluj-border)] bg-white/95 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 shadow-[0_-16px_40px_rgba(31,31,26,0.14)] backdrop-blur xl:hidden">
         <button
           type="button"
           onClick={handleSubmit}
