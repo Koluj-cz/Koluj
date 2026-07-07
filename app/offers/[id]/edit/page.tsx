@@ -806,8 +806,8 @@ async function makePrimary(imageUrl: string) {
       <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--koluj-border)] bg-white/95 px-4 pb-[calc(1rem+env(safe-area-inset-bottom))] pt-3 shadow-[0_-16px_40px_rgba(31,31,26,0.14)] backdrop-blur xl:hidden">
         <button
           type="button"
-          onClick=saveItem
-          disabled=saving
+          onClick={saveItem}
+          disabled={saving}
           className="koluj-button w-full px-6 py-4 disabled:opacity-60"
         >
           <Save size={18} />
