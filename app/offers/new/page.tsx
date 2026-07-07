@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Camera,
@@ -67,6 +67,29 @@ export default function NewItemPage() {
     handover_options: [] as string[],
     contact_note: "",
   });
+  const [allowNavigation, setAllowNavigation] = useState(false);
+
+  const hasUnsavedChanges = useMemo(() => {
+    return (
+      photos.length > 0 ||
+      form.offer_type !== "item" ||
+      form.title.trim() !== "" ||
+      form.description.trim() !== "" ||
+      form.category !== "" ||
+      form.condition !== "" ||
+      form.price_amount.trim() !== "" ||
+      form.price_unit !== "day" ||
+      form.price_note.trim() !== "" ||
+      form.deposit.trim() !== "" ||
+      form.pickup_place.trim() !== "" ||
+      form.pickup_latitude !== null ||
+      form.pickup_longitude !== null ||
+      form.handover_options.length > 0 ||
+      form.contact_note.trim() !== ""
+    );
+  }, [form, photos.length]);
+
+  useUnsavedChangesWarning(hasUnsavedChanges && !loading && !allowNavigation);
 
   function updateField(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -255,6 +278,7 @@ export default function NewItemPage() {
       }
 
       setUploadProgress(100);
+      setAllowNavigation(true);
       toast.success("Nabídka byla přidána");
       router.push("/dashboard/my-offers");
     } catch (error) {
@@ -607,8 +631,8 @@ export default function NewItemPage() {
             </div>
           </div>
 
-          <aside className="hidden lg:block">
-            <div className="koluj-card sticky top-8 p-8">
+          <aside className="hidden self-start lg:block">
+            <div className="koluj-card sticky top-24 p-8">
               <h2 className="text-2xl font-black">Kontrola před uložením</h2>
 
               <ul className="mt-6 space-y-4 text-[var(--koluj-muted)]">
@@ -641,6 +665,58 @@ export default function NewItemPage() {
           </aside>
         </section>
       </div>
+
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--koluj-border)] bg-white/95 p-4 shadow-[0_-16px_40px_rgba(31,31,26,0.14)] backdrop-blur lg:hidden">
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={loading}
+          className="koluj-button w-full px-6 py-4 disabled:opacity-60"
+        >
+          <Plus size={18} />
+          {loading ? "Ukládám..." : "Přidat nabídku"}
+        </button>
+      </div>
     </main>
   );
+}
+function useUnsavedChangesWarning(active: boolean) {
+  useEffect(() => {
+    if (!active) return;
+
+    const message = "Máš neuložené změny. Opravdu chceš odejít?";
+
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      event.returnValue = message;
+      return message;
+    }
+
+    function handleDocumentClick(event: MouseEvent) {
+      const target = event.target as HTMLElement | null;
+      const anchor = target?.closest("a[href]") as HTMLAnchorElement | null;
+
+      if (!anchor) return;
+      if (anchor.target && anchor.target !== "_self") return;
+      if (anchor.href.startsWith("mailto:")) return;
+
+      const nextUrl = new URL(anchor.href, window.location.href);
+
+      if (nextUrl.origin !== window.location.origin) return;
+      if (nextUrl.href === window.location.href) return;
+
+      if (!window.confirm(message)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("click", handleDocumentClick, true);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("click", handleDocumentClick, true);
+    };
+  }, [active]);
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Mail, MapPin, Phone, User } from "lucide-react";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
@@ -37,6 +37,15 @@ export default function ProfilePage() {
     email_notifications_enabled: true,
     marketing_notifications_enabled: false,
   });
+  const [saving, setSaving] = useState(false);
+  const [initialSnapshot, setInitialSnapshot] = useState("");
+  const [allowNavigation, setAllowNavigation] = useState(false);
+
+  const currentSnapshot = useMemo(() => JSON.stringify(profile), [profile]);
+  const hasUnsavedChanges =
+    !loading && Boolean(initialSnapshot) && currentSnapshot !== initialSnapshot;
+
+  useUnsavedChangesWarning(hasUnsavedChanges && !saving && !allowNavigation);
 
   useEffect(() => {
     loadProfile();
@@ -63,7 +72,7 @@ export default function ProfilePage() {
 
       const data = result.profile;
 
-      setProfile({
+      const nextProfile = {
         full_name: data.full_name || "",
         city: data.city || "",
         phone: data.phone || "",
@@ -75,7 +84,10 @@ export default function ProfilePage() {
           data.email_notifications_enabled ?? true,
         marketing_notifications_enabled:
           data.marketing_notifications_enabled ?? false,
-      });
+      };
+
+      setProfile(nextProfile);
+      setInitialSnapshot(JSON.stringify(nextProfile));
     } catch (error) {
       console.error(error);
       toast.error("Profil se nepodařilo načíst");
@@ -131,6 +143,8 @@ export default function ProfilePage() {
       return;
     }
 
+    setSaving(true);
+
     const response = await fetch("/api/profile", {
       method: "PUT",
       headers: {
@@ -153,10 +167,13 @@ export default function ProfilePage() {
     const result = await response.json().catch(() => null);
 
     if (!response.ok) {
+      setSaving(false);
       toast.error(result?.error || "Profil se nepodařilo uložit");
       return;
     }
 
+    setInitialSnapshot(JSON.stringify(profile));
+    setSaving(false);
     toast.success("Profil uložen");
   }
 
@@ -226,9 +243,10 @@ export default function ProfilePage() {
             <button
               type="button"
               onClick={saveProfile}
-              className="koluj-header-button"
+              disabled={saving}
+              className="koluj-header-button disabled:opacity-60"
             >
-              Uložit profil
+              {saving ? "Ukládám..." : "Uložit profil"}
             </button>
           </div>
 
@@ -448,8 +466,8 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <aside className="hidden lg:block">
-            <div className="koluj-card sticky top-8 p-8">
+          <aside className="hidden self-start lg:block">
+            <div className="koluj-card sticky top-24 p-8">
               <h2 className="text-2xl font-black">Kontrola profilu</h2>
 
               <ul className="mt-6 space-y-4 text-[var(--koluj-muted)]">
@@ -460,15 +478,26 @@ export default function ProfilePage() {
 
               <button
                 onClick={saveProfile}
-                className="koluj-button mt-8 w-full px-6 py-4"
+                disabled={saving}
+                className="koluj-button mt-8 w-full px-6 py-4 disabled:opacity-60"
               >
-                Uložit profil
+                {saving ? "Ukládám..." : "Uložit profil"}
               </button>
             </div>
           </aside>
         </section>
       </div>
 
+      <div className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--koluj-border)] bg-white/95 p-4 shadow-[0_-16px_40px_rgba(31,31,26,0.14)] backdrop-blur lg:hidden">
+        <button
+          type="button"
+          onClick={saveProfile}
+          disabled={saving}
+          className="koluj-button w-full px-6 py-4 disabled:opacity-60"
+        >
+          {saving ? "Ukládám..." : "Uložit profil"}
+        </button>
+      </div>
     </main>
   );
 }
@@ -507,4 +536,45 @@ function CheckLine({ done, text }: { done: boolean; text: string }) {
       {text}
     </li>
   );
+}
+
+function useUnsavedChangesWarning(active: boolean) {
+  useEffect(() => {
+    if (!active) return;
+
+    const message = "Máš neuložené změny. Opravdu chceš odejít?";
+
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      event.returnValue = message;
+      return message;
+    }
+
+    function handleDocumentClick(event: MouseEvent) {
+      const target = event.target as HTMLElement | null;
+      const anchor = target?.closest("a[href]") as HTMLAnchorElement | null;
+
+      if (!anchor) return;
+      if (anchor.target && anchor.target !== "_self") return;
+      if (anchor.href.startsWith("mailto:")) return;
+
+      const nextUrl = new URL(anchor.href, window.location.href);
+
+      if (nextUrl.origin !== window.location.origin) return;
+      if (nextUrl.href === window.location.href) return;
+
+      if (!window.confirm(message)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("click", handleDocumentClick, true);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("click", handleDocumentClick, true);
+    };
+  }, [active]);
 }

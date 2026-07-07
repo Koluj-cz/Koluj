@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
   Check,
@@ -74,6 +74,28 @@ export default function EditItemPage() {
     contact_note: "",
     is_active: true,
   });
+  const [initialSnapshot, setInitialSnapshot] = useState("");
+  const [allowNavigation, setAllowNavigation] = useState(false);
+
+  const currentSnapshot = useMemo(
+    () =>
+      JSON.stringify({
+        form,
+        images: images.map((image) => ({
+          id: image.id,
+          image_url: image.image_url,
+          sort_order: image.sort_order ?? null,
+        })),
+        primaryImageUrl,
+        newPhotosCount: newPhotos.length,
+      }),
+    [form, images, primaryImageUrl, newPhotos.length],
+  );
+
+  const hasUnsavedChanges =
+    !loading && Boolean(initialSnapshot) && currentSnapshot !== initialSnapshot;
+
+  useUnsavedChangesWarning(hasUnsavedChanges && !saving && !allowNavigation);
 
   useEffect(() => {
     loadItem();
@@ -128,7 +150,7 @@ export default function EditItemPage() {
           ? rawPriceUnit
           : "day";
 
-    setForm({
+    const nextForm = {
       offer_type: offerType,
       title: data.title || "",
       description: data.description || "",
@@ -144,10 +166,26 @@ export default function EditItemPage() {
       handover_options: data.handover_options || [],
       contact_note: data.contact_note || "",
       is_active: data.is_active ?? true,
-    });
+    };
 
-    setPrimaryImageUrl(data.primary_image_url || "");
-    setImages(result.images || []);
+    const nextImages = result.images || [];
+    const nextPrimaryImageUrl = data.primary_image_url || "";
+
+    setForm(nextForm);
+    setPrimaryImageUrl(nextPrimaryImageUrl);
+    setImages(nextImages);
+    setInitialSnapshot(
+      JSON.stringify({
+        form: nextForm,
+        images: nextImages.map((image: any) => ({
+          id: image.id,
+          image_url: image.image_url,
+          sort_order: image.sort_order ?? null,
+        })),
+        primaryImageUrl: nextPrimaryImageUrl,
+        newPhotosCount: 0,
+      }),
+    );
     setLoading(false);
   }
 
@@ -349,6 +387,7 @@ async function makePrimary(imageUrl: string) {
       }
 
       setUploadProgress(100);
+      setAllowNavigation(true);
       toast.success("Změny uloženy");
       router.push("/dashboard/my-offers");
     } catch (error) {
@@ -729,8 +768,8 @@ async function makePrimary(imageUrl: string) {
             </div>
           </div>
 
-          <aside className="hidden lg:block">
-            <div className="koluj-card sticky top-8 p-8">
+          <aside className="hidden self-start lg:block">
+            <div className="koluj-card sticky top-24 p-8">
               <h2 className="text-2xl font-black">Kontrola</h2>
 
               <ul className="mt-6 space-y-4 text-[var(--koluj-muted)]">
@@ -765,4 +804,44 @@ async function makePrimary(imageUrl: string) {
       </div>
     </main>
   );
+}
+function useUnsavedChangesWarning(active: boolean) {
+  useEffect(() => {
+    if (!active) return;
+
+    const message = "Máš neuložené změny. Opravdu chceš odejít?";
+
+    function handleBeforeUnload(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      event.returnValue = message;
+      return message;
+    }
+
+    function handleDocumentClick(event: MouseEvent) {
+      const target = event.target as HTMLElement | null;
+      const anchor = target?.closest("a[href]") as HTMLAnchorElement | null;
+
+      if (!anchor) return;
+      if (anchor.target && anchor.target !== "_self") return;
+      if (anchor.href.startsWith("mailto:")) return;
+
+      const nextUrl = new URL(anchor.href, window.location.href);
+
+      if (nextUrl.origin !== window.location.origin) return;
+      if (nextUrl.href === window.location.href) return;
+
+      if (!window.confirm(message)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    }
+
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    document.addEventListener("click", handleDocumentClick, true);
+
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+      document.removeEventListener("click", handleDocumentClick, true);
+    };
+  }, [active]);
 }
