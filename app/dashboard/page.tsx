@@ -18,15 +18,15 @@ import NotificationBell from "@/app/components/NotificationBell";
 
 import * as Sentry from "@sentry/nextjs";
 
-useEffect(() => {
-  Sentry.captureException(new Error("Sentry test z Koluj"));
-}, []);
-
 
 export default function DashboardPage() {
   const [fullName, setFullName] = useState("");
   const [profileComplete, setProfileComplete] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
+
+  useEffect(() => {
+  Sentry.captureException(new Error("Sentry test z Koluj"));
+}, []);
 
   useEffect(() => {
     loadProfile();
