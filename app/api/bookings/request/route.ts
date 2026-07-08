@@ -5,7 +5,7 @@ import { errorMessage } from "@/lib/security";
 import { requestBookingServer } from "@/lib/services/bookingService";
 
 export async function POST(request: Request) {
-  const rate = checkRateLimit({
+  const rate = await checkRateLimit({
     key: `booking-request:${getClientIp(request)}`,
     limit: 20,
     windowMs: 60 * 1000,

@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
 
 export async function GET(request: Request) {
-  const rate = checkRateLimit({
+  const rate = await checkRateLimit({
     key: `places:${getClientIp(request)}`,
     limit: 120,
     windowMs: 60 * 1000,

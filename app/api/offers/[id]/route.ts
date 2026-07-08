@@ -106,7 +106,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const rate = checkRateLimit({
+  const rate = await checkRateLimit({
     key: `offers:update:${id}:${getClientIp(request)}`,
     limit: 60,
     windowMs: 60 * 60 * 1000,

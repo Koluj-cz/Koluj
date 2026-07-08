@@ -40,7 +40,7 @@ async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
 }
 
 export async function GET(request: Request) {
-  const rate = checkRateLimit({
+  const rate = await checkRateLimit({
     key: `offers-public:${getClientIp(request)}`,
     limit: 180,
     windowMs: 60 * 1000,

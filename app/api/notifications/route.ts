@@ -6,7 +6,7 @@ import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit"
 const LIMIT = 8;
 
 export async function GET(request: Request) {
-  const rate = checkRateLimit({
+  const rate = await checkRateLimit({
     key: `notifications:get:${getClientIp(request)}`,
     limit: 120,
     windowMs: 60 * 1000,

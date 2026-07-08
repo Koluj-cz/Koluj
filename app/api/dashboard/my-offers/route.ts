@@ -38,7 +38,7 @@ async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
 }
 
 export async function GET(request: Request) {
-  const rate = checkRateLimit({
+  const rate = await checkRateLimit({
     key: `dashboard-my-offers:get:${getClientIp(request)}`,
     limit: 120,
     windowMs: 60 * 1000,
@@ -75,7 +75,7 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const rate = checkRateLimit({
+  const rate = await checkRateLimit({
     key: `dashboard-my-offers:patch:${getClientIp(request)}`,
     limit: 80,
     windowMs: 60 * 1000,

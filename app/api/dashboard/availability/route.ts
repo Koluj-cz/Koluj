@@ -4,7 +4,7 @@ import { errorMessage } from "@/lib/security";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
 
 export async function GET(request: Request) {
-  const rate = checkRateLimit({
+  const rate = await checkRateLimit({
     key: `dashboard-availability:get:${getClientIp(request)}`,
     limit: 120,
     windowMs: 60 * 1000,

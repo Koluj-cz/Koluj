@@ -21,7 +21,7 @@ const selectQuery = `
 `;
 
 export async function GET(request: Request) {
-  const rate = checkRateLimit({
+  const rate = await checkRateLimit({
     key: `dashboard-bookings:get:${getClientIp(request)}`,
     limit: 120,
     windowMs: 60 * 1000,

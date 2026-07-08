@@ -4,7 +4,7 @@ import { errorMessage } from "@/lib/security";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
 
 export async function POST(request: Request) {
-  const rate = checkRateLimit({
+  const rate = await checkRateLimit({
     key: `push:subscribe:${getClientIp(request)}`,
     limit: 20,
     windowMs: 60 * 60 * 1000,
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
-  const rate = checkRateLimit({
+  const rate = await checkRateLimit({
     key: `push:delete:${getClientIp(request)}`,
     limit: 30,
     windowMs: 60 * 60 * 1000,

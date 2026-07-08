@@ -14,7 +14,7 @@ function normalizeEmail(value: unknown) {
 }
 
 export async function POST(request: NextRequest) {
-  const rate = checkRateLimit({
+  const rate = await checkRateLimit({
     key: `auth:otp:verify:${getClientIp(request)}`,
     limit: 20,
     windowMs: 60 * 60 * 1000,

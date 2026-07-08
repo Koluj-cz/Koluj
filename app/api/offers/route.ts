@@ -71,7 +71,7 @@ function validatePayload(payload: OfferPayload, photoCount: number) {
 }
 
 export async function POST(request: Request) {
-  const rate = checkRateLimit({
+  const rate = await checkRateLimit({
     key: `offers:create:${getClientIp(request)}`,
     limit: 20,
     windowMs: 60 * 60 * 1000,

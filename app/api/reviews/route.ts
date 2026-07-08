@@ -4,7 +4,7 @@ import { errorMessage } from "@/lib/security";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
 
 export async function POST(request: Request) {
-  const rate = checkRateLimit({
+  const rate = await checkRateLimit({
     key: `reviews:post:${getClientIp(request)}`,
     limit: 20,
     windowMs: 60 * 60 * 1000,

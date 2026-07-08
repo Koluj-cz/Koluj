@@ -114,7 +114,7 @@ export async function GET() {
 }
 
 export async function PUT(request: Request) {
-  const rate = checkRateLimit({
+  const rate = await checkRateLimit({
     key: `profile:update:${getClientIp(request)}`,
     limit: 30,
     windowMs: 60 * 60 * 1000,

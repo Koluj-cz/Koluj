@@ -1,17 +1,33 @@
-type Bucket = {
-  count: number;
+import { createHmac } from "crypto";
+import { createSupabaseAdminClient } from "@/lib/supabase/server";
+
+type RateLimitResult = {
+  allowed: boolean;
+  remaining: number;
   resetAt: number;
 };
 
-const buckets = new Map<string, Bucket>();
+function hashRateLimitKey(key: string) {
+  const secret =
+    process.env.RATE_LIMIT_HASH_SECRET ||
+    process.env.CRON_SECRET ||
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    "koluj-rate-limit";
+
+  return createHmac("sha256", secret).update(key).digest("hex");
+}
 
 export function getClientIp(request: Request) {
   const forwardedFor = request.headers.get("x-forwarded-for");
-  if (forwardedFor) return forwardedFor.split(",")[0]?.trim() || "unknown";
+
+  if (forwardedFor) {
+    return forwardedFor.split(",")[0]?.trim() || "unknown";
+  }
+
   return request.headers.get("x-real-ip") || "unknown";
 }
 
-export function checkRateLimit({
+export async function checkRateLimit({
   key,
   limit,
   windowMs,
@@ -19,26 +35,45 @@ export function checkRateLimit({
   key: string;
   limit: number;
   windowMs: number;
-}) {
-  const now = Date.now();
-  const current = buckets.get(key);
+}): Promise<RateLimitResult> {
+  const supabaseAdmin = createSupabaseAdminClient();
 
-  if (!current || current.resetAt <= now) {
-    buckets.set(key, { count: 1, resetAt: now + windowMs });
-    return { allowed: true, remaining: limit - 1, resetAt: now + windowMs };
+  const { data, error } = await supabaseAdmin.rpc("check_rate_limit", {
+    p_key: hashRateLimitKey(key),
+    p_limit: limit,
+    p_window_seconds: Math.ceil(windowMs / 1000),
+  });
+
+  if (error) {
+    console.error("Rate limit error:", error);
+
+    return {
+      allowed: true,
+      remaining: limit,
+      resetAt: Date.now() + windowMs,
+    };
   }
 
-  if (current.count >= limit) {
-    return { allowed: false, remaining: 0, resetAt: current.resetAt };
+  const row = Array.isArray(data) ? data[0] : data;
+
+  if (!row) {
+    return {
+      allowed: true,
+      remaining: limit,
+      resetAt: Date.now() + windowMs,
+    };
   }
 
-  current.count += 1;
-  buckets.set(key, current);
-  return { allowed: true, remaining: limit - current.count, resetAt: current.resetAt };
+  return {
+    allowed: Boolean(row.allowed),
+    remaining: Number(row.remaining || 0),
+    resetAt: new Date(row.reset_at).getTime(),
+  };
 }
 
 export function rateLimitResponse(resetAt: number) {
   const retryAfter = Math.max(1, Math.ceil((resetAt - Date.now()) / 1000));
+
   return Response.json(
     { error: "Příliš mnoho požadavků. Zkus to prosím za chvíli." },
     {
