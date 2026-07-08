@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser, createSupabaseAdminClient } from "@/lib/supabase/server";
 import { errorMessage } from "@/lib/security";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
 
 function storagePathFromPublicUrl(url: string | null) {
   const marker = "/storage/v1/object/public/offers/";
@@ -9,9 +10,17 @@ function storagePathFromPublicUrl(url: string | null) {
 }
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string; imageId: string }> },
 ) {
+  const rate = await checkRateLimit({
+    key: `offer-image:delete:${getClientIp(request)}`,
+    limit: 60,
+    windowMs: 60 * 1000,
+  });
+
+  if (!rate.allowed) return rateLimitResponse(rate.resetAt);
+
   const { id, imageId } = await params;
 
   try {

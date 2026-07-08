@@ -40,7 +40,31 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       .from("offers")
       .select(
         `
-        *,
+        id,
+        owner_id,
+        title,
+        description,
+        category,
+        pickup_place,
+        deposit,
+        status,
+        is_active,
+        views_count,
+        contact_note,
+        created_at,
+        pickup_latitude,
+        pickup_longitude,
+        handover_options,
+        condition,
+        primary_image_url,
+        price_amount,
+        price_unit,
+        price_note,
+        is_seed_item,
+        deleted_at,
+        offer_type,
+        service_duration_minutes,
+        service_location_type,
         profiles:profiles!offers_owner_id_fkey (
           full_name,
           avatar_url,
@@ -71,7 +95,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const { data: imageData, error: imageError } = await supabaseAdmin
       .from("offer_images")
-      .select("*")
+      .select("id, offer_id, image_url, sort_order, created_at")
       .eq("offer_id", id)
       .order("sort_order", { ascending: true });
 

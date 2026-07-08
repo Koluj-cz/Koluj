@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
 import { createClient } from "@supabase/supabase-js";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -13,7 +14,15 @@ type RouteProps = {
   }>;
 };
 
-export async function DELETE(_request: Request, { params }: RouteProps) {
+export async function DELETE(request: Request, { params }: RouteProps) {
+  const rate = await checkRateLimit({
+    key: `dashboard-availability:block:delete:${getClientIp(request)}`,
+    limit: 60,
+    windowMs: 60 * 1000,
+  });
+
+  if (!rate.allowed) return rateLimitResponse(rate.resetAt);
+
   const { id } = await params;
   const { user } = await requireUser();
 

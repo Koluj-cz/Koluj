@@ -1,11 +1,20 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
 import { deleteAvailabilityBlockServer } from "@/lib/services/availabilityService";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
 
 export async function DELETE(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string; blockId: string }> }
 ) {
+  const rate = await checkRateLimit({
+    key: `offer-availability:block:delete:${getClientIp(request)}`,
+    limit: 60,
+    windowMs: 60 * 1000,
+  });
+
+  if (!rate.allowed) return rateLimitResponse(rate.resetAt);
+
   const { blockId } = await params;
   const { user } = await requireUser();
 

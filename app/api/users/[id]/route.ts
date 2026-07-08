@@ -18,7 +18,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .select("*")
+      .select("id, full_name, avatar_url, bio, city, is_verified, created_at, is_seed_user")
       .eq("id", id)
       .maybeSingle();
 

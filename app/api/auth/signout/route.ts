@@ -1,8 +1,17 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
 
-export async function POST() {
+export async function POST(request: Request) {
+  const rate = await checkRateLimit({
+    key: `auth:signout:${getClientIp(request)}`,
+    limit: 60,
+    windowMs: 60 * 1000,
+  });
+
+  if (!rate.allowed) return rateLimitResponse(rate.resetAt);
+
   const cookieStore = await cookies();
 
   const supabase = createServerClient(

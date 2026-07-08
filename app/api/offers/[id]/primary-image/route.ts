@@ -1,8 +1,17 @@
 import { NextResponse } from "next/server";
 import { requireUser, createSupabaseAdminClient } from "@/lib/supabase/server";
 import { errorMessage } from "@/lib/security";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const rate = await checkRateLimit({
+    key: `offer-primary-image:update:${getClientIp(request)}`,
+    limit: 60,
+    windowMs: 60 * 1000,
+  });
+
+  if (!rate.allowed) return rateLimitResponse(rate.resetAt);
+
   const { id } = await params;
 
   try {

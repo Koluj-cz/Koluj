@@ -1,8 +1,17 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient, requireUser } from "@/lib/supabase/server";
 import { errorMessage } from "@/lib/security";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
 
-export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const rate = await checkRateLimit({
+    key: `booking-presence:${getClientIp(request)}`,
+    limit: 120,
+    windowMs: 60 * 1000,
+  });
+
+  if (!rate.allowed) return rateLimitResponse(rate.resetAt);
+
   const { id } = await params;
 
   try {

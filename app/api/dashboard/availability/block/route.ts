@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
 import { createClient } from "@supabase/supabase-js";
 import {
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
   assertOfferAvailableServer,
   normalizeDateRange,
 } from "@/lib/services/availabilityService";
@@ -20,6 +21,14 @@ type RequestBody = {
 };
 
 export async function POST(request: Request) {
+  const rate = await checkRateLimit({
+    key: `dashboard-availability:block:create:${getClientIp(request)}`,
+    limit: 20,
+    windowMs: 60 * 60 * 1000,
+  });
+
+  if (!rate.allowed) return rateLimitResponse(rate.resetAt);
+
   const { user } = await requireUser();
 
 

@@ -1,11 +1,20 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
 import { createAvailabilityBlockServer } from "@/lib/services/availabilityService";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const rate = await checkRateLimit({
+    key: `offer-availability:block:create:${getClientIp(request)}`,
+    limit: 20,
+    windowMs: 60 * 60 * 1000,
+  });
+
+  if (!rate.allowed) return rateLimitResponse(rate.resetAt);
+
   const { id } = await params;
   const { user } = await requireUser();
 

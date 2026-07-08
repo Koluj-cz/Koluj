@@ -1,8 +1,17 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/supabase/server";
 import { archiveOfferServer } from "@/lib/services/offerService";
+import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
 
 export async function POST(request: Request) {
+  const rate = await checkRateLimit({
+    key: `offers:archive:${getClientIp(request)}`,
+    limit: 30,
+    windowMs: 60 * 1000,
+  });
+
+  if (!rate.allowed) return rateLimitResponse(rate.resetAt);
+
   const { user } = await requireUser();
 
 
