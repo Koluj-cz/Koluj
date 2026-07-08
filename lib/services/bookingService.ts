@@ -669,11 +669,11 @@ export async function sendBookingMessageServer({
     recipientIsActive = Boolean(
       presence?.last_seen_at &&
         Date.now() - new Date(presence.last_seen_at).getTime() <
-          10000
+          60000
     );
   }
 
-  if (recipientId) {
+  if (recipientId && !recipientIsActive) {
     await notifyUserServer({
       userId: recipientId,
       actorId,
@@ -683,8 +683,6 @@ export async function sendBookingMessageServer({
       title: "Nová zpráva",
       message: `poslal(a) zprávu k rezervaci: ${offer.title}`,
       emailSubject: "Nová zpráva",
-      sendEmail: !recipientIsActive,
-      sendPush: !recipientIsActive,
     });
   }
 

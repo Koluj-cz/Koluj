@@ -97,7 +97,7 @@ export default function BookingDetailPage() {
       const shouldScroll = isNearBottom();
       await loadBooking(false);
       if (shouldScroll) scrollMessagesToBottom("smooth");
-    }, 5000);
+    }, 15000);
 
     return () => clearInterval(interval);
   }, [bookingId]);

@@ -133,7 +133,7 @@ function LoginPageContent() {
                 <h1 className="text-4xl font-black">Přihlášení</h1>
 
                 <p className="mt-1 text-[var(--koluj-muted)]">
-                  Pomocí e-mailu přes Supabase
+                  Pomocí e-mailu
                 </p>
               </div>
             </div>
