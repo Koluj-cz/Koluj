@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
 import { createClient } from "@supabase/supabase-js";
 
+export const dynamic = "force-dynamic";
+
 const siteUrl = (process.env.NEXT_PUBLIC_APP_URL || "https://www.koluj.cz").replace(/\/$/, "");
 
 const staticRoutes = [
