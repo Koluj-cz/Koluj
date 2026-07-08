@@ -7,6 +7,66 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "**" },
     ],
   },
+
+  async headers() {
+    const securityHeaders = [
+      {
+        key: "Content-Security-Policy",
+        value: [
+          "default-src 'self'",
+          "base-uri 'self'",
+          "object-src 'none'",
+          "frame-ancestors 'none'",
+          "form-action 'self'",
+          "manifest-src 'self'",
+          "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+          "style-src 'self' 'unsafe-inline'",
+          "img-src 'self' data: blob: https:",
+          "font-src 'self' data:",
+          "media-src 'self' data: blob: https:",
+          "connect-src 'self' https: wss:",
+          "worker-src 'self' blob:",
+          "upgrade-insecure-requests",
+        ].join("; "),
+      },
+      {
+        key: "Strict-Transport-Security",
+        value: "max-age=63072000; includeSubDomains; preload",
+      },
+      {
+        key: "X-Frame-Options",
+        value: "DENY",
+      },
+      {
+        key: "X-Content-Type-Options",
+        value: "nosniff",
+      },
+      {
+        key: "Referrer-Policy",
+        value: "strict-origin-when-cross-origin",
+      },
+      {
+        key: "Permissions-Policy",
+        value: [
+          "camera=()",
+          "microphone=()",
+          "payment=()",
+          "usb=()",
+          "magnetometer=()",
+          "gyroscope=()",
+          "geolocation=(self)",
+        ].join(", "),
+      },
+    ];
+
+    return [
+      {
+        source: "/(.*)",
+        headers: securityHeaders,
+      },
+    ];
+  },
+
   async redirects() {
     return [
       { source: "/items", destination: "/offers", permanent: true },
