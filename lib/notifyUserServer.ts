@@ -41,16 +41,6 @@ export async function notifyUserServer({
 }: NotifyUserServerParams) {
   if (!userId) return;
 
-  await supabaseAdmin.from("notifications").insert({
-    user_id: userId,
-    actor_id: actorId,
-    booking_id: bookingId,
-    offer_id: offerId,
-    type,
-    title,
-    message,
-  });
-
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "");
 
   const targetUrl =
@@ -75,10 +65,20 @@ export async function notifyUserServer({
     actorName = actorProfile?.full_name || "Uživatel";
   }
 
-  const pushBody =
+  const notificationMessage =
     actorId && actorName !== "Uživatel"
       ? `${actorName} ${message}`
       : message;
+
+  await supabaseAdmin.from("notifications").insert({
+    user_id: userId,
+    actor_id: actorId,
+    booking_id: bookingId,
+    offer_id: offerId,
+    type,
+    title,
+    message: notificationMessage,
+  });
 
   if (sendPush) {
     const vapidEmail = process.env.VAPID_EMAIL;
@@ -110,7 +110,7 @@ export async function notifyUserServer({
               },
               JSON.stringify({
                 title,
-                body: pushBody,
+                body: notificationMessage,
                 url: targetUrl,
               })
             );
@@ -151,8 +151,7 @@ export async function notifyUserServer({
       ? "Otevřít nabídku"
       : "Otevřít notifikace";
 
-  const safeActorName = escapeHtml(actorName);
-  const safeMessage = escapeHtml(message);
+  const safeMessage = escapeHtml(notificationMessage);
   const safeTitle = escapeHtml(emailSubject || title);
   const safeButtonText = escapeHtml(buttonText);
   const safeFullUrl = escapeHtml(fullUrl);
@@ -166,7 +165,7 @@ export async function notifyUserServer({
         <h1 style="color:${KOLUJ_GREEN}; margin:0 0 24px 0;">Koluj</h1>
 
         <p style="font-size:16px; margin:0 0 16px 0;">
-          <strong>${safeActorName}</strong> ${safeMessage}
+          ${safeMessage}
         </p>
 
         <p style="margin:0;">
