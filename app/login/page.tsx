@@ -181,7 +181,7 @@ function LoginPageContent() {
 
                 <p className="mt-3 leading-relaxed text-[var(--koluj-muted)]">
                   Ve webu můžeš kliknout na přihlašovací odkaz. V nainstalované
-                  aplikaci zadej kód z e-mailu, aby session vznikla přímo v PWA.
+                  aplikaci zadej kód z e-mailu.
                 </p>
 
                 <p className="mt-3 rounded-2xl bg-white px-4 py-3 text-sm font-black">
