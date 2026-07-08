@@ -15,16 +15,10 @@ import RestoreAccountOnLogin from "@/app/components/RestoreAccountOnLogin";
 import BackLink from "@/app/components/BackLink";
 import NotificationBell from "@/app/components/NotificationBell";
 
-import * as Sentry from "@sentry/nextjs";
-
 export default function DashboardPage() {
   const [fullName, setFullName] = useState("");
   const [profileComplete, setProfileComplete] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
-
-  useEffect(() => {
-  Sentry.captureException(new Error("Client test " + Date.now()));
-}, []);
 
   useEffect(() => {
     loadProfile();
