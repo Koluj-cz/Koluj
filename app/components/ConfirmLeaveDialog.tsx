@@ -30,11 +30,7 @@ export default function ConfirmLeaveDialog({
         </p>
 
         <div className="mt-6 grid gap-3 sm:grid-cols-2">
-          <button
-            type="button"
-            onClick={onStay}
-            className="koluj-button px-6 py-3"
-          >
+          <button type="button" onClick={onStay} className="koluj-button px-6 py-3">
             Zůstat na stránce
           </button>
 

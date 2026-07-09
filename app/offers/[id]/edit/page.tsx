@@ -1,61 +1,42 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import dynamic from "next/dynamic";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import {
-  Check,
-  MapPin,
-  Package,
-  Save,
-  Camera,
-  Star,
-  X,
-  Plus,
-} from "lucide-react";
 import toast from "react-hot-toast";
-import PageLoader from "@/app/components/PageLoader";
-import ConfirmLeaveDialog from "@/app/components/ConfirmLeaveDialog";
-import { useUnsavedChangesWarning } from "@/lib/hooks/useUnsavedChangesWarning";
 import BackLink from "@/app/components/BackLink";
-import {
-  categories,
-  categoryLabels,
-  serviceCategories,
-  serviceCategoryLabels,
-  offerTypeLabels,
-  conditions,
-  conditionLabels,
-  handoverLabels,
-  handoverOptions,
-  itemPriceUnits,
-  itemPriceUnitLabels,
-  servicePriceUnits,
-  servicePriceUnitLabels,
-} from "@/lib/constants";
-import SectionTitle from "@/app/components/SectionTitle";
-import CheckLine from "@/app/components/CheckLine";
+import ConfirmLeaveDialog from "@/app/components/ConfirmLeaveDialog";
+import PageLoader from "@/app/components/PageLoader";
+import AvailabilityInfoSection from "@/app/components/offer-form/AvailabilityInfoSection";
+import BasicInfoSection from "@/app/components/offer-form/BasicInfoSection";
+import LocationSection from "@/app/components/offer-form/LocationSection";
+import MobileSubmitButton from "@/app/components/offer-form/MobileSubmitButton";
+import OfferFormSidebar from "@/app/components/offer-form/OfferFormSidebar";
+import OfferPhotoUploader from "@/app/components/offer-form/OfferPhotoUploader";
+import OfferTypeSection from "@/app/components/offer-form/OfferTypeSection";
+import PriceSection from "@/app/components/offer-form/PriceSection";
+import type {
+  ExistingOfferPhoto,
+  OfferFormState,
+} from "@/app/components/offer-form/types";
+import { itemPriceUnits, servicePriceUnits } from "@/lib/constants";
+import { useUnsavedChangesWarning } from "@/lib/hooks/useUnsavedChangesWarning";
 
-const RichTextEditor = dynamic(() => import("@/app/components/RichTextEditor"), {
-  ssr: false,
-  loading: () => (
-    <div className="rounded-3xl border border-[var(--koluj-border)] bg-white p-4 text-sm font-bold text-[var(--koluj-muted)]">
-      Editor popisu se načítá...
-    </div>
-  ),
-});
-
-type OfferImage = {
-  id: string;
-  image_url: string;
-  sort_order: number | null;
-};
-
-type PlaceSuggestion = {
-  name: string;
-  label?: string;
-  location?: string;
-  position: { lat: number; lon: number };
+const emptyForm: OfferFormState = {
+  offer_type: "item",
+  title: "",
+  description: "",
+  category: "",
+  condition: "",
+  price_amount: "",
+  price_unit: "day",
+  price_note: "",
+  deposit: "",
+  pickup_place: "",
+  pickup_latitude: null,
+  pickup_longitude: null,
+  handover_options: [],
+  contact_note: "",
+  is_active: true,
 };
 
 export default function EditItemPage() {
@@ -65,34 +46,17 @@ export default function EditItemPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [placeSuggestions, setPlaceSuggestions] = useState<PlaceSuggestion[]>([]);
-  const [images, setImages] = useState<OfferImage[]>([]);
+
+  const [images, setImages] = useState<ExistingOfferPhoto[]>([]);
   const [newPhotos, setNewPhotos] = useState<File[]>([]);
   const [newPhotoPreviews, setNewPhotoPreviews] = useState<string[]>([]);
+  const [mainPhotoIndex, setMainPhotoIndex] = useState(-1);
   const [primaryImageUrl, setPrimaryImageUrl] = useState("");
-  const [uploadingPhotos, setUploadingPhotos] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
 
-  const [form, setForm] = useState({
-    offer_type: "item",
-    title: "",
-    description: "",
-    category: "",
-    condition: "",
-    price_amount: "",
-    price_unit: "day",
-    price_note: "",
-    deposit: "",
-    pickup_place: "",
-    pickup_latitude: null as number | null,
-    pickup_longitude: null as number | null,
-    handover_options: [] as string[],
-    contact_note: "",
-    is_active: true,
-  });
+  const [form, setForm] = useState<OfferFormState>(emptyForm);
   const [initialSnapshot, setInitialSnapshot] = useState("");
   const [allowNavigation, setAllowNavigation] = useState(false);
-  const placeSearchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [pendingNavigationHref, setPendingNavigationHref] = useState<string | null>(null);
 
   const currentSnapshot = useMemo(
     () =>
@@ -104,25 +68,24 @@ export default function EditItemPage() {
           sort_order: image.sort_order ?? null,
         })),
         primaryImageUrl,
-        newPhotosCount: newPhotos.length,
+        mainPhotoIndex,
+        newPhotos: newPhotos.map((photo) => ({
+          name: photo.name,
+          size: photo.size,
+          type: photo.type,
+          lastModified: photo.lastModified,
+        })),
       }),
-    [form, images, primaryImageUrl, newPhotos.length],
+    [form, images, primaryImageUrl, mainPhotoIndex, newPhotos],
   );
 
   const hasUnsavedChanges =
     !loading && Boolean(initialSnapshot) && currentSnapshot !== initialSnapshot;
 
-  useUnsavedChangesWarning(hasUnsavedChanges && !saving && !allowNavigation);
-
-  useEffect(() => {
-    return () => {
-      newPhotoPreviews.forEach((preview) => URL.revokeObjectURL(preview));
-
-      if (placeSearchTimeoutRef.current) {
-        clearTimeout(placeSearchTimeoutRef.current);
-      }
-    };
-  }, [newPhotoPreviews]);
+  useUnsavedChangesWarning(
+    hasUnsavedChanges && !saving && !allowNavigation,
+    setPendingNavigationHref,
+  );
 
   const loadItem = useCallback(async () => {
     const response = await fetch(`/api/offers/${offerId}`, {
@@ -156,7 +119,7 @@ export default function EditItemPage() {
           ? rawPriceUnit
           : "day";
 
-    const nextForm = {
+    const nextForm: OfferFormState = {
       offer_type: offerType,
       title: data.title || "",
       description: data.description || "",
@@ -174,12 +137,12 @@ export default function EditItemPage() {
       is_active: data.is_active ?? true,
     };
 
-    const nextImages = (result.images || []) as OfferImage[];
+    const nextImages = (result.images || []) as ExistingOfferPhoto[];
     const nextPrimaryImageUrl = data.primary_image_url || "";
 
     setForm(nextForm);
-    setPrimaryImageUrl(nextPrimaryImageUrl);
     setImages(nextImages);
+    setPrimaryImageUrl(nextPrimaryImageUrl);
     setInitialSnapshot(
       JSON.stringify({
         form: nextForm,
@@ -189,7 +152,8 @@ export default function EditItemPage() {
           sort_order: image.sort_order ?? null,
         })),
         primaryImageUrl: nextPrimaryImageUrl,
-        newPhotosCount: 0,
+        mainPhotoIndex: -1,
+        newPhotos: [],
       }),
     );
     setLoading(false);
@@ -199,216 +163,101 @@ export default function EditItemPage() {
     void loadItem();
   }, [loadItem]);
 
-  function updateField(field: string, value: string) {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  }
-
-  function toggleHandoverOption(option: string) {
-    setForm((prev) => {
-      const exists = prev.handover_options.includes(option);
-
-      return {
-        ...prev,
-        handover_options: exists
-          ? prev.handover_options.filter((item) => item !== option)
-          : [...prev.handover_options, option],
-      };
-    });
-  }
-
-
-  function searchPlaces(value: string) {
-    setForm((prev) => ({
-      ...prev,
-      pickup_place: value,
-      pickup_latitude: null,
-      pickup_longitude: null,
-    }));
-
-    if (placeSearchTimeoutRef.current) {
-      clearTimeout(placeSearchTimeoutRef.current);
-    }
-
-    if (value.trim().length < 2) {
-      setPlaceSuggestions([]);
-      return;
-    }
-
-    placeSearchTimeoutRef.current = setTimeout(async () => {
-      const response = await fetch(`/api/places?q=${encodeURIComponent(value)}`);
-      const data = await response.json().catch(() => null);
-
-      setPlaceSuggestions(data?.items || []);
-    }, 300);
-  }
-
-  function selectPlace(place: PlaceSuggestion) {
-    setForm({
-      ...form,
-      pickup_place: `${place.name}${place.location ? `, ${place.location}` : ""}`,
-      pickup_latitude: place.position.lat,
-      pickup_longitude: place.position.lon,
+  async function deleteImage(imageId: string, imageUrl: string) {
+    const response = await fetch(`/api/offers/${offerId}/images/${imageId}`, {
+      method: "DELETE",
     });
 
-    setPlaceSuggestions([]);
-  }
+    const result = await response.json().catch(() => null);
 
-  async function handlePhotos(files: FileList | null) {
-    if (!files) return;
-
-    const selected = Array.from(files);
-
-    if (images.length + newPhotos.length + selected.length > 8) {
-      toast.error("Můžeš mít maximálně 8 fotek");
+    if (!response.ok) {
+      toast.error(result?.error || "Fotku se nepodařilo smazat");
       return;
     }
 
-    const oversized = selected.find(
-      (file) => file.size > 15 * 1024 * 1024
-    );
+    setImages((prev) => prev.filter((image) => image.id !== imageId));
 
-    if (oversized) {
-      toast.error("Jedna z fotek je větší než 15 MB");
+    if (primaryImageUrl === imageUrl) {
+      setPrimaryImageUrl(result?.primaryImageUrl || "");
+    }
+
+    toast.success("Fotka smazána");
+  }
+
+  async function makePrimary(imageUrl: string) {
+    const response = await fetch(`/api/offers/${offerId}/primary-image`, {
+      method: "PATCH",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ imageUrl }),
+    });
+
+    const result = await response.json().catch(() => null);
+
+    if (!response.ok) {
+      toast.error(result?.error || "Hlavní fotku se nepodařilo nastavit");
       return;
     }
 
-    setUploadingPhotos(true);
-    setUploadProgress(10);
-
-    try {
-      const imageCompression = (await import("browser-image-compression")).default;
-
-      const compressedFiles = await Promise.all(
-        selected.map((file) =>
-          imageCompression(file, {
-            maxSizeMB: 0.7,
-            maxWidthOrHeight: 1400,
-            useWebWorker: true,
-            fileType: "image/webp",
-          })
-        )
-      );
-      setUploadProgress(100);
-      setUploadingPhotos(false);
-
-      setNewPhotos((prev) => [...prev, ...compressedFiles]);
-
-      setNewPhotoPreviews((prev) => [
-        ...prev,
-        ...compressedFiles.map((file) =>
-          URL.createObjectURL(file)
-        ),
-      ]);
-    } catch {
-      toast.error("Fotku se nepodařilo zpracovat");
-      setUploadingPhotos(false);
-      setUploadProgress(0);
-    }
+    toast.success("Hlavní fotka nastavena");
+    setMainPhotoIndex(-1);
+    setPrimaryImageUrl(result?.primaryImageUrl || imageUrl);
   }
 
-async function deleteImage(imageId: string, imageUrl: string) {
-  const response = await fetch(`/api/offers/${offerId}/images/${imageId}`, {
-    method: "DELETE",
-  });
-
-  const result = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    toast.error(result?.error || "Fotku se nepodařilo smazat");
-    return;
-  }
-
-  setImages((prev) => prev.filter((img) => img.id !== imageId));
-
-  if (primaryImageUrl === imageUrl) {
-    setPrimaryImageUrl(result?.primaryImageUrl || "");
-  }
-
-  toast.success("Fotka smazána");
-}
-
-async function makePrimary(imageUrl: string) {
-  const response = await fetch(`/api/offers/${offerId}/primary-image`, {
-    method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ imageUrl }),
-  });
-
-  const result = await response.json().catch(() => null);
-
-  if (!response.ok) {
-    toast.error(result?.error || "Hlavní fotku se nepodařilo nastavit");
-    return;
-  }
-
-  toast.success("Hlavní fotka nastavena");
-  setPrimaryImageUrl(result?.primaryImageUrl || imageUrl);
-}
-
-  async function saveItem() {
+  function validateForm() {
     if (form.offer_type === "item" && images.length + newPhotos.length === 0) {
-      toast.error("Nahraj alespoň jednu fotku věci");
-      return;
+      throw new Error("Nahraj alespoň jednu fotku věci");
     }
 
-    if (!form.title.trim()) {
-      toast.error("Vyplň název nabídky");
-      return;
-    }
-
-    if (!form.category) {
-      toast.error("Vyber kategorii");
-      return;
-    }
+    if (!form.title.trim()) throw new Error("Vyplň název nabídky");
+    if (!form.category) throw new Error("Vyber kategorii");
 
     if (form.offer_type === "item" && !form.condition) {
-      toast.error("Vyber stav nabídky");
-      return;
+      throw new Error("Vyber stav nabídky");
     }
 
-    if (!form.description.trim()) {
-      toast.error("Vyplň popis");
-      return;
-    }
-
-    if (!form.price_amount.trim()) {
-      toast.error("Vyplň cenu");
-      return;
-    }
-
-    if (!form.price_unit) {
-      toast.error("Vyber jednotku ceny");
-      return;
-    }
+    if (!form.description.trim()) throw new Error("Vyplň popis");
+    if (!form.price_amount.trim()) throw new Error("Vyplň cenu");
+    if (!form.price_unit) throw new Error("Vyber jednotku ceny");
 
     if (!form.pickup_place.trim() || !form.pickup_latitude || !form.pickup_longitude) {
-      toast.error(
+      throw new Error(
         form.offer_type === "service"
           ? "Vyber lokalitu působení z našeptávače nebo zvol celou ČR"
-          : "Vyber místo předání z našeptávače"
+          : "Vyber místo předání z našeptávače",
       );
-      return;
     }
 
     if (form.offer_type === "item" && form.handover_options.length === 0) {
-      toast.error("Vyber alespoň jednu možnost předání");
-      return;
+      throw new Error("Vyber alespoň jednu možnost předání");
     }
+  }
 
+  async function saveItem() {
     setSaving(true);
 
     try {
+      validateForm();
+
       const formData = new FormData();
       formData.append("payload", JSON.stringify(form));
 
-      newPhotos.forEach((photo) => {
+      const orderedNewPhotos = [...newPhotos];
+
+      if (mainPhotoIndex >= 0 && mainPhotoIndex < orderedNewPhotos.length) {
+        const [mainPhoto] = orderedNewPhotos.splice(mainPhotoIndex, 1);
+
+        if (mainPhoto) {
+          orderedNewPhotos.unshift(mainPhoto);
+        }
+
+        formData.append("mainPhotoIndex", "0");
+      }
+
+      orderedNewPhotos.forEach((photo) => {
         formData.append("photos", photo);
       });
-
-      setUploadingPhotos(newPhotos.length > 0);
-      setUploadProgress(newPhotos.length > 0 ? 20 : 0);
 
       const response = await fetch(`/api/offers/${offerId}`, {
         method: "PATCH",
@@ -421,16 +270,24 @@ async function makePrimary(imageUrl: string) {
         throw new Error(result?.error || "Změny se nepodařilo uložit");
       }
 
-      setUploadProgress(100);
       setAllowNavigation(true);
       toast.success("Změny uloženy");
       router.push("/dashboard/my-offers");
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Změny se nepodařilo uložit");
     } finally {
-      setUploadingPhotos(false);
       setSaving(false);
     }
+  }
+
+  function leaveWithoutSaving() {
+    const href = pendingNavigationHref;
+
+    if (!href) return;
+
+    setAllowNavigation(true);
+    setPendingNavigationHref(null);
+    window.location.href = href;
   }
 
   if (loading) {
@@ -455,432 +312,48 @@ async function makePrimary(imageUrl: string) {
             Uprav informace, cenu a základní nastavení nabídky.
           </p>
         </section>
-<section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-        <div className="space-y-8">
 
-        <div className="koluj-card p-5 md:p-8">
-              <SectionTitle icon={<Package size={24} />} title="Co chceš nabídnout?" />
+        <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="space-y-8">
+            <OfferTypeSection offerType={form.offer_type} setForm={setForm} />
 
-              <div className="mt-6 grid gap-3 md:grid-cols-2">
-                {["item", "service"].map((type) => (
-                  <button
-                    key={type}
-                    type="button"
-                    onClick={() =>
-                      setForm((prev) => ({
-                        ...prev,
-                        offer_type: type,
-                        category: "",
-                        condition: type === "service" ? "" : prev.condition,
-                        price_unit: type === "service" ? "hour" : "day",
-                        deposit: type === "service" ? "" : prev.deposit,
-                        handover_options: type === "service" ? [] : prev.handover_options,
-                      }))
-                    }
-                    className={`rounded-3xl px-5 py-4 text-left font-black ${
-                      form.offer_type === type
-                        ? "bg-[var(--koluj-green)] text-white"
-                        : "bg-[var(--koluj-bg)] text-[var(--koluj-text)]"
-                    }`}
-                  >
-                    {offerTypeLabels[type as keyof typeof offerTypeLabels]}
-                    <span className="mt-1 block text-sm font-bold opacity-80">
-                      {type === "item"
-                        ? "Fyzická věc s předáním a rezervací po dnech."
-                        : "Čas, práce nebo pomoc s rezervací po hodinách."}
-                    </span>
-                  </button>
-                ))}
-              </div>
-        </div>
-
-        <div className="koluj-card p-5 md:p-8">
-        <SectionTitle
-            icon={<Camera size={24} />}
-            title={form.offer_type === "service" ? "Fotky služby" : "Fotky věci"}
-        />
-
-        <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-
-            {images.map((image) => (
-            <div
-                key={image.id}
-                className="relative overflow-hidden rounded-3xl border border-[var(--koluj-border)]"
-            >
-                <img
-                src={image.image_url}
-                alt="Fotka nabídky"
-                className="h-36 w-full object-cover"
-                />
-
-                <button
-                type="button"
-                onClick={() => makePrimary(image.image_url)}
-                className={`absolute left-2 top-2 rounded-full p-2 shadow-sm ${
-                    primaryImageUrl === image.image_url
-                    ? "bg-white text-[var(--koluj-green)]"
-                    : "bg-white text-[var(--koluj-muted)]"
-                }`}
-                >
-                <Star
-                    size={18}
-                    fill={primaryImageUrl === image.image_url ? "currentColor" : "none"}
-                />
-                </button>
-
-                <button
-                type="button"
-                onClick={() => deleteImage(image.id, image.image_url)}
-                className="absolute right-2 top-2 rounded-full bg-white p-2 text-red-500 shadow"
-                >
-                <X size={16} />
-                </button>
-                {primaryImageUrl === image.image_url && (
-                <div className="absolute bottom-2 left-2 rounded-full bg-[var(--koluj-green)] px-3 py-1 text-xs font-bold text-white">
-                    Hlavní
-                </div>
-                )}
-            </div>
-            ))}
-
-            {newPhotoPreviews.map((preview, index) => (
-            <div
-                key={index}
-                className="overflow-hidden rounded-3xl border border-[var(--koluj-border)]"
-            >
-                <img
-                src={preview}
-                alt="Náhled nové fotky"
-                className="h-36 w-full object-cover"
-                />
-            </div>
-            ))}
-
-            <label className="flex h-36 cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-[var(--koluj-border)]">
-            <Plus size={24} />
-
-            <span className="mt-2 text-sm font-bold">
-                Přidat fotku
-            </span>
-
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              className="hidden"
-              onChange={(e) => {
-                handlePhotos(e.target.files);
-                e.currentTarget.value = "";
-              }}
+            <OfferPhotoUploader
+              offerType={form.offer_type}
+              existingImages={images}
+              primaryImageUrl={primaryImageUrl}
+              photos={newPhotos}
+              setPhotos={setNewPhotos}
+              photoPreviews={newPhotoPreviews}
+              setPhotoPreviews={setNewPhotoPreviews}
+              mainPhotoIndex={mainPhotoIndex}
+              setMainPhotoIndex={setMainPhotoIndex}
+              onMakePrimaryExisting={makePrimary}
+              onDeleteExisting={deleteImage}
             />
-            </label>
-        </div>
 
-            <p className="mt-4 text-sm text-[var(--koluj-muted)]">
-              {form.offer_type === "service"
-                ? "Fotky jsou u služby volitelné. Pomůžou ale zvýšit důvěryhodnost nabídky."
-                : "U věci doporučujeme mít alespoň jednu fotku."}
-            </p>
+            <BasicInfoSection form={form} setForm={setForm} />
+            <PriceSection form={form} setForm={setForm} />
+            <LocationSection form={form} setForm={setForm} />
+            <AvailabilityInfoSection mode="edit" />
 
-            {uploadingPhotos && (
-              <div className="mt-4">
-                <div className="mb-2 flex justify-between text-sm font-bold text-[var(--koluj-muted)]">
-                  <span>Zpracovávám fotky...</span>
-                  <span>{uploadProgress}%</span>
-                </div>
-
-                <div className="h-3 overflow-hidden rounded-full bg-[var(--koluj-bg)]">
-                  <div
-                    className="h-full rounded-full bg-[var(--koluj-green)]"
-                    style={{ width: `${uploadProgress}%` }}
-                  />
-                </div>
-              </div>
-            )}
-        </div>
-            <div className="koluj-card p-5 md:p-8">
-              <SectionTitle icon={<Package size={24} />} title="O nabídce" />
-
-              <div className="mt-6 space-y-4">
-                <input
-                  value={form.title}
-                  onChange={(e) => updateField("title", e.target.value)}
-                  placeholder={form.offer_type === "service" ? "Název služby *" : "Název nabídky *"}
-                  className="koluj-input"
-                />
-
-                <div className="grid gap-4 md:grid-cols-2">
-                  <select
-                    value={form.category}
-                    onChange={(e) => updateField("category", e.target.value)}
-                    className="koluj-input"
-                  >
-                    <option value="">Kategorie *</option>
-                    {(form.offer_type === "service" ? serviceCategories : categories).map((category) => (
-                      <option key={category} value={category}>
-                        {form.offer_type === "service"
-                          ? serviceCategoryLabels[category as keyof typeof serviceCategoryLabels]
-                          : categoryLabels[category as keyof typeof categoryLabels]}
-                      </option>
-                    ))}
-                  </select>
-
-                  {form.offer_type === "item" && (
-                    <select
-                      value={form.condition}
-                      onChange={(e) => updateField("condition", e.target.value)}
-                      className="koluj-input"
-                    >
-                      <option value="">Stav věci *</option>
-                      {conditions.map((condition) => (
-                        <option key={condition} value={condition}>
-                          {conditionLabels[condition]}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-                </div>
-
-              <RichTextEditor
-                value={form.description}
-                onChange={(value) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    description: value,
-                  }))
-                }
-              />
-              </div>
-            </div>
-
-            <div className="koluj-card p-5 md:p-8">
-            <SectionTitle title="Cena" />
-
-            <div className="mt-6 space-y-4">
-                <div className="grid gap-4 md:grid-cols-[1fr_180px]">
-                <input
-                    type="number"
-                    min="0"
-                    value={form.price_amount}
-                    onChange={(e) => updateField("price_amount", e.target.value)}
-                    placeholder="Cena v Kč *"
-                    className="koluj-input"
-                />
-
-                <select
-                    value={form.price_unit}
-                    onChange={(e) => updateField("price_unit", e.target.value)}
-                    className="koluj-input"
-                  >
-                    {(form.offer_type === "service" ? servicePriceUnits : itemPriceUnits).map((unit) => (
-                      <option key={unit} value={unit}>
-                        {form.offer_type === "service"
-                          ? servicePriceUnitLabels[unit]
-                          : itemPriceUnitLabels[unit]}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <textarea
-                value={form.price_note}
-                onChange={(e) => updateField("price_note", e.target.value)}
-                placeholder="Poznámka k ceně, např. víkend za 250 Kč nebo sleva při delší rezervaci"
-                className="koluj-input min-h-28"
-                />
-
-
-                {form.offer_type === "item" && (
-                  <input
-                    type="number"
-                    value={form.deposit}
-                    onChange={(e) => updateField("deposit", e.target.value)}
-                    placeholder="Kauce Kč, volitelné"
-                    className="koluj-input"
-                  />
-                )}
-            </div>
-            </div>
-
-            <div className="koluj-card p-5 md:p-8">
-              <SectionTitle icon={<MapPin size={24} />} title={form.offer_type === "service" ? "Lokalita působení" : "Předání"} />
-
-              <div className="relative mt-6">
-                <input
-                  value={form.pickup_place}
-                  onChange={(e) => searchPlaces(e.target.value)}
-                  placeholder={form.offer_type === "service" ? "Lokalita působení *" : "Místo předání *"}
-                  className="koluj-input"
-                />
-
-                {form.offer_type === "service" && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setForm((prev) => ({
-                        ...prev,
-                        pickup_place: "Celá Česká republika",
-                        pickup_latitude: 49.8175,
-                        pickup_longitude: 15.473,
-                      }));
-                      setPlaceSuggestions([]);
-                    }}
-                    className="mt-3 rounded-2xl bg-[var(--koluj-bg)] px-4 py-3 text-sm font-black text-[var(--koluj-green)]"
-                  >
-                    Působím po celé ČR
-                  </button>
-                )}
-
-                {placeSuggestions.length > 0 && (
-                  <div className="absolute z-10 mt-2 w-full overflow-hidden rounded-3xl border border-[var(--koluj-border)] bg-[var(--koluj-surface)] shadow-lg">
-                    {placeSuggestions.map((place, index) => (
-                      <button
-                        key={index}
-                        type="button"
-                        onClick={() => selectPlace(place)}
-                        className="block w-full px-5 py-4 text-left hover:bg-[var(--koluj-bg)]"
-                      >
-                        <div className="font-bold">{place.name}</div>
-                        <div className="text-sm text-[var(--koluj-muted)]">
-                          {place.label}{" "}
-                          {place.location ? `· ${place.location}` : ""}
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {form.offer_type === "item" && (
-                <div className="mt-5 grid gap-3 md:grid-cols-2">
-                  {handoverOptions.map((value) => (
-                  <button
-                    key={value}
-                    type="button"
-                    onClick={() => toggleHandoverOption(value)}
-                    className={`flex items-center gap-3 rounded-2xl border px-4 py-3 font-bold ${
-                      form.handover_options.includes(value)
-                        ? "border-[var(--koluj-green)] bg-[var(--koluj-bg)] text-[var(--koluj-green)]"
-                        : "border-[var(--koluj-border)] text-[var(--koluj-muted)]"
-                    }`}
-                  >
-                    {form.handover_options.includes(value) && <Check size={18} />}
-                    {handoverLabels[value]}
-                  </button>
-                  ))}
-                </div>
-              )}
-
-              <textarea
-                value={form.contact_note}
-                onChange={(e) => updateField("contact_note", e.target.value)}
-                placeholder={form.offer_type === "service" ? "Poznámka ke službě, např. dojezd, online varianta nebo ideální časy" : "Poznámka k předání"}
-                className="koluj-input mt-5 min-h-28"
-              />
-            </div>
-
-            <div className="koluj-card p-5 md:p-8">
-              <SectionTitle title="Dostupnost" />
-
-              <div className="mt-6 rounded-3xl border border-[var(--koluj-border)] bg-[var(--koluj-bg)] p-6">
-                <p className="text-lg font-bold text-[var(--koluj-green)]">
-                  📅 Dostupnost se spravuje v kalendáři této nabídky.
-                </p>
-
-                <p className="mt-3 leading-relaxed text-[var(--koluj-muted)]">
-                  Kalendář najdeš v detailu nabídky. Zde můžeš blokovat vlastní termíny,
-                  schvalovat rezervace a sledovat obsazené dny.
-                </p>
-              </div>
-            </div>
-            <div className="xl:hidden">
-              <button
-                type="button"
-                onClick={saveItem}
-                disabled={saving}
-                className="koluj-button w-full px-6 py-4 disabled:opacity-60"
-              >
-                <Save size={18} />
-                {saving ? "Ukládám..." : "Uložit změny"}
-              </button>
-            </div>
-
+            <MobileSubmitButton mode="edit" isSubmitting={saving} onSubmit={saveItem} />
           </div>
 
-          <aside className="hidden self-start xl:block">
-            <div className="koluj-card sticky top-28 p-8">
-              <h2 className="text-2xl font-black">Kontrola</h2>
-
-              <ul className="mt-6 space-y-4 text-[var(--koluj-muted)]">
-                {form.offer_type === "item" ? (
-                  <CheckLine done={images.length + newPhotos.length > 0} text="Alespoň jedna fotka" />
-                ) : (
-                  <CheckLine done={true} text="Fotky jsou volitelné" />
-                )}
-                <CheckLine done={!!form.title} text="Název nabídky" />
-                <CheckLine done={!!form.category} text="Kategorie" />
-                {form.offer_type === "item" && (
-                  <CheckLine done={!!form.condition} text="Stav věci" />
-                )}
-                <CheckLine done={!!form.price_amount && !!form.price_unit} text="Cena" />
-                {form.offer_type === "item" ? (
-                  <CheckLine done={!!form.pickup_latitude} text="Místo předání" />
-                ) : (
-                  <CheckLine done={!!form.pickup_latitude} text="Lokalita působení" />
-                )}
-              </ul>
-
-              <button
-                onClick={saveItem}
-                disabled={saving}
-                className="koluj-button mt-8 w-full px-6 py-4 disabled:opacity-60"
-              >
-                {saving ? "Ukládám..." : "Uložit změny"}
-              </button>
-            </div>
-          </aside>
+          <OfferFormSidebar
+            mode="edit"
+            form={form}
+            photosCount={images.length + newPhotos.length}
+            isSubmitting={saving}
+            onSubmit={saveItem}
+          />
         </section>
+
+        <ConfirmLeaveDialog
+          open={Boolean(pendingNavigationHref)}
+          onStay={() => setPendingNavigationHref(null)}
+          onLeave={leaveWithoutSaving}
+        />
       </div>
     </main>
   );
-}
-function useUnsavedChangesWarning(active: boolean) {
-  useEffect(() => {
-    if (!active) return;
-
-    const message = "Máš neuložené změny. Opravdu chceš odejít?";
-
-    function handleBeforeUnload(event: BeforeUnloadEvent) {
-      event.preventDefault();
-      event.returnValue = message;
-      return message;
-    }
-
-    function handleDocumentClick(event: MouseEvent) {
-      const target = event.target as HTMLElement | null;
-      const anchor = target?.closest("a[href]") as HTMLAnchorElement | null;
-
-      if (!anchor) return;
-      if (anchor.target && anchor.target !== "_self") return;
-      if (anchor.href.startsWith("mailto:")) return;
-
-      const nextUrl = new URL(anchor.href, window.location.href);
-
-      if (nextUrl.origin !== window.location.origin) return;
-      if (nextUrl.href === window.location.href) return;
-
-      if (!window.confirm(message)) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-    }
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    document.addEventListener("click", handleDocumentClick, true);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      document.removeEventListener("click", handleDocumentClick, true);
-    };
-  }, [active]);
 }
