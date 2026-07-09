@@ -7,7 +7,6 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import PageLoader from "@/app/components/PageLoader";
 import BackLink from "@/app/components/BackLink";
-import AvailabilityCalendar from "@/app/components/AvailabilityCalendar";
 import {
   categoryLabels,
   conditionLabels,
@@ -31,6 +30,18 @@ import toast from "react-hot-toast";
 const OffersMap = dynamic(() => import("@/app/components/OffersMap"), {
   ssr: false,
 });
+
+const AvailabilityCalendar = dynamic(
+  () => import("@/app/components/AvailabilityCalendar"),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="rounded-3xl border border-[var(--koluj-border)] bg-white p-5 text-sm font-bold text-[var(--koluj-muted)]">
+        Kalendář dostupnosti se načítá...
+      </div>
+    ),
+  },
+);
 
 function todayIsoDate() {
   const now = new Date();

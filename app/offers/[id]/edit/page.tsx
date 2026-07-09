@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useParams, useRouter } from "next/navigation";
 import {
@@ -43,6 +43,12 @@ const RichTextEditor = dynamic(() => import("@/app/components/RichTextEditor"), 
   ),
 });
 
+type OfferImage = {
+  id: string;
+  image_url: string;
+  sort_order: number | null;
+};
+
 type PlaceSuggestion = {
   name: string;
   label?: string;
@@ -58,7 +64,7 @@ export default function EditItemPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [placeSuggestions, setPlaceSuggestions] = useState<PlaceSuggestion[]>([]);
-  const [images, setImages] = useState<any[]>([]);
+  const [images, setImages] = useState<OfferImage[]>([]);
   const [newPhotos, setNewPhotos] = useState<File[]>([]);
   const [newPhotoPreviews, setNewPhotoPreviews] = useState<string[]>([]);
   const [primaryImageUrl, setPrimaryImageUrl] = useState("");
@@ -84,6 +90,7 @@ export default function EditItemPage() {
   });
   const [initialSnapshot, setInitialSnapshot] = useState("");
   const [allowNavigation, setAllowNavigation] = useState(false);
+  const placeSearchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const currentSnapshot = useMemo(
     () =>
@@ -106,27 +113,16 @@ export default function EditItemPage() {
   useUnsavedChangesWarning(hasUnsavedChanges && !saving && !allowNavigation);
 
   useEffect(() => {
-    loadItem();
-  }, []);
+    return () => {
+      newPhotoPreviews.forEach((preview) => URL.revokeObjectURL(preview));
 
-  function updateField(field: string, value: string) {
-    setForm((prev) => ({ ...prev, [field]: value }));
-  }
+      if (placeSearchTimeoutRef.current) {
+        clearTimeout(placeSearchTimeoutRef.current);
+      }
+    };
+  }, [newPhotoPreviews]);
 
-  function toggleHandoverOption(option: string) {
-    setForm((prev) => {
-      const exists = prev.handover_options.includes(option);
-
-      return {
-        ...prev,
-        handover_options: exists
-          ? prev.handover_options.filter((item) => item !== option)
-          : [...prev.handover_options, option],
-      };
-    });
-  }
-
-  async function loadItem() {
+  const loadItem = useCallback(async () => {
     const response = await fetch(`/api/offers/${offerId}`, {
       cache: "no-store",
     });
@@ -151,10 +147,10 @@ export default function EditItemPage() {
     const rawPriceUnit = data.price_unit || "";
     const normalizedPriceUnit =
       offerType === "service"
-        ? servicePriceUnits.includes(rawPriceUnit as any)
+        ? servicePriceUnits.includes(rawPriceUnit as (typeof servicePriceUnits)[number])
           ? rawPriceUnit
           : "hour"
-        : itemPriceUnits.includes(rawPriceUnit as any)
+        : itemPriceUnits.includes(rawPriceUnit as (typeof itemPriceUnits)[number])
           ? rawPriceUnit
           : "day";
 
@@ -176,7 +172,7 @@ export default function EditItemPage() {
       is_active: data.is_active ?? true,
     };
 
-    const nextImages = result.images || [];
+    const nextImages = (result.images || []) as OfferImage[];
     const nextPrimaryImageUrl = data.primary_image_url || "";
 
     setForm(nextForm);
@@ -185,7 +181,7 @@ export default function EditItemPage() {
     setInitialSnapshot(
       JSON.stringify({
         form: nextForm,
-        images: nextImages.map((image: any) => ({
+        images: nextImages.map((image) => ({
           id: image.id,
           image_url: image.image_url,
           sort_order: image.sort_order ?? null,
@@ -195,26 +191,53 @@ export default function EditItemPage() {
       }),
     );
     setLoading(false);
+  }, [offerId, router]);
+
+  useEffect(() => {
+    void loadItem();
+  }, [loadItem]);
+
+  function updateField(field: string, value: string) {
+    setForm((prev) => ({ ...prev, [field]: value }));
+  }
+
+  function toggleHandoverOption(option: string) {
+    setForm((prev) => {
+      const exists = prev.handover_options.includes(option);
+
+      return {
+        ...prev,
+        handover_options: exists
+          ? prev.handover_options.filter((item) => item !== option)
+          : [...prev.handover_options, option],
+      };
+    });
   }
 
 
-  async function searchPlaces(value: string) {
-    setForm({
-      ...form,
+  function searchPlaces(value: string) {
+    setForm((prev) => ({
+      ...prev,
       pickup_place: value,
       pickup_latitude: null,
       pickup_longitude: null,
-    });
+    }));
 
-    if (value.length < 2) {
+    if (placeSearchTimeoutRef.current) {
+      clearTimeout(placeSearchTimeoutRef.current);
+    }
+
+    if (value.trim().length < 2) {
       setPlaceSuggestions([]);
       return;
     }
 
-    const response = await fetch(`/api/places?q=${encodeURIComponent(value)}`);
-    const data = await response.json();
+    placeSearchTimeoutRef.current = setTimeout(async () => {
+      const response = await fetch(`/api/places?q=${encodeURIComponent(value)}`);
+      const data = await response.json().catch(() => null);
 
-    setPlaceSuggestions(data.items || []);
+      setPlaceSuggestions(data?.items || []);
+    }, 300);
   }
 
   function selectPlace(place: PlaceSuggestion) {
@@ -484,6 +507,7 @@ async function makePrimary(imageUrl: string) {
             >
                 <img
                 src={image.image_url}
+                alt="Fotka nabídky"
                 className="h-36 w-full object-cover"
                 />
 
@@ -524,6 +548,7 @@ async function makePrimary(imageUrl: string) {
             >
                 <img
                 src={preview}
+                alt="Náhled nové fotky"
                 className="h-36 w-full object-cover"
                 />
             </div>

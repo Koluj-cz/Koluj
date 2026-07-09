@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { memo, useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Box,
@@ -63,16 +63,9 @@ export default function MyOffersPage() {
   const [sortBy, setSortBy] = useState("newest");
   const [visibleCount, setVisibleCount] = useState(8);
   const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+  const deferredSearchQuery = useDeferredValue(searchQuery);
 
-  useEffect(() => {
-    loadOffers();
-  }, []);
-
-  useEffect(() => {
-    setVisibleCount(8);
-  }, [searchQuery, offerType, category, statusFilter, sortBy]);
-
-  async function loadOffers() {
+  const loadOffers = useCallback(async () => {
     const response = await fetch("/api/dashboard/my-offers", {
       cache: "no-store",
     });
@@ -87,10 +80,18 @@ export default function MyOffersPage() {
 
     setItems((result?.offers || []) as Offer[]);
     setLoading(false);
-  }
+  }, []);
+
+  useEffect(() => {
+    void loadOffers();
+  }, [loadOffers]);
+
+  useEffect(() => {
+    setVisibleCount(8);
+  }, [deferredSearchQuery, offerType, category, statusFilter, sortBy]);
 
 
-  async function toggleVisibility(item: Offer) {
+  const toggleVisibility = useCallback(async (item: Offer) => {
     const nextValue = !item.is_active;
 
     const response = await fetch("/api/dashboard/my-offers", {
@@ -120,10 +121,10 @@ export default function MyOffersPage() {
     );
 
     toast.success(nextValue ? "Nabídka je znovu viditelná" : "Nabídka je skrytá");
-  }
+  }, []);
 
 
-  async function archiveOffer(item: Offer) {
+  const archiveOffer = useCallback(async (item: Offer) => {
     if (pendingDeleteId !== item.id) {
       setPendingDeleteId(item.id);
       return;
@@ -152,7 +153,7 @@ export default function MyOffersPage() {
 
     setPendingDeleteId(null);
     toast.success("Nabídka byla archivována");
-  }
+  }, [pendingDeleteId]);
 
   const counts = useMemo(() => {
     return {
@@ -165,8 +166,8 @@ export default function MyOffersPage() {
   const filteredOffers = useMemo(() => {
     let result = [...items];
 
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
+    if (deferredSearchQuery.trim()) {
+      const query = deferredSearchQuery.toLowerCase();
 
       result = result.filter((item) =>
         `${item.title} ${item.category} ${item.pickup_place}`
@@ -214,7 +215,7 @@ export default function MyOffersPage() {
     }
 
     return result;
-  }, [items, searchQuery, offerType, category, statusFilter, sortBy]);
+  }, [items, deferredSearchQuery, offerType, category, statusFilter, sortBy]);
 
   const visibleOffers = filteredOffers.slice(0, visibleCount);
 
@@ -308,75 +309,16 @@ export default function MyOffersPage() {
             </div>
           ) : (
             <div className="koluj-offer-grid-wide">
-              {visibleOffers.map((item) => {
-
-                return (
-                <OfferCard
+              {visibleOffers.map((item) => (
+                <OwnerOfferCard
                   key={item.id}
                   item={item}
-                  variant="owner"
-                  footer={
-                    <>
-                      {!item.is_active && (
-                        <p className="mb-3 rounded-2xl bg-[var(--koluj-bg)] px-4 py-2 text-sm font-bold text-[var(--koluj-muted)]">
-                          Skryto pro ostatní
-                        </p>
-                      )}
-
-                      <div className="grid grid-cols-4 gap-1">
-                        <Link
-                          href={`/offers/${item.id}`}
-                          className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-green)] hover:bg-[var(--koluj-bg)]"
-                        >
-                          <CalendarDays size={18} />
-                          Detail
-                        </Link>
-
-                        <Link
-                          href={`/offers/${item.id}/edit`}
-                          className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-text)] hover:bg-[var(--koluj-bg)]"
-                        >
-                          <Pencil size={18} />
-                          Upravit
-                        </Link>
-
-                        <button
-                          type="button"
-                          onClick={() => toggleVisibility(item)}
-                          className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-green)] hover:bg-[var(--koluj-bg)]"
-                        >
-                          {item.is_active ? (
-                            <>
-                              <EyeOff size={18} />
-                              Skrýt
-                            </>
-                          ) : (
-                            <>
-                              <Eye size={18} />
-                              Obnovit
-                            </>
-                          )}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => archiveOffer(item)}
-                          onMouseLeave={() => setPendingDeleteId(null)}
-                          className={`flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight ${
-                            pendingDeleteId === item.id
-                              ? "bg-red-50 text-red-600"
-                              : "text-[var(--koluj-muted)] hover:bg-[var(--koluj-bg)]"
-                          }`}
-                        >
-                          <Trash2 size={18} />
-                          {pendingDeleteId === item.id ? "Opravdu?" : "Odstranit"}
-                        </button>
-                      </div>
-                    </>
-                  }
+                  pendingDeleteId={pendingDeleteId}
+                  onToggleVisibility={toggleVisibility}
+                  onArchiveOffer={archiveOffer}
+                  onClearPendingDelete={() => setPendingDeleteId(null)}
                 />
-                );
-              })}
+              ))}
             </div>
           )}
 
@@ -406,3 +348,83 @@ export default function MyOffersPage() {
     </main>
   );
 }
+
+
+const OwnerOfferCard = memo(function OwnerOfferCard({
+  item,
+  pendingDeleteId,
+  onToggleVisibility,
+  onArchiveOffer,
+  onClearPendingDelete,
+}: {
+  item: Offer;
+  pendingDeleteId: string | null;
+  onToggleVisibility: (item: Offer) => void;
+  onArchiveOffer: (item: Offer) => void;
+  onClearPendingDelete: () => void;
+}) {
+  const footer = useMemo(
+    () => (
+      <>
+        {!item.is_active && (
+          <p className="mb-3 rounded-2xl bg-[var(--koluj-bg)] px-4 py-2 text-sm font-bold text-[var(--koluj-muted)]">
+            Skryto pro ostatní
+          </p>
+        )}
+
+        <div className="grid grid-cols-4 gap-1">
+          <Link
+            href={`/offers/${item.id}`}
+            className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-green)] hover:bg-[var(--koluj-bg)]"
+          >
+            <CalendarDays size={18} />
+            Detail
+          </Link>
+
+          <Link
+            href={`/offers/${item.id}/edit`}
+            className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-text)] hover:bg-[var(--koluj-bg)]"
+          >
+            <Pencil size={18} />
+            Upravit
+          </Link>
+
+          <button
+            type="button"
+            onClick={() => onToggleVisibility(item)}
+            className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-green)] hover:bg-[var(--koluj-bg)]"
+          >
+            {item.is_active ? (
+              <>
+                <EyeOff size={18} />
+                Skrýt
+              </>
+            ) : (
+              <>
+                <Eye size={18} />
+                Obnovit
+              </>
+            )}
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onArchiveOffer(item)}
+            onMouseLeave={onClearPendingDelete}
+            className={`flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight ${
+              pendingDeleteId === item.id
+                ? "bg-red-50 text-red-600"
+                : "text-[var(--koluj-muted)] hover:bg-[var(--koluj-bg)]"
+            }`}
+          >
+            <Trash2 size={18} />
+            {pendingDeleteId === item.id ? "Opravdu?" : "Odstranit"}
+          </button>
+        </div>
+      </>
+    ),
+    [item, onArchiveOffer, onClearPendingDelete, onToggleVisibility, pendingDeleteId],
+  );
+
+  return <OfferCard item={item} variant="owner" footer={footer} />;
+});
