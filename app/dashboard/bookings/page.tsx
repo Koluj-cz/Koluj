@@ -198,6 +198,8 @@ export default function BookingsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<BookingStatus>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("all");
+  const [showLists, setShowLists] = useState(false);
+  const [visibleListCount, setVisibleListCount] = useState(10);
   const [visibleMonth, setVisibleMonth] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -280,6 +282,10 @@ export default function BookingsPage() {
     );
   }
 
+  useEffect(() => {
+    setVisibleListCount(10);
+  }, [filter, viewMode]);
+
   const statusCounts = useMemo(() => {
     const counts: Record<BookingStatus, number> = {
       all: allBookings.length,
@@ -315,20 +321,20 @@ export default function BookingsPage() {
       title: "Půjčuji si",
       subtitle: "Rezervace, které řešíš jako zájemce.",
       emptyText: "Žádné rezervace pro vybraný filtr.",
-      items: filteredBorrowing,
-      loadedCount: borrowing.length,
-      total: borrowingTotal,
-      onLoadMore: () => setBorrowingPage((page) => page + 1),
+      items: filteredBorrowing.slice(0, visibleListCount),
+      loadedCount: Math.min(filteredBorrowing.length, visibleListCount),
+      total: filteredBorrowing.length,
+      onLoadMore: () => setVisibleListCount((count) => count + 10),
     },
     {
       key: "lending",
       title: "Půjčuji ostatním",
       subtitle: "Žádosti a rezervace k tvým nabídkám.",
       emptyText: "Žádné rezervace pro vybraný filtr.",
-      items: filteredLending,
-      loadedCount: lending.length,
-      total: lendingTotal,
-      onLoadMore: () => setLendingPage((page) => page + 1),
+      items: filteredLending.slice(0, visibleListCount),
+      loadedCount: Math.min(filteredLending.length, visibleListCount),
+      total: filteredLending.length,
+      onLoadMore: () => setVisibleListCount((count) => count + 10),
     },
   ];
 
@@ -336,7 +342,6 @@ export default function BookingsPage() {
     (group) => viewMode === "all" || viewMode === group.key,
   );
 
-  const waitingCount = statusCounts.requested + statusCounts.approved;
 
   return (
     <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
@@ -353,53 +358,17 @@ export default function BookingsPage() {
             )}
           </div>
 
-          <div className="mt-8 grid gap-8 xl:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)]">
-            <div>
-              <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
-                Můj prostor
-              </p>
+          <div className="mt-8">
+            <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
+              Můj prostor
+            </p>
 
-              <h1 className="koluj-heading mt-3">Rezervace</h1>
+            <h1 className="koluj-heading mt-3">Rezervace</h1>
 
-              <p className="mt-5 max-w-2xl text-lg leading-relaxed text-[var(--koluj-muted)] md:text-xl">
-                Přehled žádostí, probíhajících půjčení a historie. Nahoře hned
-                vidíš, co čeká na reakci.
-              </p>
-            </div>
-
-            {!loading && (
-              <div className="grid gap-3 sm:grid-cols-2">
-                <SummaryCard
-                  title="Čeká na řešení"
-                  value={waitingCount}
-                  text={`${bookingStatusLabels.requested} + ${bookingStatusLabels.approved}`}
-                  icon={<Clock3 size={24} />}
-                  active={waitingCount > 0}
-                />
-
-                <SummaryCard
-                  title={bookingStatusLabels.active}
-                  value={statusCounts.active}
-                  text="Aktuálně probíhající rezervace"
-                  icon={<Handshake size={24} />}
-                  active={statusCounts.active > 0}
-                />
-
-                <SummaryCard
-                  title={bookingStatusLabels.returned}
-                  value={statusCounts.returned}
-                  text="Dokončené rezervace"
-                  icon={<RotateCcw size={24} />}
-                />
-
-                <SummaryCard
-                  title={bookingStatusLabels.cancelled}
-                  value={statusCounts.cancelled}
-                  text="Zrušené žádosti a rezervace"
-                  icon={<XCircle size={24} />}
-                />
-              </div>
-            )}
+            <p className="mt-5 max-w-3xl text-lg leading-relaxed text-[var(--koluj-muted)] md:text-xl">
+              Primární přehled rezervací najdeš v kalendáři. Seznam níže si můžeš rozbalit
+              jen tehdy, když chceš řešit detailnější přehled.
+            </p>
           </div>
         </section>
 
@@ -478,10 +447,41 @@ export default function BookingsPage() {
               />
             </section>
 
-            <section className="mt-6 grid gap-6 xl:grid-cols-2">
-              {visibleGroups.map((group) => (
-                <BookingColumn key={group.key} group={group} />
-              ))}
+            <section className="mt-6">
+              {!showLists ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowLists(true);
+                    setVisibleListCount(10);
+                  }}
+                  className="koluj-button w-full px-6 py-4"
+                >
+                  Zobrazit seznam rezervací
+                </button>
+              ) : (
+                <>
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+                    <p className="text-sm font-bold text-[var(--koluj-muted)]">
+                      Zobrazuji prvních {visibleListCount} rezervací podle aktuálních filtrů.
+                    </p>
+
+                    <button
+                      type="button"
+                      onClick={() => setShowLists(false)}
+                      className="rounded-2xl bg-white px-4 py-2 text-sm font-black text-[var(--koluj-muted)] hover:text-[var(--koluj-green)]"
+                    >
+                      Skrýt seznam
+                    </button>
+                  </div>
+
+                  <div className="grid gap-6 xl:grid-cols-2">
+                    {visibleGroups.map((group) => (
+                      <BookingColumn key={group.key} group={group} />
+                    ))}
+                  </div>
+                </>
+              )}
             </section>
           </>
         )}
@@ -710,56 +710,6 @@ function CalendarLegend({ className, label }: { className: string; label: string
 }
 
 
-function SummaryCard({
-  title,
-  value,
-  text,
-  icon,
-  active = false,
-}: {
-  title: string;
-  value: number;
-  text: string;
-  icon: ReactNode;
-  active?: boolean;
-}) {
-  return (
-    <div
-      className={`rounded-[26px] border p-5 ${
-        active
-          ? "border-[var(--koluj-green)] bg-white shadow-[0_18px_42px_rgba(22,163,74,0.14)]"
-          : "border-[var(--koluj-border)] bg-white/76"
-      }`}
-    >
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <p className="text-sm font-black text-[var(--koluj-muted)]">
-            {title}
-          </p>
-
-          <p className="mt-2 text-4xl font-black tracking-[-0.05em] text-[var(--koluj-ink)]">
-            {value}
-          </p>
-        </div>
-
-        <span
-          className={`flex h-12 w-12 items-center justify-center rounded-2xl ${
-            active
-              ? "bg-[var(--koluj-green)] text-white"
-              : "bg-[var(--koluj-bg)] text-[var(--koluj-green)]"
-          }`}
-        >
-          {icon}
-        </span>
-      </div>
-
-      <p className="mt-3 text-sm font-bold leading-relaxed text-[var(--koluj-muted)]">
-        {text}
-      </p>
-    </div>
-  );
-}
-
 function ViewModeButton({
   label,
   active,
@@ -863,8 +813,10 @@ function BookingCard({
       : booking.customer?.full_name || "Uživatel";
 
   const statusClass =
-    bookingStatusClasses[booking.status] ||
-    "bg-[var(--koluj-bg)] text-[var(--koluj-muted)]";
+    booking.status === "returned"
+      ? "bg-stone-200 text-stone-700"
+      : bookingStatusClasses[booking.status] ||
+        "bg-[var(--koluj-bg)] text-[var(--koluj-muted)]";
 
   const icon =
     booking.status === "requested" ||
