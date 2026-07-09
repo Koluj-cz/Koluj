@@ -69,6 +69,7 @@ export default function EditItemPage() {
         })),
         primaryImageUrl,
         mainPhotoIndex,
+        newPhotoPreviewsCount: newPhotoPreviews.length,
         newPhotos: newPhotos.map((photo) => ({
           name: photo.name,
           size: photo.size,
@@ -76,7 +77,7 @@ export default function EditItemPage() {
           lastModified: photo.lastModified,
         })),
       }),
-    [form, images, primaryImageUrl, mainPhotoIndex, newPhotos],
+    [form, images, primaryImageUrl, mainPhotoIndex, newPhotos, newPhotoPreviews.length],
   );
 
   const hasUnsavedChanges =
@@ -153,6 +154,7 @@ export default function EditItemPage() {
         })),
         primaryImageUrl: nextPrimaryImageUrl,
         mainPhotoIndex: -1,
+        newPhotoPreviewsCount: 0,
         newPhotos: [],
       }),
     );

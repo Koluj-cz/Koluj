@@ -47,6 +47,7 @@ export default function NewItemPage() {
   const hasUnsavedChanges = useMemo(() => {
     return (
       photos.length > 0 ||
+      photoPreviews.length > 0 ||
       form.offer_type !== initialForm.offer_type ||
       form.title.trim() !== "" ||
       form.description.trim() !== "" ||
@@ -62,7 +63,7 @@ export default function NewItemPage() {
       form.handover_options.length > 0 ||
       form.contact_note.trim() !== ""
     );
-  }, [form, photos]);
+  }, [form, photos, photoPreviews.length]);
 
   useUnsavedChangesWarning(
     hasUnsavedChanges && !loading && !allowNavigation,
