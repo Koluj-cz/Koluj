@@ -5,12 +5,14 @@ import {
   createSupabaseAdminClient,
 } from "@/lib/supabase/server";
 
-export const dynamic = "force-dynamic";
-
 const ITEMS_PER_PAGE = 10;
 
+export const dynamic = "force-dynamic";
+
 async function attachTodayAvailability(items: OfferCardOffer[]) {
-  if (items.length === 0) return items;
+  if (items.length === 0) {
+    return items;
+  }
 
   const supabaseAdmin = createSupabaseAdminClient();
   const today = new Date().toISOString().split("T")[0];
@@ -32,9 +34,8 @@ async function attachTodayAvailability(items: OfferCardOffer[]) {
       .gte("date_to", today),
   ]);
 
-  if (reservationsResult.error || blocksResult.error) {
-    return items.map((item) => ({ ...item, is_reserved_today: false }));
-  }
+  if (reservationsResult.error) throw new Error(reservationsResult.error.message);
+  if (blocksResult.error) throw new Error(blocksResult.error.message);
 
   const reservedIds = new Set([
     ...(reservationsResult.data || []).map((row) => row.offer_id),
@@ -54,31 +55,31 @@ async function loadInitialOffers() {
     .from("offers")
     .select(
       `
-        id,
-        title,
-        description,
-        offer_type,
-        category,
-        condition,
-        pickup_place,
-        pickup_latitude,
-        pickup_longitude,
-        price_amount,
-        price_unit,
-        primary_image_url,
-        created_at,
-        status,
-        owner_id,
-        profiles:profiles!offers_owner_id_fkey (
-          full_name,
-          avatar_url,
-          is_verified,
-          profile_ratings (
-            rating_avg,
-            rating_count
-          )
+      id,
+      title,
+      description,
+      offer_type,
+      category,
+      condition,
+      pickup_place,
+      pickup_latitude,
+      pickup_longitude,
+      price_amount,
+      price_unit,
+      primary_image_url,
+      created_at,
+      status,
+      owner_id,
+      profiles:profiles!offers_owner_id_fkey (
+        full_name,
+        avatar_url,
+        is_verified,
+        profile_ratings (
+          rating_avg,
+          rating_count
         )
-      `,
+      )
+    `,
       { count: "exact" },
     )
     .eq("is_active", true)
@@ -91,15 +92,17 @@ async function loadInitialOffers() {
     return { offers: [], count: 0 };
   }
 
-  const offers = await attachTodayAvailability((data || []) as OfferCardOffer[]);
+  const rawOffers = (data ?? []) as unknown as OfferCardOffer[];
+
+  const offers = await attachTodayAvailability(rawOffers);
 
   return {
     offers,
-    count: count || 0,
+    count: count ?? 0,
   };
 }
 
-async function isCurrentUserLoggedIn() {
+async function getInitialAuthState() {
   const supabase = await createRequestSupabaseClient();
   const {
     data: { user },
@@ -109,16 +112,16 @@ async function isCurrentUserLoggedIn() {
 }
 
 export default async function HomePage() {
-  const [{ offers, count }, isLoggedIn] = await Promise.all([
+  const [{ offers, count }, initialIsLoggedIn] = await Promise.all([
     loadInitialOffers(),
-    isCurrentUserLoggedIn(),
+    getInitialAuthState(),
   ]);
 
   return (
     <HomePageClient
-      initialItems={offers}
-      initialTotalItems={count}
-      initialIsLoggedIn={isLoggedIn}
+      initialOffers={offers}
+      initialCount={count}
+      initialIsLoggedIn={initialIsLoggedIn}
     />
   );
 }

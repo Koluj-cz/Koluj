@@ -35,31 +35,31 @@ function getCategoryLabel(category: string, offerType: OfferTypeFilter) {
 }
 
 type HomePageClientProps = {
-  initialItems: OfferCardOffer[];
-  initialTotalItems: number;
+  initialOffers: OfferCardOffer[];
+  initialCount: number;
   initialIsLoggedIn: boolean;
 };
 
 export default function HomePageClient({
-  initialItems,
-  initialTotalItems,
+  initialOffers,
+  initialCount,
   initialIsLoggedIn,
 }: HomePageClientProps) {
-  const [items, setItems] = useState<OfferCardOffer[]>(initialItems);
+  const [items, setItems] = useState<OfferCardOffer[]>(initialOffers);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedOfferType, setSelectedOfferType] = useState<OfferTypeFilter>("all");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
-  const [isLoggedIn] = useState(initialIsLoggedIn);
-  const [totalItems, setTotalItems] = useState(initialTotalItems);
-  const [page, setPage] = useState(initialItems.length > 0 ? 1 : 0);
+  const isLoggedIn = initialIsLoggedIn;
+  const [totalItems, setTotalItems] = useState(initialCount);
+  const [page, setPage] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
-  const [hasMoreItems, setHasMoreItems] = useState(initialItems.length < initialTotalItems);
+  const [hasMoreItems, setHasMoreItems] = useState(initialOffers.length < initialCount);
 
+  const initialFilterRenderRef = useRef(true);
   const loadingRef = useRef(false);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
-  const didSkipInitialFilterLoadRef = useRef(false);
 
   const availableCategories = useMemo(() => {
     if (selectedOfferType === "item") return [...itemCategories];
@@ -75,7 +75,6 @@ export default function HomePageClient({
     const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 250);
     return () => window.clearTimeout(timer);
   }, [search]);
-
 
   const loadItems = useCallback(
     async ({ reset = false }: { reset?: boolean } = {}) => {
@@ -125,8 +124,8 @@ export default function HomePageClient({
   );
 
   useEffect(() => {
-    if (!didSkipInitialFilterLoadRef.current) {
-      didSkipInitialFilterLoadRef.current = true;
+    if (initialFilterRenderRef.current) {
+      initialFilterRenderRef.current = false;
       return;
     }
 
