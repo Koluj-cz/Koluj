@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import PageLoader from "@/app/components/PageLoader";
+import ConfirmLeaveDialog from "@/app/components/ConfirmLeaveDialog";
+import { useUnsavedChangesWarning } from "@/lib/hooks/useUnsavedChangesWarning";
 import BackLink from "@/app/components/BackLink";
 import {
   categories,

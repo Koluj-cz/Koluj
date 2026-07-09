@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import {
@@ -31,6 +31,8 @@ import {
 } from "@/lib/constants";
 import SectionTitle from "@/app/components/SectionTitle";
 import CheckLine from "@/app/components/CheckLine";
+import ConfirmLeaveDialog from "@/app/components/ConfirmLeaveDialog";
+import { useUnsavedChangesWarning } from "@/lib/hooks/useUnsavedChangesWarning";
 
 const RichTextEditor = dynamic(() => import("@/app/components/RichTextEditor"), {
   ssr: false,
@@ -76,6 +78,8 @@ export default function NewItemPage() {
     contact_note: "",
   });
   const [allowNavigation, setAllowNavigation] = useState(false);
+  const [pendingNavigationHref, setPendingNavigationHref] = useState<string | null>(null);
+  const photoPreviewsRef = useRef<string[]>([]);
 
   const hasUnsavedChanges = useMemo(() => {
     return (
@@ -95,9 +99,22 @@ export default function NewItemPage() {
       form.handover_options.length > 0 ||
       form.contact_note.trim() !== ""
     );
-  }, [form, photos.length]);
+  }, [form, photos]);
 
-  useUnsavedChangesWarning(hasUnsavedChanges && !loading && !allowNavigation);
+  useUnsavedChangesWarning(
+    hasUnsavedChanges && !loading && !allowNavigation,
+    setPendingNavigationHref,
+  );
+
+  useEffect(() => {
+    photoPreviewsRef.current = photoPreviews;
+  }, [photoPreviews]);
+
+  useEffect(() => {
+    return () => {
+      photoPreviewsRef.current.forEach((preview) => URL.revokeObjectURL(preview));
+    };
+  }, []);
 
   function updateField(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -120,6 +137,8 @@ export default function NewItemPage() {
     if (!files) return;
 
     const selectedFiles = Array.from(files);
+
+    if (selectedFiles.length === 0) return;
 
     if (photos.length + selectedFiles.length > 8) {
       toast.error("Můžeš nahrát maximálně 8 fotek");
@@ -168,6 +187,12 @@ export default function NewItemPage() {
   }
 
   function removePhoto(index: number) {
+    const previewToRevoke = photoPreviews[index];
+
+    if (previewToRevoke) {
+      URL.revokeObjectURL(previewToRevoke);
+    }
+
     const newPhotos = photos.filter((_, i) => i !== index);
     const newPreviews = photoPreviews.filter((_, i) => i !== index);
 
@@ -676,47 +701,21 @@ export default function NewItemPage() {
             </div>
           </aside>
         </section>
+
+        <ConfirmLeaveDialog
+          open={Boolean(pendingNavigationHref)}
+          onStay={() => setPendingNavigationHref(null)}
+          onLeave={() => {
+            const href = pendingNavigationHref;
+
+            if (!href) return;
+
+            setAllowNavigation(true);
+            setPendingNavigationHref(null);
+            window.location.href = href;
+          }}
+        />
       </div>
     </main>
   );
-}
-function useUnsavedChangesWarning(active: boolean) {
-  useEffect(() => {
-    if (!active) return;
-
-    const message = "Máš neuložené změny. Opravdu chceš odejít?";
-
-    function handleBeforeUnload(event: BeforeUnloadEvent) {
-      event.preventDefault();
-      event.returnValue = message;
-      return message;
-    }
-
-    function handleDocumentClick(event: MouseEvent) {
-      const target = event.target as HTMLElement | null;
-      const anchor = target?.closest("a[href]") as HTMLAnchorElement | null;
-
-      if (!anchor) return;
-      if (anchor.target && anchor.target !== "_self") return;
-      if (anchor.href.startsWith("mailto:")) return;
-
-      const nextUrl = new URL(anchor.href, window.location.href);
-
-      if (nextUrl.origin !== window.location.origin) return;
-      if (nextUrl.href === window.location.href) return;
-
-      if (!window.confirm(message)) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-    }
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    document.addEventListener("click", handleDocumentClick, true);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      document.removeEventListener("click", handleDocumentClick, true);
-    };
-  }, [active]);
 }
