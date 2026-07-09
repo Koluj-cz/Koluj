@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import {
   Camera,
@@ -12,8 +13,6 @@ import {
   X,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import imageCompression from "browser-image-compression";
-import RichTextEditor from "@/app/components/RichTextEditor";
 import BackLink from "@/app/components/BackLink";
 import {
   categories,
@@ -32,6 +31,15 @@ import {
 } from "@/lib/constants";
 import SectionTitle from "@/app/components/SectionTitle";
 import CheckLine from "@/app/components/CheckLine";
+
+const RichTextEditor = dynamic(() => import("@/app/components/RichTextEditor"), {
+  ssr: false,
+  loading: () => (
+    <div className="rounded-3xl border border-[var(--koluj-border)] bg-white p-4 text-sm font-bold text-[var(--koluj-muted)]">
+      Editor popisu se načítá...
+    </div>
+  ),
+});
 
 type PlaceSuggestion = {
   name: string;
@@ -131,9 +139,11 @@ export default function NewItemPage() {
     setUploadProgress(10);
     
     try {
-    const compressedFiles = await Promise.all(
-      selectedFiles.map((file) =>
-        imageCompression(file, {
+      const imageCompression = (await import("browser-image-compression")).default;
+
+      const compressedFiles = await Promise.all(
+        selectedFiles.map((file) =>
+          imageCompression(file, {
           maxSizeMB: 0.7,
           maxWidthOrHeight: 1400,
           useWebWorker: true,

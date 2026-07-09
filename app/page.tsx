@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import dynamic from "next/dynamic";
 import {
   ArrowRight,
   Leaf,
@@ -13,6 +12,7 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
+import LazyOffersMap from "@/app/components/LazyOffersMap";
 import InstallAppButton from "@/app/components/InstallAppButton";
 import { getDistanceKm } from "@/lib/location";
 import {
@@ -23,7 +23,6 @@ import {
   serviceCategoryLabels,
 } from "@/lib/constants";
 
-const OffersMap = dynamic(() => import("@/app/components/OffersMap"), { ssr: false });
 
 const ITEMS_PER_PAGE = 10;
 
@@ -338,7 +337,7 @@ export default function HomePage() {
               </div>
 
               <div className="koluj-hero-map" aria-label="Mapa nabídek v okolí">
-                <OffersMap items={sortedItems} userLocation={userLocation} />
+                <LazyOffersMap items={sortedItems} userLocation={userLocation} />
               </div>
             </section>
 

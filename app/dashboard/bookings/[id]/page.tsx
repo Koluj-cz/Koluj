@@ -94,17 +94,31 @@ export default function BookingDetailPage() {
     loadBooking();
 
     const interval = setInterval(async () => {
+      if (document.hidden) return;
+
       const shouldScroll = isNearBottom();
       await loadBooking(false);
       if (shouldScroll) scrollMessagesToBottom("smooth");
     }, 15000);
 
-    return () => clearInterval(interval);
+    function handleVisibilityChange() {
+      if (!document.hidden) {
+        loadBooking(false);
+        updatePresence();
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, [bookingId]);
 
 
   async function updatePresence() {
-    if (!userId) return;
+    if (!userId || document.hidden) return;
 
     await fetch(`/api/bookings/${bookingId}/presence`, {
       method: "POST",
@@ -119,7 +133,7 @@ export default function BookingDetailPage() {
 
     const interval = setInterval(() => {
       updatePresence();
-    }, 30000);
+    }, 15000);
 
     return () => clearInterval(interval);
   }, [userId, bookingId]);
