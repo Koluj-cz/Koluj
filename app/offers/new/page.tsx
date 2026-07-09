@@ -152,7 +152,9 @@ export default function NewItemPage() {
 
     setAllowNavigation(true);
     setPendingNavigationHref(null);
-    window.location.href = href;
+
+    const nextUrl = new URL(href, window.location.href);
+    router.push(`${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
   }
 
   return (

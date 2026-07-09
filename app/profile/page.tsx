@@ -7,6 +7,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import PageLoader from "@/app/components/PageLoader";
 import PushNotificationButton from "@/app/components/PushNotificationButton";
+import ConfirmLeaveDialog from "@/app/components/ConfirmLeaveDialog";
+import { useUnsavedChangesWarning } from "@/lib/hooks/useUnsavedChangesWarning";
 
 type PlaceSuggestion = {
   name: string;
@@ -40,12 +42,17 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [initialSnapshot, setInitialSnapshot] = useState("");
   const [allowNavigation, setAllowNavigation] = useState(false);
+  const [pendingNavigationHref, setPendingNavigationHref] = useState<string | null>(null);
+  const [pendingLeaveAction, setPendingLeaveAction] = useState<(() => void) | null>(null);
 
   const currentSnapshot = useMemo(() => JSON.stringify(profile), [profile]);
   const hasUnsavedChanges =
     !loading && Boolean(initialSnapshot) && currentSnapshot !== initialSnapshot;
 
-  useUnsavedChangesWarning(hasUnsavedChanges && !saving && !allowNavigation);
+  useUnsavedChangesWarning(
+    hasUnsavedChanges && !saving && !allowNavigation,
+    setPendingNavigationHref,
+  );
 
   useEffect(() => {
     loadProfile();
@@ -182,9 +189,22 @@ export default function ProfilePage() {
     }
   }
 
-  async function deactivateAccount() {
-    if (!confirmNavigation()) return;
+  function requestLeaveConfirmation(action: () => void) {
+    if (!hasUnsavedChanges || allowNavigation) {
+      action();
+      return;
+    }
 
+    setPendingLeaveAction(() => action);
+  }
+
+  async function deactivateAccount() {
+    requestLeaveConfirmation(() => {
+      void deactivateAccountConfirmed();
+    });
+  }
+
+  async function deactivateAccountConfirmed() {
     setDeletingAccount(true);
 
     try {
@@ -205,7 +225,7 @@ export default function ProfilePage() {
 
       setAllowNavigation(true);
       toast.success("Účet byl deaktivován");
-      window.location.href = "/";
+      router.push("/");
     } catch (error) {
       console.error(error);
       toast.error("Nepodařilo se deaktivovat účet");
@@ -215,8 +235,12 @@ export default function ProfilePage() {
   }
 
   async function logout() {
-    if (!confirmNavigation()) return;
+    requestLeaveConfirmation(() => {
+      void logoutConfirmed();
+    });
+  }
 
+  async function logoutConfirmed() {
     const response = await fetch("/api/auth/signout", {
       method: "POST",
     });
@@ -228,14 +252,27 @@ export default function ProfilePage() {
 
     setAllowNavigation(true);
     toast.success("Byl jsi odhlášen");
-
     router.push("/");
   }
 
-  function confirmNavigation() {
-    if (!hasUnsavedChanges || allowNavigation) return true;
+  function leaveWithoutSaving() {
+    setAllowNavigation(true);
 
-    return window.confirm("Máš neuložené změny. Opravdu chceš odejít?");
+    if (pendingLeaveAction) {
+      const action = pendingLeaveAction;
+      setPendingLeaveAction(null);
+      action();
+      return;
+    }
+
+    const href = pendingNavigationHref;
+
+    if (!href) return;
+
+    setPendingNavigationHref(null);
+
+    const nextUrl = new URL(href, window.location.href);
+    router.push(`${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
   }
 
   if (loading) {
@@ -258,11 +295,6 @@ export default function ProfilePage() {
             <Link
               href="/dashboard"
               prefetch={false}
-              onClick={(event) => {
-                if (!confirmNavigation()) {
-                  event.preventDefault();
-                }
-              }}
               className="koluj-header-button"
             >
               <ArrowLeft size={17} />
@@ -497,8 +529,8 @@ export default function ProfilePage() {
 
           </div>
 
-          <aside className="hidden self-start xl:block">
-            <div className="koluj-card sticky top-28 p-8">
+          <aside className="hidden self-start xl:sticky xl:top-28 xl:block">
+            <div className="koluj-card p-8">
               <h2 className="text-2xl font-black">Kontrola profilu</h2>
 
               <ul className="mt-6 space-y-4 text-[var(--koluj-muted)]">
@@ -517,6 +549,15 @@ export default function ProfilePage() {
             </div>
           </aside>
         </section>
+
+        <ConfirmLeaveDialog
+          open={Boolean(pendingNavigationHref || pendingLeaveAction)}
+          onStay={() => {
+            setPendingNavigationHref(null);
+            setPendingLeaveAction(null);
+          }}
+          onLeave={leaveWithoutSaving}
+        />
       </div>
     </main>
   );
@@ -558,43 +599,3 @@ function CheckLine({ done, text }: { done: boolean; text: string }) {
   );
 }
 
-function useUnsavedChangesWarning(active: boolean) {
-  useEffect(() => {
-    if (!active) return;
-
-    const message = "Máš neuložené změny. Opravdu chceš odejít?";
-
-    function handleBeforeUnload(event: BeforeUnloadEvent) {
-      event.preventDefault();
-      event.returnValue = message;
-      return message;
-    }
-
-    function handleDocumentClick(event: MouseEvent) {
-      const target = event.target as HTMLElement | null;
-      const anchor = target?.closest("a[href]") as HTMLAnchorElement | null;
-
-      if (!anchor) return;
-      if (anchor.target && anchor.target !== "_self") return;
-      if (anchor.href.startsWith("mailto:")) return;
-
-      const nextUrl = new URL(anchor.href, window.location.href);
-
-      if (nextUrl.origin !== window.location.origin) return;
-      if (nextUrl.href === window.location.href) return;
-
-      if (!window.confirm(message)) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-    }
-
-    window.addEventListener("beforeunload", handleBeforeUnload);
-    document.addEventListener("click", handleDocumentClick, true);
-
-    return () => {
-      window.removeEventListener("beforeunload", handleBeforeUnload);
-      document.removeEventListener("click", handleDocumentClick, true);
-    };
-  }, [active]);
-}

@@ -289,7 +289,9 @@ export default function EditItemPage() {
 
     setAllowNavigation(true);
     setPendingNavigationHref(null);
-    window.location.href = href;
+
+    const nextUrl = new URL(href, window.location.href);
+    router.push(`${nextUrl.pathname}${nextUrl.search}${nextUrl.hash}`);
   }
 
   if (loading) {
