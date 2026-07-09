@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {
   ArrowRight,
   Leaf,
@@ -12,7 +13,6 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
-import LazyOffersMap from "@/app/components/LazyOffersMap";
 import InstallAppButton from "@/app/components/InstallAppButton";
 import { getDistanceKm } from "@/lib/location";
 import {
@@ -23,6 +23,7 @@ import {
   serviceCategoryLabels,
 } from "@/lib/constants";
 
+const OffersMap = dynamic(() => import("@/app/components/OffersMap"), { ssr: false });
 
 const ITEMS_PER_PAGE = 10;
 
@@ -47,6 +48,8 @@ export default function HomePage() {
   const [hasMoreItems, setHasMoreItems] = useState(true);
 
   const loadingRef = useRef(false);
+  const pageRef = useRef(0);
+  const requestIdRef = useRef(0);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
 
   const availableCategories = useMemo(() => {
@@ -64,23 +67,25 @@ export default function HomePage() {
     return () => window.clearTimeout(timer);
   }, [search]);
 
-  useEffect(() => {
-    loadUser();
-  }, []);
-
-  async function loadUser() {
+  const loadUser = useCallback(async () => {
     const response = await fetch("/api/me", { cache: "no-store" });
     setIsLoggedIn(response.ok);
-  }
+  }, []);
+
+  useEffect(() => {
+    void loadUser();
+  }, [loadUser]);
 
   const loadItems = useCallback(
     async ({ reset = false }: { reset?: boolean } = {}) => {
       if (loadingRef.current) return;
 
-      const nextPage = reset ? 0 : page;
+      const nextPage = reset ? 0 : pageRef.current;
       const from = nextPage * ITEMS_PER_PAGE;
       const to = from + ITEMS_PER_PAGE - 1;
+      const requestId = requestIdRef.current + 1;
 
+      requestIdRef.current = requestId;
       loadingRef.current = true;
       setIsLoading(true);
 
@@ -99,6 +104,10 @@ export default function HomePage() {
 
       const result = await response.json().catch(() => null);
 
+      if (requestId !== requestIdRef.current) {
+        return;
+      }
+
       if (!response.ok) {
         console.error("Offers load error:", result?.error);
         toast.error(result?.error || "Nepodařilo se načíst nabídky.");
@@ -113,20 +122,20 @@ export default function HomePage() {
       setItems((currentItems) => (reset ? itemsWithAvailability : [...currentItems, ...itemsWithAvailability]));
       setTotalItems(count);
       setHasMoreItems(to + 1 < count);
-      setPage(nextPage + 1);
+      pageRef.current = nextPage + 1;
+      setPage(pageRef.current);
       setIsLoading(false);
       loadingRef.current = false;
     },
-    [debouncedSearch, page, selectedCategory, selectedOfferType],
+    [debouncedSearch, selectedCategory, selectedOfferType],
   );
 
   useEffect(() => {
-    setItems([]);
+    pageRef.current = 0;
     setPage(0);
     setHasMoreItems(true);
     void loadItems({ reset: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedSearch, selectedCategory, selectedOfferType]);
+  }, [loadItems]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -337,7 +346,7 @@ export default function HomePage() {
               </div>
 
               <div className="koluj-hero-map" aria-label="Mapa nabídek v okolí">
-                <LazyOffersMap items={sortedItems} userLocation={userLocation} />
+                <OffersMap items={sortedItems} userLocation={userLocation} />
               </div>
             </section>
 

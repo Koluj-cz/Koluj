@@ -1,3 +1,4 @@
+import { memo } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -81,7 +82,7 @@ function shortPlace(place: string) {
   );
 }
 
-export default function OfferCard({ item, variant = "public", footer }: OfferCardProps) {
+function OfferCard({ item, variant = "public", footer }: OfferCardProps) {
   const isReserved = Boolean(item.is_reserved_today);
   const isService = item.offer_type === "service";
   const typeLabel = isService ? "Služba" : "Věc";
@@ -204,3 +205,5 @@ export default function OfferCard({ item, variant = "public", footer }: OfferCar
     </Link>
   );
 }
+
+export default memo(OfferCard);
