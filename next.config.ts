@@ -1,5 +1,10 @@
 import { withSentryConfig } from "@sentry/nextjs";
 import type { NextConfig } from "next";
+import bundleAnalyzer from "@next/bundle-analyzer";
+
+const withBundleAnalyzer = bundleAnalyzer({
+  enabled: process.env.ANALYZE === "true",
+});
 
 const supabaseHostname = process.env.NEXT_PUBLIC_SUPABASE_URL
   ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname
@@ -99,16 +104,20 @@ const nextConfig: NextConfig = {
   },
 };
 
-export default withSentryConfig(nextConfig, {
-  org: "koluj",
-  project: "javascript-nextjs",
-  silent: !process.env.CI,
-  widenClientFileUpload: true,
+export default withBundleAnalyzer(
+  withSentryConfig(nextConfig, {
+    org: "koluj",
+    project: "javascript-nextjs",
 
-  webpack: {
-    automaticVercelMonitors: true,
-    treeshake: {
-      removeDebugLogging: true,
+    silent: !process.env.CI,
+
+    widenClientFileUpload: true,
+
+    webpack: {
+      automaticVercelMonitors: true,
+      treeshake: {
+        removeDebugLogging: true,
+      },
     },
-  },
-});
+  })
+);
