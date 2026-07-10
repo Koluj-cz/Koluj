@@ -429,27 +429,6 @@ export default function ItemDetailPage() {
         <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <BackLink href="/">Domů</BackLink>
-
-            {currentUserId ? (
-              isOwner ? (
-                <Link
-                  href={`/offers/${item.id}/edit`}
-                  prefetch={false}
-                  className="koluj-header-button"
-                >
-                  <Edit size={17} />
-                  Upravit nabídku
-                </Link>
-              ) : (
-              <Link href="/dashboard" prefetch={false} className="koluj-header-button">
-                Můj prostor
-              </Link>
-              )
-            ) : (
-              <Link href="/login" className="koluj-header-button">
-                Přihlásit se
-              </Link>
-            )}
           </div>
         </section>
 
