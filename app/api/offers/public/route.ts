@@ -2,42 +2,9 @@ import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { errorMessage } from "@/lib/security";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
+import { attachTodayAvailabilityServer } from "@/lib/services/offerAvailabilityStatusService";
 
 const MAX_LIMIT = 30;
-
-async function attachTodayAvailability<T extends { id: string }>(items: T[]) {
-  if (items.length === 0) return items.map((item) => ({ ...item, is_reserved_today: false }));
-
-  const supabaseAdmin = createSupabaseAdminClient();
-  const today = new Date().toISOString().split("T")[0];
-  const offerIds = items.map((item) => item.id);
-
-  const [reservationsResult, blocksResult] = await Promise.all([
-    supabaseAdmin
-      .from("offer_reservations")
-      .select("offer_id")
-      .in("offer_id", offerIds)
-      .eq("status", "active")
-      .lte("date_from", today)
-      .gte("date_to", today),
-    supabaseAdmin
-      .from("offer_availability_blocks")
-      .select("offer_id")
-      .in("offer_id", offerIds)
-      .lte("date_from", today)
-      .gte("date_to", today),
-  ]);
-
-  if (reservationsResult.error) throw new Error(reservationsResult.error.message);
-  if (blocksResult.error) throw new Error(blocksResult.error.message);
-
-  const reservedIds = new Set([
-    ...(reservationsResult.data || []).map((row) => row.offer_id),
-    ...(blocksResult.data || []).map((row) => row.offer_id),
-  ]);
-
-  return items.map((item) => ({ ...item, is_reserved_today: reservedIds.has(item.id) }));
-}
 
 export async function GET(request: Request) {
   const rate = await checkRateLimit({
@@ -94,7 +61,7 @@ export async function GET(request: Request) {
     const { data, count, error } = await query;
     if (error) throw new Error(error.message);
 
-    const offers = await attachTodayAvailability(data || []);
+    const offers = await attachTodayAvailabilityServer(data || []);
 
     return NextResponse.json({ offers, count: count || 0 });
   } catch (error) {
