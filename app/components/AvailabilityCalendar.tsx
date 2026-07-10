@@ -295,6 +295,47 @@ export default function AvailabilityCalendar({
     );
   }
 
+  function isServiceRangeAvailable(startTime: string, endTime: string) {
+    if (!startTime || !endTime) return false;
+
+    if (minutesFromTime(endTime) <= minutesFromTime(startTime)) {
+      return false;
+    }
+
+    const slot = {
+      startsAt: makeLocalDateTime(selectedServiceDate, startTime),
+      endsAt: makeLocalDateTime(selectedServiceDate, endTime),
+    };
+
+    if (new Date(slot.startsAt) < new Date()) {
+      return false;
+    }
+
+    return !hasBusyServiceSlot(slot);
+  }
+
+  const availableServiceStartTimes = useMemo(() => {
+    return serviceTimeOptions.slice(0, -1).filter((startTime) => {
+      const nextTime = serviceTimeOptions.find(
+        (time) =>
+          minutesFromTime(time) ===
+          minutesFromTime(startTime) + SERVICE_STEP_MINUTES
+      );
+
+      return Boolean(nextTime && isServiceRangeAvailable(startTime, nextTime));
+    });
+  }, [selectedServiceDate, reservations, blocks]);
+
+  const availableServiceEndTimes = useMemo(() => {
+    if (!serviceStartTime) return [];
+
+    return serviceTimeOptions
+      .slice(1)
+      .filter((endTime) =>
+        isServiceRangeAvailable(serviceStartTime, endTime)
+      );
+  }, [serviceStartTime, selectedServiceDate, reservations, blocks]);
+
   function updateServiceSlot(nextStartTime: string, nextEndTime: string) {
     setServiceStartTime(nextStartTime);
     setServiceEndTime(nextEndTime);
@@ -540,7 +581,7 @@ export default function AvailabilityCalendar({
                 className="koluj-input bg-white"
               >
                 <option value="">Vyber začátek</option>
-                {serviceTimeOptions.slice(0, -1).map((time) => (
+                {availableServiceStartTimes.map((time) => (
                   <option key={time} value={time}>
                     {time}
                   </option>
@@ -556,8 +597,8 @@ export default function AvailabilityCalendar({
                 className="koluj-input bg-white"
               >
                 <option value="">Vyber konec</option>
-                {serviceTimeOptions.slice(1).map((time) => (
-                  <option key={time} value={time} disabled={serviceStartTime ? minutesFromTime(time) <= minutesFromTime(serviceStartTime) : false}>
+                {availableServiceEndTimes.map((time) => (
+                  <option key={time} value={time}>
                     {time}
                   </option>
                 ))}
@@ -565,9 +606,15 @@ export default function AvailabilityCalendar({
             </label>
           </div>
 
-          <p className="mt-3 text-xs font-bold text-[var(--koluj-muted)]">
-            Časy jsou po 30 minutách. Vybraný rozsah nesmí zasahovat do obsazeného nebo blokovaného času.
-          </p>
+          {availableServiceStartTimes.length === 0 ? (
+            <p className="mt-3 rounded-2xl bg-red-50 px-4 py-3 text-xs font-bold text-red-700">
+              V tento den už není žádný volný 30minutový termín.
+            </p>
+          ) : (
+            <p className="mt-3 text-xs font-bold text-[var(--koluj-muted)]">
+              Časy jsou po 30 minutách. Obsazené a blokované intervaly se automaticky nezobrazují.
+            </p>
+          )}
         </div>
       )}
 

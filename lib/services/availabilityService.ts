@@ -78,41 +78,55 @@ export async function getOfferAvailabilityServer({
   const rangeStart = dayStart(dateFrom);
   const rangeEnd = dayAfter(dateTo);
 
-  const [dayReservationsResult, timeReservationsResult, dayBlocksResult, timeBlocksResult] =
-    await Promise.all([
-      supabaseAdmin
-        .from("offer_reservations")
-        .select("id, booking_id, date_from, date_to, starts_at, ends_at, status")
-        .eq("offer_id", offerId)
-        .eq("status", "active")
-        .lte("date_from", dateTo)
-        .gte("date_to", dateFrom),
-      supabaseAdmin
-        .from("offer_reservations")
-        .select("id, booking_id, date_from, date_to, starts_at, ends_at, status")
-        .eq("offer_id", offerId)
-        .eq("status", "active")
-        .not("starts_at", "is", null)
-        .lt("starts_at", rangeEnd)
-        .gt("ends_at", rangeStart),
-      supabaseAdmin
-        .from("offer_availability_blocks")
-        .select("id, date_from, date_to, starts_at, ends_at, reason")
-        .eq("offer_id", offerId)
-        .lte("date_from", dateTo)
-        .gte("date_to", dateFrom),
-      supabaseAdmin
-        .from("offer_availability_blocks")
-        .select("id, date_from, date_to, starts_at, ends_at, reason")
-        .eq("offer_id", offerId)
-        .not("starts_at", "is", null)
-        .lt("starts_at", rangeEnd)
-        .gt("ends_at", rangeStart),
-    ]);
+  const [
+    dayReservationsResult,
+    timeReservationsResult,
+    timedBookingsResult,
+    dayBlocksResult,
+    timeBlocksResult,
+  ] = await Promise.all([
+    supabaseAdmin
+      .from("offer_reservations")
+      .select("id, booking_id, date_from, date_to, starts_at, ends_at, status")
+      .eq("offer_id", offerId)
+      .eq("status", "active")
+      .lte("date_from", dateTo)
+      .gte("date_to", dateFrom),
+    supabaseAdmin
+      .from("offer_reservations")
+      .select("id, booking_id, date_from, date_to, starts_at, ends_at, status")
+      .eq("offer_id", offerId)
+      .eq("status", "active")
+      .not("starts_at", "is", null)
+      .lt("starts_at", rangeEnd)
+      .gt("ends_at", rangeStart),
+    supabaseAdmin
+      .from("bookings")
+      .select("id, date_from, date_to, starts_at, ends_at, status")
+      .eq("offer_id", offerId)
+      .in("status", ["requested", "approved", "active"])
+      .not("starts_at", "is", null)
+      .lt("starts_at", rangeEnd)
+      .gt("ends_at", rangeStart),
+    supabaseAdmin
+      .from("offer_availability_blocks")
+      .select("id, date_from, date_to, starts_at, ends_at, reason")
+      .eq("offer_id", offerId)
+      .lte("date_from", dateTo)
+      .gte("date_to", dateFrom),
+    supabaseAdmin
+      .from("offer_availability_blocks")
+      .select("id, date_from, date_to, starts_at, ends_at, reason")
+      .eq("offer_id", offerId)
+      .not("starts_at", "is", null)
+      .lt("starts_at", rangeEnd)
+      .gt("ends_at", rangeStart),
+  ]);
 
   for (const result of [
     dayReservationsResult,
     timeReservationsResult,
+    timedBookingsResult,
     dayBlocksResult,
     timeBlocksResult,
   ]) {
@@ -120,9 +134,26 @@ export async function getOfferAvailabilityServer({
   }
 
   const reservationsById = new Map<string, any>();
+
   [...(dayReservationsResult.data || []), ...(timeReservationsResult.data || [])].forEach(
-    (reservation) => reservationsById.set(reservation.id, reservation)
+    (reservation) => reservationsById.set(`reservation-${reservation.id}`, reservation)
   );
+
+  (timedBookingsResult.data || []).forEach((booking) => {
+    reservationsById.set(`booking-${booking.id}`, {
+      id: `booking-${booking.id}`,
+      booking_id: booking.id,
+      date_from:
+        booking.date_from ||
+        (booking.starts_at ? toIsoDate(booking.starts_at) : dateFrom),
+      date_to:
+        booking.date_to ||
+        (booking.ends_at ? toIsoDate(booking.ends_at) : dateTo),
+      starts_at: booking.starts_at,
+      ends_at: booking.ends_at,
+      status: booking.status,
+    });
+  });
 
   const blocksById = new Map<string, any>();
   [...(dayBlocksResult.data || []), ...(timeBlocksResult.data || [])].forEach((block) =>
