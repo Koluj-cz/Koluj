@@ -226,11 +226,6 @@ export default function OfferPhotoUploader({
                 />
               </>
             )}
-
-            <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-[var(--koluj-green)] px-4 py-2 text-sm font-black text-white shadow">
-              <Star size={16} fill="currentColor" />
-              Hlavní fotka
-            </div>
           </div>
 
           <div className="flex flex-wrap gap-3 border-t border-[var(--koluj-border)] bg-[var(--koluj-surface)] p-4">
