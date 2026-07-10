@@ -9,6 +9,7 @@ import PageLoader from "@/app/components/PageLoader";
 import PushNotificationButton from "@/app/components/PushNotificationButton";
 import ConfirmLeaveDialog from "@/app/components/ConfirmLeaveDialog";
 import { useUnsavedChangesWarning } from "@/lib/hooks/useUnsavedChangesWarning";
+import StickySidebar from "@/app/components/StickySidebar";
 
 type PlaceSuggestion = {
   name: string;
@@ -529,7 +530,7 @@ export default function ProfilePage() {
 
           </div>
 
-          <aside className="hidden self-start xl:sticky xl:top-28 xl:block">
+          <StickySidebar>
             <div className="koluj-card p-8">
               <h2 className="text-2xl font-black">Kontrola profilu</h2>
 
@@ -547,7 +548,7 @@ export default function ProfilePage() {
                 {saving ? "Ukládám..." : "Uložit profil"}
               </button>
             </div>
-          </aside>
+          </StickySidebar>
         </section>
 
         <ConfirmLeaveDialog

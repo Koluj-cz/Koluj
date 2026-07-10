@@ -436,7 +436,7 @@ export default function DashboardAvailabilityPage() {
 
                 <div>
                   <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
-                    Centrální kalendář
+                    Centrální blokací
                   </p>
                   <h2 className="text-3xl font-black leading-none tracking-tight">
                     {monthNames[visibleMonth.getMonth()]} {visibleMonth.getFullYear()}

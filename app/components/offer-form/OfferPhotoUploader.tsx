@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Camera, Plus, Star, X } from "lucide-react";
 import toast from "react-hot-toast";
 import SectionTitle from "@/app/components/SectionTitle";
@@ -19,6 +20,15 @@ type OfferPhotoUploaderProps = {
   onMakePrimaryExisting?: (imageUrl: string) => void | Promise<void>;
   onDeleteExisting?: (imageId: string, imageUrl: string) => void | Promise<void>;
   maxPhotos?: number;
+};
+
+type PhotoItem = {
+  key: string;
+  src: string;
+  kind: "existing" | "new";
+  index: number;
+  id?: string;
+  isPrimary: boolean;
 };
 
 export default function OfferPhotoUploader({
@@ -42,13 +52,39 @@ export default function OfferPhotoUploader({
   const totalPhotos = existingImages.length + photos.length;
   const canAddMore = totalPhotos < maxPhotos;
 
+  const items = useMemo<PhotoItem[]>(() => {
+    const existing = existingImages.map((image, index) => ({
+      key: image.id,
+      src: image.image_url,
+      kind: "existing" as const,
+      index,
+      id: image.id,
+      isPrimary: mainPhotoIndex < 0 && primaryImageUrl === image.image_url,
+    }));
+
+    const newlyAdded = photoPreviews.map((preview, index) => ({
+      key: preview,
+      src: preview,
+      kind: "new" as const,
+      index,
+      isPrimary: mainPhotoIndex === index,
+    }));
+
+    return [...existing, ...newlyAdded];
+  }, [existingImages, mainPhotoIndex, photoPreviews, primaryImageUrl]);
+
+  const selectedMain =
+    items.find((item) => item.isPrimary) ?? items[0] ?? null;
+
   useEffect(() => {
     photoPreviewsRef.current = photoPreviews;
   }, [photoPreviews]);
 
   useEffect(() => {
     return () => {
-      photoPreviewsRef.current.forEach((preview) => URL.revokeObjectURL(preview));
+      photoPreviewsRef.current.forEach((preview) =>
+        URL.revokeObjectURL(preview),
+      );
     };
   }, []);
 
@@ -56,7 +92,6 @@ export default function OfferPhotoUploader({
     if (!files) return;
 
     const selectedFiles = Array.from(files);
-
     if (selectedFiles.length === 0) return;
 
     if (totalPhotos + selectedFiles.length > maxPhotos) {
@@ -64,7 +99,9 @@ export default function OfferPhotoUploader({
       return;
     }
 
-    const oversized = selectedFiles.find((file) => file.size > 15 * 1024 * 1024);
+    const oversized = selectedFiles.find(
+      (file) => file.size > 15 * 1024 * 1024,
+    );
 
     if (oversized) {
       toast.error("Jedna z fotek je větší než 15 MB");
@@ -75,7 +112,9 @@ export default function OfferPhotoUploader({
     setUploadProgress(10);
 
     try {
-      const imageCompression = (await import("browser-image-compression")).default;
+      const imageCompression = (
+        await import("browser-image-compression")
+      ).default;
 
       const compressedFiles = await Promise.all(
         selectedFiles.map((file) =>
@@ -88,50 +127,58 @@ export default function OfferPhotoUploader({
         ),
       );
 
-      setUploadProgress(100);
-      setUploadingPhotos(false);
+      const previewUrls = compressedFiles.map((file) =>
+        URL.createObjectURL(file),
+      );
 
-      setPhotos((currentPhotos) => {
-        const nextPhotos = [...currentPhotos, ...compressedFiles];
-
-        if (existingImages.length === 0 && currentPhotos.length === 0) {
+      setPhotos((current) => {
+        if (existingImages.length === 0 && current.length === 0) {
           setMainPhotoIndex(0);
         }
-
-        return nextPhotos;
+        return [...current, ...compressedFiles];
       });
 
-      setPhotoPreviews((currentPreviews) => [
-        ...currentPreviews,
-        ...compressedFiles.map((file) => URL.createObjectURL(file)),
-      ]);
+      setPhotoPreviews((current) => [...current, ...previewUrls]);
+      setUploadProgress(100);
     } catch {
       toast.error("Fotku se nepodařilo zpracovat");
-      setUploadingPhotos(false);
       setUploadProgress(0);
+    } finally {
+      setUploadingPhotos(false);
     }
   }
 
   function removeNewPhoto(index: number) {
-    const previewToRevoke = photoPreviews[index];
+    const preview = photoPreviews[index];
+    if (preview) URL.revokeObjectURL(preview);
 
-    if (previewToRevoke) {
-      URL.revokeObjectURL(previewToRevoke);
+    setPhotos((current) =>
+      current.filter((_, currentIndex) => currentIndex !== index),
+    );
+
+    setPhotoPreviews((current) =>
+      current.filter((_, currentIndex) => currentIndex !== index),
+    );
+
+    setMainPhotoIndex((current) => {
+      if (current === index) {
+        return existingImages.length > 0 ? -1 : 0;
+      }
+      if (current > index) return current - 1;
+      return current;
+    });
+  }
+
+  function chooseMain(item: PhotoItem) {
+    if (item.kind === "new") {
+      setMainPhotoIndex(item.index);
+      return;
     }
 
-    setPhotos((currentPhotos) =>
-      currentPhotos.filter((_, currentIndex) => currentIndex !== index),
-    );
-
-    setPhotoPreviews((currentPreviews) =>
-      currentPreviews.filter((_, currentIndex) => currentIndex !== index),
-    );
-
-    setMainPhotoIndex((currentIndex) => {
-      if (currentIndex === index) return existingImages.length > 0 ? -1 : 0;
-      if (currentIndex > index) return currentIndex - 1;
-      return currentIndex;
-    });
+    setMainPhotoIndex(-1);
+    if (onMakePrimaryExisting) {
+      void onMakePrimaryExisting(item.src);
+    }
   }
 
   return (
@@ -141,115 +188,154 @@ export default function OfferPhotoUploader({
         title={offerType === "service" ? "Fotky služby" : "Fotky věci"}
       />
 
-      <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
-        {existingImages.map((image) => (
-          <div
-            key={image.id}
-            className="relative overflow-hidden rounded-3xl border border-[var(--koluj-border)] bg-[var(--koluj-bg)]"
-          >
-            <img src={image.image_url} alt="Fotka nabídky" className="h-36 w-full object-cover" />
-
-            {onMakePrimaryExisting && (
-              <button
-                type="button"
-                onClick={() => onMakePrimaryExisting(image.image_url)}
-                className={`absolute left-2 top-2 rounded-full p-2 shadow-sm ${
-                  primaryImageUrl === image.image_url
-                    ? "bg-white text-[var(--koluj-green)]"
-                    : "bg-white text-[var(--koluj-muted)]"
-                }`}
-                aria-label="Nastavit jako hlavní fotku"
-                title="Nastavit jako hlavní fotku"
-              >
-                <Star
-                  size={18}
-                  fill={primaryImageUrl === image.image_url ? "currentColor" : "none"}
+      {selectedMain ? (
+        <div className="mt-6 overflow-hidden rounded-[34px] bg-[var(--koluj-surface)] shadow-[0_18px_55px_rgba(31,31,26,0.10)]">
+          <div className="relative flex h-[320px] items-center justify-center overflow-hidden bg-[var(--koluj-bg)] sm:h-[380px] md:h-[560px]">
+            {selectedMain.kind === "existing" ? (
+              <>
+                <Image
+                  src={selectedMain.src}
+                  alt=""
+                  aria-hidden="true"
+                  fill
+                  sizes="(max-width: 1280px) 100vw, 70vw"
+                  className="scale-110 object-cover opacity-35 blur-2xl"
                 />
-              </button>
+                <div className="absolute inset-0 bg-white/20" />
+                <Image
+                  src={selectedMain.src}
+                  alt="Hlavní fotka nabídky"
+                  fill
+                  sizes="(max-width: 1280px) 100vw, 70vw"
+                  className="relative z-10 object-contain p-5 md:p-8"
+                />
+              </>
+            ) : (
+              <>
+                <img
+                  src={selectedMain.src}
+                  alt=""
+                  aria-hidden="true"
+                  className="absolute inset-0 h-full w-full scale-110 object-cover opacity-35 blur-2xl"
+                />
+                <div className="absolute inset-0 bg-white/20" />
+                <img
+                  src={selectedMain.src}
+                  alt="Hlavní fotka nabídky"
+                  className="relative z-10 h-full w-full object-contain p-5 md:p-8"
+                />
+              </>
             )}
 
-            {onDeleteExisting && (
+            <div className="absolute left-4 top-4 inline-flex items-center gap-2 rounded-full bg-[var(--koluj-green)] px-4 py-2 text-sm font-black text-white shadow">
+              <Star size={16} fill="currentColor" />
+              Hlavní fotka
+            </div>
+          </div>
+
+          <div className="flex flex-wrap gap-3 border-t border-[var(--koluj-border)] bg-[var(--koluj-surface)] p-4">
+            {items.map((item, index) => (
               <button
+                key={item.key}
                 type="button"
-                onClick={() => onDeleteExisting(image.id, image.image_url)}
-                className="absolute right-2 top-2 rounded-full bg-white p-2 text-red-500 shadow-sm"
-                aria-label="Smazat fotku"
-                title="Smazat fotku"
+                onClick={() => chooseMain(item)}
+                className={`relative h-20 w-24 shrink-0 overflow-hidden rounded-2xl border-2 transition ${
+                  item.isPrimary
+                    ? "border-[var(--koluj-green)]"
+                    : "border-transparent opacity-75 hover:opacity-100"
+                }`}
+                aria-label={`Nastavit fotku ${index + 1} jako hlavní`}
               >
-                <X size={18} />
+                {item.kind === "existing" ? (
+                  <Image
+                    src={item.src}
+                    alt=""
+                    width={144}
+                    height={120}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <img
+                    src={item.src}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                )}
+
+                <span
+                  className={`absolute left-1 top-1 rounded-full p-1.5 shadow-sm ${
+                    item.isPrimary
+                      ? "bg-white text-[var(--koluj-green)]"
+                      : "bg-white/90 text-[var(--koluj-muted)]"
+                  }`}
+                >
+                  <Star
+                    size={14}
+                    fill={item.isPrimary ? "currentColor" : "none"}
+                  />
+                </span>
+
+                <span
+                  role="button"
+                  tabIndex={0}
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    if (item.kind === "existing" && item.id && onDeleteExisting) {
+                      void onDeleteExisting(item.id, item.src);
+                    } else if (item.kind === "new") {
+                      removeNewPhoto(item.index);
+                    }
+                  }}
+                  className="absolute right-1 top-1 rounded-full bg-white/90 p-1.5 text-red-500 shadow-sm"
+                  aria-label="Odstranit fotku"
+                  title="Odstranit fotku"
+                >
+                  <X size={14} />
+                </span>
               </button>
-            )}
+            ))}
 
-            {primaryImageUrl === image.image_url && (
-              <div className="absolute bottom-2 left-2 rounded-full bg-[var(--koluj-green)] px-3 py-1 text-xs font-bold text-white">
-                Hlavní
-              </div>
-            )}
-          </div>
-        ))}
-
-        {photoPreviews.map((preview, index) => (
-          <div
-            key={preview}
-            className="relative overflow-hidden rounded-3xl border border-[var(--koluj-border)] bg-[var(--koluj-bg)]"
-          >
-            <img src={preview} alt="Náhled nové fotky" className="h-36 w-full object-cover" />
-
-            <button
-              type="button"
-              onClick={() => setMainPhotoIndex(index)}
-              className={`absolute left-2 top-2 rounded-full p-2 shadow-sm ${
-                mainPhotoIndex === index
-                  ? "bg-white text-[var(--koluj-green)]"
-                  : "bg-white text-[var(--koluj-muted)]"
-              }`}
-              aria-label="Nastavit jako hlavní fotku"
-              title="Nastavit jako hlavní fotku"
-            >
-              <Star size={18} fill={mainPhotoIndex === index ? "currentColor" : "none"} />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => removeNewPhoto(index)}
-              className="absolute right-2 top-2 rounded-full bg-white p-2 text-red-500 shadow-sm"
-              aria-label="Odebrat novou fotku"
-              title="Odebrat novou fotku"
-            >
-              <X size={18} />
-            </button>
-
-            {mainPhotoIndex === index && (
-              <div className="absolute bottom-2 left-2 rounded-full bg-[var(--koluj-green)] px-3 py-1 text-xs font-bold text-white">
-                {existingImages.length > 0 ? "Hlavní po uložení" : "Hlavní"}
-              </div>
+            {canAddMore && (
+              <label className="flex h-20 w-24 shrink-0 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--koluj-border)] bg-[var(--koluj-surface)] text-[var(--koluj-green)] hover:bg-[var(--koluj-bg)]">
+                <Plus size={22} />
+                <span className="mt-1 text-xs font-bold">Přidat</span>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*"
+                  onChange={(event) => {
+                    void handlePhotos(event.target.files);
+                    event.currentTarget.value = "";
+                  }}
+                  className="hidden"
+                />
+              </label>
             )}
           </div>
-        ))}
-
-        {canAddMore && (
-          <label className="flex h-36 cursor-pointer flex-col items-center justify-center rounded-3xl border border-dashed border-[var(--koluj-border)] bg-[var(--koluj-surface)] text-[var(--koluj-green)] hover:bg-[var(--koluj-bg)]">
-            <Plus size={30} />
-            <span className="mt-2 text-sm font-bold">Přidat</span>
-
-            <input
-              type="file"
-              multiple
-              accept="image/*"
-              onChange={(event) => {
-                void handlePhotos(event.target.files);
-                event.currentTarget.value = "";
-              }}
-              className="hidden"
-            />
-          </label>
-        )}
-      </div>
+        </div>
+      ) : (
+        <label className="mt-6 flex h-48 cursor-pointer flex-col items-center justify-center rounded-[34px] border border-dashed border-[var(--koluj-border)] bg-[var(--koluj-surface)] text-[var(--koluj-green)] hover:bg-[var(--koluj-bg)]">
+          <Plus size={34} />
+          <span className="mt-2 text-sm font-bold">Přidat fotku</span>
+          <input
+            type="file"
+            multiple
+            accept="image/*"
+            onChange={(event) => {
+              void handlePhotos(event.target.files);
+              event.currentTarget.value = "";
+            }}
+            className="hidden"
+          />
+        </label>
+      )}
 
       <p className="mt-4 text-sm text-[var(--koluj-muted)]">
         {offerType === "service"
           ? "Fotky jsou u služby volitelné. Pomůžou ale zvýšit důvěryhodnost nabídky."
-          : "Nahraj 1–8 fotek. Hvězdičkou označ hlavní fotku pro náhled."}
+          : "Nahraj 1–8 fotek. Kliknutím na miniaturu vybereš hlavní fotku."}
       </p>
 
       {uploadingPhotos && (

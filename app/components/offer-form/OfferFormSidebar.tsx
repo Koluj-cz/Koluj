@@ -2,7 +2,11 @@
 
 import { Plus, Save } from "lucide-react";
 import CheckLine from "@/app/components/CheckLine";
-import type { OfferFormMode, OfferFormState } from "@/app/components/offer-form/types";
+import StickySidebar from "@/app/components/StickySidebar";
+import type {
+  OfferFormMode,
+  OfferFormState,
+} from "@/app/components/offer-form/types";
 
 type OfferFormSidebarProps = {
   mode: OfferFormMode;
@@ -23,10 +27,10 @@ export default function OfferFormSidebar({
   const ButtonIcon = isNew ? Plus : Save;
 
   return (
-    <aside className="hidden self-start xl:block">
-      <div className="koluj-card sticky top-28 p-8">
+    <StickySidebar>
+      <div className="koluj-card p-8">
         <h2 className="text-2xl font-black">
-          {isNew ? "Kontrola před uložením" : "Kontrola"}
+          {isNew ? "Kontrola před uložením" : "Kontrola nabídky"}
         </h2>
 
         <ul className="mt-6 space-y-4 text-[var(--koluj-muted)]">
@@ -43,11 +47,18 @@ export default function OfferFormSidebar({
             <CheckLine done={Boolean(form.condition)} text="Stav věci" />
           )}
 
-          <CheckLine done={Boolean(form.price_amount && form.price_unit)} text="Cena" />
+          <CheckLine
+            done={Boolean(form.price_amount && form.price_unit)}
+            text="Cena"
+          />
 
           <CheckLine
             done={Boolean(form.pickup_latitude)}
-            text={form.offer_type === "item" ? "Místo předání" : "Lokalita působení"}
+            text={
+              form.offer_type === "item"
+                ? "Místo předání"
+                : "Lokalita působení"
+            }
           />
         </ul>
 
@@ -58,9 +69,13 @@ export default function OfferFormSidebar({
           className="koluj-button mt-8 w-full px-6 py-4 disabled:opacity-60"
         >
           <ButtonIcon size={18} />
-          {isSubmitting ? "Ukládám..." : isNew ? "Přidat nabídku" : "Uložit změny"}
+          {isSubmitting
+            ? "Ukládám..."
+            : isNew
+              ? "Přidat nabídku"
+              : "Uložit změny"}
         </button>
       </div>
-    </aside>
+    </StickySidebar>
   );
 }
