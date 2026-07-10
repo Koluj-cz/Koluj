@@ -52,11 +52,14 @@ export default function EditItemPage() {
   const [newPhotoPreviews, setNewPhotoPreviews] = useState<string[]>([]);
   const [mainPhotoIndex, setMainPhotoIndex] = useState(-1);
   const [primaryImageUrl, setPrimaryImageUrl] = useState("");
+  const [initialPrimaryImageUrl, setInitialPrimaryImageUrl] = useState("");
 
   const [form, setForm] = useState<OfferFormState>(emptyForm);
   const [initialSnapshot, setInitialSnapshot] = useState("");
   const [allowNavigation, setAllowNavigation] = useState(false);
   const [pendingNavigationHref, setPendingNavigationHref] = useState<string | null>(null);
+
+
 
   const currentSnapshot = useMemo(
     () =>
@@ -186,25 +189,9 @@ export default function EditItemPage() {
     toast.success("Fotka smazána");
   }
 
-  async function makePrimary(imageUrl: string) {
-    const response = await fetch(`/api/offers/${offerId}/primary-image`, {
-      method: "PATCH",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ imageUrl }),
-    });
-
-    const result = await response.json().catch(() => null);
-
-    if (!response.ok) {
-      toast.error(result?.error || "Hlavní fotku se nepodařilo nastavit");
-      return;
-    }
-
-    toast.success("Hlavní fotka nastavena");
+  function makePrimary(imageUrl: string) {
     setMainPhotoIndex(-1);
-    setPrimaryImageUrl(result?.primaryImageUrl || imageUrl);
+    setPrimaryImageUrl(imageUrl);
   }
 
   function validateForm() {
@@ -270,6 +257,34 @@ export default function EditItemPage() {
 
       if (!response.ok) {
         throw new Error(result?.error || "Změny se nepodařilo uložit");
+      }
+
+      if (
+        mainPhotoIndex < 0 &&
+        primaryImageUrl &&
+        primaryImageUrl !== initialPrimaryImageUrl
+      ) {
+        const primaryResponse = await fetch(
+          `/api/offers/${offerId}/primary-image`,
+          {
+            method: "PATCH",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              imageUrl: primaryImageUrl,
+            }),
+          },
+        );
+
+        const primaryResult = await primaryResponse.json().catch(() => null);
+
+        if (!primaryResponse.ok) {
+          throw new Error(
+            primaryResult?.error ||
+              "Hlavní fotku se nepodařilo uložit",
+          );
+        }
       }
 
       setAllowNavigation(true);
