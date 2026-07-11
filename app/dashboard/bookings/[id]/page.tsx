@@ -9,7 +9,7 @@ import toast from "react-hot-toast";
 import PageLoader from "@/app/components/PageLoader";
 import {
   formatDateTime,
-  translateBookingStatus,
+  getBookingDisplayStatus,
 } from "@/lib/format";
 
 type Booking = {
@@ -193,7 +193,7 @@ export default function BookingDetailPage() {
       ...booking,
       status: result.status || "approved",
       approved_at: result.approvedAt,
-      handed_over_at: result.status === "active" ? result.approvedAt : booking.handed_over_at,
+      handed_over_at: booking.handed_over_at,
     });
     toast.success(booking.offers?.offer_type === "service" ? "Služba schválena" : "Žádost schválena");
     setSaving(false);
@@ -359,6 +359,16 @@ export default function BookingDetailPage() {
 
   const isOwner = booking.owner_id === userId;
   const isService = booking.offers?.offer_type === "service";
+  const displayStatus = getBookingDisplayStatus({
+    status: booking.status,
+    offerType: booking.offers?.offer_type,
+    startsAt: booking.starts_at,
+    endsAt: booking.ends_at,
+  });
+  const canFinishService =
+    isService &&
+    (booking.status === "approved" || booking.status === "active") &&
+    (!booking.ends_at || new Date(booking.ends_at) <= new Date());
   const otherPersonLabel = isOwner ? "Zájemce" : "Vlastník";
   const otherPersonName = isOwner
     ? booking.customer?.full_name || "Uživatel"
@@ -420,7 +430,7 @@ export default function BookingDetailPage() {
               <h1 className="text-3xl font-black">{booking.offers?.title}</h1>
 
               <div className="mt-5 space-y-3 text-sm">
-                <p><strong>Stav:</strong> {translateBookingStatus(booking.status)}</p>
+                <p><strong>Stav:</strong> {displayStatus.label}</p>
                 <p><strong>{otherPersonLabel}:</strong> {otherPersonName}</p>
                 <p><strong>Vytvořeno:</strong> {formatDateTime(booking.created_at)}</p>
 
@@ -465,7 +475,7 @@ export default function BookingDetailPage() {
             <div className="border-b border-[var(--koluj-border)] p-5">
               <h2 className="text-xl font-black">{isService ? "Domluva služby" : "Domluva předání"}</h2>
               <p className="mt-1 text-sm font-bold text-[var(--koluj-muted)]">
-                Stav: {translateBookingStatus(booking.status)}
+                Stav: {displayStatus.label}
               </p>
             </div>
 
@@ -488,17 +498,27 @@ export default function BookingDetailPage() {
                 <div>
                   <p className="mb-4 font-bold">
                     {isService
-                      ? "Služba je schválená. Po dokončení ji označ jako dokončenou."
+                      ? displayStatus.key === "scheduled"
+                        ? "Služba je schválená a čeká na svůj termín."
+                        : displayStatus.key === "in_progress"
+                          ? "Služba právě probíhá. Dokončení bude možné po skončení rezervovaného času."
+                          : "Rezervovaný čas skončil. Potvrď dokončení služby."
                       : "Žádost je schválená a termín je rezervovaný v kalendáři. Po předání nabídky potvrď předání."}
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <button
                       type="button"
                       onClick={isService ? markAsReturned : markAsActive}
-                      disabled={saving}
-                      className="koluj-button py-3 disabled:opacity-60"
+                      disabled={saving || (isService && !canFinishService)}
+                      className="koluj-button py-3 disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      {saving ? "Ukládám..." : isService ? "Potvrdit dokončení" : "Potvrdit předání"}
+                      {saving
+                        ? "Ukládám..."
+                        : isService
+                          ? canFinishService
+                            ? "Potvrdit dokončení"
+                            : "Dokončení zatím není možné"
+                          : "Potvrdit předání"}
                     </button>
 
                     <button
@@ -507,7 +527,7 @@ export default function BookingDetailPage() {
                       disabled={saving}
                       className="rounded-2xl border border-red-200 bg-white py-3 font-bold text-red-600 hover:bg-red-50 disabled:opacity-60"
                     >
-                      {saving ? "Ukládám..." : "Zrušit rezervaci"}
+                      {saving ? "Ukládám..." : isService ? "Zrušit službu" : "Zrušit rezervaci"}
                     </button>
                   </div>
                 </div>
@@ -515,10 +535,29 @@ export default function BookingDetailPage() {
 
               {isOwner && booking.status === "active" && (
                 <div>
-                  <p className="mb-4 font-bold">{isService ? "Služba je schválená/probíhá. Po dokončení potvrď provedení." : "Rezervace probíhá. Po vrácení nabídky potvrď vrácení."}</p>
+                  <p className="mb-4 font-bold">
+                    {isService
+                      ? displayStatus.key === "scheduled"
+                        ? "Služba je schválená a čeká na svůj termín."
+                        : displayStatus.key === "in_progress"
+                          ? "Služba právě probíhá."
+                          : "Rezervovaný čas skončil. Potvrď dokončení služby."
+                      : "Rezervace probíhá. Po vrácení nabídky potvrď vrácení."}
+                  </p>
                   <div className="grid gap-3 sm:grid-cols-2">
-                    <button type="button" onClick={markAsReturned} disabled={saving} className="koluj-button py-3 disabled:opacity-60">
-                      {saving ? "Ukládám..." : isService ? "Potvrdit dokončení" : "Potvrdit vrácení"}
+                    <button
+                      type="button"
+                      onClick={markAsReturned}
+                      disabled={saving || (isService && !canFinishService)}
+                      className="koluj-button py-3 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {saving
+                        ? "Ukládám..."
+                        : isService
+                          ? canFinishService
+                            ? "Potvrdit dokončení"
+                            : "Dokončení zatím není možné"
+                          : "Potvrdit vrácení"}
                     </button>
                     {isService && (
                       <button type="button" onClick={rejectBooking} disabled={saving} className="rounded-2xl border border-red-200 bg-white py-3 font-bold text-red-600 hover:bg-red-50 disabled:opacity-60">

@@ -418,9 +418,9 @@ export async function approveBookingServer({
   const { error: updateBookingError } = await supabaseAdmin
     .from("bookings")
     .update({
-      status: isService ? "active" : "approved",
+      status: "approved",
       approved_at: approvedAt,
-      handed_over_at: isService ? approvedAt : null,
+      handed_over_at: null,
     })
     .eq("id", booking.id);
 
@@ -451,7 +451,7 @@ export async function approveBookingServer({
     emailSubject: isService ? "Služba schválena" : "Rezervace schválena",
   });
 
-  return { ok: true, approvedAt, status: isService ? "active" : "approved" };
+  return { ok: true, approvedAt, status: "approved" };
 }
 
 export async function rejectBookingServer({
@@ -567,8 +567,20 @@ export async function returnBookingServer({
     throw new Error(offer.offer_type === "service" ? "Dokončení může potvrdit pouze poskytovatel" : "Vrácení může potvrdit pouze vlastník");
   }
 
-  if (booking.status !== "active") {
-    throw new Error(offer.offer_type === "service" ? "Dokončit lze pouze schválenou/probíhající službu" : "Vrácení lze potvrdit pouze u probíhající rezervace");
+  const canFinishService =
+    offer.offer_type === "service" &&
+    (booking.status === "approved" || booking.status === "active");
+
+  if (offer.offer_type === "service") {
+    if (!canFinishService) {
+      throw new Error("Dokončit lze pouze schválenou službu");
+    }
+
+    if (booking.ends_at && new Date(booking.ends_at) > new Date()) {
+      throw new Error("Službu lze označit jako dokončenou až po skončení rezervovaného času.");
+    }
+  } else if (booking.status !== "active") {
+    throw new Error("Vrácení lze potvrdit pouze u probíhající rezervace");
   }
 
   const { error: bookingError } = await supabaseAdmin

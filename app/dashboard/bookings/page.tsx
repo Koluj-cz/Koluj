@@ -22,7 +22,12 @@ import {
   bookingStatusClasses,
   bookingStatusLabels,
 } from "@/lib/constants";
-import { formatDateTime, translateBookingStatus } from "@/lib/format";
+import {
+  formatDateTime,
+  getBookingDisplayStatus,
+  getBookingFilterStatus,
+  translateBookingStatus,
+} from "@/lib/format";
 
 type BookingStatus =
   | "all"
@@ -54,6 +59,7 @@ type Booking = {
     id: string;
     title: string;
     primary_image_url: string | null;
+    offer_type: string | null;
   } | null;
 };
 
@@ -110,6 +116,37 @@ const calendarStatusClasses: Record<string, string> = {
   returned: "bg-stone-200 text-stone-700",
   cancelled: "bg-red-50 text-red-600",
 };
+
+const displayStatusClasses: Record<string, string> = {
+  requested: "bg-orange-100 text-orange-800",
+  scheduled: "bg-blue-100 text-blue-800",
+  approved: "bg-blue-100 text-blue-800",
+  in_progress: "bg-green-100 text-green-800",
+  active: "bg-green-100 text-green-800",
+  awaiting_completion: "bg-amber-100 text-amber-800",
+  completed: "bg-stone-200 text-stone-700",
+  returned: "bg-stone-200 text-stone-700",
+  cancelled: "bg-red-50 text-red-600",
+};
+
+function getDisplayStatus(booking: Booking) {
+  return getBookingDisplayStatus({
+    status: booking.status,
+    offerType: booking.offers?.offer_type,
+    startsAt: booking.starts_at,
+    endsAt: booking.ends_at,
+  });
+}
+
+function getFilterStatus(booking: Booking): Exclude<BookingStatus, "all"> {
+  return getBookingFilterStatus({
+    status: booking.status,
+    offerType: booking.offers?.offer_type,
+    startsAt: booking.starts_at,
+    endsAt: booking.ends_at,
+  });
+}
+
 
 function toIsoDate(date: Date) {
   const year = date.getFullYear();
@@ -252,7 +289,7 @@ export default function BookingsPage() {
 
   const filteredCalendarBookings = useMemo(() => {
     return allBookings.filter((booking) => {
-      const matchesStatus = filter === "all" || booking.status === filter;
+      const matchesStatus = filter === "all" || getFilterStatus(booking) === filter;
       const matchesMode =
         viewMode === "all" ||
         (viewMode === "borrowing" && borrowing.some((item) => item.id === booking.id)) ||
@@ -297,9 +334,8 @@ export default function BookingsPage() {
     };
 
     allBookings.forEach((booking) => {
-      if (booking.status in counts) {
-        counts[booking.status as BookingStatus] += 1;
-      }
+      const status = getFilterStatus(booking);
+      counts[status] += 1;
     });
 
     return counts;
@@ -307,12 +343,12 @@ export default function BookingsPage() {
 
   const filteredBorrowing = useMemo(() => {
     if (filter === "all") return borrowing;
-    return borrowing.filter((booking) => booking.status === filter);
+    return borrowing.filter((booking) => getFilterStatus(booking) === filter);
   }, [borrowing, filter]);
 
   const filteredLending = useMemo(() => {
     if (filter === "all") return lending;
-    return lending.filter((booking) => booking.status === filter);
+    return lending.filter((booking) => getFilterStatus(booking) === filter);
   }, [lending, filter]);
 
   const bookingGroups: BookingGroup[] = [
@@ -605,17 +641,22 @@ function BookingsCalendar({
               </div>
 
               <div className="mt-2 space-y-1">
-                {visibleDayBookings.map((booking) => (
-                  <div
-                    key={booking.id}
-                    className={`truncate rounded-full px-2 py-1 text-[10px] font-black leading-none ${
-                      calendarStatusClasses[booking.status] ||
-                      "bg-[var(--koluj-bg)] text-[var(--koluj-muted)]"
-                    }`}
-                  >
-                    {booking.offers?.title || "Nabídka"}
-                  </div>
-                ))}
+                {visibleDayBookings.map((booking) => {
+                  const displayStatus = getDisplayStatus(booking);
+
+                  return (
+                    <div
+                      key={booking.id}
+                      className={`truncate rounded-full px-2 py-1 text-[10px] font-black leading-none ${
+                        displayStatusClasses[displayStatus.key] ||
+                        "bg-[var(--koluj-bg)] text-[var(--koluj-muted)]"
+                      }`}
+                      title={displayStatus.label}
+                    >
+                      {booking.offers?.title || "Nabídka"}
+                    </div>
+                  );
+                })}
 
                 {dayBookings.length > visibleDayBookings.length && (
                   <div className="truncate rounded-full bg-[var(--koluj-bg)] px-2 py-1 text-[10px] font-black leading-none text-[var(--koluj-muted)]">
@@ -659,7 +700,10 @@ function SelectedDayPanel({
           </div>
         ) : (
           <div className="mt-5 space-y-3">
-            {bookings.map((booking) => (
+            {bookings.map((booking) => {
+              const displayStatus = getDisplayStatus(booking);
+
+              return (
               <Link
                 key={booking.id}
                 href={`/dashboard/bookings/${booking.id}`}
@@ -679,11 +723,11 @@ function SelectedDayPanel({
 
                   <span
                     className={`shrink-0 rounded-full px-3 py-1 text-xs font-black ${
-                      calendarStatusClasses[booking.status] ||
+                      displayStatusClasses[displayStatus.key] ||
                       "bg-[var(--koluj-bg)] text-[var(--koluj-muted)]"
                     }`}
                   >
-                    {translateBookingStatus(booking.status)}
+                    {displayStatus.label}
                   </span>
                 </div>
 
@@ -692,7 +736,8 @@ function SelectedDayPanel({
                   <ArrowRight size={15} />
                 </p>
               </Link>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -812,21 +857,24 @@ function BookingCard({
       ? booking.owner?.full_name || "Uživatel"
       : booking.customer?.full_name || "Uživatel";
 
+  const displayStatus = getDisplayStatus(booking);
   const statusClass =
-    booking.status === "returned"
-      ? "bg-stone-200 text-stone-700"
-      : bookingStatusClasses[booking.status] ||
-        "bg-[var(--koluj-bg)] text-[var(--koluj-muted)]";
+    displayStatusClasses[displayStatus.key] ||
+    "bg-[var(--koluj-bg)] text-[var(--koluj-muted)]";
 
   const icon =
-    booking.status === "requested" ||
-    booking.status === "approved" ||
-    booking.status === "active" ||
-    booking.status === "returned" ||
-    booking.status === "cancelled" ? (
-      statusIcons[booking.status]
+    displayStatus.key === "requested" ? (
+      statusIcons.requested
+    ) : displayStatus.key === "scheduled" || displayStatus.key === "approved" ? (
+      statusIcons.approved
+    ) : displayStatus.key === "in_progress" || displayStatus.key === "active" ? (
+      statusIcons.active
+    ) : displayStatus.key === "completed" || displayStatus.key === "returned" ? (
+      statusIcons.returned
+    ) : displayStatus.key === "cancelled" ? (
+      statusIcons.cancelled
     ) : (
-      <CalendarDays size={18} />
+      <Clock3 size={18} />
     );
 
   return (
@@ -868,7 +916,7 @@ function BookingCard({
               className={`inline-flex max-w-full shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black ${statusClass}`}
             >
               {icon}
-              {translateBookingStatus(booking.status)}
+              {displayStatus.label}
             </span>
           </div>
 
@@ -904,13 +952,16 @@ function BookingRange({ booking }: { booking: Booking }) {
 }
 
 function BookingDate({ booking }: { booking: Booking }) {
+  const isService = booking.offers?.offer_type === "service";
   const value =
     booking.status === "requested"
       ? booking.created_at
       : booking.status === "approved"
         ? booking.approved_at
         : booking.status === "active"
-          ? booking.handed_over_at
+          ? isService
+            ? booking.approved_at
+            : booking.handed_over_at
           : booking.status === "returned"
             ? booking.returned_at
             : booking.created_at;
@@ -921,9 +972,13 @@ function BookingDate({ booking }: { booking: Booking }) {
       : booking.status === "approved"
         ? "Schváleno"
         : booking.status === "active"
-          ? "Předáno"
+          ? isService
+            ? "Schváleno"
+            : "Předáno"
           : booking.status === "returned"
-            ? "Vráceno"
+            ? isService
+              ? "Dokončeno"
+              : "Vráceno"
             : "Vytvořeno";
 
   if (!value) return null;

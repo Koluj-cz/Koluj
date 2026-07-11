@@ -10,7 +10,8 @@ const selectQuery = `
   offers:offers (
     id,
     title,
-    primary_image_url
+    primary_image_url,
+    offer_type
   ),
   owner:profiles!bookings_owner_id_fkey (
     full_name
