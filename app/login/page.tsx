@@ -89,7 +89,7 @@ function LoginPageContent() {
     setLoadingVerify(true);
 
     try {
-      const response = await fetch("/api/auth/otp/verify", {
+      const verifyResponse = await fetch("/api/auth/otp/verify", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -101,15 +101,37 @@ function LoginPageContent() {
         }),
       });
 
-      const result = await response.json().catch(() => null);
+      const verifyResult = await verifyResponse.json().catch(() => null);
 
-      if (!response.ok) {
-        throw new Error(result?.error || "Kód se nepodařilo ověřit");
+      if (!verifyResponse.ok) {
+        throw new Error(
+          verifyResult?.error || "Kód se nepodařilo ověřit",
+        );
       }
 
-      window.location.replace(result?.redirectTo || "/dashboard");
+      const profileResponse = await fetch("/api/auth/ensure-profile", {
+        method: "POST",
+      });
+
+      const profileResult = await profileResponse.json().catch(() => null);
+
+      if (!profileResponse.ok) {
+        throw new Error(
+          profileResult?.error || "Profil se nepodařilo připravit",
+        );
+      }
+
+      const destination = profileResult?.profileComplete
+        ? verifyResult?.redirectTo || "/dashboard"
+        : "/profile";
+
+      window.location.replace(destination);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Kód se nepodařilo ověřit");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Kód se nepodařilo ověřit",
+      );
     } finally {
       setLoadingVerify(false);
     }
