@@ -152,7 +152,7 @@ function LoginPageContent() {
               </div>
 
               <div>
-                <h1 className="text-4xl font-black">Přihlášení</h1>
+                <h1 className="text-4xl font-black">Přihlásit se nebo vytvořit účet</h1>
 
                 <p className="mt-1 text-[var(--koluj-muted)]">
                   Pomocí e-mailu
@@ -163,8 +163,7 @@ function LoginPageContent() {
             {!sent ? (
               <>
                 <p className="mt-8 text-lg leading-relaxed text-[var(--koluj-muted)]">
-                  Zadej svůj e-mail a pošleme ti přihlašovací e-mail. Ve webu
-                  můžeš kliknout na odkaz, v nainstalované aplikaci zadej kód.
+                  Zadej svůj e-mail. Pokud u nás ještě účet nemáš, vytvoříme ho automaticky.
                 </p>
 
                 <div className="mt-8">
