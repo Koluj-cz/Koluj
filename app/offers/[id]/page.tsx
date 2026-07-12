@@ -564,41 +564,45 @@ export default function ItemDetailPage() {
                 </p>
               )}
 
-              {(!isRequestOnlyService || isOwner) && (
-                <div className="mt-6">
-                  <AvailabilityCalendar
-                    offerId={item.id}
-                    offerType={item.offer_type}
-                    serviceBookingMode={item.service_booking_mode}
-                    serviceHoursMode={item.service_hours_mode}
-                    weekdayStartTime={item.weekday_start_time}
-                    weekdayEndTime={item.weekday_end_time}
-                    weekendStartTime={item.weekend_start_time}
-                    weekendEndTime={item.weekend_end_time}
-                    isOwner={Boolean(isOwner)}
-                    selectedRange={
-                      (!isService || isRequestOnlyService) &&
-                      borrowFrom &&
-                      borrowTo
-                        ? { dateFrom: borrowFrom, dateTo: borrowTo }
-                        : null
-                    }
-                    selectedSlot={
-                      isTimedService && startsAt && endsAt
-                        ? { startsAt, endsAt }
-                        : null
-                    }
-                    onRangeChange={(range) => {
-                      setBorrowFrom(range?.dateFrom || "");
-                      setBorrowTo(range?.dateTo || "");
-                    }}
-                    onSlotChange={(slot) => {
-                      setStartsAt(slot?.startsAt || "");
-                      setEndsAt(slot?.endsAt || "");
-                    }}
-                  />
-                </div>
-              )}
+              <div className="mt-6">
+                <AvailabilityCalendar
+                  offerId={item.id}
+                  offerType={item.offer_type}
+                  serviceBookingMode={item.service_booking_mode}
+                  serviceHoursMode={item.service_hours_mode}
+                  weekdayStartTime={item.weekday_start_time}
+                  weekdayEndTime={item.weekday_end_time}
+                  weekendStartTime={item.weekend_start_time}
+                  weekendEndTime={item.weekend_end_time}
+                  isOwner={Boolean(isOwner)}
+                  selectedRange={
+                    (!isService || isRequestOnlyService) &&
+                    borrowFrom &&
+                    borrowTo
+                      ? {
+                          dateFrom: borrowFrom,
+                          dateTo: borrowTo,
+                        }
+                      : null
+                  }
+                  selectedSlot={
+                    isTimedService && startsAt && endsAt
+                      ? {
+                          startsAt,
+                          endsAt,
+                        }
+                      : null
+                  }
+                  onRangeChange={(range) => {
+                    setBorrowFrom(range?.dateFrom || "");
+                    setBorrowTo(range?.dateTo || "");
+                  }}
+                  onSlotChange={(slot) => {
+                    setStartsAt(slot?.startsAt || "");
+                    setEndsAt(slot?.endsAt || "");
+                  }}
+                />
+              </div>
 
 
               <div className="mt-5 rounded-3xl bg-[var(--koluj-bg)] p-5">
