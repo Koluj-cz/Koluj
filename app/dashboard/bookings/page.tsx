@@ -60,6 +60,7 @@ type Booking = {
     title: string;
     primary_image_url: string | null;
     offer_type: string | null;
+    service_booking_mode?: string | null;
   } | null;
 };
 

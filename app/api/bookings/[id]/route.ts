@@ -29,7 +29,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           price_amount,
           price_unit,
           deposit,
-          offer_type
+          offer_type,
+          service_booking_mode
         ),
         owner:profiles!bookings_owner_id_fkey (
           id,

@@ -88,6 +88,13 @@ type ItemDetail = {
   primary_image_url: string | null;
   created_at: string;
   views_count: number | null;
+  service_booking_mode?: "scheduled" | "deadline" | string | null;
+  service_hours_mode?: "same_every_day" | "weekday_weekend" | string | null;
+  weekday_start_time?: string | null;
+  weekday_end_time?: string | null;
+  weekend_start_time?: string | null;
+  weekend_end_time?: string | null;
+  availability_status?: "available" | "reserved" | "unavailable";
   profiles: {
     full_name: string | null;
     avatar_url: string | null;
@@ -166,16 +173,6 @@ export default function ItemDetailPage() {
       return;
     }
 
-    if (
-      item.offer_type === "service" &&
-      item.price_unit === "piece" &&
-      availabilityBlocks.some((block) =>
-        isDateInsideBlock(todayIsoDate(), block),
-      )
-    ) {
-      toast.error("Poskytovatel momentálně nepřijímá nové poptávky.");
-      return;
-    }
 
     setSubmittingBorrowRequest(true);
 
@@ -186,8 +183,14 @@ export default function ItemDetailPage() {
       },
       body: JSON.stringify({
         offerId: item.id,
-        dateFrom: item.offer_type === "service" ? null : borrowFrom,
-        dateTo: item.offer_type === "service" ? null : borrowTo,
+        dateFrom:
+          item.offer_type === "service" && item.service_booking_mode !== "deadline"
+            ? null
+            : borrowFrom,
+        dateTo:
+          item.offer_type === "service" && item.service_booking_mode !== "deadline"
+            ? null
+            : borrowTo,
         startsAt:
           item.offer_type === "service" && item.price_unit === "hour"
             ? startsAt
@@ -245,9 +248,9 @@ export default function ItemDetailPage() {
   }, [borrowFrom, borrowTo]);
 
   const isTimedService =
-    item?.offer_type === "service" && item?.price_unit === "hour";
+    item?.offer_type === "service" && item?.service_booking_mode !== "deadline";
   const isRequestOnlyService =
-    item?.offer_type === "service" && item?.price_unit === "piece";
+    item?.offer_type === "service" && item?.service_booking_mode === "deadline";
 
   const today = todayIsoDate();
 
@@ -565,10 +568,16 @@ export default function ItemDetailPage() {
                 <div className="mt-6">
                   <AvailabilityCalendar
                     offerId={item.id}
-                    offerType={isRequestOnlyService ? "item" : item.offer_type}
+                    offerType={item.offer_type}
+                    serviceBookingMode={item.service_booking_mode}
+                    serviceHoursMode={item.service_hours_mode}
+                    weekdayStartTime={item.weekday_start_time}
+                    weekdayEndTime={item.weekday_end_time}
+                    weekendStartTime={item.weekend_start_time}
+                    weekendEndTime={item.weekend_end_time}
                     isOwner={Boolean(isOwner)}
                     selectedRange={
-                      (!isService || (isRequestOnlyService && Boolean(isOwner))) &&
+                      (!isService || isRequestOnlyService) &&
                       borrowFrom &&
                       borrowTo
                         ? { dateFrom: borrowFrom, dateTo: borrowTo }
@@ -591,43 +600,6 @@ export default function ItemDetailPage() {
                 </div>
               )}
 
-              {isRequestOnlyService && !isOwner && (
-                <div className="mt-6 rounded-3xl bg-[var(--koluj-bg)] p-5">
-                  <p className="font-black">Dostupnost</p>
-
-                  {isRequestOnlyUnavailable && activeRequestOnlyBlock ? (
-                    <div className="mt-3 space-y-2">
-                      <p className="font-bold text-red-700">
-                        Poskytovatel momentálně nepřijímá nové poptávky.
-                      </p>
-                      <p className="text-sm font-bold text-[var(--koluj-muted)]">
-                        Nedostupné:{" "}
-                        {formatDate(activeRequestOnlyBlock.date_from)} –{" "}
-                        {formatDate(activeRequestOnlyBlock.date_to)}
-                      </p>
-                      {activeRequestOnlyBlock.reason && (
-                        <p className="text-sm text-[var(--koluj-muted)]">
-                          {activeRequestOnlyBlock.reason}
-                        </p>
-                      )}
-                    </div>
-                  ) : (
-                    <div className="mt-3 space-y-2">
-                      <p className="text-[var(--koluj-muted)]">
-                        Termín služby domluvíte přímo s poskytovatelem po
-                        odeslání poptávky.
-                      </p>
-                      {nextRequestOnlyBlock && (
-                        <p className="text-sm font-bold text-[var(--koluj-muted)]">
-                          Plánovaná nedostupnost:{" "}
-                          {formatDate(nextRequestOnlyBlock.date_from)} –{" "}
-                          {formatDate(nextRequestOnlyBlock.date_to)}
-                        </p>
-                      )}
-                    </div>
-                  )}
-                </div>
-              )}
 
               <div className="mt-5 rounded-3xl bg-[var(--koluj-bg)] p-5">
                 <div className="flex items-start justify-between gap-4">
@@ -652,7 +624,7 @@ export default function ItemDetailPage() {
                           </p>
                         )}
                       </div>
-                    ) : (!isService || (isRequestOnlyService && Boolean(isOwner))) &&
+                    ) : (!isService || isRequestOnlyService) &&
                       borrowFrom &&
                       borrowTo ? (
                       <p className="mt-3 text-lg font-black">
@@ -661,8 +633,8 @@ export default function ItemDetailPage() {
                       </p>
                     ) : (
                       <p className="mt-3 text-[var(--koluj-muted)]">
-                        {isRequestOnlyService && !isOwner
-                          ? "Termín služby domluvíte ve zprávách po odeslání poptávky."
+                        {isRequestOnlyService
+                          ? "Vyber požadovaný termín dokončení."
                           : isService && !isRequestOnlyService
                             ? "Zatím není vybraný žádný čas."
                             : "Zatím není vybraný žádný termín."}
@@ -670,7 +642,7 @@ export default function ItemDetailPage() {
                     )}
                   </div>
 
-                  {(!isService || (isRequestOnlyService && Boolean(isOwner))) && selectedDays && (
+                  {(!isService || isRequestOnlyService) && selectedDays && (
                     <span className="shrink-0 rounded-full bg-white px-3 py-1 text-sm font-black text-[var(--koluj-green)]">
                       {selectedDays} {selectedDays === 1 ? "den" : "dní"}
                     </span>
@@ -678,7 +650,7 @@ export default function ItemDetailPage() {
                 </div>
 
                 {((isTimedService && startsAt && endsAt) ||
-                  ((!isService || (isRequestOnlyService && Boolean(isOwner))) && borrowFrom && borrowTo)) && (
+                  ((!isService || isRequestOnlyService) && borrowFrom && borrowTo)) && (
                   <button
                     type="button"
                     onClick={() => {
@@ -731,7 +703,6 @@ export default function ItemDetailPage() {
                     onClick={handleBorrowClick}
                     disabled={
                       submittingBorrowRequest ||
-                      isRequestOnlyUnavailable ||
                       (isTimedService
                         ? !startsAt || !endsAt || startsAt === endsAt
                         : !isService
@@ -742,20 +713,20 @@ export default function ItemDetailPage() {
                   >
                     {submittingBorrowRequest
                       ? "Odesílám žádost..."
-                      : isRequestOnlyUnavailable
-                        ? "Momentálně nedostupné"
-                        : isTimedService &&
+                      : isTimedService &&
                             startsAt &&
                             endsAt &&
                             startsAt !== endsAt
                           ? "Objednat službu"
-                          : isRequestOnlyService
+                          : isRequestOnlyService && borrowFrom
                             ? "Odeslat poptávku"
                             : !isService && borrowFrom && borrowTo
                               ? "Půjčit si"
                               : isTimedService
                                 ? "Vyber čas"
-                                : "Vyber termín"}
+                                : isRequestOnlyService
+                                  ? "Vyber termín dokončení"
+                                  : "Vyber termín"}
                   </button>
                 </>
               )}

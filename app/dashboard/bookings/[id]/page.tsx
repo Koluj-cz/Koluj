@@ -38,6 +38,7 @@ type Booking = {
     price_unit: string | null;
     deposit: number | null;
     offer_type: string | null;
+    service_booking_mode?: string | null;
   } | null;
 };
 

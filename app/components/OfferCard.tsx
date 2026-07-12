@@ -32,6 +32,7 @@ export type OfferCardOffer = {
   created_at: string;
   status?: string | null;
   is_reserved_today?: boolean;
+  availability_status?: "available" | "reserved" | "unavailable";
   owner_id: string | null;
   bookings?: { id: string; owner_earnings: number | null }[] | null;
   profiles?: {
@@ -83,7 +84,9 @@ function shortPlace(place: string) {
 }
 
 function OfferCard({ item, variant = "public", footer }: OfferCardProps) {
-  const isReserved = Boolean(item.is_reserved_today);
+  const availabilityStatus = item.availability_status || (item.is_reserved_today ? "reserved" : "available");
+  const isReserved = availabilityStatus === "reserved";
+  const isUnavailable = availabilityStatus === "unavailable";
   const isService = item.offer_type === "service";
   const typeLabel = isService ? "Služba" : "Věc";
   const categoryLabel = isService
@@ -145,8 +148,16 @@ function OfferCard({ item, variant = "public", footer }: OfferCardProps) {
             </span>
           </div>
 
-          <span className={`koluj-status-badge shrink-0 ${isReserved ? "bg-orange-100 text-orange-700" : "bg-emerald-100 text-emerald-800"}`}>
-            {isReserved ? "Rezervované" : "Volné"}
+          <span
+            className={`koluj-status-badge shrink-0 ${
+              isUnavailable
+                ? "bg-stone-200 text-stone-700"
+                : isReserved
+                  ? "bg-orange-100 text-orange-700"
+                  : "bg-emerald-100 text-emerald-800"
+            }`}
+          >
+            {isUnavailable ? "Nedostupné" : isReserved ? "Rezervované" : "Volné"}
           </span>
         </div>
       </div>

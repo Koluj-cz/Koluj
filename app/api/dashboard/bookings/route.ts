@@ -11,7 +11,8 @@ const selectQuery = `
     id,
     title,
     primary_image_url,
-    offer_type
+    offer_type,
+    service_booking_mode
   ),
   owner:profiles!bookings_owner_id_fkey (
     full_name

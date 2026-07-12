@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
+import { buildTimeOptions, getServiceHoursForDate, minutesFromTime } from "@/lib/serviceBookingRules";
 
 type Reservation = {
   id: string;
@@ -41,6 +42,12 @@ type AvailabilityCalendarProps = {
   selectedSlot?: SelectedSlot | null;
   onRangeChange?: (range: SelectedRange | null) => void;
   onSlotChange?: (slot: SelectedSlot | null) => void;
+  serviceBookingMode?: "scheduled" | "deadline" | string | null;
+  serviceHoursMode?: "same_every_day" | "weekday_weekend" | string | null;
+  weekdayStartTime?: string | null;
+  weekdayEndTime?: string | null;
+  weekendStartTime?: string | null;
+  weekendEndTime?: string | null;
 };
 
 const monthNames = [
@@ -59,8 +66,6 @@ const monthNames = [
 ];
 
 const dayLabels = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
-const SERVICE_START_HOUR = 8;
-const SERVICE_END_HOUR = 20;
 const SERVICE_STEP_MINUTES = 30;
 
 function toIsoDate(date: Date) {
@@ -131,22 +136,6 @@ function buildMonthDays(month: Date) {
   return days;
 }
 
-function timeOptions() {
-  const options: string[] = [];
-  const start = SERVICE_START_HOUR * 60;
-  const end = SERVICE_END_HOUR * 60;
-
-  for (let minutes = start; minutes <= end; minutes += SERVICE_STEP_MINUTES) {
-    const hour = Math.floor(minutes / 60);
-    const minute = minutes % 60;
-    options.push(`${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`);
-  }
-
-  return options;
-}
-
-const serviceTimeOptions = timeOptions();
-
 function makeLocalDateTime(date: string, time: string) {
   const [year, month, day] = date.split("-").map(Number);
   const [hour, minute] = time.split(":").map(Number);
@@ -156,11 +145,6 @@ function makeLocalDateTime(date: string, time: string) {
 function timeFromIso(value: string) {
   const date = new Date(value);
   return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
-}
-
-function minutesFromTime(value: string) {
-  const [hour, minute] = value.split(":").map(Number);
-  return hour * 60 + minute;
 }
 
 function overlaps(aStart: string, aEnd: string, bStart: string, bEnd: string) {
@@ -175,8 +159,16 @@ export default function AvailabilityCalendar({
   selectedSlot,
   onRangeChange,
   onSlotChange,
+  serviceBookingMode = "scheduled",
+  serviceHoursMode = "same_every_day",
+  weekdayStartTime = "08:00",
+  weekdayEndTime = "20:00",
+  weekendStartTime = "08:00",
+  weekendEndTime = "20:00",
 }: AvailabilityCalendarProps) {
   const isService = offerType === "service";
+  const isDeadlineService = isService && serviceBookingMode === "deadline";
+  const isScheduledService = isService && !isDeadlineService;
 
   const [visibleMonth, setVisibleMonth] = useState(() => {
     const now = new Date();
@@ -216,6 +208,12 @@ export default function AvailabilityCalendar({
     setServiceEndTime("");
   }, [selectedSlot?.startsAt, selectedSlot?.endsAt]);
 
+
+  useEffect(() => {
+    if (isDeadlineService && selectedRange?.dateFrom) {
+      setSelectedServiceDate(selectedRange.dateFrom);
+    }
+  }, [isDeadlineService, selectedRange?.dateFrom]);
   async function loadAvailability() {
     setLoading(true);
 
@@ -295,6 +293,38 @@ export default function AvailabilityCalendar({
     );
   }
 
+  const selectedServiceHours = useMemo(
+    () =>
+      getServiceHoursForDate(
+        {
+          service_booking_mode: serviceBookingMode,
+          service_hours_mode: serviceHoursMode,
+          weekday_start_time: weekdayStartTime,
+          weekday_end_time: weekdayEndTime,
+          weekend_start_time: weekendStartTime,
+          weekend_end_time: weekendEndTime,
+        },
+        selectedServiceDate,
+      ),
+    [
+      serviceBookingMode,
+      serviceHoursMode,
+      weekdayStartTime,
+      weekdayEndTime,
+      weekendStartTime,
+      weekendEndTime,
+      selectedServiceDate,
+    ],
+  );
+
+  const serviceTimeOptions = useMemo(
+    () =>
+      selectedServiceHours
+        ? buildTimeOptions(selectedServiceHours.start, selectedServiceHours.end, SERVICE_STEP_MINUTES)
+        : [],
+    [selectedServiceHours],
+  );
+
   function isServiceRangeAvailable(startTime: string, endTime: string) {
     if (!startTime || !endTime) return false;
 
@@ -371,11 +401,20 @@ export default function AvailabilityCalendar({
   }
 
   function handleDayClick(date: string) {
-    if (isService) {
+    if (isDeadlineService) {
+      if (date < todayIso || blockDates.has(date)) return;
+      setSelectedServiceDate(date);
+      onRangeChange?.({ dateFrom: date, dateTo: date });
+      onSlotChange?.(null);
+      return;
+    }
+
+    if (isScheduledService) {
       setSelectedServiceDate(date);
       setServiceStartTime("");
       setServiceEndTime("");
       onSlotChange?.(null);
+      onRangeChange?.(null);
       return;
     }
 
@@ -409,7 +448,7 @@ export default function AvailabilityCalendar({
   async function createBlock() {
     if (savingBlock) return;
 
-    const body = isService
+    const body = isScheduledService
       ? {
           startsAt: selectedSlot?.startsAt,
           endsAt: selectedSlot?.endsAt,
@@ -421,8 +460,8 @@ export default function AvailabilityCalendar({
           reason,
         };
 
-    if (isService && (!selectedSlot?.startsAt || !selectedSlot?.endsAt)) return;
-    if (!isService && (!selectedRange?.dateFrom || !selectedRange?.dateTo)) return;
+    if (isScheduledService && (!selectedSlot?.startsAt || !selectedSlot?.endsAt)) return;
+    if (!isScheduledService && (!selectedRange?.dateFrom || !selectedRange?.dateTo)) return;
 
     setSavingBlock(true);
 
@@ -443,7 +482,7 @@ export default function AvailabilityCalendar({
       return;
     }
 
-    toast.success(isService ? "Čas byl zablokován" : "Termín byl zablokován");
+    toast.success(isScheduledService ? "Čas byl zablokován" : "Termín byl zablokován");
     setReason("");
     setServiceStartTime("");
     setServiceEndTime("");
@@ -493,7 +532,7 @@ export default function AvailabilityCalendar({
 
         <div className="text-center">
           <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
-            {isService ? "Dostupné časy" : "Dostupnost"}
+            {isDeadlineService ? "Termín dokončení" : isService ? "Dostupné časy" : "Dostupnost"}
           </p>
           <p className="text-xl font-black">
             {monthNames[visibleMonth.getMonth()]} {visibleMonth.getFullYear()}
@@ -524,10 +563,27 @@ export default function AvailabilityCalendar({
 
           const isoDate = toIsoDate(day);
           const reserved = !isService && reservationDates.has(isoDate);
-          const blocked = !isService && blockDates.has(isoDate);
+          const blocked = isDeadlineService ? blockDates.has(isoDate) : !isService && blockDates.has(isoDate);
           const selected = isService ? selectedServiceDate === isoDate : selectedDates.has(isoDate);
           const isPast = isoDate < todayIso;
-          const disabled = !isService && (reserved || blocked || isPast);
+          const hasServiceHours = !isScheduledService || Boolean(
+            getServiceHoursForDate(
+              {
+                service_booking_mode: serviceBookingMode,
+                service_hours_mode: serviceHoursMode,
+                weekday_start_time: weekdayStartTime,
+                weekday_end_time: weekdayEndTime,
+                weekend_start_time: weekendStartTime,
+                weekend_end_time: weekendEndTime,
+              },
+              isoDate,
+            ),
+          );
+          const disabled = isDeadlineService
+            ? blocked || isPast
+            : isScheduledService
+              ? isPast || !hasServiceHours
+              : reserved || blocked || isPast;
 
           let className = "bg-white text-[var(--koluj-text)] hover:bg-white/80";
 
@@ -566,7 +622,7 @@ export default function AvailabilityCalendar({
         })}
       </div>
 
-      {isService && (
+      {isScheduledService && (
         <div className="mt-5 rounded-3xl bg-white p-4">
           <p className="text-sm font-black text-[var(--koluj-muted)]">
             Vyber čas služby · {formatShortDate(selectedServiceDate)}
@@ -618,6 +674,20 @@ export default function AvailabilityCalendar({
         </div>
       )}
 
+      {isDeadlineService && (
+        <div className="mt-5 rounded-3xl bg-white p-4">
+          <p className="font-black">Požadovaný termín dokončení</p>
+          <p className="mt-2 text-sm font-bold text-[var(--koluj-muted)]">
+            Vyber jeden den. Konkrétní čas provedení domluvíš s poskytovatelem v chatu.
+          </p>
+          {selectedRange?.dateFrom && (
+            <p className="mt-3 rounded-2xl bg-[var(--koluj-bg)] px-4 py-3 font-black text-[var(--koluj-green)]">
+              {formatShortDate(selectedRange.dateFrom)}
+            </p>
+          )}
+        </div>
+      )}
+
       <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-[var(--koluj-muted)]">
         <span className="inline-flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-white" /> Volné</span>
         <span className="inline-flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-red-100" /> Rezervováno</span>
@@ -639,7 +709,7 @@ export default function AvailabilityCalendar({
             onClick={createBlock}
             disabled={
               savingBlock ||
-              (isService
+              (isScheduledService
                 ? !selectedSlot?.startsAt || !selectedSlot?.endsAt
                 : !selectedRange?.dateFrom || !selectedRange?.dateTo)
             }
@@ -647,7 +717,7 @@ export default function AvailabilityCalendar({
           >
             {savingBlock
               ? "Ukládám..."
-              : isService
+              : isScheduledService
               ? "Blokovat vybraný čas"
               : "Blokovat vybraný termín"}
           </button>

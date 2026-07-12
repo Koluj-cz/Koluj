@@ -1,8 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import { notifyUserServer } from "@/lib/notifyUserServer";
 import { containsForbiddenText } from "@/lib/moderation";
+import { isServiceIntervalInsideOpeningHours } from "@/lib/serviceBookingRules";
 import {
   assertOfferAvailableServer,
+  assertOfferDateNotBlockedServer,
   cancelReservationForBookingServer,
   createReservationForBookingServer,
   finishReservationForBookingServer,
@@ -90,7 +92,7 @@ async function loadBookingWithOffer(bookingId: string) {
 
   const { data: offer, error: offerError } = await supabaseAdmin
     .from("offers")
-    .select("id, title, status, offer_type, price_unit")
+    .select("id, title, status, offer_type, price_unit, service_booking_mode")
     .eq("id", booking.offer_id)
     .single();
 
@@ -186,6 +188,12 @@ export async function requestBookingServer({
       price_amount,
       price_unit,
       deposit,
+      service_booking_mode,
+      service_hours_mode,
+      weekday_start_time,
+      weekday_end_time,
+      weekend_start_time,
+      weekend_end_time,
       profiles:profiles!offers_owner_id_fkey (
         is_seed_user
       )
@@ -212,7 +220,9 @@ export async function requestBookingServer({
   }
 
   const isService = offer.offer_type === "service";
-  const isTimedService = isService && offer.price_unit === "hour";
+  const serviceBookingMode = offer.service_booking_mode === "deadline" ? "deadline" : "scheduled";
+  const isTimedService = isService && serviceBookingMode === "scheduled";
+  const isDeadlineService = isService && serviceBookingMode === "deadline";
 
   if (isTimedService) {
     if (!startsAt || !endsAt) {
@@ -234,13 +244,28 @@ export async function requestBookingServer({
       throw new Error("Konec rezervace musí být později než začátek.");
     }
 
+    if (!isServiceIntervalInsideOpeningHours(offer, startsAt, endsAt)) {
+      throw new Error("Vybraný čas je mimo provozní dobu služby.");
+    }
+
     dateFrom = toIsoDate(startsAt);
     dateTo = toIsoDate(endsAt);
-  } else if (isService) {
+  } else if (isDeadlineService) {
     startsAt = undefined;
     endsAt = undefined;
-    dateFrom = undefined;
-    dateTo = undefined;
+
+    if (!dateFrom) {
+      throw new Error("Vyber požadovaný termín dokončení.");
+    }
+
+    dateTo = dateFrom;
+    const deadline = new Date(`${dateFrom}T00:00:00`);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (deadline < today) {
+      throw new Error("Termín dokončení nemůže být v minulosti.");
+    }
   } else {
     if (!dateFrom || !dateTo) {
       throw new Error("Vyber termín rezervace.");
@@ -294,8 +319,11 @@ export async function requestBookingServer({
         .lt("starts_at", endsAt!)
         .gt("ends_at", startsAt!)
         .limit(1)
-    : isService
-    ? { data: [], error: null }
+    : isDeadlineService
+    ? await overlappingBookingsQuery
+        .lte("date_from", dateTo!)
+        .gte("date_to", dateFrom!)
+        .limit(1)
     : await overlappingBookingsQuery
         .lte("date_from", dateTo!)
         .gte("date_to", dateFrom!)
@@ -309,7 +337,13 @@ export async function requestBookingServer({
     throw new Error("Na tuto nabídku už máš žádost ve stejném nebo překrývajícím se termínu.");
   }
 
-  if (!isService || isTimedService) {
+  if (isDeadlineService) {
+    await assertOfferDateNotBlockedServer({
+      offerId: offer.id,
+      dateFrom,
+      dateTo,
+    });
+  } else if (!isService || isTimedService) {
     await assertOfferAvailableServer({
       offerId: offer.id,
       dateFrom,
@@ -358,7 +392,7 @@ export async function requestBookingServer({
     message: `${isService ? "Žádost o službu vytvořena." : "Žádost o rezervaci vytvořena."}
 
 Nabídka: ${offer.title}
-${isTimedService ? `Čas: ${formatDateTime(startsAt || null)} – ${formatDateTime(endsAt || null)}\n` : !isService ? `Termín: ${formatDate(dateFrom || null)} – ${formatDate(dateTo || null)}\n` : "Termín: domluvou\n"}${isService ? "Lokalita působení" : "Místo předání"}: ${offer.pickup_place}
+${isTimedService ? `Čas: ${formatDateTime(startsAt || null)} – ${formatDateTime(endsAt || null)}\n` : isDeadlineService ? `Termín dokončení: ${formatDate(dateFrom || null)}\n` : !isService ? `Termín: ${formatDate(dateFrom || null)} – ${formatDate(dateTo || null)}\n` : "Termín: domluvou\n"}${isService ? "Lokalita působení" : "Místo předání"}: ${offer.pickup_place}
 Cena: ${totalPrice} Kč${!isService ? `\nKauce: ${offer.deposit || 0} Kč` : ""}${note?.trim() ? `\n\nPoznámka: ${note.trim()}` : ""}`,
   });
 
@@ -399,12 +433,19 @@ export async function approveBookingServer({
 
   const isService = offer.offer_type === "service";
   const isTimedService = isService && Boolean(booking.starts_at && booking.ends_at);
+  const isDeadlineService = isService && offer.service_booking_mode === "deadline";
 
   if (!isService && (!booking.date_from || !booking.date_to)) {
     throw new Error("Rezervace nemá vybraný termín.");
   }
 
-  if (!isService || isTimedService) {
+  if (isDeadlineService) {
+    await assertOfferDateNotBlockedServer({
+      offerId: offer.id,
+      dateFrom: booking.date_from,
+      dateTo: booking.date_to,
+    });
+  } else if (!isService || isTimedService) {
     await assertOfferAvailableServer({
       offerId: offer.id,
       dateFrom: booking.date_from,
@@ -576,9 +617,6 @@ export async function returnBookingServer({
       throw new Error("Dokončit lze pouze schválenou službu");
     }
 
-    if (booking.ends_at && new Date(booking.ends_at) > new Date()) {
-      throw new Error("Službu lze označit jako dokončenou až po skončení rezervovaného času.");
-    }
   } else if (booking.status !== "active") {
     throw new Error("Vrácení lze potvrdit pouze u probíhající rezervace");
   }

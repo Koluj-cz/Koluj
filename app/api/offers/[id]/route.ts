@@ -3,6 +3,7 @@ import { randomUUID } from "crypto";
 import { requireUser, createSupabaseAdminClient } from "@/lib/supabase/server";
 import { sanitizeRichText, errorMessage } from "@/lib/security";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
+import { attachTodayAvailabilityServer } from "@/lib/services/offerAvailabilityStatusService";
 
 type UpdatePayload = {
   offer_type: string;
@@ -124,9 +125,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     if (blocksError) throw new Error(blocksError.message);
 
+    const [itemWithAvailability] = await attachTodayAvailabilityServer([data]);
+
     return NextResponse.json({
       item: {
-        ...data,
+        ...itemWithAvailability,
         views_count: Number(data.views_count || 0) + 1,
       },
       images: imageData || [],

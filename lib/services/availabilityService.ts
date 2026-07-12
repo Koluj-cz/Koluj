@@ -266,6 +266,32 @@ export async function assertOfferAvailableServer({
   }
 }
 
+
+export async function assertOfferDateNotBlockedServer({
+  offerId,
+  dateFrom,
+  dateTo,
+}: {
+  offerId: string;
+  dateFrom?: string | null;
+  dateTo?: string | null;
+}) {
+  assertDateRange(dateFrom, dateTo);
+
+  const { data, error } = await supabaseAdmin
+    .from("offer_availability_blocks")
+    .select("id")
+    .eq("offer_id", offerId)
+    .lte("date_from", dateTo!)
+    .gte("date_to", dateFrom!)
+    .limit(1);
+
+  if (error) throw new Error(error.message);
+  if ((data || []).length > 0) {
+    throw new Error("Vybraný termín je nedostupný.");
+  }
+}
+
 export async function createAvailabilityBlockServer({
   offerId,
   ownerId,
