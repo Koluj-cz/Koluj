@@ -14,6 +14,7 @@ import OfferFormSidebar from "@/app/components/offer-form/OfferFormSidebar";
 import OfferPhotoUploader from "@/app/components/offer-form/OfferPhotoUploader";
 import OfferTypeSection from "@/app/components/offer-form/OfferTypeSection";
 import PriceSection from "@/app/components/offer-form/PriceSection";
+import ServiceBookingSettingsSection from "@/app/components/offer-form/ServiceBookingSettingsSection";
 import type {
   ExistingOfferPhoto,
   OfferFormState,
@@ -36,6 +37,12 @@ const emptyForm: OfferFormState = {
   pickup_longitude: null,
   handover_options: [],
   contact_note: "",
+  service_booking_mode: "scheduled",
+  service_hours_mode: "weekday_weekend",
+  weekday_start_time: "07:00",
+  weekday_end_time: "20:00",
+  weekend_start_time: "10:00",
+  weekend_end_time: "15:00",
   is_active: true,
 };
 
@@ -138,6 +145,12 @@ export default function EditItemPage() {
       pickup_longitude: data.pickup_longitude || null,
       handover_options: data.handover_options || [],
       contact_note: data.contact_note || "",
+      service_booking_mode: data.service_booking_mode === "deadline" ? "deadline" : "scheduled",
+      service_hours_mode: data.service_hours_mode === "same_every_day" ? "same_every_day" : "weekday_weekend",
+      weekday_start_time: data.weekday_start_time || "07:00",
+      weekday_end_time: data.weekday_end_time || "20:00",
+      weekend_start_time: data.weekend_start_time || "10:00",
+      weekend_end_time: data.weekend_end_time || "15:00",
       is_active: data.is_active ?? true,
     };
 
@@ -209,6 +222,19 @@ export default function EditItemPage() {
     if (!form.description.trim()) throw new Error("Vyplň popis");
     if (!form.price_amount.trim()) throw new Error("Vyplň cenu");
     if (!form.price_unit) throw new Error("Vyber jednotku ceny");
+
+    if (form.offer_type === "service" && form.service_booking_mode === "scheduled") {
+      const ranges = [
+        [form.weekday_start_time, form.weekday_end_time, "pracovní dny"],
+        [form.weekend_start_time, form.weekend_end_time, "víkend"],
+      ] as const;
+
+      for (const [start, end, label] of ranges) {
+        if (!start || !end || end <= start) {
+          throw new Error(`Nastav platnou provozní dobu pro ${label}`);
+        }
+      }
+    }
 
     if (!form.pickup_place.trim() || !form.pickup_latitude || !form.pickup_longitude) {
       throw new Error(
@@ -352,6 +378,7 @@ export default function EditItemPage() {
 
             <BasicInfoSection form={form} setForm={setForm} />
             <PriceSection form={form} setForm={setForm} />
+            <ServiceBookingSettingsSection form={form} setForm={setForm} />
             <LocationSection form={form} setForm={setForm} />
             <AvailabilityInfoSection mode="edit" />
 

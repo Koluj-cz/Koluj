@@ -52,6 +52,25 @@ export default function OfferFormSidebar({
             text="Cena"
           />
 
+          {form.offer_type === "service" && (
+            <CheckLine
+              done={
+                form.service_booking_mode === "deadline" ||
+                Boolean(
+                  form.weekday_start_time &&
+                    form.weekday_end_time &&
+                    form.weekend_start_time &&
+                    form.weekend_end_time,
+                )
+              }
+              text={
+                form.service_booking_mode === "deadline"
+                  ? "Flexibilní termín dokončení"
+                  : "Provozní doba služby"
+              }
+            />
+          )}
+
           <CheckLine
             done={Boolean(form.pickup_latitude)}
             text={

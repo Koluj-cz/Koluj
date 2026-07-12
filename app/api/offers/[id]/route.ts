@@ -19,6 +19,12 @@ type UpdatePayload = {
   pickup_longitude: number | null;
   handover_options: string[];
   contact_note?: string | null;
+  service_booking_mode?: "scheduled" | "deadline";
+  service_hours_mode?: "same_every_day" | "weekday_weekend";
+  weekday_start_time?: string | null;
+  weekday_end_time?: string | null;
+  weekend_start_time?: string | null;
+  weekend_end_time?: string | null;
   is_active?: boolean;
 };
 
@@ -65,6 +71,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         offer_type,
         service_duration_minutes,
         service_location_type,
+        service_booking_mode,
+        service_hours_mode,
+        weekday_start_time,
+        weekday_end_time,
+        weekend_start_time,
+        weekend_end_time,
         profiles:profiles!offers_owner_id_fkey (
           full_name,
           avatar_url,
@@ -189,6 +201,23 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     const offerType = payload.offer_type === "service" ? "service" : "item";
 
+  if (offerType === "service") {
+    const bookingMode = payload.service_booking_mode === "deadline" ? "deadline" : "scheduled";
+
+    if (bookingMode === "scheduled") {
+      const ranges = [
+        [payload.weekday_start_time, payload.weekday_end_time, "pracovní dny"],
+        [payload.weekend_start_time, payload.weekend_end_time, "víkend"],
+      ] as const;
+
+      for (const [start, end, label] of ranges) {
+        if (!start || !end || end <= start) {
+          throw new Error(`Nastav platnou provozní dobu pro ${label}`);
+        }
+      }
+    }
+  }
+
     if (offerType === "item" && (existingImages?.length || 0) + newPhotos.length === 0) {
       throw new Error("Nahraj alespoň jednu fotku věci");
     }
@@ -226,6 +255,24 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         pickup_longitude: payload.pickup_longitude,
         handover_options: offerType === "item" ? payload.handover_options : [],
         contact_note: payload.contact_note?.trim() || null,
+        service_booking_mode: offerType === "service"
+          ? payload.service_booking_mode === "deadline" ? "deadline" : "scheduled"
+          : null,
+        service_hours_mode: offerType === "service" && payload.service_booking_mode !== "deadline"
+          ? payload.service_hours_mode === "same_every_day" ? "same_every_day" : "weekday_weekend"
+          : null,
+        weekday_start_time: offerType === "service" && payload.service_booking_mode !== "deadline"
+          ? payload.weekday_start_time || null
+          : null,
+        weekday_end_time: offerType === "service" && payload.service_booking_mode !== "deadline"
+          ? payload.weekday_end_time || null
+          : null,
+        weekend_start_time: offerType === "service" && payload.service_booking_mode !== "deadline"
+          ? payload.weekend_start_time || null
+          : null,
+        weekend_end_time: offerType === "service" && payload.service_booking_mode !== "deadline"
+          ? payload.weekend_end_time || null
+          : null,
         is_active: payload.is_active ?? true,
       })
       .eq("id", id);

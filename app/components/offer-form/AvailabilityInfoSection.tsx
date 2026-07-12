@@ -17,14 +17,14 @@ export default function AvailabilityInfoSection({ mode }: AvailabilityInfoSectio
       <div className="mt-6 rounded-3xl border border-[var(--koluj-border)] bg-[var(--koluj-bg)] p-6">
         <p className="text-lg font-bold text-[var(--koluj-green)]">
           {isEdit
-            ? "📅 Dostupnost se spravuje v kalendáři této nabídky."
-            : "📅 Dostupnost se nastavuje až po vytvoření nabídky."}
+            ? "📅 Výjimky a blokace se spravují v kalendáři této nabídky."
+            : "📅 Po vytvoření nabídky můžeš přidávat výjimky a blokace."}
         </p>
 
         <p className="mt-3 leading-relaxed text-[var(--koluj-muted)]">
           {isEdit
-            ? "Kalendář najdeš v detailu nabídky. Zde můžeš blokovat vlastní termíny, schvalovat rezervace a sledovat obsazené dny."
-            : "Po uložení budeš moci v detailu nabídky spravovat kalendář dostupnosti, blokovat termíny a schvalovat rezervace. Ostatní uživatelé okamžitě uvidí, které dny jsou volné a které obsazené."}
+            ? "Základní provozní dobu služby nastavíš přímo v tomto formuláři. Kalendář v detailu pak slouží pro dovolenou, jednorázové blokace a obsazené termíny."
+            : "Základní provozní dobu služby nastavíš výše. Po uložení můžeš v detailu nabídky přidávat jednorázové blokace a další výjimky."}
         </p>
       </div>
     </div>

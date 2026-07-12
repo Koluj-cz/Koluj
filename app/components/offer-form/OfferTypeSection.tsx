@@ -29,6 +29,12 @@ export default function OfferTypeSection({ offerType, setForm }: OfferTypeSectio
                 price_unit: type === "service" ? "hour" : "day",
                 deposit: type === "service" ? "" : prev.deposit,
                 handover_options: type === "service" ? [] : prev.handover_options,
+                service_booking_mode: type === "service" ? prev.service_booking_mode || "scheduled" : "scheduled",
+                service_hours_mode: type === "service" ? prev.service_hours_mode || "weekday_weekend" : "weekday_weekend",
+                weekday_start_time: type === "service" ? prev.weekday_start_time || "07:00" : "07:00",
+                weekday_end_time: type === "service" ? prev.weekday_end_time || "20:00" : "20:00",
+                weekend_start_time: type === "service" ? prev.weekend_start_time || "10:00" : "10:00",
+                weekend_end_time: type === "service" ? prev.weekend_end_time || "15:00" : "15:00",
               }))
             }
             className={`rounded-3xl px-5 py-4 text-left font-black ${

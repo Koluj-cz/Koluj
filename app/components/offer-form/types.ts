@@ -13,6 +13,12 @@ export type OfferFormState = {
   pickup_longitude: number | null;
   handover_options: string[];
   contact_note: string;
+  service_booking_mode: "scheduled" | "deadline";
+  service_hours_mode: "same_every_day" | "weekday_weekend";
+  weekday_start_time: string;
+  weekday_end_time: string;
+  weekend_start_time: string;
+  weekend_end_time: string;
   is_active?: boolean;
 };
 
