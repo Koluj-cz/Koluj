@@ -7,9 +7,9 @@ export default function PrintButton() {
     <button
       type="button"
       onClick={() => window.print()}
-      className="flex items-center justify-center gap-2 rounded-[24px] bg-[var(--koluj-green)] px-5 py-3 font-black text-white shadow-sm hover:shadow-md"
+      className="inline-flex items-center justify-center gap-2 border border-[var(--koluj-border)] bg-white px-4 py-3 font-black text-[var(--koluj-green)] shadow-sm transition hover:bg-[var(--koluj-bg)]"
     >
-      <Printer size={18} />
+      <Printer size={17} />
       Tisknout
     </button>
   );

@@ -124,6 +124,9 @@ export default async function BookingHandoverProtocolPage({ params }: PageProps)
   }
 
   const isService = booking.offers?.offer_type === "service";
+  const showCalculatedTotalPrice =
+    isService && booking.offers?.price_unit === "hour";
+
   const categoryLabel = booking.offers?.category
     ? isService
       ? serviceCategoryLabels[booking.offers.category] || booking.offers.category
@@ -135,8 +138,8 @@ export default async function BookingHandoverProtocolPage({ params }: PageProps)
       <div className="mx-auto max-w-[980px] px-4 py-8 print:hidden">
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <BackLink href={`/dashboard/bookings/${booking.id}`}>Zpět na rezervaci</BackLink>
-          
-<PrintButton />
+
+          <PrintButton />
         </div>
       </div>
 
@@ -164,7 +167,12 @@ export default async function BookingHandoverProtocolPage({ params }: PageProps)
             <p><strong>ID rezervace:</strong> {booking.id}</p>
             <p><strong>Název nabídky:</strong> {valueOrLine(booking.offers?.title)}</p>
             <p><strong>Kategorie:</strong> {categoryLabel}</p>
-            <p><strong>{isService ? "Celková cena služby" : "Celková cena rezervace"}:</strong> {booking.total_price ?? "_______________________"} Kč</p>
+            <p>
+              <strong>Celková cena:</strong>{" "}
+              {showCalculatedTotalPrice && booking.total_price !== null
+                ? `${booking.total_price} Kč`
+                : "_______________________"}
+            </p>
             {!isService && <p><strong>Kauce:</strong> {booking.offers?.deposit || 0} Kč</p>}
             <p><strong>{isService ? "Lokalita působení" : "Místo předání"}:</strong> {valueOrLine(booking.offers?.pickup_place)}</p>
           </div>
