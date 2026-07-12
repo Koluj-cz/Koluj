@@ -551,8 +551,6 @@ export default function ProfilePage() {
               </button>
             </div>
           </StickySidebar>
-        </section>
-
             </div>
           </div>
         </section>

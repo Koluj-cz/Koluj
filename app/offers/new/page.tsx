@@ -224,8 +224,6 @@ export default function NewItemPage() {
             isSubmitting={loading}
             onSubmit={handleSubmit}
           />
-        </section>
-
             </div>
           </div>
         </section>

@@ -394,8 +394,6 @@ export default function EditItemPage() {
             isSubmitting={saving}
             onSubmit={saveItem}
           />
-        </section>
-
             </div>
           </div>
         </section>
