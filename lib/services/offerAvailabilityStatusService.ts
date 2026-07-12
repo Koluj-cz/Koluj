@@ -1,8 +1,13 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
-import { getServiceHoursForDate, minutesFromTime } from "@/lib/serviceBookingRules";
+import {
+  getServiceHoursForDate,
+  minutesFromTime,
+} from "@/lib/serviceBookingRules";
 
 const STEP = 30;
 const APP_TIME_ZONE = "Europe/Prague";
+
+type AvailabilityStatus = "available" | "reserved" | "unavailable";
 
 type Offer = {
   id: string;
@@ -15,78 +20,257 @@ type Offer = {
   weekend_end_time?: string | null;
 };
 
-type Interval = { offer_id: string; starts_at: string | null; ends_at: string | null };
-type Block = Interval & { date_from: string; date_to: string };
+type Interval = {
+  offer_id: string;
+  starts_at: string | null;
+  ends_at: string | null;
+};
+
+type Block = Interval & {
+  date_from: string;
+  date_to: string;
+};
 
 function nowParts() {
   const parts = new Intl.DateTimeFormat("en-CA", {
-    timeZone: APP_TIME_ZONE, year: "numeric", month: "2-digit", day: "2-digit",
-    hour: "2-digit", minute: "2-digit", hourCycle: "h23",
+    timeZone: APP_TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
   }).formatToParts(new Date());
-  const values = Object.fromEntries(parts.filter((p) => p.type !== "literal").map((p) => [p.type, p.value]));
-  return { today: `${values.year}-${values.month}-${values.day}`, minutes: Number(values.hour) * 60 + Number(values.minute) };
+
+  const values = Object.fromEntries(
+    parts
+      .filter((part) => part.type !== "literal")
+      .map((part) => [part.type, part.value]),
+  );
+
+  return {
+    today: `${values.year}-${values.month}-${values.day}`,
+    minutes: Number(values.hour) * 60 + Number(values.minute),
+  };
 }
 
 function localIso(date: string, minutes: number) {
-  const [y,m,d] = date.split("-").map(Number);
-  return new Date(y, m-1, d, Math.floor(minutes/60), minutes%60).toISOString();
+  const [year, month, day] = date.split("-").map(Number);
+
+  return new Date(
+    year,
+    month - 1,
+    day,
+    Math.floor(minutes / 60),
+    minutes % 60,
+  ).toISOString();
 }
 
-function overlaps(start: number, end: number, interval: Interval) {
-  if (!interval.starts_at || !interval.ends_at) return false;
-  return start < new Date(interval.ends_at).getTime() && end > new Date(interval.starts_at).getTime();
+function overlaps(
+  start: number,
+  end: number,
+  interval: Interval,
+) {
+  if (!interval.starts_at || !interval.ends_at) {
+    return false;
+  }
+
+  return (
+    start < new Date(interval.ends_at).getTime() &&
+    end > new Date(interval.starts_at).getTime()
+  );
 }
 
-export async function attachTodayAvailabilityServer<T extends Offer>(items: T[]) {
-  if (!items.length) return [];
+export async function attachTodayAvailabilityServer<T extends Offer>(
+  items: T[],
+) {
+  if (items.length === 0) {
+    return [];
+  }
+
   const supabase = createSupabaseAdminClient();
   const { today, minutes } = nowParts();
-  const ids = items.map((item) => item.id);
-  const dayStart = localIso(today, 0);
-  const dayEnd = localIso(today, 24*60);
+  const offerIds = items.map((item) => item.id);
 
-  const [reservations, bookings, blocks] = await Promise.all([
-    supabase.from("offer_reservations").select("offer_id, starts_at, ends_at").in("offer_id", ids).eq("status", "active").lte("date_from", today).gte("date_to", today),
-    supabase.from("bookings").select("offer_id, starts_at, ends_at").in("offer_id", ids).in("status", ["requested","approved","active"]).not("starts_at", "is", null).lt("starts_at", dayEnd).gt("ends_at", dayStart),
-    supabase.from("offer_availability_blocks").select("offer_id, date_from, date_to, starts_at, ends_at").in("offer_id", ids).lte("date_from", today).gte("date_to", today),
-  ]);
-  for (const result of [reservations, bookings, blocks]) if (result.error) throw new Error(result.error.message);
+  const dayStart = localIso(today, 0);
+  const dayEnd = localIso(today, 24 * 60);
+
+  const [reservationsResult, bookingsResult, blocksResult] =
+    await Promise.all([
+      supabase
+        .from("offer_reservations")
+        .select("offer_id, starts_at, ends_at")
+        .in("offer_id", offerIds)
+        .eq("status", "active")
+        .lte("date_from", today)
+        .gte("date_to", today),
+
+      supabase
+        .from("bookings")
+        .select("offer_id, starts_at, ends_at")
+        .in("offer_id", offerIds)
+        .in("status", ["requested", "approved", "active"])
+        .not("starts_at", "is", null)
+        .lt("starts_at", dayEnd)
+        .gt("ends_at", dayStart),
+
+      supabase
+        .from("offer_availability_blocks")
+        .select(
+          "offer_id, date_from, date_to, starts_at, ends_at",
+        )
+        .in("offer_id", offerIds)
+        .lte("date_from", today)
+        .gte("date_to", today),
+    ]);
+
+  for (const result of [
+    reservationsResult,
+    bookingsResult,
+    blocksResult,
+  ]) {
+    if (result.error) {
+      throw new Error(result.error.message);
+    }
+  }
 
   return items.map((item) => {
-    const itemBlocks = (blocks.data || []).filter((row) => row.offer_id === item.id) as Block[];
-    const fullDayBlocked = itemBlocks.some((block) => !block.starts_at);
-    let availability_status: "available" | "reserved" | "unavailable" = "available";
+    const itemBlocks = (blocksResult.data || []).filter(
+      (block) => block.offer_id === item.id,
+    ) as Block[];
 
+    const fullDayBlocked = itemBlocks.some(
+      (block) => !block.starts_at && !block.ends_at,
+    );
+
+    let availabilityStatus: AvailabilityStatus = "available";
+
+    /*
+     * Věc:
+     * - ruční blokace = Nedostupné
+     * - rezervace = Rezervované
+     * - jinak = Volné
+     */
     if (item.offer_type !== "service") {
-      const reserved = (reservations.data || []).some((row) => row.offer_id === item.id);
-      availability_status = fullDayBlocked ? "unavailable" : reserved ? "reserved" : "available";
-    } else if (item.service_booking_mode === "deadline") {
-      availability_status = fullDayBlocked ? "unavailable" : "available";
-    } else {
+      const reserved = (reservationsResult.data || []).some(
+        (reservation) => reservation.offer_id === item.id,
+      );
+
+      availabilityStatus = fullDayBlocked
+        ? "unavailable"
+        : reserved
+          ? "reserved"
+          : "available";
+    }
+
+    /*
+     * Flexibilní služba:
+     * - dnešní celodenní blokace = Nedostupné
+     * - jinak = Volné
+     */
+    else if (item.service_booking_mode === "deadline") {
+      availabilityStatus = fullDayBlocked
+        ? "unavailable"
+        : "available";
+    }
+
+    /*
+     * Služba s konkrétním časem.
+     */
+    else {
       const hours = getServiceHoursForDate(item, today);
+
       if (!hours || fullDayBlocked) {
-        availability_status = "unavailable";
+        availabilityStatus = "unavailable";
       } else {
-        const first = Math.max(minutesFromTime(hours.start), Math.ceil(minutes / STEP) * STEP);
-        const end = minutesFromTime(hours.end);
-        const intervals = [
-          ...(bookings.data || []).filter((row) => row.offer_id === item.id),
-          ...itemBlocks.filter((block) => block.starts_at),
-        ] as Interval[];
-        let free = false;
-        for (let start = first; start + STEP <= end; start += STEP) {
-          const a = new Date(localIso(today, start)).getTime();
-          const b = new Date(localIso(today, start + STEP)).getTime();
-          if (!intervals.some((interval) => overlaps(a,b,interval))) { free = true; break; }
+        const serviceStart = minutesFromTime(hours.start);
+        const serviceEnd = minutesFromTime(hours.end);
+
+        const nextHalfHour =
+          Math.ceil(minutes / STEP) * STEP;
+
+        const firstPossibleStart = Math.max(
+          serviceStart,
+          nextHalfHour,
+        );
+
+        /*
+         * Po provozní době nebo pokud už nezbývá ani jeden
+         * celý 30minutový slot.
+         */
+        if (firstPossibleStart + STEP > serviceEnd) {
+          availabilityStatus = "unavailable";
+        } else {
+          const bookingIntervals = (
+            bookingsResult.data || []
+          ).filter(
+            (booking) => booking.offer_id === item.id,
+          ) as Interval[];
+
+          const blockIntervals = itemBlocks.filter(
+            (block) => block.starts_at && block.ends_at,
+          );
+
+          let hasCandidateSlot = false;
+          let hasUnblockedSlot = false;
+          let hasFreeSlot = false;
+
+          for (
+            let start = firstPossibleStart;
+            start + STEP <= serviceEnd;
+            start += STEP
+          ) {
+            hasCandidateSlot = true;
+
+            const slotStart = new Date(
+              localIso(today, start),
+            ).getTime();
+
+            const slotEnd = new Date(
+              localIso(today, start + STEP),
+            ).getTime();
+
+            const isBlocked = blockIntervals.some((block) =>
+              overlaps(slotStart, slotEnd, block),
+            );
+
+            if (isBlocked) {
+              continue;
+            }
+
+            hasUnblockedSlot = true;
+
+            const isReserved = bookingIntervals.some((booking) =>
+              overlaps(slotStart, slotEnd, booking),
+            );
+
+            if (!isReserved) {
+              hasFreeSlot = true;
+              break;
+            }
+          }
+
+          if (!hasCandidateSlot) {
+            // Mimo provozní dobu.
+            availabilityStatus = "unavailable";
+          } else if (hasFreeSlot) {
+            // Existuje alespoň jeden volný slot.
+            availabilityStatus = "available";
+          } else if (!hasUnblockedSlot) {
+            // Všechny zbývající sloty zablokoval vlastník.
+            availabilityStatus = "unavailable";
+          } else {
+            // Nezablokované sloty existují, ale všechny zabraly rezervace.
+            availabilityStatus = "reserved";
+          }
         }
-        availability_status = free ? "available" : "reserved";
       }
     }
 
     return {
       ...item,
-      availability_status,
-      is_reserved_today: availability_status === "reserved",
+      availability_status: availabilityStatus,
+      is_reserved_today: availabilityStatus === "reserved",
     };
   });
 }
