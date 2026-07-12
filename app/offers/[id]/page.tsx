@@ -535,7 +535,21 @@ export default function ItemDetailPage() {
               )}
             </div>
 
-            {!isService && (
+            {isService ? (
+              <div className="grid items-stretch gap-6 md:grid-cols-2 xl:grid-cols-3">
+                <div className="h-full [&>div]:h-full">
+                  <MetaAndDescriptionCard item={item} />
+                </div>
+
+                <div className="h-full [&>div]:h-full">
+                  {handoverCard}
+                </div>
+
+                <div className="h-full md:col-span-2 xl:col-span-1 [&>div]:h-full">
+                  {ownerCard}
+                </div>
+              </div>
+            ) : (
               <div className="hidden space-y-6 xl:block">
                 <MetaAndDescriptionCard item={item} />
                 {handoverCard}
@@ -800,21 +814,7 @@ export default function ItemDetailPage() {
           </aside>
         </section>
 
-        {isService ? (
-          <section className="mt-6 grid items-stretch gap-6 xl:grid-cols-3">
-            <div className="h-full [&>div]:h-full">
-              <MetaAndDescriptionCard item={item} />
-            </div>
-
-            <div className="h-full [&>div]:h-full">
-              {handoverCard}
-            </div>
-
-            <div className="h-full [&>div]:h-full">
-              {ownerCard}
-            </div>
-          </section>
-        ) : (
+        {!isService && (
           <div className="mt-6 space-y-6 xl:hidden">
             <MetaAndDescriptionCard item={item} />
             {handoverCard}
@@ -822,11 +822,7 @@ export default function ItemDetailPage() {
           </div>
         )}
 
-        {mapCard && (
-          <section className="mt-6">
-            {mapCard}
-          </section>
-        )}
+        {mapCard && <section className="mt-6">{mapCard}</section>}
       </div>
     </main>
   );
