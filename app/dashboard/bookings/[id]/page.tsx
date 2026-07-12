@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Printer, Send } from "lucide-react";
+import { FileText, Paperclip, Printer, Send, X } from "lucide-react";
 import BackLink from "@/app/components/BackLink";
 import toast from "react-hot-toast";
 import PageLoader from "@/app/components/PageLoader";
@@ -49,6 +49,10 @@ type Message = {
   is_system: boolean;
   created_at: string;
   profiles?: { full_name: string | null } | null;
+  attachment_url?: string | null;
+  attachment_name?: string | null;
+  attachment_type?: string | null;
+  attachment_size?: number | null;
 };
 
 export default function BookingDetailPage() {
@@ -58,6 +62,7 @@ export default function BookingDetailPage() {
   const [booking, setBooking] = useState<Booking | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [message, setMessage] = useState("");
+  const [messageAttachment, setMessageAttachment] = useState<File | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -281,21 +286,18 @@ export default function BookingDetailPage() {
 
 
   async function sendMessage() {
-    if (!message.trim() || !booking || sendingMessage) return;
+    if ((!message.trim() && !messageAttachment) || !booking || sendingMessage) return;
 
     setSendingMessage(true);
 
-    const trimmedMessage = message.trim();
+    const formData = new FormData();
+    formData.append("bookingId", booking.id);
+    formData.append("message", message.trim());
+    if (messageAttachment) formData.append("attachment", messageAttachment);
 
     const response = await fetch("/api/bookings/message", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        bookingId: booking.id,
-        message: trimmedMessage,
-      }),
+      body: formData,
     });
 
     const result = await response.json().catch(() => null);
@@ -307,6 +309,8 @@ export default function BookingDetailPage() {
     }
 
     setMessage("");
+    setMessageAttachment(null);
+    await loadBooking(false);
     setSendingMessage(false);
     scrollMessagesToBottom("smooth");
   }
@@ -646,6 +650,38 @@ export default function BookingDetailPage() {
 
                     <p className="whitespace-pre-line">{msg.message}</p>
 
+                    {msg.attachment_url && msg.attachment_name && (
+                      msg.attachment_type?.startsWith("image/") ? (
+                        <a
+                          href={msg.attachment_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-3 block overflow-hidden rounded-2xl bg-white/90"
+                        >
+                          <img
+                            src={msg.attachment_url}
+                            alt={msg.attachment_name}
+                            className="max-h-72 w-full object-contain"
+                          />
+                          <span className="block truncate px-3 py-2 text-xs font-black text-[var(--koluj-text)]">
+                            {msg.attachment_name}
+                          </span>
+                        </a>
+                      ) : (
+                        <a
+                          href={msg.attachment_url}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-3 flex items-center gap-3 rounded-2xl bg-white/90 p-3 text-[var(--koluj-text)]"
+                        >
+                          <FileText size={22} className="shrink-0 text-[var(--koluj-green)]" />
+                          <span className="min-w-0 truncate text-sm font-black">
+                            {msg.attachment_name}
+                          </span>
+                        </a>
+                      )
+                    )}
+
                     <p className="mt-2 text-[11px] font-bold opacity-60">
                       {formatDateTime(msg.created_at)}
                     </p>
@@ -662,25 +698,61 @@ export default function BookingDetailPage() {
               </div>
             ) : (
               <div className="border-t border-[var(--koluj-border)] p-4">
-                <div className="flex gap-3">
+                {messageAttachment && (
+                  <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl bg-[var(--koluj-bg)] px-4 py-3 text-sm">
+                    <span className="min-w-0 truncate font-bold">
+                      {messageAttachment.name}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setMessageAttachment(null)}
+                      className="shrink-0 text-red-600"
+                      aria-label="Odebrat přílohu"
+                    >
+                      <X size={18} />
+                    </button>
+                  </div>
+                )}
+
+                <div className="flex gap-2 sm:gap-3">
+                  <label className="flex h-12 w-12 shrink-0 cursor-pointer items-center justify-center rounded-2xl border border-[var(--koluj-border)] bg-white text-[var(--koluj-green)] hover:bg-[var(--koluj-bg)]">
+                    <Paperclip size={20} />
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,application/pdf,.docx,.xlsx,.zip"
+                      className="hidden"
+                      disabled={sendingMessage}
+                      onChange={(event) => {
+                        const file = event.target.files?.[0] || null;
+                        if (file && file.size > 15 * 1024 * 1024) {
+                          toast.error("Příloha může mít maximálně 15 MB");
+                          event.currentTarget.value = "";
+                          return;
+                        }
+                        setMessageAttachment(file);
+                        event.currentTarget.value = "";
+                      }}
+                    />
+                  </label>
+
                   <input
                     value={message}
                     disabled={sendingMessage}
                     onChange={(event) => setMessage(event.target.value)}
                     onKeyDown={(event) => {
                       if (event.key === "Enter" && !sendingMessage) {
-                        sendMessage();
+                        void sendMessage();
                       }
                     }}
                     placeholder="Napiš zprávu..."
-                    className="koluj-input flex-1 disabled:opacity-60"
+                    className="koluj-input min-w-0 flex-1 disabled:opacity-60"
                   />
 
                   <button
                     type="button"
                     onClick={sendMessage}
-                    disabled={sendingMessage}
-                    className="koluj-button flex items-center justify-center px-5 disabled:cursor-not-allowed disabled:opacity-60"
+                    disabled={sendingMessage || (!message.trim() && !messageAttachment)}
+                    className="koluj-button flex items-center justify-center px-4 disabled:cursor-not-allowed disabled:opacity-60 sm:px-5"
                   >
                     {sendingMessage ? (
                       <span className="text-sm font-black">...</span>

@@ -24,6 +24,8 @@ import {
   ShieldCheck,
   Star,
   Eye,
+  Paperclip,
+  X,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -128,6 +130,7 @@ export default function ItemDetailPage() {
   const [startsAt, setStartsAt] = useState("");
   const [endsAt, setEndsAt] = useState("");
   const [borrowNote, setBorrowNote] = useState("");
+  const [borrowAttachment, setBorrowAttachment] = useState<File | null>(null);
   const [submittingBorrowRequest, setSubmittingBorrowRequest] = useState(false);
 
   useEffect(() => {
@@ -176,31 +179,38 @@ export default function ItemDetailPage() {
 
     setSubmittingBorrowRequest(true);
 
+    const requestData = new FormData();
+    requestData.append("offerId", item.id);
+    requestData.append(
+      "dateFrom",
+      item.offer_type === "service" && item.service_booking_mode !== "deadline"
+        ? ""
+        : borrowFrom,
+    );
+    requestData.append(
+      "dateTo",
+      item.offer_type === "service" && item.service_booking_mode !== "deadline"
+        ? ""
+        : borrowTo,
+    );
+    requestData.append(
+      "startsAt",
+      item.offer_type === "service" && item.price_unit === "hour"
+        ? startsAt
+        : "",
+    );
+    requestData.append(
+      "endsAt",
+      item.offer_type === "service" && item.price_unit === "hour"
+        ? endsAt
+        : "",
+    );
+    requestData.append("note", borrowNote);
+    if (borrowAttachment) requestData.append("attachment", borrowAttachment);
+
     const response = await fetch("/api/bookings/request", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        offerId: item.id,
-        dateFrom:
-          item.offer_type === "service" && item.service_booking_mode !== "deadline"
-            ? null
-            : borrowFrom,
-        dateTo:
-          item.offer_type === "service" && item.service_booking_mode !== "deadline"
-            ? null
-            : borrowTo,
-        startsAt:
-          item.offer_type === "service" && item.price_unit === "hour"
-            ? startsAt
-            : null,
-        endsAt:
-          item.offer_type === "service" && item.price_unit === "hour"
-            ? endsAt
-            : null,
-        note: borrowNote,
-      }),
+      body: requestData,
     });
 
     const result = await response.json().catch(() => null);
@@ -700,6 +710,43 @@ export default function ItemDetailPage() {
                     <p className="text-right text-xs text-[var(--koluj-muted)]">
                       {borrowNote.length}/500
                     </p>
+
+                    <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-[var(--koluj-border)] bg-white px-4 py-3 text-sm font-black text-[var(--koluj-green)] hover:bg-[var(--koluj-bg)]">
+                      <Paperclip size={18} />
+                      Přiložit soubor
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp,application/pdf,.docx,.xlsx,.zip"
+                        className="hidden"
+                        disabled={submittingBorrowRequest}
+                        onChange={(event) => {
+                          const file = event.target.files?.[0] || null;
+                          if (file && file.size > 15 * 1024 * 1024) {
+                            toast.error("Příloha může mít maximálně 15 MB");
+                            event.currentTarget.value = "";
+                            return;
+                          }
+                          setBorrowAttachment(file);
+                          event.currentTarget.value = "";
+                        }}
+                      />
+                    </label>
+
+                    {borrowAttachment && (
+                      <div className="flex items-center justify-between gap-3 rounded-2xl bg-[var(--koluj-bg)] px-4 py-3 text-sm">
+                        <span className="min-w-0 truncate font-bold">
+                          {borrowAttachment.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setBorrowAttachment(null)}
+                          className="shrink-0 text-red-600"
+                          aria-label="Odebrat přílohu"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <button

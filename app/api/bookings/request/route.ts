@@ -11,20 +11,26 @@ export async function POST(request: Request) {
     windowMs: 60 * 1000,
   });
 
-  if (!rate.allowed) {
-    return rateLimitResponse(rate.resetAt);
-  }
-  const { user } = await requireUser();
-
-
-  const { offerId, dateFrom, dateTo, startsAt, endsAt, note } = await request.json();
-  const normalizedNote = typeof note === "string" ? note.trim().slice(0, 500) : "";
-
-  if (!offerId) {
-    return NextResponse.json({ error: "Missing offerId" }, { status: 400 });
-  }
+  if (!rate.allowed) return rateLimitResponse(rate.resetAt);
 
   try {
+    const { user } = await requireUser();
+    const formData = await request.formData();
+    const offerId = String(formData.get("offerId") || "");
+    const dateFrom = String(formData.get("dateFrom") || "") || undefined;
+    const dateTo = String(formData.get("dateTo") || "") || undefined;
+    const startsAt = String(formData.get("startsAt") || "") || undefined;
+    const endsAt = String(formData.get("endsAt") || "") || undefined;
+    const note = String(formData.get("note") || "").trim().slice(0, 500);
+    const attachmentValue = formData.get("attachment");
+    const attachment = attachmentValue instanceof File && attachmentValue.size > 0
+      ? attachmentValue
+      : null;
+
+    if (!offerId) {
+      return NextResponse.json({ error: "Missing offerId" }, { status: 400 });
+    }
+
     const result = await requestBookingServer({
       offerId,
       customerId: user.id,
@@ -32,14 +38,15 @@ export async function POST(request: Request) {
       dateTo,
       startsAt,
       endsAt,
-      note: normalizedNote,
+      note,
+      attachment,
     });
 
     return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json(
       { error: errorMessage(error, "Žádost se nepodařilo vytvořit") },
-      { status: 400 }
+      { status: 400 },
     );
   }
 }

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseAdminClient, requireUser } from "@/lib/supabase/server";
 import { errorMessage } from "@/lib/security";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
+import { createBookingAttachmentSignedUrl } from "@/lib/services/bookingAttachmentService";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -71,9 +72,23 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     if (messagesError) throw new Error(messagesError.message);
 
+    const messagesWithAttachments = await Promise.all(
+      (messages || []).map(async (message) => {
+        const attachmentUrl = message.attachment_path
+          ? await createBookingAttachmentSignedUrl(message.attachment_path)
+          : null;
+        const { attachment_path: _attachmentPath, ...safeMessage } = message;
+
+        return {
+          ...safeMessage,
+          attachment_url: attachmentUrl,
+        };
+      }),
+    );
+
     return NextResponse.json({
       booking,
-      messages: messages || [],
+      messages: messagesWithAttachments,
       reviewed: Boolean(existingReview),
       userId: user.id,
     });

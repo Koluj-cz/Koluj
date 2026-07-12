@@ -3,6 +3,10 @@ import { notifyUserServer } from "@/lib/notifyUserServer";
 import { containsForbiddenText } from "@/lib/moderation";
 import { isServiceIntervalInsideOpeningHours } from "@/lib/serviceBookingRules";
 import {
+  removeBookingAttachment,
+  uploadBookingAttachment,
+} from "@/lib/services/bookingAttachmentService";
+import {
   assertOfferAvailableServer,
   assertOfferDateNotBlockedServer,
   cancelReservationForBookingServer,
@@ -166,6 +170,7 @@ export async function requestBookingServer({
   startsAt,
   endsAt,
   note,
+  attachment,
 }: {
   offerId: string;
   customerId: string;
@@ -174,6 +179,7 @@ export async function requestBookingServer({
   startsAt?: string;
   endsAt?: string;
   note?: string;
+  attachment?: File | null;
 }) {
 
   const { data: offer, error: offerError } = await supabaseAdmin
@@ -395,6 +401,34 @@ Nabídka: ${offer.title}
 ${isTimedService ? `Čas: ${formatDateTime(startsAt || null)} – ${formatDateTime(endsAt || null)}\n` : isDeadlineService ? `Termín dokončení: ${formatDate(dateFrom || null)}\n` : !isService ? `Termín: ${formatDate(dateFrom || null)} – ${formatDate(dateTo || null)}\n` : "Termín: domluvou\n"}${isService ? "Lokalita působení" : "Místo předání"}: ${offer.pickup_place}
 Cena: ${totalPrice} Kč${!isService ? `\nKauce: ${offer.deposit || 0} Kč` : ""}${note?.trim() ? `\n\nPoznámka: ${note.trim()}` : ""}`,
   });
+
+  if (attachment) {
+    let uploadedPath: string | null = null;
+
+    try {
+      const attachmentData = await uploadBookingAttachment({
+        bookingId: createdBooking.id,
+        userId: customerId,
+        file: attachment,
+      });
+      uploadedPath = attachmentData.attachment_path;
+
+      const { error: attachmentMessageError } = await supabaseAdmin
+        .from("booking_messages")
+        .insert({
+          booking_id: createdBooking.id,
+          sender_id: customerId,
+          message: note?.trim() || "Příloha k žádosti",
+          is_system: false,
+          ...attachmentData,
+        });
+
+      if (attachmentMessageError) throw new Error(attachmentMessageError.message);
+    } catch (error) {
+      await removeBookingAttachment(uploadedPath);
+      throw error;
+    }
+  }
 
   await notifyUserServer({
     userId: offer.owner_id,
@@ -663,18 +697,20 @@ export async function sendBookingMessageServer({
   bookingId,
   actorId,
   message,
+  attachment,
 }: {
   bookingId: string;
   actorId: string;
   message: string;
+  attachment?: File | null;
 }) {
   const trimmedMessage = message.trim();
 
-  if (!trimmedMessage) {
-    throw new Error("Zpráva je prázdná");
+  if (!trimmedMessage && !attachment) {
+    throw new Error("Napiš zprávu nebo přilož soubor");
   }
 
-  if (containsForbiddenText(trimmedMessage)) {
+  if (trimmedMessage && containsForbiddenText(trimmedMessage)) {
     throw new Error("Zpráva obsahuje nepovolený obsah.");
   }
 
@@ -688,18 +724,30 @@ export async function sendBookingMessageServer({
     throw new Error("Do ukončené rezervace už nelze psát.");
   }
 
+  let attachmentData: Awaited<ReturnType<typeof uploadBookingAttachment>> | null = null;
+
+  if (attachment) {
+    attachmentData = await uploadBookingAttachment({
+      bookingId: booking.id,
+      userId: actorId,
+      file: attachment,
+    });
+  }
+
   const { data: createdMessage, error: messageError } = await supabaseAdmin
     .from("booking_messages")
     .insert({
       booking_id: booking.id,
       sender_id: actorId,
-      message: trimmedMessage,
+      message: trimmedMessage || (attachment ? "Příloha" : ""),
       is_system: false,
+      ...(attachmentData || {}),
     })
     .select("id")
     .single();
 
   if (messageError || !createdMessage) {
+    await removeBookingAttachment(attachmentData?.attachment_path);
     throw new Error(messageError?.message || "Zprávu se nepodařilo odeslat");
   }
 

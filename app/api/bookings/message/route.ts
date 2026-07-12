@@ -11,35 +11,38 @@ export async function POST(request: Request) {
     windowMs: 60 * 1000,
   });
 
-  if (!rate.allowed) {
-    return rateLimitResponse(rate.resetAt);
-  }
-  const { user } = await requireUser();
-
-
-  const { bookingId, message } = await request.json();
-  const normalizedMessage = typeof message === "string" ? message.trim() : "";
-
-  if (!bookingId || !normalizedMessage) {
-    return NextResponse.json({ error: "Missing data" }, { status: 400 });
-  }
-
-  if (normalizedMessage.length > 1000) {
-    return NextResponse.json({ error: "Zpráva je příliš dlouhá" }, { status: 400 });
-  }
+  if (!rate.allowed) return rateLimitResponse(rate.resetAt);
 
   try {
+    const { user } = await requireUser();
+    const formData = await request.formData();
+    const bookingId = String(formData.get("bookingId") || "");
+    const message = String(formData.get("message") || "").trim();
+    const attachmentValue = formData.get("attachment");
+    const attachment = attachmentValue instanceof File && attachmentValue.size > 0
+      ? attachmentValue
+      : null;
+
+    if (!bookingId || (!message && !attachment)) {
+      return NextResponse.json({ error: "Napiš zprávu nebo přilož soubor" }, { status: 400 });
+    }
+
+    if (message.length > 1000) {
+      return NextResponse.json({ error: "Zpráva je příliš dlouhá" }, { status: 400 });
+    }
+
     const result = await sendBookingMessageServer({
       bookingId,
       actorId: user.id,
-      message: normalizedMessage,
+      message,
+      attachment,
     });
 
     return NextResponse.json(result);
   } catch (error) {
     return NextResponse.json(
       { error: errorMessage(error, "Zprávu se nepodařilo odeslat") },
-      { status: 400 }
+      { status: 400 },
     );
   }
 }
