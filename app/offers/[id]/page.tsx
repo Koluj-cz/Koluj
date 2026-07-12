@@ -535,11 +535,12 @@ export default function ItemDetailPage() {
               )}
             </div>
 
-            <div className="hidden space-y-6 lg:block">
-              <MetaAndDescriptionCard item={item} />
-              {handoverCard}
-              {mapCard}
-            </div>
+            {!isService && (
+              <div className="hidden space-y-6 xl:block">
+                <MetaAndDescriptionCard item={item} />
+                {handoverCard}
+              </div>
+            )}
           </div>
 
           <aside className="min-w-0 space-y-5 md:space-y-6">
@@ -793,16 +794,39 @@ export default function ItemDetailPage() {
               </div>
             </div>
 
-            <div className="hidden lg:block">{ownerCard}</div>
+            {!isService && (
+              <div className="hidden xl:block">{ownerCard}</div>
+            )}
           </aside>
         </section>
 
-        <div className="mt-6 space-y-6 lg:hidden">
-          <MetaAndDescriptionCard item={item} />
-          {handoverCard}
-          {ownerCard}
-          {mapCard}
-        </div>
+        {isService ? (
+          <section className="mt-6 grid items-stretch gap-6 xl:grid-cols-3">
+            <div className="h-full [&>div]:h-full">
+              <MetaAndDescriptionCard item={item} />
+            </div>
+
+            <div className="h-full [&>div]:h-full">
+              {handoverCard}
+            </div>
+
+            <div className="h-full [&>div]:h-full">
+              {ownerCard}
+            </div>
+          </section>
+        ) : (
+          <div className="mt-6 space-y-6 xl:hidden">
+            <MetaAndDescriptionCard item={item} />
+            {handoverCard}
+            {ownerCard}
+          </div>
+        )}
+
+        {mapCard && (
+          <section className="mt-6">
+            {mapCard}
+          </section>
+        )}
       </div>
     </main>
   );
