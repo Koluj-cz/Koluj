@@ -536,23 +536,32 @@ export default function ItemDetailPage() {
             </div>
 
             {isService ? (
-              <div className="grid items-stretch gap-6 md:grid-cols-2 xl:grid-cols-3">
-                <div className="h-full [&>div]:h-full">
-                  <MetaAndDescriptionCard item={item} />
+              <>
+                <div className="grid items-stretch gap-6 md:grid-cols-2 xl:grid-cols-3">
+                  <div className="h-full [&>div]:h-full">
+                    <MetaAndDescriptionCard item={item} />
+                  </div>
+
+                  <div className="h-full [&>div]:h-full">
+                    {handoverCard}
+                  </div>
+
+                  <div className="h-full md:col-span-2 xl:col-span-1 [&>div]:h-full">
+                    {ownerCard}
+                  </div>
                 </div>
 
-                <div className="h-full [&>div]:h-full">
-                  {handoverCard}
-                </div>
-
-                <div className="h-full md:col-span-2 xl:col-span-1 [&>div]:h-full">
-                  {ownerCard}
-                </div>
-              </div>
+                {mapCard && (
+                  <div className="hidden xl:block">
+                    {mapCard}
+                  </div>
+                )}
+              </>
             ) : (
               <div className="hidden space-y-6 xl:block">
                 <MetaAndDescriptionCard item={item} />
                 {handoverCard}
+                {mapCard}
               </div>
             )}
           </div>
@@ -822,7 +831,11 @@ export default function ItemDetailPage() {
           </div>
         )}
 
-        {mapCard && <section className="mt-6">{mapCard}</section>}
+        {mapCard && (
+          <section className="mt-6 xl:hidden">
+            {mapCard}
+          </section>
+        )}
       </div>
     </main>
   );
