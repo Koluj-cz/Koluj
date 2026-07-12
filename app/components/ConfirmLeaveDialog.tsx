@@ -14,8 +14,8 @@ export default function ConfirmLeaveDialog({
   if (!open) return null;
 
   return (
-    <div className="fixed inset-0 z-[1000] flex items-end justify-center bg-black/40 p-4 sm:items-center">
-      <div className="koluj-card w-full max-w-lg max-h-[90dvh] overflow-y-auto p-6 shadow-2xl">
+    <div className="fixed inset-0 z-[2000] flex justify-center bg-black/30 px-4 pt-10 pb-28 sm:items-center sm:p-4">
+      <div className="koluj-card mb-6 w-full max-w-lg p-6 shadow-2xl sm:mb-0">
         <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
           Neuložené změny
         </p>
