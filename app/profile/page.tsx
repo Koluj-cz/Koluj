@@ -311,7 +311,9 @@ export default function ProfilePage() {
 
         </section>
 
-        <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <section className="mt-6">
+          <div className="mx-auto max-w-7xl">
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-8">
             <div className="koluj-card p-5 md:p-8">
               <SectionTitle icon={<Mail size={24} />} title="Přihlášení" />
@@ -549,6 +551,10 @@ export default function ProfilePage() {
               </button>
             </div>
           </StickySidebar>
+        </section>
+
+            </div>
+          </div>
         </section>
 
         <ConfirmLeaveDialog

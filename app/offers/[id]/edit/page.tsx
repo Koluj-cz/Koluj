@@ -358,7 +358,9 @@ export default function EditItemPage() {
           </p>
         </section>
 
-        <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+        <section className="mt-6">
+          <div className="mx-auto max-w-7xl">
+            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
           <div className="space-y-8">
             <OfferTypeSection offerType={form.offer_type} setForm={setForm} />
 
@@ -392,6 +394,10 @@ export default function EditItemPage() {
             isSubmitting={saving}
             onSubmit={saveItem}
           />
+        </section>
+
+            </div>
+          </div>
         </section>
 
         <ConfirmLeaveDialog
