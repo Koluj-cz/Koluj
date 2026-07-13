@@ -458,7 +458,10 @@ export default function BookingDetailPage() {
 
                 <p><strong>{isService ? "Lokalita působení" : "Místo předání"}:</strong> {booking.offers?.pickup_place}</p>
                 <p>
-                  <strong>Cena celkem:</strong> {booking.total_price ?? booking.offers?.price_amount ?? 0} Kč
+                  <strong>Cena celkem:</strong>{" "}
+                  {booking.offers?.price_unit === "individual"
+                    ? "individuálně"
+                    : `${booking.total_price ?? booking.offers?.price_amount ?? 0} Kč`}
                 </p>
                 {!isService && <p><strong>Kauce:</strong> {booking.offers?.deposit || 0} Kč</p>}
               </div>

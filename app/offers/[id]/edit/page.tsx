@@ -136,7 +136,7 @@ export default function EditItemPage() {
       description: data.description || "",
       category: data.category || "",
       condition: data.condition || "",
-      price_amount: data.price_amount?.toString() || "",
+      price_amount: data.price_unit === "individual" ? "0" : data.price_amount?.toString() || "",
       price_unit: normalizedPriceUnit,
       price_note: data.price_note || "",
       deposit: data.deposit?.toString() || "",
@@ -220,7 +220,7 @@ export default function EditItemPage() {
     }
 
     if (!form.description.trim()) throw new Error("Vyplň popis");
-    if (!form.price_amount.trim()) throw new Error("Vyplň cenu");
+    if (form.price_unit !== "individual" && !form.price_amount.trim()) throw new Error("Vyplň cenu");
     if (!form.price_unit) throw new Error("Vyber jednotku ceny");
 
     if (form.offer_type === "service" && form.service_booking_mode === "scheduled") {

@@ -238,7 +238,20 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     if (!payload.pickup_place?.trim() || !payload.pickup_latitude || !payload.pickup_longitude) throw new Error("Vyber lokalitu z našeptávače");
     if (offerType === "item" && (!Array.isArray(payload.handover_options) || payload.handover_options.length === 0)) throw new Error("Vyber alespoň jednu možnost předání");
 
-    const priceAmount = Number(payload.price_amount);
+    const allowedPriceUnits =
+      offerType === "service"
+        ? ["hour", "piece", "individual"]
+        : ["day", "weekend", "week", "month"];
+
+    if (!allowedPriceUnits.includes(payload.price_unit)) {
+      throw new Error("Vyber platnou jednotku ceny");
+    }
+
+    const priceAmount =
+      offerType === "service" && payload.price_unit === "individual"
+        ? 0
+        : Number(payload.price_amount);
+
     if (!Number.isFinite(priceAmount) || priceAmount < 0) throw new Error("Vyplň platnou cenu");
 
     const { error: updateError } = await supabaseAdmin

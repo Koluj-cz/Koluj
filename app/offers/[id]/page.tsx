@@ -195,13 +195,13 @@ export default function ItemDetailPage() {
     );
     requestData.append(
       "startsAt",
-      item.offer_type === "service" && item.price_unit === "hour"
+      item.offer_type === "service" && item.service_booking_mode !== "deadline"
         ? startsAt
         : "",
     );
     requestData.append(
       "endsAt",
-      item.offer_type === "service" && item.price_unit === "hour"
+      item.offer_type === "service" && item.service_booking_mode !== "deadline"
         ? endsAt
         : "",
     );
@@ -574,10 +574,14 @@ export default function ItemDetailPage() {
                 </p>
 
                 <p className="mt-2 text-4xl font-black">
-                  {item.price_amount ? `${item.price_amount} Kč` : "Dohodou"}
+                  {item.price_unit === "individual"
+                    ? "Individuálně"
+                    : item.price_amount
+                      ? `${item.price_amount} Kč`
+                      : "Dohodou"}
                 </p>
 
-                {item.price_unit && (
+                {item.price_unit && item.price_unit !== "individual" && (
                   <p className="mt-1 font-bold text-[var(--koluj-green)]">
                     za {translatePriceUnit(item.price_unit, item.offer_type)}
                   </p>

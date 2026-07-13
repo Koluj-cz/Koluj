@@ -98,7 +98,11 @@ function OfferCard({ item, variant = "public", footer }: OfferCardProps) {
   const ratingText = rating && rating.rating_count ? `★ ${Number(rating.rating_avg).toFixed(1)}` : "★ Nový";
   const bookingCount = item.bookings?.length || 0;
 
-  const priceBlock = item.price_amount && item.price_unit ? (
+  const priceBlock = item.price_unit === "individual" ? (
+    <p className="shrink-0 text-right text-lg font-black text-[var(--koluj-green)]">
+      Individuálně
+    </p>
+  ) : item.price_amount && item.price_unit ? (
     <div className="shrink-0 text-right">
       <p className="text-xl font-black tracking-[-0.04em] text-[var(--koluj-green)]">
         {item.price_amount} Kč

@@ -54,6 +54,10 @@ function calculateBookingPrice({
 }) {
   const amount = Number(priceAmount || 0);
 
+  if (offerType === "service" && priceUnit === "individual") {
+    return 0;
+  }
+
   if (offerType === "service" && priceUnit === "hour" && startsAt && endsAt) {
     const minutes = (new Date(endsAt).getTime() - new Date(startsAt).getTime()) / 60000;
     return Math.max(0, Math.round(amount * (minutes / 60) * 100) / 100);
@@ -399,7 +403,7 @@ export async function requestBookingServer({
 
 Nabídka: ${offer.title}
 ${isTimedService ? `Čas: ${formatDateTime(startsAt || null)} – ${formatDateTime(endsAt || null)}\n` : isDeadlineService ? `Termín dokončení: ${formatDate(dateFrom || null)}\n` : !isService ? `Termín: ${formatDate(dateFrom || null)} – ${formatDate(dateTo || null)}\n` : "Termín: domluvou\n"}${isService ? "Lokalita působení" : "Místo předání"}: ${offer.pickup_place}
-Cena: ${totalPrice} Kč${!isService ? `\nKauce: ${offer.deposit || 0} Kč` : ""}${note?.trim() ? `\n\nPoznámka: ${note.trim()}` : ""}`,
+Cena: ${offer.price_unit === "individual" ? "individuálně" : `${totalPrice} Kč`}${!isService ? `\nKauce: ${offer.deposit || 0} Kč` : ""}${note?.trim() ? `\n\nPoznámka: ${note.trim()}` : ""}`,
   });
 
   if (attachment) {

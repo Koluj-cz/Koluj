@@ -27,6 +27,10 @@ export default function OfferTypeSection({ offerType, setForm }: OfferTypeSectio
                 category: "",
                 condition: type === "service" ? "" : prev.condition,
                 price_unit: type === "service" ? "hour" : "day",
+                price_amount:
+                  prev.price_unit === "individual" && prev.price_amount === "0"
+                    ? ""
+                    : prev.price_amount,
                 deposit: type === "service" ? "" : prev.deposit,
                 handover_options: type === "service" ? [] : prev.handover_options,
                 service_booking_mode: type === "service" ? prev.service_booking_mode || "scheduled" : "scheduled",

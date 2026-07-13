@@ -21,6 +21,7 @@ type UserLocation = {
 
 function priceUnit(unit: string | null) {
   if (unit === "hour") return "hodinu";
+  if (unit === "individual") return "individuálně";
   if (unit === "day") return "den";
   if (unit === "week") return "týden";
   if (unit === "month") return "měsíc";
@@ -186,14 +187,18 @@ export default function OffersMap({
                         {item.title}
                       </p>
 
-                      {item.price_amount && item.price_unit && (
+                      {item.price_unit === "individual" ? (
+                        <p className="shrink-0 rounded-full bg-[var(--koluj-green)] px-2 py-1 text-[11px] font-black text-white">
+                          Individuálně
+                        </p>
+                      ) : item.price_amount && item.price_unit ? (
                         <p className="shrink-0 rounded-full bg-[var(--koluj-green)] px-2 py-1 text-[11px] font-black text-white">
                           {item.price_amount} Kč
                         </p>
-                      )}
+                      ) : null}
                     </div>
 
-                    {item.price_amount && item.price_unit && (
+                    {item.price_amount && item.price_unit && item.price_unit !== "individual" && (
                       <p className="mt-1 text-xs text-[var(--koluj-muted)]">
                         za {priceUnit(item.price_unit)}
                       </p>

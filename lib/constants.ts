@@ -28,11 +28,13 @@ export const itemPriceUnits = [
 export const servicePriceUnitLabels: Record<string, string> = {
   hour: "za hodinu",
   piece: "za zakázku",
+  individual: "individuálně",
 };
 
 export const servicePriceUnits = [
   "hour",
   "piece",
+  "individual",
 ] as const;
 
 export const priceUnitLabels: Record<string, string> = {

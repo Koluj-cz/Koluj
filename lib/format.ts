@@ -5,6 +5,7 @@ export function translatePriceUnit(
   offerType?: string | null
 ) {
   if (unit === "hour") return "hodinu";
+  if (unit === "individual") return "individuálně";
   if (unit === "day") return "den";
   if (unit === "weekend") return "víkend";
   if (unit === "week") return "týden";

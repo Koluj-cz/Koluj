@@ -75,13 +75,22 @@ function validatePayload(payload: OfferPayload, photoCount: number) {
     throw new Error("Vyplň popis nabídky");
   }
 
-  const priceAmount = Number(payload.price_amount);
-  if (!Number.isFinite(priceAmount) || priceAmount < 0) {
-    throw new Error("Vyplň platnou cenu");
+  const allowedPriceUnits =
+    offerType === "service"
+      ? ["hour", "piece", "individual"]
+      : ["day", "weekend", "week", "month"];
+
+  if (!allowedPriceUnits.includes(payload.price_unit)) {
+    throw new Error("Vyber platnou jednotku ceny");
   }
 
-  if (!payload.price_unit) {
-    throw new Error("Vyber jednotku ceny");
+  const priceAmount =
+    offerType === "service" && payload.price_unit === "individual"
+      ? 0
+      : Number(payload.price_amount);
+
+  if (!Number.isFinite(priceAmount) || priceAmount < 0) {
+    throw new Error("Vyplň platnou cenu");
   }
 
   if (!payload.pickup_place?.trim() || !payload.pickup_latitude || !payload.pickup_longitude) {
@@ -147,7 +156,7 @@ export async function POST(request: Request) {
         description,
         category: payload.category,
         condition: offerType === "item" ? payload.condition : null,
-        price_amount: Number(payload.price_amount),
+        price_amount: offerType === "service" && payload.price_unit === "individual" ? 0 : Number(payload.price_amount),
         price_unit: payload.price_unit,
         price_note: payload.price_note?.trim() || null,
         deposit: offerType === "item" && payload.deposit ? Number(payload.deposit) : null,

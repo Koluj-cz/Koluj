@@ -48,7 +48,7 @@ export default function OfferFormSidebar({
           )}
 
           <CheckLine
-            done={Boolean(form.price_amount && form.price_unit)}
+            done={Boolean(form.price_unit === "individual" || (form.price_amount && form.price_unit))}
             text="Cena"
           />
 

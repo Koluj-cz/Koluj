@@ -94,7 +94,7 @@ export default function NewItemPage() {
     }
 
     if (!form.description.trim()) throw new Error("Vyplň popis");
-    if (!form.price_amount.trim()) throw new Error("Vyplň cenu");
+    if (form.price_unit !== "individual" && !form.price_amount.trim()) throw new Error("Vyplň cenu");
     if (!form.price_unit) throw new Error("Vyber jednotku ceny");
 
     if (form.offer_type === "service" && form.service_booking_mode === "scheduled") {
