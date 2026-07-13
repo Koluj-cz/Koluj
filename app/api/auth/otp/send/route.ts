@@ -1,16 +1,10 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
-import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
-
-const CANONICAL_ORIGIN =
-  process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "") || "https://www.koluj.cz";
-
-function safeRedirectTo(value: string | null) {
-  if (!value) return null;
-  if (!value.startsWith("/")) return null;
-  if (value.startsWith("//")) return null;
-  return value;
-}
+import {
+  checkRateLimit,
+  getClientIp,
+  rateLimitResponse,
+} from "@/lib/rateLimit";
 
 function normalizeEmail(value: unknown) {
   return String(value || "").trim().toLowerCase();
@@ -29,10 +23,12 @@ export async function POST(request: Request) {
 
   const body = await request.json().catch(() => null);
   const email = normalizeEmail(body?.email);
-  const redirectTo = safeRedirectTo(body?.redirectTo || null);
 
   if (!email || !email.includes("@") || email.length > 254) {
-    return NextResponse.json({ error: "Zadej platný e-mail" }, { status: 400 });
+    return NextResponse.json(
+      { error: "Zadej platný e-mail" },
+      { status: 400 },
+    );
   }
 
   const response = NextResponse.json({ ok: true });
@@ -54,22 +50,15 @@ export async function POST(request: Request) {
     },
   );
 
-  const callbackUrl = new URL("/auth/callback", CANONICAL_ORIGIN);
-
-  if (redirectTo) {
-    callbackUrl.searchParams.set("redirectTo", redirectTo);
-  }
-
   const { error } = await supabase.auth.signInWithOtp({
     email,
-    options: {
-      emailRedirectTo: callbackUrl.toString(),
-    },
   });
 
   if (error) {
     return NextResponse.json(
-      { error: "Přihlašovací e-mail se nepodařilo odeslat" },
+      {
+        error: "Přihlašovací e-mail se nepodařilo odeslat",
+      },
       { status: 400 },
     );
   }

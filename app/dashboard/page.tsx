@@ -11,7 +11,6 @@ import {
   Plus,
   User,
 } from "lucide-react";
-import RestoreAccountOnLogin from "@/app/components/RestoreAccountOnLogin";
 import BackLink from "@/app/components/BackLink";
 import NotificationBell from "@/app/components/NotificationBell";
 
@@ -40,8 +39,6 @@ export default function DashboardPage() {
 
   return (
     <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
-      <RestoreAccountOnLogin />
-
       <div className="koluj-wide-frame relative z-10">
         <section className="koluj-hero-card koluj-hero-card-popover p-5 md:p-8 xl:p-10">
           <div className="mb-8 flex items-center justify-between gap-3">

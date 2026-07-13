@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
+import { restoreAccountServer } from "@/lib/services/accountService";
 
 function safeRedirectTo(value: string | null) {
   if (!value) return null;
@@ -59,18 +60,25 @@ export async function POST(request: NextRequest) {
     },
   );
 
-  const { error } = await supabase.auth.verifyOtp({
+  const {
+    data: verifyData,
+    error,
+  } = await supabase.auth.verifyOtp({
     email,
     token,
     type: "email",
   });
 
-  if (error) {
+  if (error || !verifyData.user) {
     return NextResponse.json(
       { error: "Kód je neplatný nebo vypršel" },
       { status: 400 },
     );
   }
+
+  await restoreAccountServer({
+    userId: verifyData.user.id,
+  });
 
   return response;
 }
