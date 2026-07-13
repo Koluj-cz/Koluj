@@ -289,7 +289,7 @@ export default function ProfilePage() {
     /iPad|iPhone|iPod/.test(navigator.userAgent);
 
   return (
-    <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
+    <main className="koluj-home min-h-screen overflow-x-hidden text-[var(--koluj-text)]">
       <div className="koluj-wide-frame relative z-10">
         <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
           <div className="flex flex-wrap items-center justify-between gap-3">
@@ -313,16 +313,16 @@ export default function ProfilePage() {
 
         <section className="mt-6">
           <div className="mx-auto max-w-7xl">
-            <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="space-y-8">
-            <div className="koluj-card p-5 md:p-8">
+            <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="min-w-0 space-y-8">
+            <div className="koluj-card min-w-0 overflow-hidden p-5 md:p-8">
               <SectionTitle icon={<Mail size={24} />} title="Přihlášení" />
 
               <div className="mt-6 rounded-3xl bg-[var(--koluj-bg)] px-5 py-4">
                 <p className="text-sm font-bold text-[var(--koluj-muted)]">
                   Přihlášený e-mail
                 </p>
-                <p className="mt-1 text-lg font-bold">{profile.email}</p>
+                <p className="mt-1 break-all text-lg font-bold">{profile.email}</p>
               </div>
               <button
                 type="button"
@@ -332,7 +332,7 @@ export default function ProfilePage() {
                 Odhlásit se
               </button>
             </div>
-            <div className="koluj-card p-5 md:p-8">
+            <div className="koluj-card min-w-0 overflow-hidden p-5 md:p-8">
               <SectionTitle
                 icon={<Mail size={24} />}
                 title="Notifikace"
@@ -347,9 +347,9 @@ export default function ProfilePage() {
                       !profile.email_notifications_enabled,
                   })
                 }
-                className="mt-6 flex w-full items-center justify-between gap-6 rounded-3xl bg-[var(--koluj-bg)] px-5 py-4 text-left hover:opacity-90"
+                className="mt-6 flex w-full min-w-0 flex-col items-stretch gap-4 rounded-3xl bg-[var(--koluj-bg)] px-4 py-4 text-left hover:opacity-90 sm:flex-row sm:items-center sm:justify-between sm:gap-6 sm:px-5"
               >
-                <div>
+                <div className="min-w-0">
                   <p className="font-bold">E-mailové notifikace</p>
 
                   <p className="mt-1 text-sm text-[var(--koluj-muted)]">
@@ -357,7 +357,7 @@ export default function ProfilePage() {
                   </p>
                 </div>
 
-                <div className="flex rounded-2xl bg-white p-1">
+                <div className="grid w-full shrink-0 grid-cols-2 rounded-2xl bg-white p-1 sm:w-auto">
                   <span
                     className={`rounded-xl px-4 py-2 text-sm font-black ${
                       profile.email_notifications_enabled
@@ -387,7 +387,7 @@ export default function ProfilePage() {
                 </p>
               )}
             </div>
-            <div className="koluj-card p-5 md:p-8">
+            <div className="koluj-card min-w-0 overflow-hidden p-5 md:p-8">
               <SectionTitle icon={<User size={24} />} title="Osobní údaje" />
 
               <div className="mt-6 space-y-5">
@@ -475,7 +475,7 @@ export default function ProfilePage() {
                 </div>
               </div>
             </div>
-            <div className="koluj-card border border-red-200 p-5 md:p-8">
+            <div className="koluj-card min-w-0 overflow-hidden border border-red-200 p-5 md:p-8">
               <h2 className="text-2xl font-black text-red-600">
                 Deaktivace účtu
               </h2>
@@ -498,7 +498,7 @@ export default function ProfilePage() {
                     Opravdu chceš deaktivovat svůj účet?
                   </p>
 
-                  <div className="mt-4 flex gap-3">
+                  <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                     <button
                       onClick={() => setShowDeleteAccount(false)}
                       className="rounded-xl border border-[var(--koluj-border)] px-4 py-2 font-bold"
