@@ -390,7 +390,7 @@ export default function UserProfilePage() {
                   Nic nenalezeno. Zkus změnit hledání nebo filtr.
                 </div>
               ) : (
-                <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                <div className="koluj-offer-grid-wide">
                   {filteredItems.map((item) => (
                     <OfferCard key={item.id} item={item} />
                   ))}
