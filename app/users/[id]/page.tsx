@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { MapPin, ShieldCheck, Star } from "lucide-react";
 import BackLink from "@/app/components/BackLink";
@@ -84,10 +84,6 @@ export default function UserProfilePage() {
   const [category, setCategory] = useState("all");
   const [sortBy, setSortBy] = useState("newest");
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
-
   const filteredItems = useMemo(() => {
     let result = [...items];
 
@@ -134,7 +130,7 @@ export default function UserProfilePage() {
     return result;
   }, [items, offerSearch, offerType, category, sortBy]);
 
-  async function loadProfile() {
+  const loadProfile = useCallback(async () => {
     const response = await fetch(`/api/users/${userId}`, {
       cache: "no-store",
     });
@@ -151,7 +147,11 @@ export default function UserProfilePage() {
     setReviews((result.reviews || []) as unknown as Review[]);
     setItems((result.offers || []) as OfferCardOffer[]);
     setLoading(false);
-  }
+  }, [userId]);
+
+  useEffect(() => {
+    void loadProfile();
+  }, [loadProfile]);
 
 
   if (loading) {

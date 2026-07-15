@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import {
   ArrowRight,
@@ -19,11 +19,7 @@ export default function DashboardPage() {
   const [profileComplete, setProfileComplete] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
-
-  async function loadProfile() {
+  const loadProfile = useCallback(async () => {
     const response = await fetch("/api/me", { cache: "no-store" });
     const result = await response.json().catch(() => null);
 
@@ -35,7 +31,11 @@ export default function DashboardPage() {
     setFullName(result?.profile?.full_name || "");
     setProfileComplete(Boolean(result?.profileComplete));
     setLoadingProfile(false);
-  }
+  }, []);
+
+  useEffect(() => {
+    void loadProfile();
+  }, [loadProfile]);
 
   return (
     <main className="koluj-home min-h-screen text-[var(--koluj-text)]">

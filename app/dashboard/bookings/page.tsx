@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -249,11 +249,7 @@ export default function BookingsPage() {
   const [borrowingTotal, setBorrowingTotal] = useState(0);
   const [lendingTotal, setLendingTotal] = useState(0);
 
-  useEffect(() => {
-    loadBookings();
-  }, [borrowingPage, lendingPage]);
-
-  async function loadBookings() {
+  const loadBookings = useCallback(async () => {
     const params = new URLSearchParams({
       borrowingPage: String(borrowingPage),
       lendingPage: String(lendingPage),
@@ -278,7 +274,11 @@ export default function BookingsPage() {
     setBorrowingTotal(Number(result?.borrowingTotal || 0));
     setLendingTotal(Number(result?.lendingTotal || 0));
     setLoading(false);
-  }
+  }, [borrowingPage, lendingPage]);
+
+  useEffect(() => {
+    void loadBookings();
+  }, [loadBookings]);
 
   const allBookings = useMemo(
     () => [...borrowing, ...lending],

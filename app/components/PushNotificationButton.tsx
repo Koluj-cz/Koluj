@@ -16,6 +16,13 @@ export default function PushNotificationButton() {
   const [enabled, setEnabled] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  async function checkSubscription() {
+    const registration = await navigator.serviceWorker.getRegistration("/sw.js");
+    const subscription = await registration?.pushManager.getSubscription();
+
+    setEnabled(Boolean(subscription));
+  }
+
   useEffect(() => {
     const isSupported =
       typeof window !== "undefined" &&
@@ -26,16 +33,9 @@ export default function PushNotificationButton() {
     setSupported(isSupported);
 
     if (isSupported) {
-      checkSubscription();
+      void checkSubscription();
     }
   }, []);
-
-  async function checkSubscription() {
-    const registration = await navigator.serviceWorker.getRegistration("/sw.js");
-    const subscription = await registration?.pushManager.getSubscription();
-
-    setEnabled(Boolean(subscription));
-  }
 
   async function enablePushNotifications() {
     if (!supported) return;

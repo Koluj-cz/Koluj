@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ArrowLeft, Mail, MapPin, Phone, User } from "lucide-react";
 import toast from "react-hot-toast";
 import Link from "next/link";
@@ -55,11 +55,7 @@ export default function ProfilePage() {
     setPendingNavigationHref,
   );
 
-  useEffect(() => {
-    loadProfile();
-  }, []);
-
-  async function loadProfile() {
+  const loadProfile = useCallback(async () => {
     try {
       const response = await fetch("/api/profile", {
         method: "GET",
@@ -102,7 +98,11 @@ export default function ProfilePage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
+
+  useEffect(() => {
+    void loadProfile();
+  }, [loadProfile]);
 
 
   async function searchPlaces(value: string) {
