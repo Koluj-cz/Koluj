@@ -10,28 +10,20 @@ import BackLink from "@/app/components/BackLink";
 import {
   categoryLabels,
   conditionLabels,
-  handoverLabels,
   serviceCategoryLabels,
 } from "@/lib/constants";
 import { formatDate, formatDateTime, translatePriceUnit } from "@/lib/format";
 
 import {
-  CalendarDays,
-  Check,
   Edit,
-  Handshake,
-  MapPin,
   ShieldCheck,
   Star,
-  Eye,
   Paperclip,
   X,
 } from "lucide-react";
 import toast from "react-hot-toast";
-
-const OffersMap = dynamic(() => import("@/app/components/OffersMap"), {
-  ssr: false,
-});
+import { HandoverCard, MetaAndDescriptionCard, OfferMapCard, OwnerCard } from "@/app/components/offer-detail/OfferDetailCards";
+import type { ItemDetail, ItemImage } from "@/app/components/offer-detail/types";
 
 const AvailabilityCalendar = dynamic(
   () => import("@/app/components/AvailabilityCalendar"),
@@ -45,54 +37,6 @@ const AvailabilityCalendar = dynamic(
   },
 );
 
-
-type ItemImage = {
-  id: string;
-  image_url: string;
-  sort_order: number | null;
-};
-
-
-type ItemDetail = {
-  id: string;
-  owner_id: string | null;
-  title: string;
-  description: string | null;
-  offer_type?: "item" | "service" | string | null;
-  category: string;
-  condition: string | null;
-  pickup_place: string;
-  pickup_latitude: number | null;
-  pickup_longitude: number | null;
-  price_amount: number | null;
-  price_unit: string | null;
-  price_note: string | null;
-  deposit: number | null;
-  contact_note: string | null;
-  handover_options: string[] | null;
-  primary_image_url: string | null;
-  created_at: string;
-  views_count: number | null;
-  service_booking_mode?: "scheduled" | "deadline" | string | null;
-  service_hours_mode?: "same_every_day" | "weekday_weekend" | string | null;
-  weekday_start_time?: string | null;
-  weekday_end_time?: string | null;
-  weekend_start_time?: string | null;
-  weekend_end_time?: string | null;
-  availability_status?: "available" | "reserved" | "unavailable";
-  profiles: {
-    full_name: string | null;
-    avatar_url: string | null;
-    is_verified: boolean | null;
-    is_seed_user: boolean | null;
-    profile_ratings?:
-      | {
-          rating_avg: number | null;
-          rating_count: number | null;
-        }[]
-      | null;
-  } | null;
-};
 
 export default function ItemDetailPage() {
   const params = useParams();
@@ -284,104 +228,13 @@ export default function ItemDetailPage() {
 
   if (!item) return null;
 
-  const ownerName = item.profiles?.full_name || "Uživatel";
-  const ownerInitial = ownerName.charAt(0).toUpperCase();
   const isService = item.offer_type === "service";
 
-
-  const handoverCard = (
-    <div className="koluj-card p-6 md:p-8">
-      <h2 className="text-2xl font-black">Předání</h2>
-
-      <div className="mt-5 grid gap-4 md:grid-cols-2">
-        <InfoLine
-          icon={<MapPin size={20} />}
-          title={
-            item.offer_type === "service"
-              ? "Lokalita působení"
-              : "Místo předání"
-          }
-          text={item.pickup_place}
-        />
-
-        {item.offer_type !== "service" && (
-          <InfoLine
-            icon={<Handshake size={20} />}
-            title="Možnosti předání"
-            text={
-              item.handover_options && item.handover_options.length > 0
-                ? item.handover_options
-                    .map((option) => handoverLabels[option] || option)
-                    .join(", ")
-                : "Domluvou"
-            }
-          />
-        )}
-
-        {item.contact_note && (
-          <InfoLine
-            icon={<Check size={20} />}
-            title="Poznámka k předání"
-            text={item.contact_note}
-          />
-        )}
-      </div>
-    </div>
-  );
-
+  const handoverCard = <HandoverCard item={item} />;
   const ownerCard = (
-    <div className="koluj-card p-6 md:p-8">
-      <h2 className="text-2xl font-black">Vlastník</h2>
-
-      <Link
-        href={`/users/${item.owner_id}`}
-        className="mt-5 flex items-center gap-4 hover:opacity-80"
-      >
-        {item.profiles?.avatar_url ? (
-          <Image
-            src={item.profiles.avatar_url}
-            alt={ownerName}
-            width={56}
-            height={56}
-            className="h-14 w-14 rounded-full object-cover"
-          />
-        ) : (
-          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-xl font-black text-[var(--koluj-green)]">
-            {ownerInitial}
-          </div>
-        )}
-
-        <div>
-          <p className="text-xl font-black">{ownerName}</p>
-
-          <p className="font-bold text-[var(--koluj-green)]">
-            {ratingText}
-            {ratingCountText && (
-              <span className="ml-1 text-[var(--koluj-muted)]">
-                {ratingCountText}
-              </span>
-            )}
-          </p>
-        </div>
-      </Link>
-
-      {item.profiles?.is_verified && (
-        <p className="mt-5 inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-4 py-2 text-sm font-bold text-[var(--koluj-green)]">
-          <ShieldCheck size={16} />
-          Ověřený profil
-        </p>
-      )}
-    </div>
+    <OwnerCard item={item} ratingText={ratingText} ratingCountText={ratingCountText} />
   );
-
-  const mapCard =
-    item.pickup_latitude && item.pickup_longitude ? (
-      <div className="koluj-card overflow-hidden p-0">
-        <div className="relative h-[320px] lg:h-[420px]">
-          <OffersMap items={mapOffers} userLocation={null} />
-        </div>
-      </div>
-    ) : null;
+  const mapCard = <OfferMapCard item={item} mapOffers={mapOffers} />;
 
   return (
     <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
@@ -792,54 +645,3 @@ export default function ItemDetailPage() {
   );
 }
 
-function MetaAndDescriptionCard({ item }: { item: ItemDetail }) {
-  return (
-    <div className="koluj-card p-6 md:p-8">
-      <div className="flex flex-wrap gap-3 text-sm font-bold text-[var(--koluj-muted)]">
-        <span className="flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-4 py-2">
-          <CalendarDays size={16} />
-          Přidáno {formatDate(item.created_at)}
-        </span>
-
-        <span className="flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-4 py-2">
-          <Eye size={16} />
-          {item.views_count || 0} zobrazení
-        </span>
-      </div>
-
-      {item.description && (
-        <div className="mt-6">
-          <h2 className="text-2xl font-black">Popis</h2>
-
-          <div
-            className="koluj-rich-text mt-3 text-lg leading-relaxed text-[var(--koluj-muted)]"
-            dangerouslySetInnerHTML={{
-              __html: item.description,
-            }}
-          />
-        </div>
-      )}
-    </div>
-  );
-}
-
-function InfoLine({
-  icon,
-  title,
-  text,
-}: {
-  icon: React.ReactNode;
-  title: string;
-  text: string;
-}) {
-  return (
-    <div className="rounded-3xl border border-[var(--koluj-border)] p-5">
-      <div className="flex items-center gap-3 text-[var(--koluj-green)]">
-        {icon}
-        <p className="font-black">{title}</p>
-      </div>
-
-      <p className="mt-3 text-[var(--koluj-muted)]">{text}</p>
-    </div>
-  );
-}
