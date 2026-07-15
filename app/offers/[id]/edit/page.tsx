@@ -43,7 +43,7 @@ const emptyForm: OfferFormState = {
   weekday_end_time: "20:00",
   weekend_start_time: "10:00",
   weekend_end_time: "15:00",
-  is_active: true,
+  publication_status: "active",
 };
 
 export default function EditItemPage() {
@@ -151,7 +151,8 @@ export default function EditItemPage() {
       weekday_end_time: data.weekday_end_time || "20:00",
       weekend_start_time: data.weekend_start_time || "10:00",
       weekend_end_time: data.weekend_end_time || "15:00",
-      is_active: data.is_active ?? true,
+      publication_status:
+        data.publication_status === "inactive" ? "inactive" : "active",
     };
 
     const nextImages = (result.images || []) as ExistingOfferPhoto[];

@@ -48,8 +48,7 @@ function getCategoryOptions(offerType: string) {
 }
 
 type Offer = OfferCardOffer & {
-  is_active: boolean;
-  deleted_at: string | null;
+  publication_status: "active" | "inactive";
   borrow_count: number | null;
 };
 
@@ -92,7 +91,8 @@ export default function MyOffersPage() {
 
 
   const toggleVisibility = useCallback(async (item: Offer) => {
-    const nextValue = !item.is_active;
+    const nextStatus =
+      item.publication_status === "active" ? "inactive" : "active";
 
     const response = await fetch("/api/dashboard/my-offers", {
       method: "PATCH",
@@ -101,7 +101,7 @@ export default function MyOffersPage() {
       },
       body: JSON.stringify({
         offerId: item.id,
-        isActive: nextValue,
+        publicationStatus: nextStatus,
       }),
     });
 
@@ -115,12 +115,16 @@ export default function MyOffersPage() {
     setItems((prev) =>
       prev.map((current) =>
         current.id === item.id
-          ? { ...current, is_active: nextValue }
+          ? { ...current, publication_status: nextStatus }
           : current
       )
     );
 
-    toast.success(nextValue ? "Nabídka je znovu viditelná" : "Nabídka je skrytá");
+    toast.success(
+      nextStatus === "active"
+        ? "Nabídka je znovu viditelná"
+        : "Nabídka je skrytá",
+    );
   }, []);
 
 
@@ -158,8 +162,8 @@ export default function MyOffersPage() {
   const counts = useMemo(() => {
     return {
       all: items.length,
-      available: items.filter((item) => item.is_active && !item.is_reserved_today).length,
-      reserved: items.filter((item) => item.is_active && item.is_reserved_today).length,
+      available: items.filter((item) => item.publication_status === "active" && !item.is_reserved_today).length,
+      reserved: items.filter((item) => item.publication_status === "active" && item.is_reserved_today).length,
     };
   }, [items]);
 
@@ -185,11 +189,11 @@ export default function MyOffersPage() {
     }
 
     if (statusFilter === "available") {
-      result = result.filter((item) => item.is_active && !item.is_reserved_today);
+      result = result.filter((item) => item.publication_status === "active" && !item.is_reserved_today);
     }
 
     if (statusFilter === "reserved") {
-      result = result.filter((item) => item.is_active && item.is_reserved_today);
+      result = result.filter((item) => item.publication_status === "active" && item.is_reserved_today);
     }
 
     if (sortBy === "newest") {
@@ -366,7 +370,7 @@ const OwnerOfferCard = memo(function OwnerOfferCard({
   const footer = useMemo(
     () => (
       <>
-        {!item.is_active && (
+        {item.publication_status === "inactive" && (
           <p className="mb-3 rounded-2xl bg-[var(--koluj-bg)] px-4 py-2 text-sm font-bold text-[var(--koluj-muted)]">
             Skryto pro ostatní
           </p>
@@ -394,7 +398,7 @@ const OwnerOfferCard = memo(function OwnerOfferCard({
             onClick={() => onToggleVisibility(item)}
             className="flex min-h-16 flex-col items-center justify-center gap-1 rounded-2xl px-2 py-2 text-center text-xs font-black leading-tight text-[var(--koluj-green)] hover:bg-[var(--koluj-bg)]"
           >
-            {item.is_active ? (
+            {item.publication_status === "active" ? (
               <>
                 <EyeOff size={18} />
                 Skrýt

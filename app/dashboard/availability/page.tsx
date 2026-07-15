@@ -16,7 +16,7 @@ type OwnerItem = {
   id: string;
   title: string;
   primary_image_url: string | null;
-  is_active: boolean | null;
+  publication_status: "active" | "inactive";
 };
 
 type OwnerBlock = {
@@ -384,7 +384,7 @@ export default function DashboardAvailabilityPage() {
   const selectedCount = applyToAll ? items.length : selectedItemIds.length;
 
   const inactiveCount = useMemo(
-    () => items.filter((item) => !item.is_active).length,
+    () => items.filter((item) => item.publication_status === "inactive").length,
     [items]
   );
 
@@ -618,7 +618,7 @@ export default function DashboardAvailabilityPage() {
                           <div className="min-w-0 flex-1">
                             <p className="truncate text-sm font-black">{item.title}</p>
                             <p className="text-xs font-bold text-[var(--koluj-muted)]">
-                              {item.is_active ? "Viditelná" : "Skrytá"}
+                              {item.publication_status === "active" ? "Viditelná" : "Skrytá"}
                             </p>
                           </div>
 

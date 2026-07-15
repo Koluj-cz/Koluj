@@ -3,6 +3,7 @@ import { createSupabaseAdminClient, requireUser } from "@/lib/supabase/server";
 import { errorMessage } from "@/lib/security";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
 import { attachTodayAvailabilityServer } from "@/lib/services/offerAvailabilityStatusService";
+import { normalizeEditablePublicationStatus } from "@/lib/offerPublication";
 
 export async function GET(request: Request) {
   const rate = await checkRateLimit({
@@ -27,7 +28,7 @@ export async function GET(request: Request) {
         )
       `)
       .eq("owner_id", user.id)
-      .is("deleted_at", null)
+      .neq("publication_status", "archived")
       .order("created_at", { ascending: false });
 
     if (error) throw new Error(error.message);
@@ -53,21 +54,27 @@ export async function PATCH(request: Request) {
   try {
     const { user } = await requireUser();
     const supabaseAdmin = createSupabaseAdminClient();
-    const { offerId, isActive } = await request.json();
+    const { offerId, publicationStatus } = await request.json();
 
-    if (!offerId || typeof isActive !== "boolean") {
+    if (!offerId || !["active", "inactive"].includes(publicationStatus)) {
       throw new Error("Chybí data nabídky");
     }
 
-    const { error } = await supabaseAdmin
+    const nextStatus = normalizeEditablePublicationStatus(publicationStatus);
+
+    const { data, error } = await supabaseAdmin
       .from("offers")
-      .update({ is_active: isActive })
+      .update({ publication_status: nextStatus })
       .eq("id", offerId)
-      .eq("owner_id", user.id);
+      .eq("owner_id", user.id)
+      .neq("publication_status", "archived")
+      .select("id")
+      .maybeSingle();
 
     if (error) throw new Error(error.message);
+    if (!data) throw new Error("Nabídka nebyla nalezena");
 
-    return NextResponse.json({ ok: true, isActive });
+    return NextResponse.json({ ok: true, publicationStatus: nextStatus });
   } catch (error) {
     const message = errorMessage(error, "Nabídku se nepodařilo upravit");
     const status = message === "Unauthorized" ? 401 : 400;

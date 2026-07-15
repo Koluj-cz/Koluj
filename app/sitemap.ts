@@ -40,8 +40,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const { data: offers } = await supabaseAdmin
     .from("offers")
     .select("id, created_at")
-    .eq("is_active", true)
-    .is("deleted_at", null)
+    .eq("publication_status", "active")
+    .eq("hidden_by_account_deactivation", false)
     .order("created_at", { ascending: false })
     .limit(5000);
 

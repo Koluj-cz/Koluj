@@ -35,6 +35,7 @@ export async function GET(request: Request) {
           full_name,
           avatar_url,
           is_verified,
+          is_deactivated,
           profile_ratings (
             rating_avg,
             rating_count
@@ -43,8 +44,8 @@ export async function GET(request: Request) {
       `,
         { count: "exact" },
       )
-      .eq("is_active", true)
-      .is("deleted_at", null)
+      .eq("publication_status", "active")
+      .eq("hidden_by_account_deactivation", false)
       .order("created_at", { ascending: false })
       .range(from, to);
 

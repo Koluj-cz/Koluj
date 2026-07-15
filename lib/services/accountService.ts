@@ -1,15 +1,11 @@
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { createSupabaseAdminClient } from "@/lib/supabase/server";
 
 export async function deactivateAccountServer({
   userId,
 }: {
   userId: string;
 }) {
+  const supabaseAdmin = createSupabaseAdminClient();
   const deactivatedAt = new Date().toISOString();
 
   const { error: profileError } = await supabaseAdmin
@@ -26,23 +22,27 @@ export async function deactivateAccountServer({
     throw new Error(profileError.message);
   }
 
-  const { error: itemsError } = await supabaseAdmin
+  // Nabídky pouze dočasně skryjeme kvůli účtu. Jejich vlastní stav
+  // active/inactive/archived neměníme, aby šel po obnově přesně zachovat.
+  const { error: offersError } = await supabaseAdmin
     .from("offers")
-    .update({
-      is_active: false,
-      deleted_at: deactivatedAt,
-    })
+    .update({ hidden_by_account_deactivation: true })
     .eq("owner_id", userId)
-    .is("deleted_at", null);
+    .neq("publication_status", "archived")
+    .eq("hidden_by_account_deactivation", false);
 
-  if (itemsError) {
-    throw new Error(itemsError.message);
+  if (offersError) {
+    throw new Error(offersError.message);
   }
 
-  await supabaseAdmin
+  const { error: pushError } = await supabaseAdmin
     .from("push_subscriptions")
     .delete()
     .eq("user_id", userId);
+
+  if (pushError) {
+    throw new Error(pushError.message);
+  }
 
   return {
     ok: true,
@@ -55,6 +55,8 @@ export async function restoreAccountServer({
 }: {
   userId: string;
 }) {
+  const supabaseAdmin = createSupabaseAdminClient();
+
   const { data: profile, error: profileLoadError } = await supabaseAdmin
     .from("profiles")
     .select("id, is_deactivated")
@@ -84,16 +86,16 @@ export async function restoreAccountServer({
     throw new Error(profileError.message);
   }
 
-  const { error: itemsError } = await supabaseAdmin
+  // Obnovíme jen dočasné skrytí účtem. Publikační stav nabídky zůstává
+  // přesně takový, jaký byl před deaktivací účtu.
+  const { error: offersError } = await supabaseAdmin
     .from("offers")
-    .update({
-      deleted_at: null,
-      is_active: true,
-    })
-    .eq("owner_id", userId);
+    .update({ hidden_by_account_deactivation: false })
+    .eq("owner_id", userId)
+    .eq("hidden_by_account_deactivation", true);
 
-  if (itemsError) {
-    throw new Error(itemsError.message);
+  if (offersError) {
+    throw new Error(offersError.message);
   }
 
   return {

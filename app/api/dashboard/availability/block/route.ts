@@ -68,7 +68,7 @@ export async function POST(request: Request) {
     .from("offers")
     .select("id, title")
     .eq("owner_id", user.id)
-    .is("deleted_at", null);
+    .neq("publication_status", "archived");
 
   if (!applyToAll) {
     query = query.in("id", offerIds);

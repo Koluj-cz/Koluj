@@ -18,11 +18,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .select("id, full_name, avatar_url, bio, city, is_verified, created_at, is_seed_user")
+      .select("id, full_name, avatar_url, bio, city, is_verified, created_at, is_seed_user, is_deactivated")
       .eq("id", id)
       .maybeSingle();
 
-    if (profileError || !profile) throw new Error("Uživatel nebyl nalezen");
+    if (profileError || !profile || profile.is_deactivated) {
+      throw new Error("Uživatel nebyl nalezen");
+    }
 
     const { data: rating } = await supabaseAdmin
       .from("profile_ratings")
@@ -65,8 +67,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         )
       `)
       .eq("owner_id", id)
-      .eq("is_active", true)
-      .is("deleted_at", null)
+      .eq("publication_status", "active")
+      .eq("hidden_by_account_deactivation", false)
       .order("created_at", { ascending: false });
 
     if (offersError) throw new Error(offersError.message);

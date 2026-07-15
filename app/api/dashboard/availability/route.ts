@@ -21,9 +21,9 @@ export async function GET(request: Request) {
 
     const { data: items, error: itemsError } = await supabaseAdmin
       .from("offers")
-      .select("id, title, primary_image_url, is_active")
+      .select("id, title, primary_image_url, publication_status")
       .eq("owner_id", user.id)
-      .is("deleted_at", null)
+      .neq("publication_status", "archived")
       .order("created_at", { ascending: false });
 
     if (itemsError) throw new Error(itemsError.message);

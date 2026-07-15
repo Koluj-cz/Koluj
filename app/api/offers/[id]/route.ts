@@ -4,6 +4,7 @@ import { requireUser, createSupabaseAdminClient } from "@/lib/supabase/server";
 import { sanitizeRichText, errorMessage } from "@/lib/security";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
 import { attachTodayAvailabilityServer } from "@/lib/services/offerAvailabilityStatusService";
+import { normalizeEditablePublicationStatus } from "@/lib/offerPublication";
 
 type UpdatePayload = {
   offer_type: string;
@@ -26,7 +27,7 @@ type UpdatePayload = {
   weekday_end_time?: string | null;
   weekend_start_time?: string | null;
   weekend_end_time?: string | null;
-  is_active?: boolean;
+  publication_status?: "active" | "inactive";
 };
 
 function storagePathFromPublicUrl(url: string | null) {
@@ -55,7 +56,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         pickup_place,
         deposit,
         status,
-        is_active,
+        publication_status,
+        hidden_by_account_deactivation,
         views_count,
         contact_note,
         created_at,
@@ -68,7 +70,6 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         price_unit,
         price_note,
         is_seed_item,
-        deleted_at,
         offer_type,
         service_duration_minutes,
         service_location_type,
@@ -83,6 +84,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           avatar_url,
           is_verified,
           is_seed_user,
+          is_deactivated,
           profile_ratings (
             rating_avg,
             rating_count
@@ -91,20 +93,31 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       `,
       )
       .eq("id", id)
-      .is("deleted_at", null)
       .single();
 
     if (error || !data) {
       throw new Error("Nabídka nebyla nalezena");
     }
 
-    if (data.is_active !== true && data.owner_id !== user?.id) {
+    const isOwner = data.owner_id === user?.id;
+    const ownerProfile = Array.isArray(data.profiles)
+      ? data.profiles[0]
+      : data.profiles;
+    const ownerDeactivated = Boolean(ownerProfile?.is_deactivated);
+    const isPublic =
+      data.publication_status === "active" &&
+      !data.hidden_by_account_deactivation &&
+      !ownerDeactivated;
+
+    if (data.publication_status === "archived" || (!isOwner && !isPublic)) {
       throw new Error("Nabídka není dostupná");
     }
 
-    await supabaseAdmin.rpc("increment_offer_views", {
-      offer_id_input: id,
-    });
+    if (!isOwner && isPublic) {
+      await supabaseAdmin.rpc("increment_offer_views", {
+        offer_id_input: id,
+      });
+    }
 
     const { data: imageData, error: imageError } = await supabaseAdmin
       .from("offer_images")
@@ -130,7 +143,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json({
       item: {
         ...itemWithAvailability,
-        views_count: Number(data.views_count || 0) + 1,
+        views_count: Number(data.views_count || 0) + (!isOwner && isPublic ? 1 : 0),
       },
       images: imageData || [],
       availabilityBlocks: blocksData || [],
@@ -170,7 +183,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     const { data: existingOffer, error: existingError } = await supabaseAdmin
       .from("offers")
-      .select("id, owner_id, primary_image_url")
+      .select("id, owner_id, primary_image_url, publication_status")
       .eq("id", id)
       .single();
 
@@ -180,6 +193,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     if (existingOffer.owner_id !== user.id) {
       throw new Error("Tuhle nabídku může upravit pouze vlastník");
+    }
+
+    if (existingOffer.publication_status === "archived") {
+      throw new Error("Archivovanou nabídku už nelze upravit");
     }
 
     const { data: existingImages, error: imagesError } = await supabaseAdmin
@@ -289,7 +306,9 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
         weekend_end_time: offerType === "service" && payload.service_booking_mode !== "deadline"
           ? payload.weekend_end_time || null
           : null,
-        is_active: payload.is_active ?? true,
+        publication_status: normalizeEditablePublicationStatus(
+          payload.publication_status ?? existingOffer.publication_status,
+        ),
       })
       .eq("id", id);
 
@@ -343,7 +362,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
 
     const { data: offer, error } = await supabaseAdmin
       .from("offers")
-      .select("id, owner_id, primary_image_url")
+      .select("id, owner_id, primary_image_url, publication_status")
       .eq("id", id)
       .single();
 

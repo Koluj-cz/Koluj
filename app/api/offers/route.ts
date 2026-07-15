@@ -183,7 +183,8 @@ export async function POST(request: Request) {
         weekend_end_time: offerType === "service" && payload.service_booking_mode !== "deadline"
           ? payload.weekend_end_time || null
           : null,
-        is_active: true,
+        publication_status: "active",
+        hidden_by_account_deactivation: false,
       })
       .select("id")
       .single();

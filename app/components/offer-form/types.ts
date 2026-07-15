@@ -19,7 +19,7 @@ export type OfferFormState = {
   weekday_end_time: string;
   weekend_start_time: string;
   weekend_end_time: string;
-  is_active?: boolean;
+  publication_status?: "active" | "inactive";
 };
 
 export type ExistingOfferPhoto = {

@@ -193,6 +193,8 @@ export async function requestBookingServer({
       owner_id,
       title,
       status,
+      publication_status,
+      hidden_by_account_deactivation,
       offer_type,
       pickup_place,
       price_amount,
@@ -205,7 +207,8 @@ export async function requestBookingServer({
       weekend_start_time,
       weekend_end_time,
       profiles:profiles!offers_owner_id_fkey (
-        is_seed_user
+        is_seed_user,
+        is_deactivated
       )
     `)
     .eq("id", offerId)
@@ -215,6 +218,13 @@ export async function requestBookingServer({
     throw new Error("Nabídka nebyla nalezena");
   }
 
+  if (
+    offer.publication_status !== "active" ||
+    offer.hidden_by_account_deactivation
+  ) {
+    throw new Error("Tato nabídka momentálně není dostupná");
+  }
+
   if (offer.owner_id === customerId) {
     throw new Error("Vlastní nabídku si nemůžeš rezervovat");
   }
@@ -222,6 +232,10 @@ export async function requestBookingServer({
   const profile = Array.isArray(offer.profiles)
     ? offer.profiles[0]
     : offer.profiles;
+
+  if (profile?.is_deactivated) {
+    throw new Error("Tato nabídka momentálně není dostupná");
+  }
 
   if (profile?.is_seed_user) {
     throw new Error(

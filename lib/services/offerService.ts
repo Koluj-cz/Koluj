@@ -1,9 +1,4 @@
-import { createClient } from "@supabase/supabase-js";
-
-const supabaseAdmin = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-);
+import { createSupabaseAdminClient } from "@/lib/supabase/server";
 
 function getStoragePathFromPublicUrl(url: string | null) {
   if (!url) return null;
@@ -24,9 +19,11 @@ export async function archiveOfferServer({
   offerId: string;
   actorId: string;
 }) {
+  const supabaseAdmin = createSupabaseAdminClient();
+
   const { data: item, error: itemError } = await supabaseAdmin
     .from("offers")
-    .select("id, owner_id, deleted_at")
+    .select("id, owner_id, publication_status")
     .eq("id", offerId)
     .single();
 
@@ -38,7 +35,7 @@ export async function archiveOfferServer({
     throw new Error("Tuhle nabídku může odstranit pouze vlastník");
   }
 
-  if (item.deleted_at) {
+  if (item.publication_status === "archived") {
     return {
       ok: true,
       mode: "archived",
@@ -109,8 +106,8 @@ export async function archiveOfferServer({
   const { error } = await supabaseAdmin
     .from("offers")
     .update({
-      deleted_at: new Date().toISOString(),
-      is_active: false,
+      publication_status: "archived",
+      hidden_by_account_deactivation: false,
     })
     .eq("id", offerId);
 
