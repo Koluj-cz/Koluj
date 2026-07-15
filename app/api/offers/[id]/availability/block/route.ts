@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { errorMessage } from "@/lib/security";
 import { requireUser } from "@/lib/supabase/server";
 import { createAvailabilityBlockServer } from "@/lib/services/availabilityService";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
@@ -40,9 +41,9 @@ export async function POST(
     });
 
     return NextResponse.json({ ok: true, block });
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
-      { error: error.message || "Blokaci se nepodařilo vytvořit" },
+      { error: errorMessage(error, "Blokaci se nepodařilo vytvořit") },
       { status: 400 }
     );
   }

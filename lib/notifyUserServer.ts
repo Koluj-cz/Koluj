@@ -12,6 +12,19 @@ const supabaseAdmin = createClient(
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+function getHttpStatusCode(error: unknown) {
+  if (
+    typeof error === "object" &&
+    error !== null &&
+    "statusCode" in error &&
+    typeof error.statusCode === "number"
+  ) {
+    return error.statusCode;
+  }
+
+  return null;
+}
+
 type NotifyUserServerParams = {
   userId: string | null;
   actorId: string | null;
@@ -114,8 +127,10 @@ export async function notifyUserServer({
                 url: targetUrl,
               })
             );
-          } catch (error: any) {
-            if (error?.statusCode === 404 || error?.statusCode === 410) {
+          } catch (error) {
+            const statusCode = getHttpStatusCode(error);
+
+            if (statusCode === 404 || statusCode === 410) {
               await supabaseAdmin
                 .from("push_subscriptions")
                 .delete()

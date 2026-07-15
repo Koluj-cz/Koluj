@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { errorMessage } from "@/lib/security";
 import { requireUser } from "@/lib/supabase/server";
 import { deactivateAccountServer } from "@/lib/services/accountService";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
@@ -21,9 +22,9 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
-      { error: error.message || "Účet se nepodařilo deaktivovat" },
+      { error: errorMessage(error, "Účet se nepodařilo deaktivovat") },
       { status: 400 }
     );
   }

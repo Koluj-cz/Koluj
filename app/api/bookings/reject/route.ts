@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { errorMessage } from "@/lib/security";
 import { requireUser } from "@/lib/supabase/server";
 import { rejectBookingServer } from "@/lib/services/bookingService";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
@@ -28,9 +29,9 @@ export async function POST(request: Request) {
     });
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
-      { error: error.message || "Rezervaci se nepodařilo odmítnout" },
+      { error: errorMessage(error, "Rezervaci se nepodařilo odmítnout") },
       { status: 400 }
     );
   }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { errorMessage } from "@/lib/security";
 import { getOfferAvailabilityServer } from "@/lib/services/availabilityService";
 
 function monthBounds() {
@@ -31,9 +32,9 @@ export async function GET(
     });
 
     return NextResponse.json({ ok: true, ...availability });
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
-      { error: error.message || "Dostupnost se nepodařilo načíst" },
+      { error: errorMessage(error, "Dostupnost se nepodařilo načíst") },
       { status: 400 }
     );
   }

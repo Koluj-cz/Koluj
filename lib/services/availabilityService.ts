@@ -5,6 +5,25 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+type AvailabilityReservation = {
+  id: string;
+  booking_id: string | null;
+  date_from: string;
+  date_to: string;
+  starts_at: string | null;
+  ends_at: string | null;
+  status: string;
+};
+
+type AvailabilityBlock = {
+  id: string;
+  date_from: string;
+  date_to: string;
+  starts_at: string | null;
+  ends_at: string | null;
+  reason: string | null;
+};
+
 function toIsoDate(value: string | Date) {
   const date = typeof value === "string" ? new Date(value) : value;
   return date.toISOString().split("T")[0];
@@ -133,7 +152,7 @@ export async function getOfferAvailabilityServer({
     if (result.error) throw new Error(result.error.message);
   }
 
-  const reservationsById = new Map<string, any>();
+  const reservationsById = new Map<string, AvailabilityReservation>();
 
   [...(dayReservationsResult.data || []), ...(timeReservationsResult.data || [])].forEach(
     (reservation) => reservationsById.set(`reservation-${reservation.id}`, reservation)
@@ -155,7 +174,7 @@ export async function getOfferAvailabilityServer({
     });
   });
 
-  const blocksById = new Map<string, any>();
+  const blocksById = new Map<string, AvailabilityBlock>();
   [...(dayBlocksResult.data || []), ...(timeBlocksResult.data || [])].forEach((block) =>
     blocksById.set(block.id, block)
   );

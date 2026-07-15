@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { errorMessage } from "@/lib/security";
 import { requireUser } from "@/lib/supabase/server";
 import { deleteAvailabilityBlockServer } from "@/lib/services/availabilityService";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
@@ -26,9 +27,9 @@ export async function DELETE(
     });
 
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
-      { error: error.message || "Blokaci se nepodařilo zrušit" },
+      { error: errorMessage(error, "Blokaci se nepodařilo zrušit") },
       { status: 400 }
     );
   }

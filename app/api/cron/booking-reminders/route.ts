@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { errorMessage } from "@/lib/security";
 import { sendBookingRemindersServer } from "@/lib/services/bookingReminderService";
 
 export const runtime = "nodejs";
@@ -21,11 +22,11 @@ export async function GET(request: Request) {
   try {
     const result = await sendBookingRemindersServer();
     return NextResponse.json(result);
-  } catch (error: any) {
+  } catch (error) {
     console.error("Booking reminders cron error:", error);
 
     return NextResponse.json(
-      { error: error.message || "Booking reminders failed" },
+      { error: errorMessage(error, "Booking reminders failed") },
       { status: 500 }
     );
   }

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { errorMessage } from "@/lib/security";
 import { createClient } from "@supabase/supabase-js";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
 import { requireUser } from "@/lib/supabase/server";
@@ -45,9 +46,9 @@ export async function POST(request: Request) {
 
   try {
     range = normalizeDateRange(body.dateFrom, body.dateTo);
-  } catch (error: any) {
+  } catch (error) {
     return NextResponse.json(
-      { error: error.message || "Neplatný termín." },
+      { error: errorMessage(error, "Neplatný termín.") },
       { status: 400 }
     );
   }
@@ -126,11 +127,11 @@ export async function POST(request: Request) {
         offerId: offer.id,
         title: offer.title || "Nabídka",
       });
-    } catch (error: any) {
+    } catch (error) {
       skipped.push({
         offerId: offer.id,
         title: offer.title || "Nabídka",
-        reason: error.message || "Termín není dostupný.",
+        reason: errorMessage(error, "Termín není dostupný."),
       });
     }
   }

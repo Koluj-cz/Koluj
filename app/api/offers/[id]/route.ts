@@ -42,7 +42,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
   try {
     const supabaseAdmin = createSupabaseAdminClient();
-    const { user } = await requireUser().catch(() => ({ user: null as any }));
+    let currentUserId: string | null = null;
+
+    try {
+      const { user } = await requireUser();
+      currentUserId = user.id;
+    } catch {
+      // Veřejný detail nabídky je dostupný i bez přihlášení.
+    }
 
     const { data, error } = await supabaseAdmin
       .from("offers")
@@ -99,7 +106,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       throw new Error("Nabídka nebyla nalezena");
     }
 
-    const isOwner = data.owner_id === user?.id;
+    const isOwner = data.owner_id === currentUserId;
     const ownerProfile = Array.isArray(data.profiles)
       ? data.profiles[0]
       : data.profiles;
@@ -147,7 +154,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       },
       images: imageData || [],
       availabilityBlocks: blocksData || [],
-      currentUserId: user?.id || null,
+      currentUserId,
     });
   } catch (error) {
     const message = errorMessage(error, "Nabídku se nepodařilo načíst");
