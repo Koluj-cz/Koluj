@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import {
   Check,
   ChevronLeft,
@@ -604,9 +605,11 @@ export default function DashboardAvailabilityPage() {
                           }`}
                         >
                           {item.primary_image_url ? (
-                            <img
+                            <Image
                               src={item.primary_image_url}
                               alt={item.title}
+                              width={44}
+                              height={44}
                               className="h-11 w-11 rounded-xl object-cover"
                             />
                           ) : (

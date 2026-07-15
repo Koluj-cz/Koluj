@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { FileText, Paperclip, Printer, Send, X } from "lucide-react";
 import BackLink from "@/app/components/BackLink";
 import toast from "react-hot-toast";
@@ -389,9 +390,11 @@ export default function BookingDetailPage() {
             <div className="koluj-card p-6">
               <div className="flex items-center gap-4">
                 {otherPerson?.avatar_url ? (
-                  <img
+                  <Image
                     src={otherPerson.avatar_url}
                     alt={otherPerson.full_name || "Uživatel"}
+                    width={64}
+                    height={64}
                     className="h-16 w-16 rounded-full object-cover"
                   />
                 ) : (
@@ -422,9 +425,11 @@ export default function BookingDetailPage() {
 
             <div className="koluj-card p-6">
               {booking.offers?.primary_image_url && (
-                <img
+                <Image
                   src={booking.offers.primary_image_url}
                   alt={booking.offers.title}
+                  width={720}
+                  height={448}
                   className="mb-5 h-56 w-full rounded-2xl object-cover"
                 />
               )}
@@ -658,9 +663,12 @@ export default function BookingDetailPage() {
                           rel="noreferrer"
                           className="mt-3 block overflow-hidden rounded-2xl bg-white/90"
                         >
-                          <img
+                          <Image
                             src={msg.attachment_url}
                             alt={msg.attachment_name}
+                            width={720}
+                            height={480}
+                            unoptimized
                             className="max-h-72 w-full object-contain"
                           />
                           <span className="block truncate px-3 py-2 text-xs font-black text-[var(--koluj-text)]">

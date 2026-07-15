@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Bell, X } from "lucide-react";
 import { formatDateTime } from "@/lib/format";
 
@@ -138,9 +139,11 @@ export default function NotificationBell() {
                   const content = (
                     <div className="flex gap-3 rounded-2xl p-3 hover:bg-[var(--koluj-green-pale)]">
                       {notification.actor?.avatar_url ? (
-                        <img
+                        <Image
                           src={notification.actor.avatar_url}
                           alt={actorName}
+                          width={40}
+                          height={40}
                           className="h-10 w-10 shrink-0 rounded-full object-cover"
                         />
                       ) : (

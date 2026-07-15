@@ -212,6 +212,8 @@ export default function OfferPhotoUploader({
               </>
             ) : (
               <>
+                {/* Object URLs from local files are intentionally rendered without Next image optimization. */}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={selectedMain.src}
                   alt=""
@@ -219,6 +221,7 @@ export default function OfferPhotoUploader({
                   className="absolute inset-0 h-full w-full scale-110 object-cover opacity-35 blur-2xl"
                 />
                 <div className="absolute inset-0 bg-white/20" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={selectedMain.src}
                   alt="Hlavní fotka nabídky"
@@ -250,6 +253,8 @@ export default function OfferPhotoUploader({
                     className="h-full w-full object-cover"
                   />
                 ) : (
+                  /* Object URL preview; Next image optimization is not applicable. */
+                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={item.src}
                     alt=""

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import Image from "next/image";
 import { MapPin, ShieldCheck } from "lucide-react";
 import BackLink from "@/app/components/BackLink";
 import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
@@ -205,9 +206,11 @@ export default function UserProfilePage() {
             <div className="koluj-card p-8">
               <div className="flex items-center gap-5">
                 {profile.avatar_url ? (
-                  <img
+                  <Image
                     src={profile.avatar_url}
                     alt={profile.full_name || "Uživatel"}
+                    width={96}
+                    height={96}
                     className="h-24 w-24 rounded-full object-cover"
                   />
                 ) : (
@@ -288,9 +291,11 @@ export default function UserProfilePage() {
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex items-center gap-3">
                           {review.reviewer?.avatar_url ? (
-                            <img
+                            <Image
                               src={review.reviewer.avatar_url}
                               alt={review.reviewer.full_name || "Uživatel"}
+                              width={40}
+                              height={40}
                               className="h-10 w-10 rounded-full object-cover"
                             />
                           ) : (

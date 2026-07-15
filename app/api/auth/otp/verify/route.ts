@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Zadej platný kód" }, { status: 400 });
   }
 
-  let response = NextResponse.json({
+  const response = NextResponse.json({
     ok: true,
     redirectTo,
   });
