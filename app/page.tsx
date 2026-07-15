@@ -43,7 +43,6 @@ export default function HomePage() {
   const [userLocation, setUserLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [totalItems, setTotalItems] = useState(0);
-  const [page, setPage] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [hasMoreItems, setHasMoreItems] = useState(true);
 
@@ -123,7 +122,6 @@ export default function HomePage() {
       setTotalItems(count);
       setHasMoreItems(to + 1 < count);
       pageRef.current = nextPage + 1;
-      setPage(pageRef.current);
       setIsLoading(false);
       loadingRef.current = false;
     },
@@ -132,7 +130,6 @@ export default function HomePage() {
 
   useEffect(() => {
     pageRef.current = 0;
-    setPage(0);
     setHasMoreItems(true);
     void loadItems({ reset: true });
   }, [loadItems]);

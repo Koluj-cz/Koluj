@@ -21,7 +21,6 @@ type Notification = {
   } | null;
 };
 
-const LIMIT = 8;
 
 export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);

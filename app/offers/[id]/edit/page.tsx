@@ -161,6 +161,7 @@ export default function EditItemPage() {
     setForm(nextForm);
     setImages(nextImages);
     setPrimaryImageUrl(nextPrimaryImageUrl);
+    setInitialPrimaryImageUrl(nextPrimaryImageUrl);
     setInitialSnapshot(
       JSON.stringify({
         form: nextForm,

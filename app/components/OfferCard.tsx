@@ -5,7 +5,6 @@ import {
   Baby,
   Boxes,
   GraduationCap,
-  Heart,
   Home,
   Laptop,
   MapPin,

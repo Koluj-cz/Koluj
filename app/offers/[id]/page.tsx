@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Image from "next/image";
 import Link from "next/link";
@@ -45,17 +45,6 @@ const AvailabilityCalendar = dynamic(
   },
 );
 
-function todayIsoDate() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = `${now.getMonth() + 1}`.padStart(2, "0");
-  const day = `${now.getDate()}`.padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function isDateInsideBlock(date: string, block: AvailabilityBlock) {
-  return block.date_from <= date && block.date_to >= date;
-}
 
 type ItemImage = {
   id: string;
@@ -63,12 +52,6 @@ type ItemImage = {
   sort_order: number | null;
 };
 
-type AvailabilityBlock = {
-  id: string;
-  date_from: string;
-  date_to: string;
-  reason: string | null;
-};
 
 type ItemDetail = {
   id: string;
@@ -119,9 +102,6 @@ export default function ItemDetailPage() {
   const [item, setItem] = useState<ItemDetail | null>(null);
   const [images, setImages] = useState<ItemImage[]>([]);
   const [selectedImage, setSelectedImage] = useState("");
-  const [availabilityBlocks, setAvailabilityBlocks] = useState<
-    AvailabilityBlock[]
-  >([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -133,11 +113,7 @@ export default function ItemDetailPage() {
   const [borrowAttachment, setBorrowAttachment] = useState<File | null>(null);
   const [submittingBorrowRequest, setSubmittingBorrowRequest] = useState(false);
 
-  useEffect(() => {
-    loadPage();
-  }, []);
-
-  async function loadPage() {
+  const loadPage = useCallback(async () => {
     try {
       const response = await fetch(`/api/offers/${offerId}`, {
         cache: "no-store",
@@ -153,7 +129,6 @@ export default function ItemDetailPage() {
 
       setCurrentUserId(result.currentUserId || null);
       setItem(result.item as ItemDetail);
-      setAvailabilityBlocks((result.availabilityBlocks || []) as AvailabilityBlock[]);
       setImages(result.images || []);
       setSelectedImage(
         result.item.primary_image_url || result.images?.[0]?.image_url || "",
@@ -165,8 +140,11 @@ export default function ItemDetailPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [offerId, router]);
 
+  useEffect(() => {
+    void loadPage();
+  }, [loadPage]);
 
   async function handleBorrowClick() {
     if (!item || submittingBorrowRequest) return;
@@ -262,25 +240,6 @@ export default function ItemDetailPage() {
   const isRequestOnlyService =
     item?.offer_type === "service" && item?.service_booking_mode === "deadline";
 
-  const today = todayIsoDate();
-
-  const activeRequestOnlyBlock = useMemo(() => {
-    if (!isRequestOnlyService) return null;
-
-    return (
-      availabilityBlocks.find((block) => isDateInsideBlock(today, block)) ||
-      null
-    );
-  }, [availabilityBlocks, isRequestOnlyService, today]);
-
-  const nextRequestOnlyBlock = useMemo(() => {
-    if (!isRequestOnlyService) return null;
-
-    return activeRequestOnlyBlock || availabilityBlocks[0] || null;
-  }, [activeRequestOnlyBlock, availabilityBlocks, isRequestOnlyService]);
-
-  const isRequestOnlyUnavailable = Boolean(activeRequestOnlyBlock);
-
   const selectedServiceMinutes = useMemo(() => {
     if (!startsAt || !endsAt) return null;
     const minutes = Math.round(
@@ -329,18 +288,6 @@ export default function ItemDetailPage() {
   const ownerInitial = ownerName.charAt(0).toUpperCase();
   const isService = item.offer_type === "service";
 
-  const descriptionCard = item.description ? (
-    <div className="koluj-card p-6 md:p-8">
-      <h2 className="text-2xl font-black">Popis</h2>
-
-      <div
-        className="koluj-rich-text mt-3 text-lg leading-relaxed text-[var(--koluj-muted)]"
-        dangerouslySetInnerHTML={{
-          __html: item.description,
-        }}
-      />
-    </div>
-  ) : null;
 
   const handoverCard = (
     <div className="koluj-card p-6 md:p-8">

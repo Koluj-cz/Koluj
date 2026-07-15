@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { buildTimeOptions, getServiceHoursForDate, minutesFromTime } from "@/lib/serviceBookingRules";
@@ -100,11 +100,6 @@ function formatTime(value: string) {
   });
 }
 
-function formatSlot(slot: SelectedSlot) {
-  return `${formatShortDate(toIsoDate(new Date(slot.startsAt)))} · ${formatTime(
-    slot.startsAt
-  )}–${formatTime(slot.endsAt)}`;
-}
 
 function eachDateInRange(dateFrom: string, dateTo: string) {
   const dates: string[] = [];
@@ -193,10 +188,6 @@ export default function AvailabilityCalendar({
   );
 
   useEffect(() => {
-    loadAvailability();
-  }, [offerId, firstVisibleDate, lastVisibleDate]);
-
-  useEffect(() => {
     if (selectedSlot?.startsAt && selectedSlot?.endsAt) {
       setSelectedServiceDate(toIsoDate(new Date(selectedSlot.startsAt)));
       setServiceStartTime(timeFromIso(selectedSlot.startsAt));
@@ -214,7 +205,7 @@ export default function AvailabilityCalendar({
       setSelectedServiceDate(selectedRange.dateFrom);
     }
   }, [isDeadlineService, selectedRange?.dateFrom]);
-  async function loadAvailability() {
+  const loadAvailability = useCallback(async () => {
     setLoading(true);
 
     const params = new URLSearchParams({
@@ -234,7 +225,11 @@ export default function AvailabilityCalendar({
 
     setReservations(result.reservations || []);
     setBlocks(result.blocks || []);
-  }
+  }, [firstVisibleDate, lastVisibleDate, offerId]);
+
+  useEffect(() => {
+    void loadAvailability();
+  }, [loadAvailability]);
 
   const reservationDates = useMemo(() => {
     const dates = new Set<string>();
@@ -274,7 +269,7 @@ export default function AvailabilityCalendar({
     return reservationDates.has(date) || blockDates.has(date);
   }
 
-  function hasBusyServiceSlot(slot: SelectedSlot) {
+  const hasBusyServiceSlot = useCallback((slot: SelectedSlot) => {
     return (
       reservations.some((reservation) => {
         if (reservation.starts_at && reservation.ends_at) {
@@ -291,7 +286,7 @@ export default function AvailabilityCalendar({
         return block.date_from <= selectedServiceDate && block.date_to >= selectedServiceDate;
       })
     );
-  }
+  }, [blocks, reservations, selectedServiceDate]);
 
   const selectedServiceHours = useMemo(
     () =>
@@ -325,7 +320,7 @@ export default function AvailabilityCalendar({
     [selectedServiceHours],
   );
 
-  function isServiceRangeAvailable(startTime: string, endTime: string) {
+  const isServiceRangeAvailable = useCallback((startTime: string, endTime: string) => {
     if (!startTime || !endTime) return false;
 
     if (minutesFromTime(endTime) <= minutesFromTime(startTime)) {
@@ -342,7 +337,7 @@ export default function AvailabilityCalendar({
     }
 
     return !hasBusyServiceSlot(slot);
-  }
+  }, [hasBusyServiceSlot, selectedServiceDate]);
 
   const availableServiceStartTimes = useMemo(() => {
     return serviceTimeOptions.slice(0, -1).filter((startTime) => {
@@ -354,7 +349,7 @@ export default function AvailabilityCalendar({
 
       return Boolean(nextTime && isServiceRangeAvailable(startTime, nextTime));
     });
-  }, [selectedServiceDate, reservations, blocks]);
+  }, [isServiceRangeAvailable, serviceTimeOptions]);
 
   const availableServiceEndTimes = useMemo(() => {
     if (!serviceStartTime) return [];
@@ -364,7 +359,7 @@ export default function AvailabilityCalendar({
       .filter((endTime) =>
         isServiceRangeAvailable(serviceStartTime, endTime)
       );
-  }, [serviceStartTime, selectedServiceDate, reservations, blocks]);
+  }, [isServiceRangeAvailable, serviceStartTime, serviceTimeOptions]);
 
   function updateServiceSlot(nextStartTime: string, nextEndTime: string) {
     setServiceStartTime(nextStartTime);
@@ -516,8 +511,6 @@ export default function AvailabilityCalendar({
   }
 
   const todayIso = toIsoDate(new Date());
-  const validServiceSlot = Boolean(selectedSlot?.startsAt && selectedSlot?.endsAt);
-
   return (
     <div className="rounded-[28px] bg-[var(--koluj-bg)] p-4">
       <div className="flex items-center justify-between gap-3">

@@ -1,8 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { MapPin, ShieldCheck, Star } from "lucide-react";
+import { MapPin, ShieldCheck } from "lucide-react";
 import BackLink from "@/app/components/BackLink";
 import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
 import { useParams } from "next/navigation";

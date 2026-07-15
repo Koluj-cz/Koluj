@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Check,
   ChevronLeft,
@@ -158,17 +158,7 @@ export default function DashboardAvailabilityPage() {
     new Date(visibleMonth.getFullYear(), visibleMonth.getMonth() + 1, 0)
   );
 
-  useEffect(() => {
-    loadItems();
-  }, []);
-
-  useEffect(() => {
-    if (items.length > 0) {
-      loadAvailability();
-    }
-  }, [items, firstVisibleDate, lastVisibleDate]);
-
-  async function loadItems() {
+  const loadItems = useCallback(async () => {
     const params = new URLSearchParams({
       dateFrom: firstVisibleDate,
       dateTo: lastVisibleDate,
@@ -192,10 +182,10 @@ export default function DashboardAvailabilityPage() {
     setBlocks((result?.blocks || []) as unknown as OwnerBlock[]);
     setReservations((result?.reservations || []) as unknown as OwnerReservation[]);
     setLoading(false);
-  }
+  }, [firstVisibleDate, lastVisibleDate]);
 
 
-  async function loadAvailability() {
+  const loadAvailability = useCallback(async () => {
     const params = new URLSearchParams({
       dateFrom: firstVisibleDate,
       dateTo: lastVisibleDate,
@@ -214,7 +204,17 @@ export default function DashboardAvailabilityPage() {
 
     setBlocks((result?.blocks || []) as unknown as OwnerBlock[]);
     setReservations((result?.reservations || []) as unknown as OwnerReservation[]);
-  }
+  }, [firstVisibleDate, lastVisibleDate]);
+
+  useEffect(() => {
+    void loadItems();
+  }, [loadItems]);
+
+  useEffect(() => {
+    if (items.length > 0) {
+      void loadAvailability();
+    }
+  }, [items.length, loadAvailability]);
 
 
   function toggleItem(offerId: string) {

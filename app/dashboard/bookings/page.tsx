@@ -18,15 +18,11 @@ import {
 } from "lucide-react";
 import BackLink from "@/app/components/BackLink";
 import PageLoader from "@/app/components/PageLoader";
-import {
-  bookingStatusClasses,
-  bookingStatusLabels,
-} from "@/lib/constants";
+import { bookingStatusLabels } from "@/lib/constants";
 import {
   formatDateTime,
   getBookingDisplayStatus,
   getBookingFilterStatus,
-  translateBookingStatus,
 } from "@/lib/format";
 
 type BookingStatus =
@@ -110,13 +106,6 @@ const monthNames = [
 
 const dayLabels = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
 
-const calendarStatusClasses: Record<string, string> = {
-  requested: "bg-orange-100 text-orange-800",
-  approved: "bg-blue-100 text-blue-800",
-  active: "bg-green-100 text-green-800",
-  returned: "bg-stone-200 text-stone-700",
-  cancelled: "bg-red-50 text-red-600",
-};
 
 const displayStatusClasses: Record<string, string> = {
   requested: "bg-orange-100 text-orange-800",
@@ -160,11 +149,6 @@ function parseIsoDate(value: string) {
   return new Date(`${value}T00:00:00`);
 }
 
-function addDays(date: Date, days: number) {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
-}
 
 function buildMonthDays(month: Date) {
   const first = new Date(month.getFullYear(), month.getMonth(), 1);
@@ -244,8 +228,8 @@ export default function BookingsPage() {
   });
   const [activeDate, setActiveDate] = useState(() => toIsoDate(new Date()));
 
-  const [borrowingPage, setBorrowingPage] = useState(1);
-  const [lendingPage, setLendingPage] = useState(1);
+  const [borrowingPage] = useState(1);
+  const [lendingPage] = useState(1);
   const [borrowingTotal, setBorrowingTotal] = useState(0);
   const [lendingTotal, setLendingTotal] = useState(0);
 

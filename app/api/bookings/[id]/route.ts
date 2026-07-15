@@ -77,7 +77,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         const attachmentUrl = message.attachment_path
           ? await createBookingAttachmentSignedUrl(message.attachment_path)
           : null;
-        const { attachment_path: _attachmentPath, ...safeMessage } = message;
+        const safeMessage = { ...message };
+        delete safeMessage.attachment_path;
 
         return {
           ...safeMessage,

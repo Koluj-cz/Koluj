@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { FileText, Paperclip, Printer, Send, X } from "lucide-react";
@@ -74,7 +74,7 @@ export default function BookingDetailPage() {
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
-  function isNearBottom() {
+  const isNearBottom = useCallback(() => {
     const container = messagesContainerRef.current;
     if (!container) return true;
 
@@ -82,9 +82,9 @@ export default function BookingDetailPage() {
       container.scrollHeight - container.scrollTop - container.clientHeight;
 
     return distanceFromBottom < 140;
-  }
+  }, []);
 
-  function scrollMessagesToBottom(behavior: ScrollBehavior = "auto") {
+  const scrollMessagesToBottom = useCallback((behavior: ScrollBehavior = "auto") => {
     requestAnimationFrame(() => {
       const container = messagesContainerRef.current;
       if (!container) return;
@@ -94,57 +94,9 @@ export default function BookingDetailPage() {
         behavior,
       });
     });
-  }
+  }, []);
 
-  useEffect(() => {
-    loadBooking();
-
-    const interval = setInterval(async () => {
-      if (document.hidden) return;
-
-      const shouldScroll = isNearBottom();
-      await loadBooking(false);
-      if (shouldScroll) scrollMessagesToBottom("smooth");
-    }, 15000);
-
-    function handleVisibilityChange() {
-      if (!document.hidden) {
-        loadBooking(false);
-        updatePresence();
-      }
-    }
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-    };
-  }, [bookingId]);
-
-
-  async function updatePresence() {
-    if (!userId || document.hidden) return;
-
-    await fetch(`/api/bookings/${bookingId}/presence`, {
-      method: "POST",
-    });
-  }
-
-
-  useEffect(() => {
-    if (!userId) return;
-
-    updatePresence();
-
-    const interval = setInterval(() => {
-      updatePresence();
-    }, 15000);
-
-    return () => clearInterval(interval);
-  }, [userId, bookingId]);
-
-  async function loadBooking(shouldScrollToBottom = true) {
+  const loadBooking = useCallback(async (shouldScrollToBottom = true) => {
     try {
       const response = await fetch(`/api/bookings/${bookingId}`, {
         cache: "no-store",
@@ -173,8 +125,53 @@ export default function BookingDetailPage() {
     } finally {
       setLoading(false);
     }
-  }
+    }, [bookingId, scrollMessagesToBottom]);
 
+  const updatePresence = useCallback(async () => {
+    if (!userId || document.hidden) return;
+
+    await fetch(`/api/bookings/${bookingId}/presence`, {
+      method: "POST",
+    });
+  }, [bookingId, userId]);
+
+  useEffect(() => {
+    void loadBooking();
+
+    const interval = setInterval(async () => {
+      if (document.hidden) return;
+
+      const shouldScroll = isNearBottom();
+      await loadBooking(false);
+      if (shouldScroll) scrollMessagesToBottom("smooth");
+    }, 15000);
+
+    function handleVisibilityChange() {
+      if (!document.hidden) {
+        void loadBooking(false);
+        void updatePresence();
+      }
+    }
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [isNearBottom, loadBooking, scrollMessagesToBottom, updatePresence]);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    void updatePresence();
+
+    const interval = setInterval(() => {
+      void updatePresence();
+    }, 15000);
+
+    return () => clearInterval(interval);
+  }, [updatePresence, userId]);
 
   async function approveBooking() {
     if (!booking) return;
