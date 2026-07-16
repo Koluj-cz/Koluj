@@ -6,6 +6,7 @@ import { MapPin, ShieldCheck } from "lucide-react";
 import BackLink from "@/app/components/BackLink";
 import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
 import { useParams } from "next/navigation";
+import AuthHeaderButton from "@/app/components/AuthHeaderButton";
 import PageLoader from "@/app/components/PageLoader";
 import OfferSearchFilters from "@/app/components/OfferSearchFilters";
 import { formatDate } from "@/lib/format";
@@ -140,6 +141,14 @@ export default function UserProfilePage() {
     return (
       <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
         <div className="koluj-wide-frame relative z-10">
+          <section className="hidden md:block">
+            <div className="koluj-hero-card p-5 md:p-8 xl:p-10">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <BackLink href="/">Domů</BackLink>
+                <AuthHeaderButton />
+              </div>
+            </div>
+          </section>
           <BackLink href="/">Zpět</BackLink>
 
           <div className="koluj-card mt-10 p-8">
@@ -168,7 +177,7 @@ export default function UserProfilePage() {
   return (
     <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
       <div className="koluj-wide-frame relative z-10">
-        <section className="grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
+        <section className="mt-6 grid gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
           <aside className="space-y-6">
             <div className="koluj-card p-8">
               <div className="flex items-center gap-5">
