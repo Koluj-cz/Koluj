@@ -373,10 +373,6 @@ export default function BookingsPage() {
           </div>
 
           <div className="mt-8">
-            <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
-              Můj prostor
-            </p>
-
             <h1 className="koluj-heading mt-3">Rezervace</h1>
 
             <p className="mt-5 max-w-3xl text-lg leading-relaxed text-[var(--koluj-muted)] md:text-xl">

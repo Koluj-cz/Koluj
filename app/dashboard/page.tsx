@@ -56,31 +56,6 @@ export default function DashboardPage() {
                 Spravuj nabídky, rezervace, dostupnost i profil na jednom přehledném místě.
               </p>
             </div>
-
-            <div className="koluj-card flex flex-col justify-center p-6 md:p-8">
-              <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
-                Přehled účtu
-              </p>
-
-              <h2 className="mt-3 text-2xl font-black tracking-[-0.04em] text-[var(--koluj-ink)] md:text-3xl">
-                Vše důležité pro kolování.
-              </h2>
-
-              <p className="mt-3 text-[var(--koluj-muted)]">
-                Zkontroluj rezervace, uprav nabídky, nastav dostupnost nebo doplň profil.
-                Novou nabídku přidáš samostatnou kartou níže.
-              </p>
-
-              {!loadingProfile && !profileComplete && (
-                <Link
-                  href="/profile"
-                  prefetch={false}
-                  className="koluj-button mt-6 w-fit min-h-[52px] px-6"
-                >
-                  Dokončit profil <ArrowRight size={18} />
-                </Link>
-              )}
-            </div>
           </div>
         </section>
 
