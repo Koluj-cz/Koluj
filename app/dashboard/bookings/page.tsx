@@ -18,6 +18,13 @@ import {
 } from "lucide-react";
 import BackLink from "@/app/components/BackLink";
 import PageLoader from "@/app/components/PageLoader";
+import {
+  buildMonthDays,
+  dayLabels,
+  monthNames,
+  parseIsoDate,
+  toIsoDate,
+} from "@/app/components/availability/utils";
 import { bookingStatusLabels } from "@/lib/constants";
 import {
   formatDateTime,
@@ -89,35 +96,6 @@ const statusIcons: Record<Exclude<BookingStatus, "all">, ReactNode> = {
 };
 
 
-const monthNames = [
-  "leden",
-  "únor",
-  "březen",
-  "duben",
-  "květen",
-  "červen",
-  "červenec",
-  "srpen",
-  "září",
-  "říjen",
-  "listopad",
-  "prosinec",
-];
-
-const dayLabels = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
-
-
-const displayStatusClasses: Record<string, string> = {
-  requested: "bg-orange-100 text-orange-800",
-  scheduled: "bg-blue-100 text-blue-800",
-  approved: "bg-blue-100 text-blue-800",
-  in_progress: "bg-green-100 text-green-800",
-  active: "bg-green-100 text-green-800",
-  awaiting_completion: "bg-amber-100 text-amber-800",
-  completed: "bg-stone-200 text-stone-700",
-  returned: "bg-stone-200 text-stone-700",
-  cancelled: "bg-red-50 text-red-600",
-};
 
 function getDisplayStatus(booking: Booking) {
   return getBookingDisplayStatus({
@@ -138,37 +116,6 @@ function getFilterStatus(booking: Booking): Exclude<BookingStatus, "all"> {
 }
 
 
-function toIsoDate(date: Date) {
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getDate()}`.padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function parseIsoDate(value: string) {
-  return new Date(`${value}T00:00:00`);
-}
-
-
-function buildMonthDays(month: Date) {
-  const first = new Date(month.getFullYear(), month.getMonth(), 1);
-  const last = new Date(month.getFullYear(), month.getMonth() + 1, 0);
-  const leadingEmptyDays = (first.getDay() + 6) % 7;
-  const days: (Date | null)[] = Array.from(
-    { length: leadingEmptyDays },
-    () => null,
-  );
-
-  for (let day = 1; day <= last.getDate(); day++) {
-    days.push(new Date(month.getFullYear(), month.getMonth(), day));
-  }
-
-  while (days.length % 7 !== 0) {
-    days.push(null);
-  }
-
-  return days;
-}
 
 function getBookingDateFrom(booking: Booking) {
   if (booking.date_from) return booking.date_from;

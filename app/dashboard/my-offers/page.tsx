@@ -16,36 +16,12 @@ import PageLoader from "@/app/components/PageLoader";
 import OfferSearchFilters from "@/app/components/OfferSearchFilters";
 import BackLink from "@/app/components/BackLink";
 import {
-  categories,
-  categoryLabels,
-  serviceCategories,
-  serviceCategoryLabels,
+  getOfferCategoryOptions,
   offerTypeLabels,
 } from "@/lib/constants";
 
 
 
-function getCategoryOptions(offerType: string) {
-  if (offerType === "service") {
-    return {
-      all: "Všechny kategorie",
-      ...Object.fromEntries(serviceCategories.map((c) => [c, serviceCategoryLabels[c]])),
-    };
-  }
-
-  if (offerType === "item") {
-    return {
-      all: "Všechny kategorie",
-      ...Object.fromEntries(categories.map((c) => [c, categoryLabels[c]])),
-    };
-  }
-
-  return {
-    all: "Všechny kategorie",
-    ...Object.fromEntries(categories.map((c) => [c, categoryLabels[c]])),
-    ...Object.fromEntries(serviceCategories.map((c) => [c, serviceCategoryLabels[c]])),
-  };
-}
 
 type Offer = OfferCardOffer & {
   publication_status: "active" | "inactive";
@@ -264,7 +240,7 @@ export default function MyOffersPage() {
             ]}
             category={category}
             onCategoryChange={setCategory}
-            categoryOptions={Object.entries(getCategoryOptions(offerType)).map(
+            categoryOptions={Object.entries(getOfferCategoryOptions(offerType)).map(
               ([value, label]) => ({ value, label })
             )}
             status={statusFilter}

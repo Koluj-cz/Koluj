@@ -88,6 +88,42 @@ export const categories = [
   "ostatni",
 ] as const;
 
+export function getOfferCategoryOptions(offerType: string) {
+  if (offerType === "service") {
+    return {
+      all: "Všechny kategorie",
+      ...Object.fromEntries(
+        serviceCategories.map((category) => [
+          category,
+          serviceCategoryLabels[category],
+        ]),
+      ),
+    };
+  }
+
+  if (offerType === "item") {
+    return {
+      all: "Všechny kategorie",
+      ...Object.fromEntries(
+        categories.map((category) => [category, categoryLabels[category]]),
+      ),
+    };
+  }
+
+  return {
+    all: "Všechny kategorie",
+    ...Object.fromEntries(
+      categories.map((category) => [category, categoryLabels[category]]),
+    ),
+    ...Object.fromEntries(
+      serviceCategories.map((category) => [
+        category,
+        serviceCategoryLabels[category],
+      ]),
+    ),
+  };
+}
+
 export const conditionLabels: Record<string, string> = {
   new: "Nové",
   like_new: "Jako nové",

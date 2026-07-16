@@ -14,7 +14,7 @@ export default function BackLink({
   className = "",
   hideOnMobile = false,
 }: BackLinkProps) {
-  const responsiveClass = hideOnMobile ? "hidden md:inline-flex" : "";
+  const responsiveClass = hideOnMobile ? "!hidden md:!inline-flex" : "";
 
   return (
     <Link

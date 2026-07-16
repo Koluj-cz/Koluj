@@ -12,6 +12,16 @@ import {
 import toast from "react-hot-toast";
 import PageLoader from "@/app/components/PageLoader";
 import BackLink from "@/app/components/BackLink";
+import {
+  addDays,
+  buildMonthDays,
+  dayLabels,
+  eachDateInRange,
+  formatShortDate,
+  monthNames,
+  parseIsoDate,
+  toIsoDate,
+} from "@/app/components/availability/utils";
 
 type OwnerItem = {
   id: string;
@@ -56,80 +66,6 @@ type BulkResult = {
   skipped: { offerId: string; title: string; reason: string }[];
 };
 
-const monthNames = [
-  "leden",
-  "únor",
-  "březen",
-  "duben",
-  "květen",
-  "červen",
-  "červenec",
-  "srpen",
-  "září",
-  "říjen",
-  "listopad",
-  "prosinec",
-];
-
-const dayLabels = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
-
-function toIsoDate(date: Date) {
-  const year = date.getFullYear();
-  const month = `${date.getMonth() + 1}`.padStart(2, "0");
-  const day = `${date.getDate()}`.padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
-
-function parseIsoDate(value: string) {
-  return new Date(`${value}T00:00:00`);
-}
-
-function addDays(date: Date, days: number) {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
-}
-
-function formatShortDate(value: string) {
-  return parseIsoDate(value).toLocaleDateString("cs-CZ", {
-    day: "numeric",
-    month: "numeric",
-    year: "numeric",
-  });
-}
-
-function eachDateInRange(dateFrom: string, dateTo: string) {
-  const dates: string[] = [];
-  let current = parseIsoDate(dateFrom);
-  const end = parseIsoDate(dateTo);
-
-  while (current <= end) {
-    dates.push(toIsoDate(current));
-    current = addDays(current, 1);
-  }
-
-  return dates;
-}
-
-function buildMonthDays(month: Date) {
-  const first = new Date(month.getFullYear(), month.getMonth(), 1);
-  const last = new Date(month.getFullYear(), month.getMonth() + 1, 0);
-  const leadingEmptyDays = (first.getDay() + 6) % 7;
-  const days: (Date | null)[] = Array.from(
-    { length: leadingEmptyDays },
-    () => null
-  );
-
-  for (let day = 1; day <= last.getDate(); day++) {
-    days.push(new Date(month.getFullYear(), month.getMonth(), day));
-  }
-
-  while (days.length % 7 !== 0) {
-    days.push(null);
-  }
-
-  return days;
-}
 
 export default function DashboardAvailabilityPage() {
   const [items, setItems] = useState<OwnerItem[]>([]);
