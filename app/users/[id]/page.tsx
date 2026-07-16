@@ -10,13 +10,10 @@ import PageLoader from "@/app/components/PageLoader";
 import OfferSearchFilters from "@/app/components/OfferSearchFilters";
 import { formatDate } from "@/lib/format";
 import {
-  categories,
-  categoryLabels,
-  serviceCategories,
-  serviceCategoryLabels,
-  offerTypeLabels,
+  getOfferCategoryFilterOptions,
+  offerFilterSortOptions,
+  offerFilterTypeOptions,
 } from "@/lib/constants";
-
 
 type Profile = {
   id: string;
@@ -32,28 +29,6 @@ type Rating = {
   rating_avg: number | null;
   rating_count: number | null;
 };
-
-function getCategoryOptions(offerType: string) {
-  if (offerType === "service") {
-    return {
-      all: "Všechny kategorie",
-      ...Object.fromEntries(serviceCategories.map((c) => [c, serviceCategoryLabels[c]])),
-    };
-  }
-
-  if (offerType === "item") {
-    return {
-      all: "Všechny kategorie",
-      ...Object.fromEntries(categories.map((c) => [c, categoryLabels[c]])),
-    };
-  }
-
-  return {
-    all: "Všechny kategorie",
-    ...Object.fromEntries(categories.map((c) => [c, categoryLabels[c]])),
-    ...Object.fromEntries(serviceCategories.map((c) => [c, serviceCategoryLabels[c]])),
-  };
-}
 
 type Review = {
   id: string;
@@ -353,26 +328,13 @@ export default function UserProfilePage() {
                       setOfferType(value);
                       setCategory("all");
                     }}
-                    offerTypeOptions={[
-                      { value: "all", label: "Vše" },
-                      ...Object.entries(offerTypeLabels).map(([value, label]) => ({
-                        value,
-                        label,
-                      })),
-                    ]}
+                    offerTypeOptions={offerFilterTypeOptions}
                     category={category}
                     onCategoryChange={setCategory}
-                    categoryOptions={Object.entries(getCategoryOptions(offerType)).map(
-                      ([value, label]) => ({ value, label })
-                    )}
+                    categoryOptions={getOfferCategoryFilterOptions(offerType)}
                     sortBy={sortBy}
                     onSortByChange={setSortBy}
-                    sortOptions={[
-                      { value: "newest", label: "Nejnovější" },
-                      { value: "oldest", label: "Nejstarší" },
-                      { value: "az", label: "Název A–Z" },
-                      { value: "za", label: "Název Z–A" },
-                    ]}
+                    sortOptions={offerFilterSortOptions}
                   />
                 </div>
               )}

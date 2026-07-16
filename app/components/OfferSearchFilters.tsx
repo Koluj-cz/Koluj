@@ -1,7 +1,6 @@
 "use client";
 
 import { Search } from "lucide-react";
-
 export type SelectOption = { value: string; label: string };
 
 type OfferSearchFiltersProps = {
@@ -20,8 +19,6 @@ type OfferSearchFiltersProps = {
   sortBy?: string;
   onSortByChange?: (value: string) => void;
   sortOptions?: SelectOption[];
-  onUseLocation?: () => void;
-  locationActive?: boolean;
 };
 
 export default function OfferSearchFilters({
@@ -42,12 +39,30 @@ export default function OfferSearchFilters({
   sortOptions = [{ value: "newest", label: "Nejnovější" }],
 }: OfferSearchFiltersProps) {
   const selectClass =
-    "h-[58px] w-full rounded-[22px] border border-[var(--koluj-border)] bg-white px-4 font-bold text-[var(--koluj-text)] outline-none shadow-sm focus:border-[var(--koluj-green)] focus:shadow-[0_0_0_4px_rgba(95,127,43,0.10)] disabled:cursor-not-allowed disabled:opacity-55";
+    "h-[58px] w-full min-w-0 rounded-[22px] border border-[var(--koluj-border)] bg-white px-4 font-bold text-[var(--koluj-text)] outline-none shadow-sm focus:border-[var(--koluj-green)] focus:shadow-[0_0_0_4px_rgba(95,127,43,0.10)]";
+
+  const visibleSelectCount = [
+    onOfferTypeChange,
+    onCategoryChange,
+    onStatusChange,
+    onSortByChange,
+  ].filter(Boolean).length;
+
+  const desktopGridClass =
+    visibleSelectCount >= 4
+      ? "xl:grid-cols-[minmax(280px,1fr)_170px_220px_210px_190px]"
+      : visibleSelectCount === 3
+        ? "xl:grid-cols-[minmax(280px,1fr)_170px_220px_190px]"
+        : visibleSelectCount === 2
+          ? "xl:grid-cols-[minmax(280px,1fr)_220px_190px]"
+          : visibleSelectCount === 1
+            ? "xl:grid-cols-[minmax(280px,1fr)_220px]"
+            : "xl:grid-cols-1";
 
   return (
     <section className="koluj-card p-3 md:p-4">
-      <div className="grid gap-3 xl:grid-cols-[minmax(280px,1fr)_170px_220px_210px_190px]">
-        <div className="flex h-[58px] min-w-0 items-center gap-3 rounded-[22px] border border-[var(--koluj-border)] bg-white px-4 shadow-sm focus-within:border-[var(--koluj-green)] focus-within:shadow-[0_0_0_4px_rgba(95,127,43,0.10)]">
+      <div className={`grid gap-3 md:grid-cols-2 ${desktopGridClass}`}>
+        <div className="flex h-[58px] min-w-0 items-center gap-3 rounded-[22px] border border-[var(--koluj-border)] bg-white px-4 shadow-sm focus-within:border-[var(--koluj-green)] focus-within:shadow-[0_0_0_4px_rgba(95,127,43,0.10)] md:col-span-2 xl:col-span-1">
           <Search size={21} className="shrink-0 text-[var(--koluj-muted)]" />
           <input
             value={search}
@@ -57,21 +72,65 @@ export default function OfferSearchFilters({
           />
         </div>
 
-        <select value={offerType} onChange={(event) => onOfferTypeChange?.(event.target.value)} disabled={!onOfferTypeChange} className={selectClass}>
-          {offerTypeOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-        </select>
+        {onOfferTypeChange && (
+          <select
+            aria-label="Typ nabídky"
+            value={offerType}
+            onChange={(event) => onOfferTypeChange(event.target.value)}
+            className={selectClass}
+          >
+            {offerTypeOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        )}
 
-        <select value={category} onChange={(event) => onCategoryChange?.(event.target.value)} disabled={!onCategoryChange} className={selectClass}>
-          {categoryOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-        </select>
+        {onCategoryChange && (
+          <select
+            aria-label="Kategorie"
+            value={category}
+            onChange={(event) => onCategoryChange(event.target.value)}
+            className={selectClass}
+          >
+            {categoryOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        )}
 
-        <select value={status} onChange={(event) => onStatusChange?.(event.target.value)} disabled={!onStatusChange} className={selectClass}>
-          {statusOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-        </select>
+        {onStatusChange && (
+          <select
+            aria-label="Stav nabídky"
+            value={status}
+            onChange={(event) => onStatusChange(event.target.value)}
+            className={selectClass}
+          >
+            {statusOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        )}
 
-        <select value={sortBy} onChange={(event) => onSortByChange?.(event.target.value)} disabled={!onSortByChange} className={selectClass}>
-          {sortOptions.map((option) => <option key={option.value} value={option.value}>{option.label}</option>)}
-        </select>
+        {onSortByChange && (
+          <select
+            aria-label="Řazení"
+            value={sortBy}
+            onChange={(event) => onSortByChange(event.target.value)}
+            className={selectClass}
+          >
+            {sortOptions.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
     </section>
   );

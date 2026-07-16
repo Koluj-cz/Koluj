@@ -124,6 +124,28 @@ export function getOfferCategoryOptions(offerType: string) {
   };
 }
 
+
+export const offerFilterTypeOptions = [
+  { value: "all", label: "Vše" },
+  ...Object.entries(offerTypeLabels).map(([value, label]) => ({
+    value,
+    label,
+  })),
+];
+
+export const offerFilterSortOptions = [
+  { value: "newest", label: "Nejnovější" },
+  { value: "oldest", label: "Nejstarší" },
+  { value: "az", label: "Název A–Z" },
+  { value: "za", label: "Název Z–A" },
+];
+
+export function getOfferCategoryFilterOptions(offerType: string) {
+  return Object.entries(getOfferCategoryOptions(offerType)).map(
+    ([value, label]) => ({ value, label }),
+  );
+}
+
 export const conditionLabels: Record<string, string> = {
   new: "Nové",
   like_new: "Jako nové",

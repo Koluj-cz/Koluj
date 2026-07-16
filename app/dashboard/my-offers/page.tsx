@@ -16,36 +16,10 @@ import PageLoader from "@/app/components/PageLoader";
 import OfferSearchFilters from "@/app/components/OfferSearchFilters";
 import BackLink from "@/app/components/BackLink";
 import {
-  categories,
-  categoryLabels,
-  serviceCategories,
-  serviceCategoryLabels,
-  offerTypeLabels,
+  getOfferCategoryFilterOptions,
+  offerFilterSortOptions,
+  offerFilterTypeOptions,
 } from "@/lib/constants";
-
-
-
-function getCategoryOptions(offerType: string) {
-  if (offerType === "service") {
-    return {
-      all: "Všechny kategorie",
-      ...Object.fromEntries(serviceCategories.map((c) => [c, serviceCategoryLabels[c]])),
-    };
-  }
-
-  if (offerType === "item") {
-    return {
-      all: "Všechny kategorie",
-      ...Object.fromEntries(categories.map((c) => [c, categoryLabels[c]])),
-    };
-  }
-
-  return {
-    all: "Všechny kategorie",
-    ...Object.fromEntries(categories.map((c) => [c, categoryLabels[c]])),
-    ...Object.fromEntries(serviceCategories.map((c) => [c, serviceCategoryLabels[c]])),
-  };
-}
 
 type Offer = OfferCardOffer & {
   publication_status: "active" | "inactive";
@@ -255,18 +229,10 @@ export default function MyOffersPage() {
               setOfferType(value);
               setCategory("all");
             }}
-            offerTypeOptions={[
-              { value: "all", label: "Vše" },
-              ...Object.entries(offerTypeLabels).map(([value, label]) => ({
-                value,
-                label,
-              })),
-            ]}
+            offerTypeOptions={offerFilterTypeOptions}
             category={category}
             onCategoryChange={setCategory}
-            categoryOptions={Object.entries(getCategoryOptions(offerType)).map(
-              ([value, label]) => ({ value, label })
-            )}
+            categoryOptions={getOfferCategoryFilterOptions(offerType)}
             status={statusFilter}
             onStatusChange={setStatusFilter}
             statusOptions={[
@@ -276,12 +242,7 @@ export default function MyOffersPage() {
             ]}
             sortBy={sortBy}
             onSortByChange={setSortBy}
-            sortOptions={[
-              { value: "newest", label: "Nejnovější" },
-              { value: "oldest", label: "Nejstarší" },
-              { value: "az", label: "Název A–Z" },
-              { value: "za", label: "Název Z–A" },
-            ]}
+            sortOptions={offerFilterSortOptions}
           />
 
           <div className="mb-8 mt-4 flex flex-wrap items-center justify-between gap-4">
