@@ -370,13 +370,6 @@ export default function BookingsPage() {
         <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <BackLink href="/dashboard" hideOnMobile>Dashboard</BackLink>
-
-            {!loading && (
-              <span className="koluj-header-button pointer-events-none">
-                <Package size={17} />
-                {borrowingTotal + lendingTotal} celkem
-              </span>
-            )}
           </div>
 
           <div className="mt-8">
