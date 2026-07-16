@@ -1,17 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { Mail, User } from "lucide-react";
+import { ArrowLeft, Mail, User } from "lucide-react";
 import toast from "react-hot-toast";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import PageLoader from "@/app/components/PageLoader";
 import PushNotificationButton from "@/app/components/PushNotificationButton";
 import ConfirmLeaveDialog from "@/app/components/ConfirmLeaveDialog";
 import { useUnsavedChangesWarning } from "@/lib/hooks/useUnsavedChangesWarning";
 import StickySidebar from "@/app/components/StickySidebar";
-import BackLink from "@/app/components/BackLink";
-import SectionTitle from "@/app/components/SectionTitle";
-import CheckLine from "@/app/components/CheckLine";
 
 type PlaceSuggestion = {
   name: string;
@@ -295,9 +293,14 @@ export default function ProfilePage() {
       <div className="koluj-wide-frame relative z-10">
         <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <BackLink href="/dashboard" hideOnMobile>
+            <Link
+              href="/dashboard"
+              prefetch={false}
+              className="koluj-header-button !hidden md:!inline-flex"
+            >
+              <ArrowLeft size={17} />
               Dashboard
-            </BackLink>
+            </Link>
           </div>
 
           <h1 className="koluj-heading mt-6">Profil</h1>
@@ -564,3 +567,40 @@ export default function ProfilePage() {
     </main>
   );
 }
+
+function SectionTitle({
+  title,
+  icon,
+}: {
+  title: string;
+  icon?: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      {icon && (
+        <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-[var(--koluj-green)]">
+          {icon}
+        </div>
+      )}
+      <h2 className="text-2xl font-black">{title}</h2>
+    </div>
+  );
+}
+
+function CheckLine({ done, text }: { done: boolean; text: string }) {
+  return (
+    <li className="flex items-center gap-3">
+      <span
+        className={`flex h-6 w-6 items-center justify-center rounded-full ${
+          done
+            ? "bg-[var(--koluj-green)] text-white"
+            : "bg-[var(--koluj-bg)] text-[var(--koluj-muted)]"
+        }`}
+      >
+        {done ? "✓" : ""}
+      </span>
+      {text}
+    </li>
+  );
+}
+

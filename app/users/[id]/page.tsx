@@ -11,7 +11,10 @@ import PageLoader from "@/app/components/PageLoader";
 import OfferSearchFilters from "@/app/components/OfferSearchFilters";
 import { formatDate } from "@/lib/format";
 import {
-  getOfferCategoryOptions,
+  categories,
+  categoryLabels,
+  serviceCategories,
+  serviceCategoryLabels,
   offerTypeLabels,
 } from "@/lib/constants";
 
@@ -31,6 +34,27 @@ type Rating = {
   rating_count: number | null;
 };
 
+function getCategoryOptions(offerType: string) {
+  if (offerType === "service") {
+    return {
+      all: "Všechny kategorie",
+      ...Object.fromEntries(serviceCategories.map((c) => [c, serviceCategoryLabels[c]])),
+    };
+  }
+
+  if (offerType === "item") {
+    return {
+      all: "Všechny kategorie",
+      ...Object.fromEntries(categories.map((c) => [c, categoryLabels[c]])),
+    };
+  }
+
+  return {
+    all: "Všechny kategorie",
+    ...Object.fromEntries(categories.map((c) => [c, categoryLabels[c]])),
+    ...Object.fromEntries(serviceCategories.map((c) => [c, serviceCategoryLabels[c]])),
+  };
+}
 
 type Review = {
   id: string;
@@ -346,7 +370,7 @@ export default function UserProfilePage() {
                     ]}
                     category={category}
                     onCategoryChange={setCategory}
-                    categoryOptions={Object.entries(getOfferCategoryOptions(offerType)).map(
+                    categoryOptions={Object.entries(getCategoryOptions(offerType)).map(
                       ([value, label]) => ({ value, label })
                     )}
                     sortBy={sortBy}
