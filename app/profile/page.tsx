@@ -296,7 +296,7 @@ export default function ProfilePage() {
             <Link
               href="/dashboard"
               prefetch={false}
-              className="koluj-header-button"
+              className="koluj-header-button hidden md:inline-flex"
             >
               <ArrowLeft size={17} />
               Dashboard

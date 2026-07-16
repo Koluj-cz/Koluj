@@ -350,7 +350,7 @@ export default function EditItemPage() {
       <div className="koluj-wide-frame relative z-10">
         <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <BackLink href="/dashboard/my-offers">Moje nabídky</BackLink>
+            <BackLink href="/dashboard/my-offers" hideOnMobile>Moje nabídky</BackLink>
           </div>
 
           <h1 className="koluj-heading mt-6">Upravit nabídku</h1>

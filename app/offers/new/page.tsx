@@ -182,7 +182,7 @@ export default function NewItemPage() {
       <div className="koluj-wide-frame relative z-10">
         <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <BackLink href="/dashboard">Dashboard</BackLink>
+            <BackLink href="/dashboard" hideOnMobile>Dashboard</BackLink>
           </div>
 
           <h1 className="koluj-heading mt-6">Přidat nabídku</h1>

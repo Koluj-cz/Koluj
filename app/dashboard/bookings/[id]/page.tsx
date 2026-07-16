@@ -341,7 +341,7 @@ export default function BookingDetailPage() {
     <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
       <div className="koluj-wide-frame relative z-10">
         <section className="koluj-hero-card mb-6 p-5 md:p-8">
-          <BackLink href="/dashboard/bookings">Rezervace</BackLink>
+          <BackLink href="/dashboard/bookings" hideOnMobile>Rezervace</BackLink>
         </section>
 
         <div className="grid gap-8 xl:grid-cols-[380px_minmax(0,1fr)]">

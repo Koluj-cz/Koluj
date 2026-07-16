@@ -239,7 +239,7 @@ export default function ItemDetailPage() {
   return (
     <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
       <div className="koluj-wide-frame relative z-10">
-        <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
+        <section className="koluj-hero-card hidden p-5 md:block md:p-8 xl:p-10">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <BackLink href="/">Domů</BackLink>
           </div>

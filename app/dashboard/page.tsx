@@ -42,7 +42,7 @@ export default function DashboardPage() {
       <div className="koluj-wide-frame relative z-10">
         <section className="koluj-hero-card koluj-hero-card-popover p-5 md:p-8 xl:p-10">
           <div className="mb-8 flex items-center justify-between gap-3">
-            <BackLink href="/">Domů</BackLink>
+            <BackLink href="/" hideOnMobile>Domů</BackLink>
             <NotificationBell />
           </div>
 

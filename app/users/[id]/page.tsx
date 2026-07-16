@@ -196,7 +196,7 @@ export default function UserProfilePage() {
       <div className="koluj-wide-frame relative z-10">
         <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <BackLink href="/">Domů</BackLink>
+            <BackLink href="/" hideOnMobile>Domů</BackLink>
             <AuthHeaderButton />
           </div>
         </section>
