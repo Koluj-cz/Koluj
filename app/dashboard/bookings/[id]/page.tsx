@@ -11,6 +11,7 @@ import PageLoader from "@/app/components/PageLoader";
 import BookingChat from "@/app/components/booking-detail/BookingChat";
 import type { Booking, Message } from "@/app/components/booking-detail/types";
 import {
+  formatDateRange,
   formatDateTime,
   getBookingDisplayStatus,
 } from "@/lib/format";
@@ -326,11 +327,12 @@ export default function BookingDetailPage() {
     offerType: booking.offers?.offer_type,
     startsAt: booking.starts_at,
     endsAt: booking.ends_at,
+    dateFrom: booking.date_from,
+    dateTo: booking.date_to,
   });
   const canFinishService =
     isService &&
-    (booking.status === "approved" || booking.status === "active") &&
-    (!booking.ends_at || new Date(booking.ends_at) <= new Date());
+    (booking.status === "approved" || booking.status === "active");
   const otherPersonLabel = isOwner ? "Zájemce" : "Vlastník";
   const otherPersonName = isOwner
     ? booking.customer?.full_name || "Uživatel"
@@ -409,10 +411,13 @@ export default function BookingDetailPage() {
                 {booking.returned_at && (
                   <p><strong>{isService ? "Dokončeno" : "Vráceno"}:</strong> {formatDateTime(booking.returned_at)}</p>
                 )}
-                {booking.starts_at && booking.ends_at ? (
+                {isService && booking.starts_at && booking.ends_at ? (
                   <p><strong>Čas služby:</strong> {formatDateTime(booking.starts_at)} – {formatDateTime(booking.ends_at)}</p>
-                ) : booking.date_from && booking.date_to ? (
-                  <p><strong>Termín:</strong> {formatDateTime(booking.date_from)} – {formatDateTime(booking.date_to)}</p>
+                ) : booking.date_from || booking.date_to ? (
+                  <p>
+                    <strong>{isService ? "Termín dokončení" : "Doba půjčení"}:</strong>{" "}
+                    {formatDateRange(booking.date_from || null, booking.date_to || null)}
+                  </p>
                 ) : isService ? (
                   <p><strong>Termín:</strong> domluvou</p>
                 ) : null}
@@ -470,7 +475,7 @@ export default function BookingDetailPage() {
                       ? displayStatus.key === "scheduled"
                         ? "Služba je schválená a čeká na svůj termín."
                         : displayStatus.key === "in_progress"
-                          ? "Služba právě probíhá. Dokončení bude možné po skončení rezervovaného času."
+                          ? "Služba právě probíhá. Dokončení můžeš potvrdit i dříve."
                           : "Rezervovaný čas skončil. Potvrď dokončení služby."
                       : "Žádost je schválená a termín je rezervovaný v kalendáři. Po předání nabídky potvrď předání."}
                   </p>
@@ -484,9 +489,7 @@ export default function BookingDetailPage() {
                       {saving
                         ? "Ukládám..."
                         : isService
-                          ? canFinishService
-                            ? "Potvrdit dokončení"
-                            : "Dokončení zatím není možné"
+                          ? "Potvrdit dokončení"
                           : "Potvrdit předání"}
                     </button>
 
@@ -523,9 +526,7 @@ export default function BookingDetailPage() {
                       {saving
                         ? "Ukládám..."
                         : isService
-                          ? canFinishService
-                            ? "Potvrdit dokončení"
-                            : "Dokončení zatím není možné"
+                          ? "Potvrdit dokončení"
                           : "Potvrdit vrácení"}
                     </button>
                     {isService && (

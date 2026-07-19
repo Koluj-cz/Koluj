@@ -19,20 +19,34 @@ const supabaseAdmin = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+const APP_TIME_ZONE = "Europe/Prague";
+
 function formatDate(date: string | null) {
   if (!date) return "";
-  return new Date(date).toLocaleDateString("cs-CZ");
+  return new Intl.DateTimeFormat("cs-CZ", {
+    timeZone: APP_TIME_ZONE,
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+  }).format(new Date(date));
 }
 
 function formatDateTime(date: string | null) {
   if (!date) return "";
-  return new Date(date).toLocaleString("cs-CZ", {
+  return new Intl.DateTimeFormat("cs-CZ", {
+    timeZone: APP_TIME_ZONE,
     day: "numeric",
     month: "numeric",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  });
+  }).format(new Date(date));
+}
+
+function formatDateRange(dateFrom: string | null, dateTo: string | null) {
+  if (!dateFrom && !dateTo) return "";
+  if (!dateTo || dateFrom === dateTo) return formatDate(dateFrom || dateTo);
+  return `${formatDate(dateFrom)} – ${formatDate(dateTo)}`;
 }
 
 function toIsoDate(date: string) {
@@ -416,7 +430,7 @@ export async function requestBookingServer({
     message: `${isService ? "Žádost o službu vytvořena." : "Žádost o rezervaci vytvořena."}
 
 Nabídka: ${offer.title}
-${isTimedService ? `Čas: ${formatDateTime(startsAt || null)} – ${formatDateTime(endsAt || null)}\n` : isDeadlineService ? `Termín dokončení: ${formatDate(dateFrom || null)}\n` : !isService ? `Termín: ${formatDate(dateFrom || null)} – ${formatDate(dateTo || null)}\n` : "Termín: domluvou\n"}${isService ? "Lokalita působení" : "Místo předání"}: ${offer.pickup_place}
+${isTimedService ? `Čas: ${formatDateTime(startsAt || null)} – ${formatDateTime(endsAt || null)}\n` : isDeadlineService ? `Termín dokončení: ${formatDate(dateFrom || null)}\n` : !isService ? `Termín: ${formatDateRange(dateFrom || null, dateTo || null)}\n` : "Termín: domluvou\n"}${isService ? "Lokalita působení" : "Místo předání"}: ${offer.pickup_place}
 Cena: ${offer.price_unit === "individual" ? "individuálně" : `${totalPrice} Kč`}${!isService ? `\nKauce: ${offer.deposit || 0} Kč` : ""}${note?.trim() ? `\n\nPoznámka: ${note.trim()}` : ""}`,
   });
 

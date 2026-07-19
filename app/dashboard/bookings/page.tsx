@@ -114,6 +114,8 @@ const displayStatusClasses: Record<string, string> = {
   in_progress: "bg-green-100 text-green-800",
   active: "bg-green-100 text-green-800",
   awaiting_completion: "bg-amber-100 text-amber-800",
+  waiting_pickup: "bg-amber-100 text-amber-800",
+  waiting_return: "bg-amber-100 text-amber-800",
   completed: "bg-stone-200 text-stone-700",
   returned: "bg-stone-200 text-stone-700",
   cancelled: "bg-red-50 text-red-600",
@@ -125,6 +127,8 @@ function getDisplayStatus(booking: Booking) {
     offerType: booking.offers?.offer_type,
     startsAt: booking.starts_at,
     endsAt: booking.ends_at,
+    dateFrom: booking.date_from,
+    dateTo: booking.date_to,
   });
 }
 
@@ -134,6 +138,8 @@ function getFilterStatus(booking: Booking): Exclude<BookingStatus, "all"> {
     offerType: booking.offers?.offer_type,
     startsAt: booking.starts_at,
     endsAt: booking.ends_at,
+    dateFrom: booking.date_from,
+    dateTo: booking.date_to,
   });
 }
 
@@ -839,7 +845,9 @@ function BookingCard({
   const icon =
     displayStatus.key === "requested" ? (
       statusIcons.requested
-    ) : displayStatus.key === "scheduled" || displayStatus.key === "approved" ? (
+    ) : displayStatus.key === "scheduled" ||
+      displayStatus.key === "approved" ||
+      displayStatus.key === "waiting_pickup" ? (
       statusIcons.approved
     ) : displayStatus.key === "in_progress" || displayStatus.key === "active" ? (
       statusIcons.active
