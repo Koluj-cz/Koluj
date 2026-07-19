@@ -12,26 +12,22 @@ import {
   Clock3,
   Handshake,
   Inbox,
+  Info,
   Package,
   RotateCcw,
+  X,
   XCircle,
 } from "lucide-react";
 import BackLink from "@/app/components/BackLink";
 import PageLoader from "@/app/components/PageLoader";
-import { bookingStatusLabels } from "@/lib/constants";
 import {
   formatDateTime,
   getBookingDisplayStatus,
   getBookingFilterStatus,
+  type BookingFilterStatus,
 } from "@/lib/format";
 
-type BookingStatus =
-  | "all"
-  | "requested"
-  | "approved"
-  | "active"
-  | "returned"
-  | "cancelled";
+type BookingStatus = "all" | BookingFilterStatus;
 
 type BookingGroupKey = "borrowing" | "lending";
 type ViewMode = "all" | BookingGroupKey;
@@ -74,17 +70,59 @@ type BookingGroup = {
 const bookingStatuses: BookingStatus[] = [
   "all",
   "requested",
-  "approved",
-  "active",
-  "returned",
+  "scheduled",
+  "action_required",
+  "in_progress",
+  "completed",
   "cancelled",
+];
+
+const bookingFilterLabels: Record<BookingStatus, string> = {
+  all: "Vše",
+  requested: "Čeká na schválení",
+  scheduled: "Naplánováno",
+  action_required: "Čeká na akci",
+  in_progress: "Probíhá",
+  completed: "Dokončeno",
+  cancelled: "Zrušeno",
+};
+
+const statusHelpItems: Array<{
+  status: Exclude<BookingStatus, "all">;
+  description: string;
+}> = [
+  {
+    status: "requested",
+    description: "Majitel ještě rezervaci nepotvrdil.",
+  },
+  {
+    status: "scheduled",
+    description: "Rezervace je potvrzená, ale její termín ještě nezačal.",
+  },
+  {
+    status: "action_required",
+    description: "Je potřeba potvrdit předání, vrácení nebo dokončení služby.",
+  },
+  {
+    status: "in_progress",
+    description: "Věc byla předána nebo právě probíhá objednaná služba.",
+  },
+  {
+    status: "completed",
+    description: "Věc byla vrácena nebo byla služba dokončena.",
+  },
+  {
+    status: "cancelled",
+    description: "Rezervace byla zrušena a už není aktivní.",
+  },
 ];
 
 const statusIcons: Record<Exclude<BookingStatus, "all">, ReactNode> = {
   requested: <Clock3 size={18} />,
-  approved: <CheckCircle2 size={18} />,
-  active: <Handshake size={18} />,
-  returned: <RotateCcw size={18} />,
+  scheduled: <CheckCircle2 size={18} />,
+  action_required: <Clock3 size={18} />,
+  in_progress: <Handshake size={18} />,
+  completed: <RotateCcw size={18} />,
   cancelled: <XCircle size={18} />,
 };
 
@@ -132,7 +170,7 @@ function getDisplayStatus(booking: Booking) {
   });
 }
 
-function getFilterStatus(booking: Booking): Exclude<BookingStatus, "all"> {
+function getFilterStatus(booking: Booking): BookingFilterStatus {
   return getBookingFilterStatus({
     status: booking.status,
     offerType: booking.offers?.offer_type,
@@ -226,6 +264,7 @@ export default function BookingsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<BookingStatus>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("all");
+  const [showStatusHelp, setShowStatusHelp] = useState(false);
   const [showLists, setShowLists] = useState(false);
   const [visibleListCount, setVisibleListCount] = useState(10);
   const [visibleMonth, setVisibleMonth] = useState(() => {
@@ -314,9 +353,10 @@ export default function BookingsPage() {
     const counts: Record<BookingStatus, number> = {
       all: allBookings.length,
       requested: 0,
-      approved: 0,
-      active: 0,
-      returned: 0,
+      scheduled: 0,
+      action_required: 0,
+      in_progress: 0,
+      completed: 0,
       cancelled: 0,
     };
 
@@ -390,12 +430,24 @@ export default function BookingsPage() {
           <>
             <section className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
               <div className="koluj-card p-4">
-                <label
-                  htmlFor="booking-status-filter"
-                  className="mb-2 block text-sm font-black text-[var(--koluj-text)]"
-                >
-                  Stav rezervace
-                </label>
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <label
+                    htmlFor="booking-status-filter"
+                    className="block text-sm font-black text-[var(--koluj-text)]"
+                  >
+                    Stav rezervace
+                  </label>
+
+                  <button
+                    type="button"
+                    onClick={() => setShowStatusHelp(true)}
+                    className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-black text-[var(--koluj-green)] transition hover:bg-[var(--koluj-bg)]"
+                    aria-label="Zobrazit význam stavů rezervace"
+                  >
+                    <Info size={16} />
+                    Význam stavů
+                  </button>
+                </div>
                 <select
                   id="booking-status-filter"
                   value={filter}
@@ -404,7 +456,7 @@ export default function BookingsPage() {
                 >
                   {bookingStatuses.map((status) => (
                     <option key={status} value={status}>
-                      {bookingStatusLabels[status]} ({statusCounts[status]})
+                      {bookingFilterLabels[status]} ({statusCounts[status]})
                     </option>
                   ))}
                 </select>
@@ -488,6 +540,10 @@ export default function BookingsPage() {
           </>
         )}
       </div>
+
+      {showStatusHelp && (
+        <StatusHelpDialog onClose={() => setShowStatusHelp(false)} />
+      )}
     </main>
   );
 }
@@ -545,8 +601,9 @@ function BookingsCalendar({
         </div>
 
         <div className="flex flex-wrap gap-2 text-xs font-bold text-[var(--koluj-muted)]">
-          <CalendarLegend className="bg-orange-100" label="Žádost" />
-          <CalendarLegend className="bg-blue-100" label="Schváleno" />
+          <CalendarLegend className="bg-orange-100" label="Čeká na schválení" />
+          <CalendarLegend className="bg-blue-100" label="Naplánováno" />
+          <CalendarLegend className="bg-amber-100" label="Čeká na akci" />
           <CalendarLegend className="bg-green-100" label="Probíhá" />
           <CalendarLegend className="bg-stone-200" label="Dokončeno" />
         </div>
@@ -721,6 +778,75 @@ function CalendarLegend({ className, label }: { className: string; label: string
 }
 
 
+function StatusHelpDialog({ onClose }: { onClose: () => void }) {
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") onClose();
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+      role="presentation"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="booking-status-help-title"
+        className="max-h-[85vh] w-full overflow-y-auto rounded-t-[32px] bg-white p-5 shadow-2xl sm:max-w-xl sm:rounded-[32px] sm:p-7"
+      >
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
+              Nápověda
+            </p>
+            <h2 id="booking-status-help-title" className="mt-1 text-2xl font-black">
+              Význam stavů
+            </h2>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-[var(--koluj-text)]"
+            aria-label="Zavřít nápovědu"
+          >
+            <X size={21} />
+          </button>
+        </div>
+
+        <div className="mt-5 space-y-3">
+          {statusHelpItems.map((item) => (
+            <div
+              key={item.status}
+              className="rounded-3xl border border-[var(--koluj-border)] bg-[var(--koluj-bg)] p-4"
+            >
+              <p className="font-black text-[var(--koluj-text)]">
+                {bookingFilterLabels[item.status]}
+              </p>
+              <p className="mt-1 text-sm font-bold leading-relaxed text-[var(--koluj-muted)]">
+                {item.description}
+              </p>
+            </div>
+          ))}
+        </div>
+
+        <button type="button" onClick={onClose} className="koluj-button mt-5 w-full px-6 py-3">
+          Rozumím
+        </button>
+      </section>
+    </div>
+  );
+}
+
+
 function ViewModeButton({
   label,
   active,
@@ -828,22 +954,8 @@ function BookingCard({
     displayStatusClasses[displayStatus.key] ||
     "bg-[var(--koluj-bg)] text-[var(--koluj-muted)]";
 
-  const icon =
-    displayStatus.key === "requested" ? (
-      statusIcons.requested
-    ) : displayStatus.key === "scheduled" ||
-      displayStatus.key === "approved" ||
-      displayStatus.key === "waiting_pickup" ? (
-      statusIcons.approved
-    ) : displayStatus.key === "in_progress" || displayStatus.key === "active" ? (
-      statusIcons.active
-    ) : displayStatus.key === "completed" || displayStatus.key === "returned" ? (
-      statusIcons.returned
-    ) : displayStatus.key === "cancelled" ? (
-      statusIcons.cancelled
-    ) : (
-      <Clock3 size={18} />
-    );
+  const filterStatus = getFilterStatus(booking);
+  const icon = statusIcons[filterStatus];
 
   return (
     <Link
@@ -938,10 +1050,10 @@ function BookingDate({ booking }: { booking: Booking }) {
     booking.status === "requested"
       ? "Vytvořeno"
       : booking.status === "approved"
-        ? "Schváleno"
+        ? "Potvrzeno"
         : booking.status === "active"
           ? isService
-            ? "Schváleno"
+            ? "Potvrzeno"
             : "Předáno"
           : booking.status === "returned"
             ? isService

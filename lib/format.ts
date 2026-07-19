@@ -184,33 +184,38 @@ export function getBookingDisplayStatus({
   };
 }
 
+export type BookingFilterStatus =
+  | "requested"
+  | "scheduled"
+  | "action_required"
+  | "in_progress"
+  | "completed"
+  | "cancelled";
+
 export function getBookingFilterStatus(
   booking: BookingStatusSource,
-): "requested" | "approved" | "active" | "returned" | "cancelled" {
+): BookingFilterStatus {
   const displayStatus = getBookingDisplayStatus(booking);
 
-  if (
-    displayStatus.key === "scheduled" ||
-    displayStatus.key === "waiting_pickup"
-  ) return "approved";
-  if (
-    displayStatus.key === "in_progress" ||
-    displayStatus.key === "awaiting_completion" ||
-    displayStatus.key === "waiting_return"
-  ) {
-    return "active";
-  }
-  if (displayStatus.key === "completed") return "returned";
+  if (displayStatus.key === "scheduled") return "scheduled";
 
   if (
-    displayStatus.key === "requested" ||
-    displayStatus.key === "approved" ||
-    displayStatus.key === "active" ||
-    displayStatus.key === "returned" ||
-    displayStatus.key === "cancelled"
+    displayStatus.key === "waiting_pickup" ||
+    displayStatus.key === "waiting_return" ||
+    displayStatus.key === "awaiting_completion"
   ) {
-    return displayStatus.key;
+    return "action_required";
   }
+
+  if (displayStatus.key === "in_progress" || displayStatus.key === "active") {
+    return "in_progress";
+  }
+
+  if (displayStatus.key === "completed" || displayStatus.key === "returned") {
+    return "completed";
+  }
+
+  if (displayStatus.key === "cancelled") return "cancelled";
 
   return "requested";
 }
