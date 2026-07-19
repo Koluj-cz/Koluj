@@ -255,7 +255,7 @@ export async function assertOfferAvailableServer({
 
   assertDateRange(dateFrom, dateTo);
 
-  const [reservationResult, blockResult] = await Promise.all([
+  const [reservationResult, activeBookingResult, blockResult] = await Promise.all([
     supabaseAdmin
       .from("offer_reservations")
       .select("id, booking_id")
@@ -264,6 +264,12 @@ export async function assertOfferAvailableServer({
       .lte("date_from", dateTo!)
       .gte("date_to", dateFrom!)
       .limit(1),
+    supabaseAdmin
+      .from("bookings")
+      .select("id")
+      .eq("offer_id", offerId)
+      .eq("status", "active")
+      .not("handed_over_at", "is", null),
     supabaseAdmin
       .from("offer_availability_blocks")
       .select("id")
@@ -274,13 +280,21 @@ export async function assertOfferAvailableServer({
   ]);
 
   if (reservationResult.error) throw new Error(reservationResult.error.message);
+  if (activeBookingResult.error) throw new Error(activeBookingResult.error.message);
   if (blockResult.error) throw new Error(blockResult.error.message);
 
   const overlappingReservations = (reservationResult.data || []).filter(
     (reservation) => reservation.booking_id !== ignoreBookingId
   );
+  const activeBookings = (activeBookingResult.data || []).filter(
+    (booking) => booking.id !== ignoreBookingId
+  );
 
-  if (overlappingReservations.length > 0 || (blockResult.data || []).length > 0) {
+  if (
+    overlappingReservations.length > 0 ||
+    activeBookings.length > 0 ||
+    (blockResult.data || []).length > 0
+  ) {
     throw new Error("Vybraný termín už není dostupný.");
   }
 }

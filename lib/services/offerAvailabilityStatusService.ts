@@ -94,8 +94,9 @@ export async function attachTodayAvailabilityServer<T extends Offer>(
 
   const dayStart = localIso(today, 0);
   const dayEnd = localIso(today, 24 * 60);
+  const nowIso = new Date().toISOString();
 
-  const [reservationsResult, bookingsResult, blocksResult] =
+  const [reservationsResult, bookingsResult, activeItemBookingsResult, blocksResult] =
     await Promise.all([
       supabase
         .from("offer_reservations")
@@ -115,6 +116,14 @@ export async function attachTodayAvailabilityServer<T extends Offer>(
         .gt("ends_at", dayStart),
 
       supabase
+        .from("bookings")
+        .select("offer_id, handed_over_at")
+        .in("offer_id", offerIds)
+        .eq("status", "active")
+        .not("handed_over_at", "is", null)
+        .lte("handed_over_at", nowIso),
+
+      supabase
         .from("offer_availability_blocks")
         .select(
           "offer_id, date_from, date_to, starts_at, ends_at",
@@ -127,6 +136,7 @@ export async function attachTodayAvailabilityServer<T extends Offer>(
   for (const result of [
     reservationsResult,
     bookingsResult,
+    activeItemBookingsResult,
     blocksResult,
   ]) {
     if (result.error) {
@@ -152,9 +162,15 @@ export async function attachTodayAvailabilityServer<T extends Offer>(
      * - jinak = Volné
      */
     if (item.offer_type !== "service") {
-      const reserved = (reservationsResult.data || []).some(
+      const hasPlannedReservationToday = (reservationsResult.data || []).some(
         (reservation) => reservation.offer_id === item.id,
       );
+
+      const isActuallyHandedOver = (activeItemBookingsResult.data || []).some(
+        (booking) => booking.offer_id === item.id,
+      );
+
+      const reserved = hasPlannedReservationToday || isActuallyHandedOver;
 
       availabilityStatus = fullDayBlocked
         ? "unavailable"

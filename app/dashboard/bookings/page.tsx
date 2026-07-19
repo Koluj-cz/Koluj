@@ -236,8 +236,6 @@ export default function BookingsPage() {
 
   const [borrowingPage] = useState(1);
   const [lendingPage] = useState(1);
-  const [borrowingTotal, setBorrowingTotal] = useState(0);
-  const [lendingTotal, setLendingTotal] = useState(0);
 
   const loadBookings = useCallback(async () => {
     const params = new URLSearchParams({
@@ -261,8 +259,6 @@ export default function BookingsPage() {
 
     setBorrowing((result?.borrowing || []) as Booking[]);
     setLending((result?.lending || []) as Booking[]);
-    setBorrowingTotal(Number(result?.borrowingTotal || 0));
-    setLendingTotal(Number(result?.lendingTotal || 0));
     setLoading(false);
   }, [borrowingPage, lendingPage]);
 
@@ -393,35 +389,25 @@ export default function BookingsPage() {
         ) : (
           <>
             <section className="mt-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
-              <div className="koluj-card p-3">
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-6">
+              <div className="koluj-card p-4">
+                <label
+                  htmlFor="booking-status-filter"
+                  className="mb-2 block text-sm font-black text-[var(--koluj-text)]"
+                >
+                  Stav rezervace
+                </label>
+                <select
+                  id="booking-status-filter"
+                  value={filter}
+                  onChange={(event) => setFilter(event.target.value as BookingStatus)}
+                  className="w-full rounded-2xl border border-[var(--koluj-border)] bg-white px-4 py-3 font-bold text-[var(--koluj-text)] outline-none transition focus:border-[var(--koluj-green)] focus:ring-2 focus:ring-[var(--koluj-green)]/20 lg:min-w-[280px]"
+                >
                   {bookingStatuses.map((status) => (
-                    <button
-                      key={status}
-                      type="button"
-                      onClick={() => setFilter(status)}
-                      className={`rounded-2xl px-3 py-3 text-center text-sm font-black transition ${
-                        filter === status
-                          ? "bg-[var(--koluj-green)] text-white"
-                          : "bg-[var(--koluj-bg)] text-[var(--koluj-muted)] hover:text-[var(--koluj-green)]"
-                      }`}
-                    >
-                      <span className="block leading-none">
-                        {bookingStatusLabels[status]}
-                      </span>
-
-                      <span
-                        className={`mt-1 block text-xs ${
-                          filter === status
-                            ? "text-white/80"
-                            : "text-[var(--koluj-muted)]"
-                        }`}
-                      >
-                        {statusCounts[status]}
-                      </span>
-                    </button>
+                    <option key={status} value={status}>
+                      {bookingStatusLabels[status]} ({statusCounts[status]})
+                    </option>
                   ))}
-                </div>
+                </select>
               </div>
 
               <div className="grid grid-cols-3 gap-2 lg:w-[420px]">
