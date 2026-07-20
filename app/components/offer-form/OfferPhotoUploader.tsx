@@ -208,10 +208,9 @@ export default function OfferPhotoUploader({
               }}
             />
 
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid max-h-[420px] grid-cols-2 auto-rows-[minmax(104px,1fr)] gap-2 overflow-y-auto pr-1">
               {items
                 .filter((item) => item.key !== selectedMain.key)
-                .slice(0, 3)
                 .map((item) => (
                   <PhotoTile
                     key={item.key}
@@ -234,7 +233,7 @@ export default function OfferPhotoUploader({
                 ))}
 
               {canAddMore && (
-                <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--koluj-border)] bg-[var(--koluj-surface)] text-[var(--koluj-green)] transition hover:bg-white">
+                <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--koluj-border)] bg-[var(--koluj-surface)] text-[var(--koluj-green)] transition hover:border-[var(--koluj-green)] hover:bg-white">
                   <Plus size={24} />
                   <span className="mt-1 text-xs font-black">Přidat fotky</span>
                   <span className="mt-1 text-[11px] font-bold text-[var(--koluj-muted)]">
@@ -254,51 +253,6 @@ export default function OfferPhotoUploader({
               )}
             </div>
           </div>
-
-          {items.length > 4 && (
-            <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-              {items.slice(4).map((item) => {
-                const itemIndex = items.indexOf(item);
-
-                return (
-                  <div
-                    key={item.key}
-                    className="relative h-20 w-24 shrink-0 overflow-hidden rounded-2xl bg-white"
-                  >
-                    <PhotoPreview item={item} />
-                    <button
-                      type="button"
-                      onClick={() => chooseMain(item)}
-                      className="absolute inset-0 bg-black/10 transition hover:bg-black/20"
-                      aria-label="Nastavit fotografii jako hlavní"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setLightboxIndex(itemIndex)}
-                      className="absolute left-1 top-1 rounded-full bg-white/95 p-1.5 shadow"
-                      aria-label="Zvětšit fotografii"
-                    >
-                      <Maximize2 size={13} />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (item.kind === "existing" && item.id && onDeleteExisting) {
-                          void onDeleteExisting(item.id, item.src);
-                        } else if (item.kind === "new") {
-                          removeNewPhoto(item.index);
-                        }
-                      }}
-                      className="absolute right-1 top-1 rounded-full bg-white/95 p-1.5 text-red-500 shadow"
-                      aria-label="Odstranit fotografii"
-                    >
-                      <X size={13} />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
         </div>
       ) : (
         <label className="mt-6 flex h-48 cursor-pointer flex-col items-center justify-center rounded-[28px] border border-dashed border-[var(--koluj-border)] bg-[var(--koluj-surface)] text-[var(--koluj-green)] hover:bg-[var(--koluj-bg)]">
@@ -331,7 +285,7 @@ export default function OfferPhotoUploader({
       <p className="mt-4 text-sm text-[var(--koluj-muted)]">
         {offerType === "service"
           ? "Fotky jsou u služby volitelné. Pomůžou ale zvýšit důvěryhodnost nabídky."
-          : "Nahraj 1–8 fotek. Kliknutím na miniaturu vybereš hlavní fotku."}
+          : "Nahraj 1–8 fotek. Hlavní fotku vybereš ikonou hvězdy."}
       </p>
 
       {uploadingPhotos && (
@@ -377,37 +331,43 @@ function PhotoTile({
       }`}
     >
       <PhotoPreview item={item} />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-transparent to-black/10 opacity-80" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-transparent to-black/10 opacity-70 transition group-hover:opacity-90" />
 
-      <button
-        type="button"
-        onClick={() => onChooseMain(item)}
-        className={`absolute bottom-3 left-3 inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-black shadow-lg transition ${
-          item.isPrimary
-            ? "bg-[var(--koluj-green)] text-white"
-            : "bg-white/95 text-[var(--koluj-text)] hover:-translate-y-0.5"
-        }`}
-      >
-        <Star size={14} fill={item.isPrimary ? "currentColor" : "none"} />
-        {item.isPrimary ? "Hlavní" : "Nastavit hlavní"}
-      </button>
+      {item.isPrimary ? (
+        <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-[var(--koluj-green)] px-2.5 py-1.5 text-[11px] font-black text-white shadow-lg">
+          <Star size={12} fill="currentColor" />
+          Hlavní
+        </span>
+      ) : (
+        <button
+          type="button"
+          onClick={() => onChooseMain(item)}
+          className="absolute bottom-2 left-2 rounded-full bg-white/95 p-2 text-[var(--koluj-text)] shadow-lg transition hover:scale-105 hover:text-[var(--koluj-green)]"
+          aria-label="Nastavit fotografii jako hlavní"
+          title="Nastavit jako hlavní"
+        >
+          <Star size={14} />
+        </button>
+      )}
 
-      <div className="absolute right-3 top-3 flex gap-2">
+      <div className="absolute right-2 top-2 flex gap-1.5">
         <button
           type="button"
           onClick={() => onOpen(itemIndex)}
-          className="rounded-full bg-white/95 p-2 text-[var(--koluj-text)] shadow-lg transition hover:scale-105"
+          className="rounded-full bg-white/95 p-1.5 text-[var(--koluj-text)] shadow-lg transition hover:scale-105"
           aria-label="Zvětšit fotografii"
+          title="Zvětšit fotografii"
         >
-          <Maximize2 size={16} />
+          <Maximize2 size={14} />
         </button>
         <button
           type="button"
           onClick={() => onRemove(item)}
-          className="rounded-full bg-white/95 p-2 text-red-500 shadow-lg transition hover:scale-105"
+          className="rounded-full bg-white/95 p-1.5 text-red-500 shadow-lg transition hover:scale-105"
           aria-label="Odstranit fotografii"
+          title="Odstranit fotografii"
         >
-          <X size={16} />
+          <X size={14} />
         </button>
       </div>
     </div>
