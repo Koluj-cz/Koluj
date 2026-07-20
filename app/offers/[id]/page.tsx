@@ -239,19 +239,21 @@ export default function ItemDetailPage() {
           <div className="space-y-6">
             <div className="overflow-hidden rounded-[34px] bg-[var(--koluj-surface)] shadow-[0_18px_55px_rgba(31,31,26,0.12)]">
               <div className="border-b border-[var(--koluj-border)] px-5 py-6 md:px-8 md:py-7">
-                <div className="flex items-center justify-between gap-4">
+                <div className="hidden md:block">
                   <BackLink href="/">Domů</BackLink>
+                </div>
 
-                  <p className="text-right text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
+                <div className="flex items-start justify-between gap-4 md:mt-6">
+                  <h1 className="min-w-0 max-w-4xl text-4xl font-black leading-none tracking-tight md:text-6xl">
+                    {item.title}
+                  </h1>
+
+                  <p className="shrink-0 pt-1 text-right text-xs font-black uppercase tracking-wide text-[var(--koluj-green)] md:pt-2 md:text-sm">
                     {item.offer_type === "service"
                       ? serviceCategoryLabels[item.category] || item.category
                       : categoryLabels[item.category] || item.category}
                   </p>
                 </div>
-
-                <h1 className="mt-6 max-w-4xl text-4xl font-black leading-none tracking-tight md:text-6xl">
-                  {item.title}
-                </h1>
 
                 <div className="mt-5 flex flex-wrap gap-2 text-sm font-bold text-[var(--koluj-muted)] md:text-base">
                   <span className="inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-3 py-1.5">
