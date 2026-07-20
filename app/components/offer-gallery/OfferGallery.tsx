@@ -161,61 +161,6 @@ function DesktopThumbnailGrid({
   title,
   onOpen,
 }: DesktopThumbnailGridProps) {
-  const count = images.length;
-
-  if (count === 1) {
-    return (
-      <GalleryTile
-        image={images[0]}
-        index={1}
-        title={title}
-        className="h-full min-h-0"
-        onOpen={onOpen}
-      />
-    );
-  }
-
-  if (count === 2) {
-    return (
-      <div className="grid min-h-0 grid-rows-2 gap-1">
-        {images.map((image, offset) => (
-          <GalleryTile
-            key={image.id}
-            image={image}
-            index={offset + 1}
-            title={title}
-            className="h-full min-h-0"
-            onOpen={onOpen}
-          />
-        ))}
-      </div>
-    );
-  }
-
-  if (count === 3) {
-    return (
-      <div className="grid min-h-0 grid-cols-2 grid-rows-2 gap-1">
-        <GalleryTile
-          image={images[0]}
-          index={1}
-          title={title}
-          className="col-span-2 h-full min-h-0"
-          onOpen={onOpen}
-        />
-        {images.slice(1).map((image, offset) => (
-          <GalleryTile
-            key={image.id}
-            image={image}
-            index={offset + 2}
-            title={title}
-            className="h-full min-h-0"
-            onOpen={onOpen}
-          />
-        ))}
-      </div>
-    );
-  }
-
   return (
     <div className="grid min-h-0 grid-cols-2 grid-rows-2 gap-1">
       {images.slice(0, 4).map((image, offset) => {
