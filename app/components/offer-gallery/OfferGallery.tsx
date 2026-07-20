@@ -25,6 +25,7 @@ export default function OfferGallery({ images, title }: OfferGalleryProps) {
   }
 
   const mobileImage = images[mobileIndex];
+  const hasSingleImage = images.length === 1;
 
   return (
     <>
@@ -41,7 +42,7 @@ export default function OfferGallery({ images, title }: OfferGalleryProps) {
             fill
             priority={mobileIndex === 0}
             sizes="100vw"
-            className="object-cover"
+            className={hasSingleImage ? "object-contain" : "object-cover"}
           />
         </button>
 
@@ -114,6 +115,7 @@ function DesktopGallery({
           index={0}
           title={title}
           priority
+          fit="contain"
           className="h-full w-full"
           onOpen={onOpen}
         />
@@ -207,6 +209,7 @@ type GalleryTileProps = {
   className?: string;
   priority?: boolean;
   overlayLabel?: string;
+  fit?: "cover" | "contain";
   onOpen: (index: number) => void;
 };
 
@@ -217,6 +220,7 @@ function GalleryTile({
   className = "",
   priority = false,
   overlayLabel,
+  fit = "cover",
   onOpen,
 }: GalleryTileProps) {
   return (
@@ -232,7 +236,7 @@ function GalleryTile({
         fill
         priority={priority}
         sizes={index === 0 ? "(max-width: 1280px) 55vw, 900px" : "360px"}
-        className="object-cover transition duration-300 group-hover:scale-[1.015]"
+        className={`${fit === "contain" ? "object-contain" : "object-cover"} transition duration-300 group-hover:scale-[1.015]`}
       />
 
       {overlayLabel && (
