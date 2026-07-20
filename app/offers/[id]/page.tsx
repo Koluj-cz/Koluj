@@ -13,16 +13,18 @@ import {
 } from "@/lib/constants";
 import { formatDate, formatDateTime, translatePriceUnit } from "@/lib/format";
 
-import {
-  Edit,
-  ShieldCheck,
-  Star,
-  Paperclip,
-  X,
-} from "lucide-react";
+import { Edit, ShieldCheck, Paperclip, X } from "lucide-react";
 import toast from "react-hot-toast";
-import { HandoverCard, MetaAndDescriptionCard, OfferMapCard, OwnerCard } from "@/app/components/offer-detail/OfferDetailCards";
-import type { ItemDetail, ItemImage } from "@/app/components/offer-detail/types";
+import {
+  HandoverCard,
+  MetaAndDescriptionCard,
+  OfferMapCard,
+  OwnerCard,
+} from "@/app/components/offer-detail/OfferDetailCards";
+import type {
+  ItemDetail,
+  ItemImage,
+} from "@/app/components/offer-detail/types";
 import OfferGallery from "@/app/components/offer-gallery/OfferGallery";
 
 const AvailabilityCalendar = dynamic(
@@ -36,7 +38,6 @@ const AvailabilityCalendar = dynamic(
     ),
   },
 );
-
 
 export default function ItemDetailPage() {
   const params = useParams();
@@ -90,10 +91,11 @@ export default function ItemDetailPage() {
     if (!item || submittingBorrowRequest) return;
 
     if (!currentUserId) {
-      router.push(`/login?redirectTo=${encodeURIComponent(`/offers/${item.id}`)}`);
+      router.push(
+        `/login?redirectTo=${encodeURIComponent(`/offers/${item.id}`)}`,
+      );
       return;
     }
-
 
     setSubmittingBorrowRequest(true);
 
@@ -228,7 +230,11 @@ export default function ItemDetailPage() {
 
   const handoverCard = <HandoverCard item={item} />;
   const ownerCard = (
-    <OwnerCard item={item} ratingText={ratingText} ratingCountText={ratingCountText} />
+    <OwnerCard
+      item={item}
+      ratingText={ratingText}
+      ratingCountText={ratingCountText}
+    />
   );
   const mapCard = <OfferMapCard item={item} mapOffers={mapOffers} />;
 
@@ -255,14 +261,8 @@ export default function ItemDetailPage() {
                   </p>
                 </div>
 
-                <div className="mt-5 flex flex-wrap gap-2 text-sm font-bold text-[var(--koluj-muted)] md:text-base">
-                  <span className="inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-3 py-1.5">
-                    <Star size={16} className="text-[var(--koluj-green)]" />
-                    {ratingText}
-                    {ratingCountText && <span>{ratingCountText}</span>}
-                  </span>
-
-                  {item.condition && (
+                {item.condition && (
+                  <div className="mt-5 flex flex-wrap gap-2 text-sm font-bold text-[var(--koluj-muted)] md:text-base">
                     <span className="inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-3 py-1.5">
                       <ShieldCheck
                         size={16}
@@ -270,8 +270,8 @@ export default function ItemDetailPage() {
                       />
                       {conditionLabels[item.condition] || item.condition}
                     </span>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
               {(images.length > 0 || item.offer_type !== "service") && (
@@ -299,26 +299,24 @@ export default function ItemDetailPage() {
                     <MetaAndDescriptionCard item={item} />
                   </div>
 
-                  <div className="h-full [&>div]:h-full">
-                    {handoverCard}
-                  </div>
+                  <div className="h-full [&>div]:h-full">{handoverCard}</div>
 
                   <div className="h-full md:col-span-2 xl:col-span-1 [&>div]:h-full">
                     {ownerCard}
                   </div>
                 </div>
 
-                {mapCard && (
-                  <div className="hidden xl:block">
-                    {mapCard}
-                  </div>
-                )}
+                {mapCard && <div className="hidden xl:block">{mapCard}</div>}
               </>
             ) : (
-              <div className="hidden space-y-6 xl:block">
+              <div className="space-y-6">
                 <MetaAndDescriptionCard item={item} />
-                {handoverCard}
-                {mapCard}
+
+                <div className="grid items-stretch gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(260px,1fr)]">
+                  <div className="h-full [&>div]:h-full">{handoverCard}</div>
+
+                  <div className="h-full [&>div]:h-full">{ownerCard}</div>
+                </div>
               </div>
             )}
           </div>
@@ -399,12 +397,13 @@ export default function ItemDetailPage() {
                 />
               </div>
 
-
               <div className="mt-5 rounded-3xl bg-[var(--koluj-bg)] p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="font-black">
-                      {isRequestOnlyService && !isOwner ? "Poptávka" : "Vybraný termín"}
+                      {isRequestOnlyService && !isOwner
+                        ? "Poptávka"
+                        : "Vybraný termín"}
                     </p>
 
                     {isTimedService && startsAt && endsAt ? (
@@ -449,7 +448,9 @@ export default function ItemDetailPage() {
                 </div>
 
                 {((isTimedService && startsAt && endsAt) ||
-                  ((!isService || isRequestOnlyService) && borrowFrom && borrowTo)) && (
+                  ((!isService || isRequestOnlyService) &&
+                    borrowFrom &&
+                    borrowTo)) && (
                   <button
                     type="button"
                     onClick={() => {
@@ -550,19 +551,19 @@ export default function ItemDetailPage() {
                     {submittingBorrowRequest
                       ? "Odesílám žádost..."
                       : isTimedService &&
-                            startsAt &&
-                            endsAt &&
-                            startsAt !== endsAt
-                          ? "Objednat službu"
-                          : isRequestOnlyService && borrowFrom
-                            ? "Odeslat poptávku"
-                            : !isService && borrowFrom && borrowTo
-                              ? "Půjčit si"
-                              : isTimedService
-                                ? "Vyber čas"
-                                : isRequestOnlyService
-                                  ? "Vyber termín dokončení"
-                                  : "Vyber termín"}
+                          startsAt &&
+                          endsAt &&
+                          startsAt !== endsAt
+                        ? "Objednat službu"
+                        : isRequestOnlyService && borrowFrom
+                          ? "Odeslat poptávku"
+                          : !isService && borrowFrom && borrowTo
+                            ? "Půjčit si"
+                            : isTimedService
+                              ? "Vyber čas"
+                              : isRequestOnlyService
+                                ? "Vyber termín dokončení"
+                                : "Vyber termín"}
                   </button>
                 </>
               )}
@@ -577,28 +578,13 @@ export default function ItemDetailPage() {
                   : "Domluv se s vlastníkem na detailech. Platbu a předání věci řešte bezpečně a férově."}
               </div>
             </div>
-
-            {!isService && (
-              <div className="hidden xl:block">{ownerCard}</div>
-            )}
           </aside>
         </section>
 
-        {!isService && (
-          <div className="mt-6 space-y-6 xl:hidden">
-            <MetaAndDescriptionCard item={item} />
-            {handoverCard}
-            {ownerCard}
-          </div>
-        )}
-
-        {mapCard && (
-          <section className="mt-6 xl:hidden">
-            {mapCard}
-          </section>
+        {isService && mapCard && (
+          <section className="mt-6 xl:hidden">{mapCard}</section>
         )}
       </div>
     </main>
   );
 }
-
