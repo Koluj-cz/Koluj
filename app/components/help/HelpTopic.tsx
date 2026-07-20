@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useState, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Info, X } from "lucide-react";
 
@@ -23,13 +23,14 @@ export default function HelpTopic({
   title,
   items,
   triggerLabel = "Nápověda",
-  eyebrow = "Nápověda",
+  eyebrow = "Praktické vysvětlení",
   compact = false,
   className = "",
 }: HelpTopicProps) {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const titleId = useId();
+  const closeButtonRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => setMounted(true), []);
 
@@ -38,6 +39,7 @@ export default function HelpTopic({
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    closeButtonRef.current?.focus();
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") setOpen(false);
@@ -52,7 +54,7 @@ export default function HelpTopic({
 
   const dialog = open ? (
     <div
-      className="fixed inset-0 z-[1200] flex items-end justify-center bg-black/45 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+      className="fixed inset-0 z-[1200] bg-black/10 sm:bg-black/25 sm:backdrop-blur-[2px]"
       role="presentation"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) setOpen(false);
@@ -62,49 +64,54 @@ export default function HelpTopic({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="max-h-[calc(100dvh-24px)] w-full overflow-y-auto rounded-t-[32px] bg-white p-5 pb-[max(24px,env(safe-area-inset-bottom))] shadow-2xl sm:max-h-[85vh] sm:max-w-xl sm:rounded-[32px] sm:p-7"
+        className="fixed bottom-[calc(84px+env(safe-area-inset-bottom))] left-3 right-3 flex max-h-[min(620px,calc(100dvh-120px-env(safe-area-inset-bottom)))] flex-col overflow-hidden rounded-[28px] border border-[var(--koluj-border)] bg-white/98 shadow-[0_24px_70px_rgba(15,23,42,0.18)] sm:bottom-auto sm:left-1/2 sm:right-auto sm:top-1/2 sm:w-[min(420px,calc(100vw-48px))] sm:-translate-x-1/2 sm:-translate-y-1/2"
       >
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
-              {eyebrow}
-            </p>
-            <h2 id={titleId} className="mt-1 text-2xl font-black">
+        <header className="flex shrink-0 items-center justify-between gap-4 border-b border-[var(--koluj-border)] px-5 py-4">
+          <div className="min-w-0">
+            <h2
+              id={titleId}
+              className="truncate text-lg font-black text-[var(--koluj-ink)]"
+            >
               {title}
             </h2>
+            <p className="text-sm font-bold text-[var(--koluj-muted)]">
+              {eyebrow}
+            </p>
           </div>
 
           <button
+            ref={closeButtonRef}
             type="button"
             onClick={() => setOpen(false)}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-[var(--koluj-text)] transition hover:text-[var(--koluj-green)]"
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-[var(--koluj-muted)] transition hover:bg-[var(--koluj-green-pale)] hover:text-[var(--koluj-green)]"
             aria-label="Zavřít nápovědu"
           >
-            <X size={21} />
+            <X size={18} />
           </button>
-        </div>
+        </header>
 
-        <div className="mt-5 space-y-3">
-          {items.map((item) => (
-            <div
-              key={item.title}
-              className="rounded-3xl border border-[var(--koluj-border)] bg-[var(--koluj-bg)] p-4"
-            >
-              <div className="flex items-start gap-3">
-                {item.icon ? (
-                  <span className="mt-0.5 shrink-0 text-[var(--koluj-green)]">
-                    {item.icon}
-                  </span>
-                ) : null}
-                <div>
-                  <p className="font-black text-[var(--koluj-text)]">{item.title}</p>
+        <div className="overflow-y-auto overscroll-contain p-3">
+          <div className="grid gap-2">
+            {items.map((item) => (
+              <div
+                key={item.title}
+                className="flex gap-3 rounded-2xl p-3 transition hover:bg-[var(--koluj-green-pale)]"
+              >
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--koluj-green-pale)] text-sm font-black text-[var(--koluj-green)]">
+                  {item.icon ?? <Info size={17} />}
+                </span>
+
+                <div className="min-w-0 flex-1">
+                  <p className="font-black leading-snug text-[var(--koluj-ink)]">
+                    {item.title}
+                  </p>
                   <p className="mt-1 text-sm font-bold leading-relaxed text-[var(--koluj-muted)]">
                     {item.description}
                   </p>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
     </div>
@@ -121,6 +128,8 @@ export default function HelpTopic({
             : "inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-black text-[var(--koluj-green)] transition hover:bg-[var(--koluj-bg)]"
         } ${className}`}
         aria-label={compact ? triggerLabel : undefined}
+        aria-expanded={open}
+        aria-haspopup="dialog"
       >
         <Info size={compact ? 18 : 16} />
         {!compact ? triggerLabel : null}
