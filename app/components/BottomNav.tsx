@@ -24,7 +24,7 @@ export default function BottomNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="koluj-bottom-nav" aria-label="Mobilní navigace">
+    <nav className="koluj-bottom-nav print:hidden" data-print="hide" aria-label="Mobilní navigace">
       {navItems.map((item) => {
         const Icon = item.icon;
         const isActive = item.match(pathname);

@@ -680,3 +680,10 @@ footer,
   border-color: var(--koluj-green);
   color: var(--koluj-green);
 }
+
+@media print {
+  .koluj-bottom-nav,
+  [data-print="hide"] {
+    display: none !important;
+  }
+}
