@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
-import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import PageLoader from "@/app/components/PageLoader";
@@ -24,6 +23,7 @@ import {
 import toast from "react-hot-toast";
 import { HandoverCard, MetaAndDescriptionCard, OfferMapCard, OwnerCard } from "@/app/components/offer-detail/OfferDetailCards";
 import type { ItemDetail, ItemImage } from "@/app/components/offer-detail/types";
+import OfferGallery from "@/app/components/offer-gallery/OfferGallery";
 
 const AvailabilityCalendar = dynamic(
   () => import("@/app/components/AvailabilityCalendar"),
@@ -45,7 +45,6 @@ export default function ItemDetailPage() {
 
   const [item, setItem] = useState<ItemDetail | null>(null);
   const [images, setImages] = useState<ItemImage[]>([]);
-  const [selectedImage, setSelectedImage] = useState("");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -74,9 +73,6 @@ export default function ItemDetailPage() {
       setCurrentUserId(result.currentUserId || null);
       setItem(result.item as ItemDetail);
       setImages(result.images || []);
-      setSelectedImage(
-        result.item.primary_image_url || result.images?.[0]?.image_url || "",
-      );
     } catch (error) {
       console.error("Unexpected item detail error:", error);
       toast.error("Detail nabídky se nepodařilo načíst");
@@ -278,60 +274,21 @@ export default function ItemDetailPage() {
                 </div>
               </div>
 
-              {selectedImage ? (
-                <div className="relative flex h-[320px] items-center justify-center overflow-hidden bg-[var(--koluj-bg)] sm:h-[380px] md:h-[560px]">
-                  <Image
-                    src={selectedImage}
-                    alt=""
-                    aria-hidden="true"
-                    fill
-                    sizes="(max-width: 1280px) 100vw, 70vw"
-                    className="scale-110 object-cover opacity-35 blur-2xl"
-                  />
-
-                  <div className="absolute inset-0 bg-white/20" />
-
-                  <Image
-                    src={selectedImage}
-                    alt={item.title}
-                    fill
-                    sizes="(max-width: 1280px) 100vw, 70vw"
-                    className="relative z-10 object-contain p-5 md:p-8"
-                    priority
-                  />
-                </div>
-              ) : item.offer_type !== "service" ? (
-                <div className="relative flex h-[320px] items-center justify-center overflow-hidden bg-[var(--koluj-bg)] sm:h-[380px] md:h-[560px]">
-                  <div className="flex h-full items-center justify-center text-[var(--koluj-muted)]">
-                    Bez fotky
-                  </div>
-                </div>
-              ) : null}
-
-              {images.length > 1 && (
-                <div className="grid grid-cols-3 gap-3 border-t border-[var(--koluj-border)] bg-[var(--koluj-surface)] p-4 sm:grid-cols-4 lg:flex lg:overflow-x-auto">
-                  {images.map((image, index) => (
-                    <button
-                      key={image.id}
-                      type="button"
-                      onClick={() => setSelectedImage(image.image_url)}
-                      className={`aspect-[6/5] min-w-0 overflow-hidden rounded-2xl border-2 lg:h-20 lg:w-24 lg:shrink-0 ${
-                        selectedImage === image.image_url
-                          ? "border-[var(--koluj-green)]"
-                          : "border-transparent opacity-75 hover:opacity-100"
-                      }`}
-                      aria-label={`Zobrazit fotku ${index + 1}`}
-                    >
-                      <Image
-                        src={image.image_url}
-                        alt=""
-                        width={144}
-                        height={120}
-                        className="h-full w-full object-cover"
-                      />
-                    </button>
-                  ))}
-                </div>
+              {(images.length > 0 || item.offer_type !== "service") && (
+                <OfferGallery
+                  title={item.title}
+                  images={[...images]
+                    .sort((a, b) => {
+                      if (a.image_url === item.primary_image_url) return -1;
+                      if (b.image_url === item.primary_image_url) return 1;
+                      return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+                    })
+                    .map((image) => ({
+                      id: image.id,
+                      src: image.image_url,
+                      alt: item.title,
+                    }))}
+                />
               )}
             </div>
 
