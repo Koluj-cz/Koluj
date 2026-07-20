@@ -235,23 +235,21 @@ export default function ItemDetailPage() {
   return (
     <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
       <div className="koluj-wide-frame relative z-10">
-        <section className="koluj-hero-card hidden p-5 md:block md:p-8 xl:p-10">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <BackLink href="/">Domů</BackLink>
-          </div>
-        </section>
-
-        <section className="mt-6 grid gap-6 md:mt-10 xl:grid-cols-[minmax(0,1fr)_460px] lg:gap-8">
+        <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_460px] lg:gap-8">
           <div className="space-y-6">
             <div className="overflow-hidden rounded-[34px] bg-[var(--koluj-surface)] shadow-[0_18px_55px_rgba(31,31,26,0.12)]">
               <div className="border-b border-[var(--koluj-border)] px-5 py-6 md:px-8 md:py-7">
-                <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
-                  {item.offer_type === "service"
-                    ? serviceCategoryLabels[item.category] || item.category
-                    : categoryLabels[item.category] || item.category}
-                </p>
+                <div className="flex items-center justify-between gap-4">
+                  <BackLink href="/">Domů</BackLink>
 
-                <h1 className="mt-4 max-w-4xl text-4xl font-black leading-none tracking-tight md:text-6xl">
+                  <p className="text-right text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
+                    {item.offer_type === "service"
+                      ? serviceCategoryLabels[item.category] || item.category
+                      : categoryLabels[item.category] || item.category}
+                  </p>
+                </div>
+
+                <h1 className="mt-6 max-w-4xl text-4xl font-black leading-none tracking-tight md:text-6xl">
                   {item.title}
                 </h1>
 
