@@ -23,7 +23,6 @@ export default function HelpTopic({
   title,
   items,
   triggerLabel = "Nápověda",
-  eyebrow = "Praktické vysvětlení",
   compact = false,
   className = "",
 }: HelpTopicProps) {
@@ -67,17 +66,12 @@ export default function HelpTopic({
         className="fixed bottom-[calc(84px+env(safe-area-inset-bottom))] left-3 right-3 flex max-h-[min(620px,calc(100dvh-120px-env(safe-area-inset-bottom)))] flex-col overflow-hidden rounded-[28px] border border-[var(--koluj-border)] bg-white/98 shadow-[0_24px_70px_rgba(15,23,42,0.18)] sm:bottom-auto sm:left-1/2 sm:right-auto sm:top-1/2 sm:w-[min(420px,calc(100vw-48px))] sm:-translate-x-1/2 sm:-translate-y-1/2"
       >
         <header className="flex shrink-0 items-center justify-between gap-4 border-b border-[var(--koluj-border)] px-5 py-4">
-          <div className="min-w-0">
-            <h2
-              id={titleId}
-              className="truncate text-lg font-black text-[var(--koluj-ink)]"
-            >
-              {title}
-            </h2>
-            <p className="text-sm font-bold text-[var(--koluj-muted)]">
-              {eyebrow}
-            </p>
-          </div>
+          <h2
+            id={titleId}
+            className="min-w-0 truncate text-xl font-black text-[var(--koluj-ink)]"
+          >
+            {title}
+          </h2>
 
           <button
             ref={closeButtonRef}
@@ -90,25 +84,16 @@ export default function HelpTopic({
           </button>
         </header>
 
-        <div className="overflow-y-auto overscroll-contain p-3">
-          <div className="grid gap-2">
+        <div className="overflow-y-auto overscroll-contain px-5">
+          <div className="divide-y divide-[var(--koluj-border)]">
             {items.map((item) => (
-              <div
-                key={item.title}
-                className="flex gap-3 rounded-2xl p-3 transition hover:bg-[var(--koluj-green-pale)]"
-              >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--koluj-green-pale)] text-sm font-black text-[var(--koluj-green)]">
-                  {item.icon ?? <Info size={17} />}
-                </span>
-
-                <div className="min-w-0 flex-1">
-                  <p className="font-black leading-snug text-[var(--koluj-ink)]">
-                    {item.title}
-                  </p>
-                  <p className="mt-1 text-sm font-bold leading-relaxed text-[var(--koluj-muted)]">
-                    {item.description}
-                  </p>
-                </div>
+              <div key={item.title} className="py-4 first:pt-5 last:pb-5">
+                <p className="font-black leading-snug text-[var(--koluj-ink)]">
+                  {item.title}
+                </p>
+                <p className="mt-1.5 text-sm font-bold leading-relaxed text-[var(--koluj-muted)]">
+                  {item.description}
+                </p>
               </div>
             ))}
           </div>
