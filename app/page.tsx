@@ -201,7 +201,7 @@ export default function HomePage() {
               Sdílej. Půjčuj. <span className="text-[var(--koluj-green)]">Koluj.</span>
             </h1>
             <p className="mt-5 max-w-2xl text-lg leading-relaxed text-[var(--koluj-muted)]">
-              Věci i služby, které dávají smysl – pro tebe, pro sousedy i pro planetu.
+              Věci i služby, které dávají smysl – pro tebe, sousedy i planetu.
             </p>
             <div className="mt-7 flex flex-wrap items-center gap-3">
               <a href="#nabidky" className="koluj-button h-[52px] px-6">

@@ -2,6 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import PrintButton from "@/app/components/PrintButton";
 import { categoryLabels, serviceCategoryLabels } from "@/lib/constants";
 import BackLink from "@/app/components/BackLink";
+import HelpTopic from "@/app/components/help/HelpTopic";
 import { requireUser } from "@/lib/supabase/server";
 
 type Profile = {
@@ -139,7 +140,19 @@ export default async function BookingHandoverProtocolPage({ params }: PageProps)
         <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
           <BackLink href={`/dashboard/bookings/${booking.id}`}>Zpět na rezervaci</BackLink>
 
-          <PrintButton />
+          <div className="flex items-center gap-2">
+            <HelpTopic
+              triggerLabel="Jak protokol použít"
+              title="Jak použít protokol"
+              items={[
+                { title: "Vyplňte ho při předání", description: "Zapište skutečný stav věci, viditelné vady, příslušenství a případně převzatou kauci." },
+                { title: "Pořiďte fotografie", description: "Fotky stavu při předání pomáhají oběma stranám při pozdějším řešení poškození nebo sporu." },
+                { title: "Podepište oba výtisky", description: "Každá strana by měla mít jednu podepsanou kopii nebo vlastní fotografii vyplněného protokolu." },
+                { title: "Protokol nenahrazuje domluvu", description: "Konkrétní podmínky rezervace a komunikaci si vždy potvrďte také v chatu rezervace." },
+              ]}
+            />
+            <PrintButton />
+          </div>
         </div>
       </div>
 

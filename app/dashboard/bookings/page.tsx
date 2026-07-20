@@ -12,14 +12,13 @@ import {
   Clock3,
   Handshake,
   Inbox,
-  Info,
   Package,
   RotateCcw,
-  X,
   XCircle,
 } from "lucide-react";
 import BackLink from "@/app/components/BackLink";
 import PageLoader from "@/app/components/PageLoader";
+import HelpTopic from "@/app/components/help/HelpTopic";
 import {
   formatDateTime,
   getBookingDisplayStatus,
@@ -264,7 +263,6 @@ export default function BookingsPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<BookingStatus>("all");
   const [viewMode, setViewMode] = useState<ViewMode>("all");
-  const [showStatusHelp, setShowStatusHelp] = useState(false);
   const [showLists, setShowLists] = useState(false);
   const [visibleListCount, setVisibleListCount] = useState(10);
   const [visibleMonth, setVisibleMonth] = useState(() => {
@@ -438,15 +436,14 @@ export default function BookingsPage() {
                     Stav rezervace
                   </label>
 
-                  <button
-                    type="button"
-                    onClick={() => setShowStatusHelp(true)}
-                    className="inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-black text-[var(--koluj-green)] transition hover:bg-[var(--koluj-bg)]"
-                    aria-label="Zobrazit význam stavů rezervace"
-                  >
-                    <Info size={16} />
-                    Význam stavů
-                  </button>
+                  <HelpTopic
+                    title="Význam stavů"
+                    triggerLabel="Význam stavů"
+                    items={statusHelpItems.map((item) => ({
+                      title: bookingFilterLabels[item.status],
+                      description: item.description,
+                    }))}
+                  />
                 </div>
                 <select
                   id="booking-status-filter"
@@ -541,9 +538,6 @@ export default function BookingsPage() {
         )}
       </div>
 
-      {showStatusHelp && (
-        <StatusHelpDialog onClose={() => setShowStatusHelp(false)} />
-      )}
     </main>
   );
 }
@@ -777,74 +771,6 @@ function CalendarLegend({ className, label }: { className: string; label: string
   );
 }
 
-
-function StatusHelpDialog({ onClose }: { onClose: () => void }) {
-  useEffect(() => {
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === "Escape") onClose();
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [onClose]);
-
-  return (
-    <div
-      className="fixed inset-0 z-50 flex items-end justify-center bg-black/40 p-0 backdrop-blur-sm sm:items-center sm:p-6"
-      role="presentation"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
-    >
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="booking-status-help-title"
-        className="max-h-[85vh] w-full overflow-y-auto rounded-t-[32px] bg-white p-5 shadow-2xl sm:max-w-xl sm:rounded-[32px] sm:p-7"
-      >
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <p className="text-sm font-black uppercase tracking-wide text-[var(--koluj-green)]">
-              Nápověda
-            </p>
-            <h2 id="booking-status-help-title" className="mt-1 text-2xl font-black">
-              Význam stavů
-            </h2>
-          </div>
-
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-[var(--koluj-text)]"
-            aria-label="Zavřít nápovědu"
-          >
-            <X size={21} />
-          </button>
-        </div>
-
-        <div className="mt-5 space-y-3">
-          {statusHelpItems.map((item) => (
-            <div
-              key={item.status}
-              className="rounded-3xl border border-[var(--koluj-border)] bg-[var(--koluj-bg)] p-4"
-            >
-              <p className="font-black text-[var(--koluj-text)]">
-                {bookingFilterLabels[item.status]}
-              </p>
-              <p className="mt-1 text-sm font-bold leading-relaxed text-[var(--koluj-muted)]">
-                {item.description}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        <button type="button" onClick={onClose} className="koluj-button mt-5 w-full px-6 py-3">
-          Rozumím
-        </button>
-      </section>
-    </div>
-  );
-}
 
 
 function ViewModeButton({

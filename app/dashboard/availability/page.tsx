@@ -12,6 +12,7 @@ import {
 import toast from "react-hot-toast";
 import PageLoader from "@/app/components/PageLoader";
 import BackLink from "@/app/components/BackLink";
+import HelpTopic from "@/app/components/help/HelpTopic";
 
 type OwnerItem = {
   id: string;
@@ -405,7 +406,20 @@ export default function DashboardAvailabilityPage() {
             <BackLink href="/dashboard" hideOnMobile>Dashboard</BackLink>
           </div>
 
-          <h1 className="koluj-heading mt-6">Dostupnost</h1>
+          <div className="mt-6 flex items-center gap-3">
+            <h1 className="koluj-heading">Dostupnost</h1>
+            <HelpTopic
+              compact
+              triggerLabel="Jak funguje dostupnost"
+              title="Jak funguje dostupnost"
+              items={[
+                { title: "Volné", description: "Termín není blokovaný ani obsazený schválenou nebo probíhající rezervací." },
+                { title: "Rezervace", description: "Termín je obsazený rezervací. U předané věci zůstává obsazený až do potvrzeného vrácení." },
+                { title: "Blokace", description: "Termín jsi ručně označil jako nedostupný, například kvůli dovolené, servisu nebo jiné překážce." },
+                { title: "Výběr termínu", description: "Klikni na první a poslední den rozsahu. Potom zvol, kterých nabídek se blokace týká." },
+              ]}
+            />
+          </div>
 
           <p className="mt-5 max-w-3xl text-lg leading-relaxed text-[var(--koluj-muted)] md:text-xl">
             Spravuj dostupnost všech nabídek v jednom kalendáři. Vyber termín,

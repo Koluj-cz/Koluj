@@ -1,6 +1,7 @@
 "use client";
 
 import SectionTitle from "@/app/components/SectionTitle";
+import HelpTopic from "@/app/components/help/HelpTopic";
 import {
   itemPriceUnitLabels,
   itemPriceUnits,
@@ -37,7 +38,20 @@ export default function PriceSection({ form, setForm }: PriceSectionProps) {
 
   return (
     <div className="koluj-card p-5 md:p-8">
-      <SectionTitle title="Cena" />
+      <div className="flex items-center justify-between gap-3">
+        <SectionTitle title="Cena" />
+        <HelpTopic
+          compact
+          triggerLabel="Jak funguje cena a kauce"
+          title="Cena a kauce"
+          items={[
+            { title: "Cena za jednotku", description: "Určuje, zda se cena počítá za hodinu, den, kus nebo jinou zvolenou jednotku." },
+            { title: "Individuální cena", description: "U služby se konečná cena domluví v chatu podle rozsahu zakázky." },
+            { title: "Poznámka k ceně", description: "Použij ji pro víkendové sazby, slevy při delší rezervaci nebo další důležité podmínky." },
+            { title: "Kauce", description: "Dobrovolná vratná částka, kterou může vlastník požadovat jako jistotu při půjčení věci." },
+          ]}
+        />
+      </div>
 
       <div className="mt-6 space-y-4">
         <div className={`grid gap-4 ${isIndividualService ? "" : "md:grid-cols-[1fr_180px]"}`}>
