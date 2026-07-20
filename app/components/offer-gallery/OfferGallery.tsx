@@ -18,7 +18,7 @@ export default function OfferGallery({ images, title }: OfferGalleryProps) {
 
   if (images.length === 0) {
     return (
-      <div className="flex h-72 items-center justify-center bg-[var(--koluj-bg)] text-sm font-bold text-[var(--koluj-muted)] md:h-[460px]">
+      <div className="flex h-72 items-center justify-center bg-[var(--koluj-bg)] text-sm font-bold text-[var(--koluj-muted)] md:h-[500px]">
         Bez fotky
       </div>
     );
@@ -90,7 +90,6 @@ export default function OfferGallery({ images, title }: OfferGalleryProps) {
   );
 }
 
-
 type DesktopGalleryProps = {
   images: GalleryImage[];
   totalImages: number;
@@ -109,13 +108,13 @@ function DesktopGallery({
 
   if (count === 1) {
     return (
-      <div className="relative mx-auto hidden h-[430px] max-w-[1120px] bg-[var(--koluj-bg)] p-4 md:block md:rounded-[28px]">
+      <div className="relative hidden h-[500px] overflow-hidden bg-[var(--koluj-bg)] md:block">
         <GalleryTile
           image={images[0]}
           index={0}
           title={title}
           priority
-          className="h-full"
+          className="h-full w-full"
           onOpen={onOpen}
         />
         <GalleryCountButton count={totalImages} onClick={() => onOpen(0)} />
@@ -123,75 +122,122 @@ function DesktopGallery({
     );
   }
 
+  return (
+    <div className="relative hidden h-[500px] overflow-hidden bg-[var(--koluj-bg)] md:grid md:grid-cols-[minmax(0,1fr)_minmax(360px,1fr)] md:gap-1">
+      <GalleryTile
+        image={images[0]}
+        index={0}
+        title={title}
+        priority
+        className="h-full min-h-0"
+        onOpen={onOpen}
+      />
+
+      <DesktopThumbnailGrid
+        images={images.slice(1)}
+        totalImages={totalImages}
+        remainingCount={remainingCount}
+        title={title}
+        onOpen={onOpen}
+      />
+
+      <GalleryCountButton count={totalImages} onClick={() => onOpen(0)} />
+    </div>
+  );
+}
+
+type DesktopThumbnailGridProps = {
+  images: GalleryImage[];
+  totalImages: number;
+  remainingCount: number;
+  title: string;
+  onOpen: (index: number) => void;
+};
+
+function DesktopThumbnailGrid({
+  images,
+  totalImages,
+  remainingCount,
+  title,
+  onOpen,
+}: DesktopThumbnailGridProps) {
+  const count = images.length;
+
+  if (count === 1) {
+    return (
+      <GalleryTile
+        image={images[0]}
+        index={1}
+        title={title}
+        className="h-full min-h-0"
+        onOpen={onOpen}
+      />
+    );
+  }
+
   if (count === 2) {
     return (
-      <div className="relative mx-auto hidden h-[430px] max-w-[1120px] grid-cols-2 gap-3 bg-[var(--koluj-bg)] p-4 md:grid md:rounded-[28px]">
-        {images.map((image, index) => (
+      <div className="grid min-h-0 grid-rows-2 gap-1">
+        {images.map((image, offset) => (
           <GalleryTile
             key={image.id}
             image={image}
-            index={index}
+            index={offset + 1}
             title={title}
-            priority={index === 0}
-            className="h-full"
+            className="h-full min-h-0"
             onOpen={onOpen}
           />
         ))}
-        <GalleryCountButton count={totalImages} onClick={() => onOpen(0)} />
       </div>
     );
   }
 
   if (count === 3) {
     return (
-      <div className="relative mx-auto hidden h-[430px] max-w-[1120px] grid-cols-[minmax(0,1.45fr)_minmax(280px,1fr)] gap-3 bg-[var(--koluj-bg)] p-4 md:grid md:rounded-[28px]">
-        <GalleryTile image={images[0]} index={0} title={title} priority className="h-full" onOpen={onOpen} />
-        <div className="grid min-h-0 grid-rows-2 gap-3">
-          {images.slice(1).map((image, offset) => (
-            <GalleryTile key={image.id} image={image} index={offset + 1} title={title} className="h-full min-h-0" onOpen={onOpen} />
-          ))}
-        </div>
-        <GalleryCountButton count={totalImages} onClick={() => onOpen(0)} />
-      </div>
-    );
-  }
-
-  if (count === 4) {
-    return (
-      <div className="relative mx-auto hidden h-[430px] max-w-[1120px] grid-cols-[minmax(0,1.45fr)_minmax(320px,1fr)] gap-3 bg-[var(--koluj-bg)] p-4 md:grid md:rounded-[28px]">
-        <GalleryTile image={images[0]} index={0} title={title} priority className="h-full" onOpen={onOpen} />
-        <div className="grid min-h-0 grid-cols-2 grid-rows-2 gap-3">
-          <GalleryTile image={images[1]} index={1} title={title} className="col-span-2 h-full min-h-0" onOpen={onOpen} />
-          {images.slice(2).map((image, offset) => (
-            <GalleryTile key={image.id} image={image} index={offset + 2} title={title} className="h-full min-h-0" onOpen={onOpen} />
-          ))}
-        </div>
-        <GalleryCountButton count={totalImages} onClick={() => onOpen(0)} />
+      <div className="grid min-h-0 grid-cols-2 grid-rows-2 gap-1">
+        <GalleryTile
+          image={images[0]}
+          index={1}
+          title={title}
+          className="col-span-2 h-full min-h-0"
+          onOpen={onOpen}
+        />
+        {images.slice(1).map((image, offset) => (
+          <GalleryTile
+            key={image.id}
+            image={image}
+            index={offset + 2}
+            title={title}
+            className="h-full min-h-0"
+            onOpen={onOpen}
+          />
+        ))}
       </div>
     );
   }
 
   return (
-    <div className="relative mx-auto hidden h-[430px] max-w-[1120px] grid-cols-[minmax(0,1.45fr)_minmax(320px,1fr)] gap-3 bg-[var(--koluj-bg)] p-4 md:grid md:rounded-[28px]">
-      <GalleryTile image={images[0]} index={0} title={title} priority className="h-full" onOpen={onOpen} />
-      <div className="grid min-h-0 grid-cols-2 grid-rows-2 gap-3">
-        {images.slice(1, 5).map((image, offset) => {
-          const index = offset + 1;
-          const isLastVisible = index === 4 && remainingCount > 0;
-          return (
-            <GalleryTile
-              key={image.id}
-              image={image}
-              index={index}
-              title={title}
-              className="h-full min-h-0"
-              overlayLabel={isLastVisible ? `+ ${remainingCount} dalších` : undefined}
-              onOpen={onOpen}
-            />
-          );
-        })}
-      </div>
-      <GalleryCountButton count={totalImages} onClick={() => onOpen(0)} />
+    <div className="grid min-h-0 grid-cols-2 grid-rows-2 gap-1">
+      {images.slice(0, 4).map((image, offset) => {
+        const index = offset + 1;
+        const isLastVisible = offset === 3 && totalImages > 5;
+
+        return (
+          <GalleryTile
+            key={image.id}
+            image={image}
+            index={index}
+            title={title}
+            className="h-full min-h-0"
+            overlayLabel={
+              isLastVisible && remainingCount > 0
+                ? `+ ${remainingCount} dalších`
+                : undefined
+            }
+            onOpen={onOpen}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -232,7 +278,7 @@ function GalleryTile({
     <button
       type="button"
       onClick={() => onOpen(index)}
-      className={`group relative overflow-hidden rounded-2xl border border-[var(--koluj-border)] bg-white ${className}`}
+      className={`group relative overflow-hidden bg-[var(--koluj-bg)] ${className}`}
       aria-label={`Zvětšit fotografii ${index + 1}`}
     >
       <Image
@@ -240,7 +286,7 @@ function GalleryTile({
         alt={image.alt || title}
         fill
         priority={priority}
-        sizes={index === 0 ? "(max-width: 1280px) 65vw, 760px" : "320px"}
+        sizes={index === 0 ? "(max-width: 1280px) 55vw, 900px" : "360px"}
         className="object-cover transition duration-300 group-hover:scale-[1.015]"
       />
 
