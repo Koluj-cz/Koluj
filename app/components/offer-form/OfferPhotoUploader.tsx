@@ -208,7 +208,7 @@ export default function OfferPhotoUploader({
               }}
             />
 
-            <div className="grid max-h-[420px] grid-cols-2 auto-rows-[minmax(104px,1fr)] gap-2 overflow-y-auto pr-1">
+            <div className="grid max-h-[420px] grid-cols-2 auto-rows-[150px] content-start gap-2 overflow-y-auto pr-1">
               {items
                 .filter((item) => item.key !== selectedMain.key)
                 .map((item) => (
@@ -326,8 +326,8 @@ function PhotoTile({
 }: PhotoTileProps) {
   return (
     <div
-      className={`group relative min-h-36 overflow-hidden rounded-2xl bg-white ${
-        isLarge ? "row-span-2 md:h-full" : ""
+      className={`group relative overflow-hidden rounded-2xl bg-white ${
+        isLarge ? "min-h-[300px] md:h-full" : "h-[150px]"
       }`}
     >
       <PhotoPreview item={item} />

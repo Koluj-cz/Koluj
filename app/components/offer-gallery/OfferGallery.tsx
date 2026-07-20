@@ -73,56 +73,12 @@ export default function OfferGallery({ images, title }: OfferGalleryProps) {
         </span>
       </div>
 
-      <div className="relative hidden h-[500px] gap-1.5 bg-[var(--koluj-bg)] p-1.5 md:grid md:grid-cols-[minmax(0,1.8fr)_minmax(260px,1fr)]">
-        <GalleryTile
-          image={visibleDesktopImages[0]}
-          index={0}
-          title={title}
-          priority
-          className="h-full"
-          onOpen={setLightboxIndex}
-        />
-
-        <div className="grid min-h-0 grid-cols-2 grid-rows-2 gap-1.5">
-          {visibleDesktopImages.slice(1, 5).map((image, offset) => {
-            const index = offset + 1;
-            const remainingCount = images.length - 5;
-            const isLastVisible = index === 4 && remainingCount > 0;
-
-            return (
-              <GalleryTile
-                key={image.id}
-                image={image}
-                index={index}
-                title={title}
-                className="h-full min-h-0"
-                overlayLabel={isLastVisible ? `+ ${remainingCount} dalších` : undefined}
-                onOpen={setLightboxIndex}
-              />
-            );
-          })}
-
-          {Array.from({ length: Math.max(0, 4 - (visibleDesktopImages.length - 1)) }).map(
-            (_, index) => (
-              <div
-                key={`empty-${index}`}
-                className="flex items-center justify-center bg-white/45 text-[var(--koluj-muted)]"
-              >
-                <Camera size={24} />
-              </div>
-            ),
-          )}
-        </div>
-
-        <button
-          type="button"
-          onClick={() => setLightboxIndex(0)}
-          className="absolute bottom-5 right-5 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-black text-[var(--koluj-text)] shadow-lg transition hover:-translate-y-0.5"
-        >
-          <Camera size={18} />
-          Zobrazit všech {images.length} fotek
-        </button>
-      </div>
+      <DesktopGallery
+        images={visibleDesktopImages}
+        totalImages={images.length}
+        title={title}
+        onOpen={setLightboxIndex}
+      />
 
       <GalleryLightbox
         images={images}
@@ -131,6 +87,125 @@ export default function OfferGallery({ images, title }: OfferGalleryProps) {
         onChange={setLightboxIndex}
       />
     </>
+  );
+}
+
+
+type DesktopGalleryProps = {
+  images: GalleryImage[];
+  totalImages: number;
+  title: string;
+  onOpen: (index: number) => void;
+};
+
+function DesktopGallery({
+  images,
+  totalImages,
+  title,
+  onOpen,
+}: DesktopGalleryProps) {
+  const count = images.length;
+  const remainingCount = Math.max(0, totalImages - 5);
+
+  if (count === 1) {
+    return (
+      <div className="relative hidden h-[500px] bg-[var(--koluj-bg)] p-1.5 md:block">
+        <GalleryTile
+          image={images[0]}
+          index={0}
+          title={title}
+          priority
+          className="h-full"
+          onOpen={onOpen}
+        />
+        <GalleryCountButton count={totalImages} onClick={() => onOpen(0)} />
+      </div>
+    );
+  }
+
+  if (count === 2) {
+    return (
+      <div className="relative hidden h-[500px] grid-cols-[minmax(0,1.7fr)_minmax(280px,1fr)] gap-1.5 bg-[var(--koluj-bg)] p-1.5 md:grid">
+        {images.map((image, index) => (
+          <GalleryTile
+            key={image.id}
+            image={image}
+            index={index}
+            title={title}
+            priority={index === 0}
+            className="h-full"
+            onOpen={onOpen}
+          />
+        ))}
+        <GalleryCountButton count={totalImages} onClick={() => onOpen(0)} />
+      </div>
+    );
+  }
+
+  if (count === 3) {
+    return (
+      <div className="relative hidden h-[500px] grid-cols-[minmax(0,1.75fr)_minmax(280px,1fr)] gap-1.5 bg-[var(--koluj-bg)] p-1.5 md:grid">
+        <GalleryTile image={images[0]} index={0} title={title} priority className="h-full" onOpen={onOpen} />
+        <div className="grid min-h-0 grid-rows-2 gap-1.5">
+          {images.slice(1).map((image, offset) => (
+            <GalleryTile key={image.id} image={image} index={offset + 1} title={title} className="h-full min-h-0" onOpen={onOpen} />
+          ))}
+        </div>
+        <GalleryCountButton count={totalImages} onClick={() => onOpen(0)} />
+      </div>
+    );
+  }
+
+  if (count === 4) {
+    return (
+      <div className="relative hidden h-[500px] grid-cols-[minmax(0,1.65fr)_minmax(320px,1fr)] gap-1.5 bg-[var(--koluj-bg)] p-1.5 md:grid">
+        <GalleryTile image={images[0]} index={0} title={title} priority className="h-full" onOpen={onOpen} />
+        <div className="grid min-h-0 grid-cols-2 grid-rows-2 gap-1.5">
+          <GalleryTile image={images[1]} index={1} title={title} className="col-span-2 h-full min-h-0" onOpen={onOpen} />
+          {images.slice(2).map((image, offset) => (
+            <GalleryTile key={image.id} image={image} index={offset + 2} title={title} className="h-full min-h-0" onOpen={onOpen} />
+          ))}
+        </div>
+        <GalleryCountButton count={totalImages} onClick={() => onOpen(0)} />
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative hidden h-[500px] grid-cols-[minmax(0,1.8fr)_minmax(260px,1fr)] gap-1.5 bg-[var(--koluj-bg)] p-1.5 md:grid">
+      <GalleryTile image={images[0]} index={0} title={title} priority className="h-full" onOpen={onOpen} />
+      <div className="grid min-h-0 grid-cols-2 grid-rows-2 gap-1.5">
+        {images.slice(1, 5).map((image, offset) => {
+          const index = offset + 1;
+          const isLastVisible = index === 4 && remainingCount > 0;
+          return (
+            <GalleryTile
+              key={image.id}
+              image={image}
+              index={index}
+              title={title}
+              className="h-full min-h-0"
+              overlayLabel={isLastVisible ? `+ ${remainingCount} dalších` : undefined}
+              onOpen={onOpen}
+            />
+          );
+        })}
+      </div>
+      <GalleryCountButton count={totalImages} onClick={() => onOpen(0)} />
+    </div>
+  );
+}
+
+function GalleryCountButton({ count, onClick }: { count: number; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="absolute bottom-5 right-5 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-black text-[var(--koluj-text)] shadow-lg transition hover:-translate-y-0.5"
+    >
+      <Camera size={18} />
+      Zobrazit {count === 1 ? "fotku" : `všech ${count} fotek`}
+    </button>
   );
 }
 
