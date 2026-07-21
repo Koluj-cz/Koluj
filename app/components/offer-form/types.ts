@@ -36,3 +36,11 @@ export type PlaceSuggestion = {
 };
 
 export type OfferFormMode = "new" | "edit";
+
+export type ExistingOfferVideo = {
+  id: string;
+  video_url: string;
+  thumbnail_url: string | null;
+  duration_seconds: number | null;
+  sort_order?: number | null;
+};

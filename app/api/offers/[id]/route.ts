@@ -134,6 +134,14 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     if (imageError) throw new Error(imageError.message);
 
+    const { data: videoData, error: videoError } = await supabaseAdmin
+      .from("offer_videos")
+      .select("id, offer_id, video_url, thumbnail_url, duration_seconds, sort_order, created_at")
+      .eq("offer_id", id)
+      .order("sort_order", { ascending: true });
+
+    if (videoError) throw new Error(videoError.message);
+
     const today = new Date().toISOString().split("T")[0];
 
     const { data: blocksData, error: blocksError } = await supabaseAdmin
@@ -153,6 +161,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         views_count: Number(data.views_count || 0) + (!isOwner && isPublic ? 1 : 0),
       },
       images: imageData || [],
+      videos: videoData || [],
       availabilityBlocks: blocksData || [],
       currentUserId,
     });
@@ -376,10 +385,22 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     if (error || !offer) throw new Error("Nabídka nebyla nalezena");
     if (offer.owner_id !== user.id) throw new Error("Tuhle nabídku může smazat pouze vlastník");
 
-    const { data: images } = await supabaseAdmin.from("offer_images").select("image_url").eq("offer_id", id);
-    const paths = (images || []).map((image) => storagePathFromPublicUrl(image.image_url)).filter(Boolean) as string[];
+    const [{ data: images }, { data: videos }] = await Promise.all([
+      supabaseAdmin.from("offer_images").select("image_url").eq("offer_id", id),
+      supabaseAdmin.from("offer_videos").select("video_url, thumbnail_url").eq("offer_id", id),
+    ]);
+    const paths = [
+      ...(images || []).map((image) => storagePathFromPublicUrl(image.image_url)),
+      ...(videos || []).flatMap((video) => [
+        storagePathFromPublicUrl(video.video_url),
+        storagePathFromPublicUrl(video.thumbnail_url),
+      ]),
+    ].filter(Boolean) as string[];
     if (paths.length > 0) await supabaseAdmin.storage.from("offers").remove(paths);
-    await supabaseAdmin.from("offer_images").delete().eq("offer_id", id);
+    await Promise.all([
+      supabaseAdmin.from("offer_images").delete().eq("offer_id", id),
+      supabaseAdmin.from("offer_videos").delete().eq("offer_id", id),
+    ]);
     await supabaseAdmin.from("offers").delete().eq("id", id);
 
     return NextResponse.json({ ok: true });

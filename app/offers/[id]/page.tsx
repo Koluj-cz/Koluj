@@ -31,6 +31,7 @@ import {
 import type {
   ItemDetail,
   ItemImage,
+  ItemVideo,
 } from "@/app/components/offer-detail/types";
 import OfferGallery from "@/app/components/offer-gallery/OfferGallery";
 
@@ -53,6 +54,7 @@ export default function ItemDetailPage() {
 
   const [item, setItem] = useState<ItemDetail | null>(null);
   const [images, setImages] = useState<ItemImage[]>([]);
+  const [videos, setVideos] = useState<ItemVideo[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDesktopLayout, setIsDesktopLayout] = useState(false);
@@ -82,6 +84,7 @@ export default function ItemDetailPage() {
       setCurrentUserId(result.currentUserId || null);
       setItem(result.item as ItemDetail);
       setImages(result.images || []);
+      setVideos(result.videos || []);
     } catch (error) {
       console.error("Unexpected item detail error:", error);
       toast.error("Detail nabídky se nepodařilo načíst");
@@ -499,6 +502,19 @@ export default function ItemDetailPage() {
                           alt: item.title,
                         }))}
                     />
+
+                    {videos[0] && (
+                      <div className="border-t border-[var(--koluj-border)] bg-black">
+                        <video
+                          src={videos[0].video_url}
+                          poster={videos[0].thumbnail_url || undefined}
+                          controls
+                          playsInline
+                          preload="metadata"
+                          className="aspect-video w-full object-contain"
+                        />
+                      </div>
+                    )}
                   </div>
                 )}
 

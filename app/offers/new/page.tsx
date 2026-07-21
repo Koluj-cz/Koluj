@@ -11,11 +11,13 @@ import LocationSection from "@/app/components/offer-form/LocationSection";
 import MobileSubmitButton from "@/app/components/offer-form/MobileSubmitButton";
 import OfferFormSidebar from "@/app/components/offer-form/OfferFormSidebar";
 import OfferPhotoUploader from "@/app/components/offer-form/OfferPhotoUploader";
+import OfferVideoUploader, { type SelectedOfferVideo } from "@/app/components/offer-form/OfferVideoUploader";
 import OfferTypeSection from "@/app/components/offer-form/OfferTypeSection";
 import PriceSection from "@/app/components/offer-form/PriceSection";
 import ServiceBookingSettingsSection from "@/app/components/offer-form/ServiceBookingSettingsSection";
 import type { OfferFormState } from "@/app/components/offer-form/types";
 import { useUnsavedChangesWarning } from "@/lib/hooks/useUnsavedChangesWarning";
+import { uploadOfferVideo } from "@/lib/uploadOfferVideo";
 
 const initialForm: OfferFormState = {
   offer_type: "item",
@@ -47,6 +49,7 @@ export default function NewItemPage() {
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [mainPhotoIndex, setMainPhotoIndex] = useState(0);
+  const [video, setVideo] = useState<SelectedOfferVideo | null>(null);
   const [form, setForm] = useState<OfferFormState>(initialForm);
   const [allowNavigation, setAllowNavigation] = useState(false);
   const [pendingNavigationHref, setPendingNavigationHref] = useState<string | null>(null);
@@ -55,6 +58,7 @@ export default function NewItemPage() {
     return (
       photos.length > 0 ||
       photoPreviews.length > 0 ||
+      Boolean(video) ||
       form.offer_type !== initialForm.offer_type ||
       form.title.trim() !== "" ||
       form.description.trim() !== "" ||
@@ -70,7 +74,7 @@ export default function NewItemPage() {
       form.handover_options.length > 0 ||
       form.contact_note.trim() !== ""
     );
-  }, [form, photos, photoPreviews.length]);
+  }, [form, photos, photoPreviews.length, video]);
 
   useUnsavedChangesWarning(
     hasUnsavedChanges && !loading && !allowNavigation,
@@ -155,6 +159,21 @@ export default function NewItemPage() {
         throw new Error(result?.error || "Nepodařilo se uložit nabídku");
       }
 
+      if (video && result?.offerId) {
+        try {
+          await uploadOfferVideo(result.offerId, video);
+        } catch (videoError) {
+          setAllowNavigation(true);
+          toast.error(
+            videoError instanceof Error
+              ? `Nabídka byla uložena, ale ${videoError.message.toLocaleLowerCase("cs")}`
+              : "Nabídka byla uložena, ale video se nepodařilo nahrát",
+          );
+          router.push(`/offers/${result.offerId}/edit`);
+          return;
+        }
+      }
+
       setAllowNavigation(true);
       toast.success("Nabídka byla přidána");
       router.push("/dashboard/my-offers");
@@ -207,6 +226,8 @@ export default function NewItemPage() {
               mainPhotoIndex={mainPhotoIndex}
               setMainPhotoIndex={setMainPhotoIndex}
             />
+
+            <OfferVideoUploader video={video} setVideo={setVideo} />
 
             <BasicInfoSection form={form} setForm={setForm} />
             <PriceSection form={form} setForm={setForm} />

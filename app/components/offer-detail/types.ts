@@ -4,6 +4,14 @@ export type ItemImage = {
   sort_order: number | null;
 };
 
+export type ItemVideo = {
+  id: string;
+  video_url: string;
+  thumbnail_url: string | null;
+  duration_seconds: number | null;
+  sort_order: number | null;
+};
+
 export type ItemDetail = {
   id: string;
   owner_id: string | null;

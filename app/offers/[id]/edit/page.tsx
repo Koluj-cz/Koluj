@@ -12,15 +12,18 @@ import LocationSection from "@/app/components/offer-form/LocationSection";
 import MobileSubmitButton from "@/app/components/offer-form/MobileSubmitButton";
 import OfferFormSidebar from "@/app/components/offer-form/OfferFormSidebar";
 import OfferPhotoUploader from "@/app/components/offer-form/OfferPhotoUploader";
+import OfferVideoUploader, { type SelectedOfferVideo } from "@/app/components/offer-form/OfferVideoUploader";
 import OfferTypeSection from "@/app/components/offer-form/OfferTypeSection";
 import PriceSection from "@/app/components/offer-form/PriceSection";
 import ServiceBookingSettingsSection from "@/app/components/offer-form/ServiceBookingSettingsSection";
 import type {
   ExistingOfferPhoto,
+  ExistingOfferVideo,
   OfferFormState,
 } from "@/app/components/offer-form/types";
 import { itemPriceUnits, servicePriceUnits } from "@/lib/constants";
 import { useUnsavedChangesWarning } from "@/lib/hooks/useUnsavedChangesWarning";
+import { uploadOfferVideo } from "@/lib/uploadOfferVideo";
 
 const emptyForm: OfferFormState = {
   offer_type: "item",
@@ -60,6 +63,8 @@ export default function EditItemPage() {
   const [mainPhotoIndex, setMainPhotoIndex] = useState(-1);
   const [primaryImageUrl, setPrimaryImageUrl] = useState("");
   const [initialPrimaryImageUrl, setInitialPrimaryImageUrl] = useState("");
+  const [existingVideo, setExistingVideo] = useState<ExistingOfferVideo | null>(null);
+  const [newVideo, setNewVideo] = useState<SelectedOfferVideo | null>(null);
 
   const [form, setForm] = useState<OfferFormState>(emptyForm);
   const [initialSnapshot, setInitialSnapshot] = useState("");
@@ -86,8 +91,15 @@ export default function EditItemPage() {
           type: photo.type,
           lastModified: photo.lastModified,
         })),
+        existingVideoId: existingVideo?.id || null,
+        newVideo: newVideo ? {
+          name: newVideo.file.name,
+          size: newVideo.file.size,
+          type: newVideo.file.type,
+          lastModified: newVideo.file.lastModified,
+        } : null,
       }),
-    [form, images, primaryImageUrl, mainPhotoIndex, newPhotos, newPhotoPreviews.length],
+    [form, images, primaryImageUrl, mainPhotoIndex, newPhotos, newPhotoPreviews.length, existingVideo, newVideo],
   );
 
   const hasUnsavedChanges =
@@ -156,12 +168,14 @@ export default function EditItemPage() {
     };
 
     const nextImages = (result.images || []) as ExistingOfferPhoto[];
+    const nextVideo = ((result.videos || [])[0] || null) as ExistingOfferVideo | null;
     const nextPrimaryImageUrl = data.primary_image_url || "";
 
     setForm(nextForm);
     setImages(nextImages);
     setPrimaryImageUrl(nextPrimaryImageUrl);
     setInitialPrimaryImageUrl(nextPrimaryImageUrl);
+    setExistingVideo(nextVideo);
     setInitialSnapshot(
       JSON.stringify({
         form: nextForm,
@@ -174,6 +188,8 @@ export default function EditItemPage() {
         mainPhotoIndex: -1,
         newPhotoPreviewsCount: 0,
         newPhotos: [],
+        existingVideoId: nextVideo?.id || null,
+        newVideo: null,
       }),
     );
     setLoading(false);
@@ -202,6 +218,17 @@ export default function EditItemPage() {
     }
 
     toast.success("Fotka smazána");
+  }
+
+  async function deleteVideo(video: ExistingOfferVideo) {
+    const response = await fetch(`/api/offers/${offerId}/videos/${video.id}`, { method: "DELETE" });
+    const result = await response.json().catch(() => null);
+    if (!response.ok) {
+      toast.error(result?.error || "Video se nepodařilo smazat");
+      return;
+    }
+    setExistingVideo(null);
+    toast.success("Video smazáno");
   }
 
   function makePrimary(imageUrl: string) {
@@ -285,6 +312,10 @@ export default function EditItemPage() {
 
       if (!response.ok) {
         throw new Error(result?.error || "Změny se nepodařilo uložit");
+      }
+
+      if (newVideo) {
+        await uploadOfferVideo(offerId, newVideo);
       }
 
       if (
@@ -378,6 +409,13 @@ export default function EditItemPage() {
               setMainPhotoIndex={setMainPhotoIndex}
               onMakePrimaryExisting={makePrimary}
               onDeleteExisting={deleteImage}
+            />
+
+            <OfferVideoUploader
+              existingVideo={existingVideo}
+              video={newVideo}
+              setVideo={setNewVideo}
+              onDeleteExisting={deleteVideo}
             />
 
             <BasicInfoSection form={form} setForm={setForm} />
