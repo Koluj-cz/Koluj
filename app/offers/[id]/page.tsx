@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -15,6 +15,8 @@ import { formatDate, formatDateTime, translatePriceUnit } from "@/lib/format";
 
 import {
   CalendarDays,
+  ChevronLeft,
+  ChevronRight,
   Edit,
   Eye,
   Paperclip,
@@ -503,18 +505,6 @@ export default function ItemDetailPage() {
                         }))}
                     />
 
-                    {videos[0] && (
-                      <div className="border-t border-[var(--koluj-border)] bg-black">
-                        <video
-                          src={videos[0].video_url}
-                          poster={videos[0].thumbnail_url || undefined}
-                          controls
-                          playsInline
-                          preload="metadata"
-                          className="aspect-video w-full object-contain"
-                        />
-                      </div>
-                    )}
                   </div>
                 )}
 
@@ -560,6 +550,10 @@ export default function ItemDetailPage() {
               </div>
             </div>
 
+            {videos.length > 0 && (
+              <OfferVideoGallery title={item.title} videos={videos} />
+            )}
+
             <div className="min-w-0">
               <MetaAndDescriptionCard item={item} />
             </div>
@@ -589,5 +583,149 @@ export default function ItemDetailPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+
+function OfferVideoGallery({
+  title,
+  videos,
+}: {
+  title: string;
+  videos: ItemVideo[];
+}) {
+  const sortedVideos = useMemo(
+    () =>
+      [...videos].sort(
+        (a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0),
+      ),
+    [videos],
+  );
+  const [activeIndex, setActiveIndex] = useState(0);
+  const touchStartX = useRef<number | null>(null);
+  const touchStartY = useRef<number | null>(null);
+
+  useEffect(() => {
+    setActiveIndex((current) => Math.min(current, sortedVideos.length - 1));
+  }, [sortedVideos.length]);
+
+  const showPrevious = useCallback(() => {
+    setActiveIndex((current) =>
+      current === 0 ? sortedVideos.length - 1 : current - 1,
+    );
+  }, [sortedVideos.length]);
+
+  const showNext = useCallback(() => {
+    setActiveIndex((current) =>
+      current === sortedVideos.length - 1 ? 0 : current + 1,
+    );
+  }, [sortedVideos.length]);
+
+  if (sortedVideos.length === 0) return null;
+
+  const activeVideo = sortedVideos[activeIndex];
+  const hasMultipleVideos = sortedVideos.length > 1;
+
+  return (
+    <section className="koluj-card overflow-hidden">
+      <div className="flex items-center justify-between gap-4 px-5 py-5 md:px-8">
+        <div>
+          <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--koluj-green)]">
+            Videa
+          </p>
+          <h2 className="mt-1 text-2xl font-black">Ukázka nabídky</h2>
+        </div>
+
+        {hasMultipleVideos && (
+          <span className="shrink-0 rounded-full bg-[var(--koluj-bg)] px-3 py-1.5 text-sm font-black text-[var(--koluj-muted)]">
+            {activeIndex + 1} / {sortedVideos.length}
+          </span>
+        )}
+      </div>
+
+      <div
+        className="relative bg-black"
+        onTouchStart={(event) => {
+          touchStartX.current = event.touches[0]?.clientX ?? null;
+          touchStartY.current = event.touches[0]?.clientY ?? null;
+        }}
+        onTouchEnd={(event) => {
+          if (!hasMultipleVideos) return;
+
+          const startX = touchStartX.current;
+          const startY = touchStartY.current;
+          const endX = event.changedTouches[0]?.clientX;
+          const endY = event.changedTouches[0]?.clientY;
+
+          touchStartX.current = null;
+          touchStartY.current = null;
+
+          if (startX === null || startY === null || endX == null || endY == null) {
+            return;
+          }
+
+          const deltaX = endX - startX;
+          const deltaY = endY - startY;
+
+          if (Math.abs(deltaX) < 55 || Math.abs(deltaX) <= Math.abs(deltaY)) {
+            return;
+          }
+
+          if (deltaX < 0) showNext();
+          else showPrevious();
+        }}
+      >
+        <video
+          key={activeVideo.id}
+          src={activeVideo.video_url}
+          poster={activeVideo.thumbnail_url || undefined}
+          aria-label={`Video k nabídce ${title}`}
+          controls
+          playsInline
+          preload="metadata"
+          className="aspect-video w-full object-contain"
+        />
+
+        {hasMultipleVideos && (
+          <>
+            <button
+              type="button"
+              onClick={showPrevious}
+              className="absolute left-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[var(--koluj-ink)] shadow-lg transition hover:bg-white md:left-5"
+              aria-label="Předchozí video"
+            >
+              <ChevronLeft size={26} />
+            </button>
+            <button
+              type="button"
+              onClick={showNext}
+              className="absolute right-3 top-1/2 z-10 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full bg-white/90 text-[var(--koluj-ink)] shadow-lg transition hover:bg-white md:right-5"
+              aria-label="Další video"
+            >
+              <ChevronRight size={26} />
+            </button>
+          </>
+        )}
+      </div>
+
+      {hasMultipleVideos && (
+        <div className="flex justify-center gap-2 px-5 py-4">
+          {sortedVideos.map((video, index) => (
+            <button
+              key={video.id}
+              type="button"
+              onClick={() => setActiveIndex(index)}
+              className={`h-2.5 rounded-full transition-all ${
+                index === activeIndex
+                  ? "w-8 bg-[var(--koluj-green)]"
+                  : "w-2.5 bg-[var(--koluj-border)] hover:bg-[var(--koluj-muted)]"
+              }`}
+              aria-label={`Zobrazit video ${index + 1}`}
+              aria-current={index === activeIndex ? "true" : undefined}
+            />
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
