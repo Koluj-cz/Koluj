@@ -13,7 +13,7 @@ import {
 } from "@/lib/constants";
 import { formatDate, formatDateTime, translatePriceUnit } from "@/lib/format";
 
-import { Edit, ShieldCheck, Paperclip, X } from "lucide-react";
+import { CalendarDays, Edit, Eye, Paperclip, ShieldCheck, Tag, X } from "lucide-react";
 import toast from "react-hot-toast";
 import {
   HandoverCard,
@@ -241,92 +241,76 @@ export default function ItemDetailPage() {
   return (
     <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
       <div className="koluj-wide-frame relative z-10">
-        <section className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_460px] lg:gap-8">
-          <div className="space-y-6">
+        <section className="grid gap-6 lg:gap-8 xl:grid-cols-[minmax(0,1fr)_460px]">
+          <div className="order-1 min-w-0 xl:col-start-1 xl:row-start-1">
             <div className="overflow-hidden rounded-[34px] bg-[var(--koluj-surface)] shadow-[0_18px_55px_rgba(31,31,26,0.12)]">
-              <div className="border-b border-[var(--koluj-border)] px-5 py-6 md:px-8 md:py-7">
-                <div className="hidden md:block">
-                  <BackLink href="/">Domů</BackLink>
+              {(images.length > 0 || item.offer_type !== "service") && (
+                <div className="relative">
+                  <div className="absolute left-5 top-5 z-20 hidden rounded-full bg-white/95 px-3 py-2 shadow-lg backdrop-blur md:block">
+                    <BackLink href="/">Domů</BackLink>
+                  </div>
+
+                  <OfferGallery
+                    title={item.title}
+                    images={[...images]
+                      .sort((a, b) => {
+                        if (a.image_url === item.primary_image_url) return -1;
+                        if (b.image_url === item.primary_image_url) return 1;
+                        return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+                      })
+                      .map((image) => ({
+                        id: image.id,
+                        src: image.image_url,
+                        alt: item.title,
+                      }))}
+                  />
                 </div>
+              )}
 
-                <div className="flex items-start justify-between gap-4 md:mt-6">
-                  <h1 className="min-w-0 max-w-4xl text-4xl font-black leading-none tracking-tight md:text-6xl">
-                    {item.title}
-                  </h1>
+              <div className="border-t border-[var(--koluj-border)] px-5 py-6 md:px-8 md:py-7">
+                <h1 className="max-w-4xl text-4xl font-black leading-none tracking-tight md:text-6xl">
+                  {item.title}
+                </h1>
 
-                  <p className="shrink-0 pt-1 text-right text-xs font-black uppercase tracking-wide text-[var(--koluj-green)] md:pt-2 md:text-sm">
+                <div className="mt-5 flex flex-wrap gap-2 text-sm font-bold text-[var(--koluj-muted)] md:text-base">
+                  {item.condition && (
+                    <span className="inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-3 py-1.5">
+                      <ShieldCheck size={16} className="text-[var(--koluj-green)]" />
+                      {conditionLabels[item.condition] || item.condition}
+                    </span>
+                  )}
+
+                  <span className="inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-3 py-1.5">
+                    <Tag size={16} className="text-[var(--koluj-green)]" />
                     {item.offer_type === "service"
                       ? serviceCategoryLabels[item.category] || item.category
                       : categoryLabels[item.category] || item.category}
-                  </p>
-                </div>
+                  </span>
 
-                {item.condition && (
-                  <div className="mt-5 flex flex-wrap gap-2 text-sm font-bold text-[var(--koluj-muted)] md:text-base">
+                  {item.created_at && (
                     <span className="inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-3 py-1.5">
-                      <ShieldCheck
-                        size={16}
-                        className="text-[var(--koluj-green)]"
-                      />
-                      {conditionLabels[item.condition] || item.condition}
+                      <CalendarDays size={16} className="text-[var(--koluj-green)]" />
+                      Přidáno {formatDate(item.created_at)}
                     </span>
-                  </div>
-                )}
-              </div>
+                  )}
 
-              {(images.length > 0 || item.offer_type !== "service") && (
-                <OfferGallery
-                  title={item.title}
-                  images={[...images]
-                    .sort((a, b) => {
-                      if (a.image_url === item.primary_image_url) return -1;
-                      if (b.image_url === item.primary_image_url) return 1;
-                      return (a.sort_order ?? 0) - (b.sort_order ?? 0);
-                    })
-                    .map((image) => ({
-                      id: image.id,
-                      src: image.image_url,
-                      alt: item.title,
-                    }))}
-                />
-              )}
+                  <span className="inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-3 py-1.5">
+                    <Eye size={16} className="text-[var(--koluj-green)]" />
+                    {item.views_count ?? 0} zobrazení
+                  </span>
+                </div>
+              </div>
             </div>
-
-            {isService ? (
-              <>
-                <div className="grid items-stretch gap-6 md:grid-cols-2 xl:grid-cols-3">
-                  <div className="h-full [&>div]:h-full">
-                    <MetaAndDescriptionCard item={item} />
-                  </div>
-
-                  <div className="h-full [&>div]:h-full">{handoverCard}</div>
-
-                  <div className="h-full md:col-span-2 xl:col-span-1 [&>div]:h-full">
-                    {ownerCard}
-                  </div>
-                </div>
-
-                {mapCard && <div className="hidden xl:block">{mapCard}</div>}
-              </>
-            ) : (
-              <div className="space-y-6">
-                <MetaAndDescriptionCard item={item} />
-
-                <div className="grid items-stretch gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(260px,1fr)]">
-                  <div className="h-full [&>div]:h-full">{handoverCard}</div>
-
-                  <div className="h-full [&>div]:h-full">{ownerCard}</div>
-                </div>
-              </div>
-            )}
           </div>
 
-          <aside className="min-w-0 space-y-5 md:space-y-6">
+          <div className="order-2 min-w-0 xl:col-start-1 xl:row-start-2">
+            <MetaAndDescriptionCard item={item} />
+          </div>
+
+          <aside className="order-3 min-w-0 space-y-5 md:space-y-6 xl:col-start-2 xl:row-start-1 xl:row-span-3">
             <div className="koluj-card p-5 md:p-8">
               <div className="rounded-3xl bg-[var(--koluj-bg)] p-5">
-                <p className="text-sm font-bold text-[var(--koluj-muted)]">
-                  Cena
-                </p>
+                <p className="text-sm font-bold text-[var(--koluj-muted)]">Cena</p>
 
                 <p className="mt-2 text-4xl font-black">
                   {item.price_unit === "individual"
@@ -342,13 +326,11 @@ export default function ItemDetailPage() {
                   </p>
                 )}
 
-                {!isService &&
-                  item.deposit !== null &&
-                  item.deposit !== undefined && (
-                    <p className="mt-3 text-sm font-bold text-[var(--koluj-muted)]">
-                      Kauce: {item.deposit} Kč
-                    </p>
-                  )}
+                {!isService && item.deposit !== null && item.deposit !== undefined && (
+                  <p className="mt-3 text-sm font-bold text-[var(--koluj-muted)]">
+                    Kauce: {item.deposit} Kč
+                  </p>
+                )}
               </div>
 
               {item.price_note && (
@@ -369,21 +351,13 @@ export default function ItemDetailPage() {
                   weekendEndTime={item.weekend_end_time}
                   isOwner={Boolean(isOwner)}
                   selectedRange={
-                    (!isService || isRequestOnlyService) &&
-                    borrowFrom &&
-                    borrowTo
-                      ? {
-                          dateFrom: borrowFrom,
-                          dateTo: borrowTo,
-                        }
+                    (!isService || isRequestOnlyService) && borrowFrom && borrowTo
+                      ? { dateFrom: borrowFrom, dateTo: borrowTo }
                       : null
                   }
                   selectedSlot={
                     isTimedService && startsAt && endsAt
-                      ? {
-                          startsAt,
-                          endsAt,
-                        }
+                      ? { startsAt, endsAt }
                       : null
                   }
                   onRangeChange={(range) => {
@@ -401,16 +375,13 @@ export default function ItemDetailPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div>
                     <p className="font-black">
-                      {isRequestOnlyService && !isOwner
-                        ? "Poptávka"
-                        : "Vybraný termín"}
+                      {isRequestOnlyService && !isOwner ? "Poptávka" : "Vybraný termín"}
                     </p>
 
                     {isTimedService && startsAt && endsAt ? (
                       <div className="mt-3 space-y-1">
                         <p className="text-lg font-black">
-                          {formatDateTime(startsAt)}{" "}
-                          <span className="mx-2">→</span>{" "}
+                          {formatDateTime(startsAt)} <span className="mx-2">→</span>{" "}
                           {formatDateTime(endsAt)}
                         </p>
                         {selectedServiceMinutes && (
@@ -422,9 +393,7 @@ export default function ItemDetailPage() {
                           </p>
                         )}
                       </div>
-                    ) : (!isService || isRequestOnlyService) &&
-                      borrowFrom &&
-                      borrowTo ? (
+                    ) : (!isService || isRequestOnlyService) && borrowFrom && borrowTo ? (
                       <p className="mt-3 text-lg font-black">
                         {formatDate(borrowFrom)} <span className="mx-2">→</span>{" "}
                         {formatDate(borrowTo)}
@@ -448,9 +417,7 @@ export default function ItemDetailPage() {
                 </div>
 
                 {((isTimedService && startsAt && endsAt) ||
-                  ((!isService || isRequestOnlyService) &&
-                    borrowFrom &&
-                    borrowTo)) && (
+                  ((!isService || isRequestOnlyService) && borrowFrom && borrowTo)) && (
                   <button
                     type="button"
                     onClick={() => {
@@ -481,13 +448,12 @@ export default function ItemDetailPage() {
                 <>
                   <div className="mt-6 grid gap-3">
                     <label className="grid gap-2 text-sm font-bold text-[var(--koluj-muted)]">
-                      Zpráva pro vlastníka{" "}
-                      <span className="font-normal">(volitelné)</span>
+                      Zpráva pro vlastníka <span className="font-normal">(volitelné)</span>
                       <textarea
                         value={borrowNote}
                         maxLength={500}
                         disabled={submittingBorrowRequest}
-                        onChange={(e) => setBorrowNote(e.target.value)}
+                        onChange={(event) => setBorrowNote(event.target.value)}
                         placeholder="Napište zprávu pro majitele..."
                         className="koluj-input min-h-[120px] disabled:opacity-70"
                       />
@@ -550,10 +516,7 @@ export default function ItemDetailPage() {
                   >
                     {submittingBorrowRequest
                       ? "Odesílám žádost..."
-                      : isTimedService &&
-                          startsAt &&
-                          endsAt &&
-                          startsAt !== endsAt
+                      : isTimedService && startsAt && endsAt && startsAt !== endsAt
                         ? "Objednat službu"
                         : isRequestOnlyService && borrowFrom
                           ? "Odeslat poptávku"
@@ -569,20 +532,33 @@ export default function ItemDetailPage() {
               )}
 
               <div className="mt-6 flex gap-3 rounded-2xl bg-[var(--koluj-bg)] p-4 text-sm font-bold text-[var(--koluj-muted)]">
-                <ShieldCheck
-                  size={20}
-                  className="shrink-0 text-[var(--koluj-green)]"
-                />
+                <ShieldCheck size={20} className="shrink-0 text-[var(--koluj-green)]" />
                 {isService
                   ? "Po odeslání poptávky se domluvte s poskytovatelem na průběhu služby, ceně a všech detailech."
                   : "Domluv se s vlastníkem na detailech. Platbu a předání věci řešte bezpečně a férově."}
               </div>
             </div>
           </aside>
+
+          <div className="order-4 min-w-0 xl:col-start-1 xl:row-start-3">
+            {isService ? (
+              <div className="grid items-stretch gap-6 md:grid-cols-2 xl:grid-cols-3">
+                <div className="h-full [&>div]:h-full">{handoverCard}</div>
+                <div className="h-full md:col-span-1 xl:col-span-2 [&>div]:h-full">
+                  {ownerCard}
+                </div>
+              </div>
+            ) : (
+              <div className="grid items-stretch gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(260px,1fr)]">
+                <div className="h-full [&>div]:h-full">{handoverCard}</div>
+                <div className="h-full [&>div]:h-full">{ownerCard}</div>
+              </div>
+            )}
+          </div>
         </section>
 
         {isService && mapCard && (
-          <section className="mt-6 xl:hidden">{mapCard}</section>
+          <section className="mt-6">{mapCard}</section>
         )}
       </div>
     </main>
