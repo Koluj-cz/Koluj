@@ -2,28 +2,44 @@
 
 import Image from "next/image";
 import { useMemo, useRef, useState } from "react";
-import { Camera, ChevronLeft, ChevronRight } from "lucide-react";
-import GalleryLightbox, { type GalleryImage } from "./GalleryLightbox";
+import { Camera, ChevronLeft, ChevronRight, Play } from "lucide-react";
+import GalleryLightbox, {
+  type GalleryImage,
+  type GalleryMedia,
+  type GalleryVideo,
+} from "./GalleryLightbox";
 
 type OfferGalleryProps = {
   images: GalleryImage[];
+  videos?: GalleryVideo[];
   title: string;
 };
 
-export default function OfferGallery({ images, title }: OfferGalleryProps) {
+export default function OfferGallery({
+  images,
+  videos = [],
+  title,
+}: OfferGalleryProps) {
+  const media = useMemo<GalleryMedia[]>(
+    () => [
+      ...images.map((image) => ({ ...image, kind: "image" as const })),
+      ...videos,
+    ],
+    [images, videos],
+  );
   const [mobileIndex, setMobileIndex] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const touchStart = useRef<{ x: number; y: number } | null>(null);
 
-  function changeMobileImage(direction: -1 | 1) {
+  function changeMobileMedia(direction: -1 | 1) {
     setMobileIndex((current) =>
-      (current + direction + images.length) % images.length,
+      (current + direction + media.length) % media.length,
     );
   }
 
-  const visibleDesktopImages = useMemo(() => images.slice(0, 5), [images]);
+  const visibleDesktopMedia = useMemo(() => media.slice(0, 5), [media]);
 
-  if (images.length === 0) {
+  if (media.length === 0) {
     return (
       <div className="flex h-72 items-center justify-center bg-[var(--koluj-bg)] text-sm font-bold text-[var(--koluj-muted)] md:h-[500px]">
         Bez fotky
@@ -31,8 +47,8 @@ export default function OfferGallery({ images, title }: OfferGalleryProps) {
     );
   }
 
-  const mobileImage = images[mobileIndex];
-  const hasSingleImage = images.length === 1;
+  const mobileMedia = media[mobileIndex];
+  const hasSingleMedia = media.length === 1;
 
   return (
     <>
@@ -47,7 +63,7 @@ export default function OfferGallery({ images, title }: OfferGalleryProps) {
           const touch = event.changedTouches[0];
           touchStart.current = null;
 
-          if (!start || images.length < 2) return;
+          if (!start || media.length < 2) return;
 
           const deltaX = touch.clientX - start.x;
           const deltaY = touch.clientY - start.y;
@@ -56,60 +72,77 @@ export default function OfferGallery({ images, title }: OfferGalleryProps) {
             return;
           }
 
-          changeMobileImage(deltaX < 0 ? 1 : -1);
+          changeMobileMedia(deltaX < 0 ? 1 : -1);
         }}
       >
-        <button
-          type="button"
-          onClick={() => setLightboxIndex(mobileIndex)}
-          className="relative block h-[330px] w-full overflow-hidden bg-[var(--koluj-bg)]"
-          aria-label={`Zvětšit fotografii ${mobileIndex + 1}`}
-        >
-          <Image
-            src={mobileImage.src}
-            alt={mobileImage.alt || title}
-            fill
-            priority={mobileIndex === 0}
-            sizes="100vw"
-            className={hasSingleImage ? "object-contain" : "object-cover"}
-          />
-        </button>
+        {mobileMedia.kind === "video" ? (
+          <div className="relative h-[330px] w-full overflow-hidden bg-black">
+            <video
+              key={mobileMedia.id}
+              src={mobileMedia.src}
+              poster={mobileMedia.poster || undefined}
+              controls
+              playsInline
+              preload="metadata"
+              className="h-full w-full object-contain"
+              aria-label={mobileMedia.alt || title}
+            />
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setLightboxIndex(mobileIndex)}
+            className="relative block h-[330px] w-full overflow-hidden bg-[var(--koluj-bg)]"
+            aria-label={`Zvětšit fotografii ${mobileIndex + 1}`}
+          >
+            <Image
+              src={mobileMedia.src}
+              alt={mobileMedia.alt || title}
+              fill
+              priority={mobileIndex === 0}
+              sizes="100vw"
+              className={hasSingleMedia ? "object-contain" : "object-cover"}
+            />
+          </button>
+        )}
 
-        {images.length > 1 && (
+        {media.length > 1 && (
           <>
             <button
               type="button"
-              onClick={() => changeMobileImage(-1)}
-              className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 text-[var(--koluj-text)] shadow-lg"
-              aria-label="Předchozí fotografie"
+              onClick={() => changeMobileMedia(-1)}
+              className="absolute left-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 p-2 text-[var(--koluj-text)] shadow-lg"
+              aria-label="Předchozí médium"
             >
               <ChevronLeft size={22} />
             </button>
             <button
               type="button"
-              onClick={() => changeMobileImage(1)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 text-[var(--koluj-text)] shadow-lg"
-              aria-label="Další fotografie"
+              onClick={() => changeMobileMedia(1)}
+              className="absolute right-3 top-1/2 z-10 -translate-y-1/2 rounded-full bg-white/90 p-2 text-[var(--koluj-text)] shadow-lg"
+              aria-label="Další médium"
             >
               <ChevronRight size={22} />
             </button>
           </>
         )}
 
-        <span className="absolute bottom-3 right-3 rounded-full bg-black/65 px-3 py-1.5 text-xs font-black text-white">
-          {mobileIndex + 1} / {images.length}
+        <span className="absolute bottom-3 right-3 z-10 rounded-full bg-black/65 px-3 py-1.5 text-xs font-black text-white">
+          {mobileIndex + 1} / {media.length}
         </span>
       </div>
 
       <DesktopGallery
-        images={visibleDesktopImages}
-        totalImages={images.length}
+        media={visibleDesktopMedia}
+        totalMedia={media.length}
+        imageCount={images.length}
+        videoCount={videos.length}
         title={title}
         onOpen={setLightboxIndex}
       />
 
       <GalleryLightbox
-        images={images}
+        media={media}
         activeIndex={lightboxIndex}
         onClose={() => setLightboxIndex(null)}
         onChange={setLightboxIndex}
@@ -119,26 +152,30 @@ export default function OfferGallery({ images, title }: OfferGalleryProps) {
 }
 
 type DesktopGalleryProps = {
-  images: GalleryImage[];
-  totalImages: number;
+  media: GalleryMedia[];
+  totalMedia: number;
+  imageCount: number;
+  videoCount: number;
   title: string;
   onOpen: (index: number) => void;
 };
 
 function DesktopGallery({
-  images,
-  totalImages,
+  media,
+  totalMedia,
+  imageCount,
+  videoCount,
   title,
   onOpen,
 }: DesktopGalleryProps) {
-  const count = images.length;
-  const remainingCount = Math.max(0, totalImages - 5);
+  const count = media.length;
+  const remainingCount = Math.max(0, totalMedia - 5);
 
   if (count === 1) {
     return (
       <div className="relative hidden h-[500px] overflow-hidden bg-[var(--koluj-bg)] md:block">
         <GalleryTile
-          image={images[0]}
+          media={media[0]}
           index={0}
           title={title}
           priority
@@ -146,7 +183,11 @@ function DesktopGallery({
           className="h-full w-full"
           onOpen={onOpen}
         />
-        <GalleryCountButton count={totalImages} onClick={() => onOpen(0)} />
+        <GalleryCountButton
+          imageCount={imageCount}
+          videoCount={videoCount}
+          onClick={() => onOpen(0)}
+        />
       </div>
     );
   }
@@ -154,7 +195,7 @@ function DesktopGallery({
   return (
     <div className="relative hidden h-[500px] overflow-hidden bg-[var(--koluj-bg)] md:grid md:grid-cols-[minmax(0,1fr)_minmax(360px,1fr)] md:gap-1">
       <GalleryTile
-        image={images[0]}
+        media={media[0]}
         index={0}
         title={title}
         priority
@@ -163,43 +204,47 @@ function DesktopGallery({
       />
 
       <DesktopThumbnailGrid
-        images={images.slice(1)}
-        totalImages={totalImages}
+        media={media.slice(1)}
+        totalMedia={totalMedia}
         remainingCount={remainingCount}
         title={title}
         onOpen={onOpen}
       />
 
-      <GalleryCountButton count={totalImages} onClick={() => onOpen(0)} />
+      <GalleryCountButton
+        imageCount={imageCount}
+        videoCount={videoCount}
+        onClick={() => onOpen(0)}
+      />
     </div>
   );
 }
 
 type DesktopThumbnailGridProps = {
-  images: GalleryImage[];
-  totalImages: number;
+  media: GalleryMedia[];
+  totalMedia: number;
   remainingCount: number;
   title: string;
   onOpen: (index: number) => void;
 };
 
 function DesktopThumbnailGrid({
-  images,
-  totalImages,
+  media,
+  totalMedia,
   remainingCount,
   title,
   onOpen,
 }: DesktopThumbnailGridProps) {
   return (
     <div className="grid min-h-0 grid-cols-2 grid-rows-2 gap-1">
-      {images.slice(0, 4).map((image, offset) => {
+      {media.slice(0, 4).map((item, offset) => {
         const index = offset + 1;
-        const isLastVisible = offset === 3 && totalImages > 5;
+        const isLastVisible = offset === 3 && totalMedia > 5;
 
         return (
           <GalleryTile
-            key={image.id}
-            image={image}
+            key={`${item.kind || "image"}-${item.id}`}
+            media={item}
             index={index}
             title={title}
             className="h-full min-h-0"
@@ -216,7 +261,22 @@ function DesktopThumbnailGrid({
   );
 }
 
-function GalleryCountButton({ count, onClick }: { count: number; onClick: () => void }) {
+function GalleryCountButton({
+  imageCount,
+  videoCount,
+  onClick,
+}: {
+  imageCount: number;
+  videoCount: number;
+  onClick: () => void;
+}) {
+  const label =
+    videoCount > 0
+      ? `${imageCount} ${imageCount === 1 ? "fotka" : imageCount < 5 ? "fotky" : "fotek"} a ${videoCount} ${videoCount === 1 ? "video" : "videa"}`
+      : imageCount === 1
+        ? "fotku"
+        : `všech ${imageCount} fotek`;
+
   return (
     <button
       type="button"
@@ -224,13 +284,13 @@ function GalleryCountButton({ count, onClick }: { count: number; onClick: () => 
       className="absolute bottom-5 right-5 inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-sm font-black text-[var(--koluj-text)] shadow-lg transition hover:-translate-y-0.5"
     >
       <Camera size={18} />
-      Zobrazit {count === 1 ? "fotku" : `všech ${count} fotek`}
+      Zobrazit {label}
     </button>
   );
 }
 
 type GalleryTileProps = {
-  image: GalleryImage;
+  media: GalleryMedia;
   index: number;
   title: string;
   className?: string;
@@ -241,7 +301,7 @@ type GalleryTileProps = {
 };
 
 function GalleryTile({
-  image,
+  media,
   index,
   title,
   className = "",
@@ -250,21 +310,50 @@ function GalleryTile({
   fit = "cover",
   onOpen,
 }: GalleryTileProps) {
+  const isVideo = media.kind === "video";
+
   return (
     <button
       type="button"
       onClick={() => onOpen(index)}
       className={`group relative overflow-hidden bg-[var(--koluj-bg)] ${className}`}
-      aria-label={`Zvětšit fotografii ${index + 1}`}
+      aria-label={isVideo ? `Přehrát video ${index + 1}` : `Zvětšit fotografii ${index + 1}`}
     >
-      <Image
-        src={image.src}
-        alt={image.alt || title}
-        fill
-        priority={priority}
-        sizes={index === 0 ? "(max-width: 1280px) 55vw, 900px" : "360px"}
-        className={`${fit === "contain" ? "object-contain" : "object-cover"} transition duration-300 group-hover:scale-[1.015]`}
-      />
+      {isVideo ? (
+        <>
+          {media.poster ? (
+            <Image
+              src={media.poster}
+              alt={media.alt || title}
+              fill
+              sizes="360px"
+              className="object-cover transition duration-300 group-hover:scale-[1.015]"
+            />
+          ) : (
+            <video
+              src={media.src}
+              muted
+              playsInline
+              preload="metadata"
+              className="h-full w-full object-cover"
+            />
+          )}
+          <span className="absolute inset-0 flex items-center justify-center bg-black/20 transition group-hover:bg-black/30">
+            <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white/90 text-[var(--koluj-ink)] shadow-lg">
+              <Play size={26} fill="currentColor" className="ml-1" />
+            </span>
+          </span>
+        </>
+      ) : (
+        <Image
+          src={media.src}
+          alt={media.alt || title}
+          fill
+          priority={priority}
+          sizes={index === 0 ? "(max-width: 1280px) 55vw, 900px" : "360px"}
+          className={`${fit === "contain" ? "object-contain" : "object-cover"} transition duration-300 group-hover:scale-[1.015]`}
+        />
+      )}
 
       {overlayLabel && (
         <span className="absolute inset-0 flex items-center justify-center bg-black/55 px-4 text-center text-lg font-black text-white">
