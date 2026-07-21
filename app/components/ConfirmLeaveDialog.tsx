@@ -37,7 +37,7 @@ export default function ConfirmLeaveDialog({
           <button
             type="button"
             onClick={onLeave}
-            className="rounded-full border border-red-200 bg-white px-6 py-3 font-black text-red-600 hover:bg-red-50"
+            className="rounded-2xl border border-red-200 bg-white px-6 py-3 font-black text-red-600 hover:bg-red-50"
           >
             Odejít bez uložení
           </button>

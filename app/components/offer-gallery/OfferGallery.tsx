@@ -194,7 +194,7 @@ function GalleryCountButton({ count, onClick }: { count: number; onClick: () => 
     <button
       type="button"
       onClick={onClick}
-      className="absolute bottom-5 right-5 inline-flex items-center gap-2 rounded-full bg-white px-4 py-2.5 text-sm font-black text-[var(--koluj-text)] shadow-lg transition hover:-translate-y-0.5"
+      className="absolute bottom-5 right-5 inline-flex items-center gap-2 rounded-2xl bg-white px-4 py-2.5 text-sm font-black text-[var(--koluj-text)] shadow-lg transition hover:-translate-y-0.5"
     >
       <Camera size={18} />
       Zobrazit {count === 1 ? "fotku" : `všech ${count} fotek`}

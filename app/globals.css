@@ -126,7 +126,7 @@ img { max-width: 100%; }
 }
 .koluj-button,
 .koluj-button-secondary {
-  border-radius: 999px;
+  border-radius: 16px;
 }
 .koluj-chip,
 .koluj-category-chip,
@@ -678,6 +678,7 @@ footer,
   justify-content: center;
   gap: 8px;
   border: 1px solid var(--koluj-border);
+  border-radius: 16px;
   background: #fff;
   padding: 0 20px;
   color: var(--koluj-text);
@@ -697,7 +698,7 @@ footer,
   justify-content: center;
   gap: 8px;
   border: 0;
-  border-radius: 999px;
+  border-radius: 14px;
   background: transparent;
   padding: 8px 12px;
   color: var(--koluj-text);

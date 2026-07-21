@@ -110,7 +110,7 @@ export default function HelpTopic({
         className={`${
           compact
             ? "flex h-9 w-9 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-[var(--koluj-green)]"
-            : "inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-xs font-black text-[var(--koluj-green)] transition hover:bg-[var(--koluj-bg)]"
+            : "inline-flex items-center gap-1.5 rounded-xl px-2 py-1 text-xs font-black text-[var(--koluj-green)] transition hover:bg-[var(--koluj-bg)]"
         } ${className}`}
         aria-label={compact ? triggerLabel : undefined}
         aria-expanded={open}

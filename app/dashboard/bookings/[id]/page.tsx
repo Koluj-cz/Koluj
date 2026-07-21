@@ -461,7 +461,7 @@ export default function BookingDetailPage() {
                     <button type="button" onClick={approveBooking} disabled={saving} className="koluj-button py-3 disabled:opacity-60">
                       {saving ? "Ukládám..." : isService ? "Schválit poptávku" : "Schválit žádost"}
                     </button>
-                    <button type="button" onClick={rejectBooking} disabled={saving} className="rounded-full border border-red-200 bg-white py-3 font-bold text-red-600 hover:bg-red-50 disabled:opacity-60">
+                    <button type="button" onClick={rejectBooking} disabled={saving} className="rounded-2xl border border-red-200 bg-white py-3 font-bold text-red-600 hover:bg-red-50 disabled:opacity-60">
                       {isService ? "Odmítnout poptávku" : "Odmítnout žádost"}
                     </button>
                   </div>
@@ -497,7 +497,7 @@ export default function BookingDetailPage() {
                       type="button"
                       onClick={rejectBooking}
                       disabled={saving}
-                      className="rounded-full border border-red-200 bg-white py-3 font-bold text-red-600 hover:bg-red-50 disabled:opacity-60"
+                      className="rounded-2xl border border-red-200 bg-white py-3 font-bold text-red-600 hover:bg-red-50 disabled:opacity-60"
                     >
                       {saving ? "Ukládám..." : isService ? "Zrušit službu" : "Zrušit rezervaci"}
                     </button>
@@ -530,7 +530,7 @@ export default function BookingDetailPage() {
                           : "Potvrdit vrácení"}
                     </button>
                     {isService && (
-                      <button type="button" onClick={rejectBooking} disabled={saving} className="rounded-full border border-red-200 bg-white py-3 font-bold text-red-600 hover:bg-red-50 disabled:opacity-60">
+                      <button type="button" onClick={rejectBooking} disabled={saving} className="rounded-2xl border border-red-200 bg-white py-3 font-bold text-red-600 hover:bg-red-50 disabled:opacity-60">
                         {saving ? "Ukládám..." : "Zrušit službu"}
                       </button>
                     )}
