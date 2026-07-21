@@ -229,12 +229,7 @@ export default function ItemDetailPage() {
               {(images.length > 0 || item.offer_type !== "service") && (
                 <div className="relative">
                   <div className="absolute left-5 top-5 z-20 hidden md:block">
-                    <BackLink
-                      href="/"
-                      className="!text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] hover:!bg-transparent hover:!text-white"
-                    >
-                      Domů
-                    </BackLink>
+                    <BackLink href="/">Domů</BackLink>
                   </div>
 
                   <OfferGallery
@@ -435,7 +430,6 @@ export default function ItemDetailPage() {
                 <>
                   <div className="mt-6 grid gap-3">
                     <label className="grid gap-2 text-sm font-bold text-[var(--koluj-muted)]">
-                      Zpráva pro vlastníka <span className="font-normal">(volitelné)</span>
                       <textarea
                         value={borrowNote}
                         maxLength={500}
