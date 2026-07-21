@@ -114,9 +114,9 @@ export default function DashboardPage() {
 
           <DashboardCard
             href="/dashboard/performance"
-            title="Výkon"
+            title="Výkon nabídek"
             icon={<BarChart3 />}
-            text="Sleduj zájem o nabídky, konverze a konkrétní doporučení ke zlepšení."
+            text="Sleduj zájem o nabídky a konkrétní doporučení ke zlepšení."
             action="Zobrazit"
           />
         </section>
