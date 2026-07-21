@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Camera, ChevronLeft, ChevronRight } from "lucide-react";
 import GalleryLightbox, { type GalleryImage } from "./GalleryLightbox";
 
@@ -13,6 +13,13 @@ type OfferGalleryProps = {
 export default function OfferGallery({ images, title }: OfferGalleryProps) {
   const [mobileIndex, setMobileIndex] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
+
+  function changeMobileImage(direction: -1 | 1) {
+    setMobileIndex((current) =>
+      (current + direction + images.length) % images.length,
+    );
+  }
 
   const visibleDesktopImages = useMemo(() => images.slice(0, 5), [images]);
 
@@ -29,7 +36,29 @@ export default function OfferGallery({ images, title }: OfferGalleryProps) {
 
   return (
     <>
-      <div className="relative md:hidden">
+      <div
+        className="relative touch-pan-y md:hidden"
+        onTouchStart={(event) => {
+          const touch = event.touches[0];
+          touchStart.current = { x: touch.clientX, y: touch.clientY };
+        }}
+        onTouchEnd={(event) => {
+          const start = touchStart.current;
+          const touch = event.changedTouches[0];
+          touchStart.current = null;
+
+          if (!start || images.length < 2) return;
+
+          const deltaX = touch.clientX - start.x;
+          const deltaY = touch.clientY - start.y;
+
+          if (Math.abs(deltaX) < 45 || Math.abs(deltaX) <= Math.abs(deltaY)) {
+            return;
+          }
+
+          changeMobileImage(deltaX < 0 ? 1 : -1);
+        }}
+      >
         <button
           type="button"
           onClick={() => setLightboxIndex(mobileIndex)}
@@ -50,9 +79,7 @@ export default function OfferGallery({ images, title }: OfferGalleryProps) {
           <>
             <button
               type="button"
-              onClick={() =>
-                setMobileIndex((mobileIndex - 1 + images.length) % images.length)
-              }
+              onClick={() => changeMobileImage(-1)}
               className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 text-[var(--koluj-text)] shadow-lg"
               aria-label="Předchozí fotografie"
             >
@@ -60,7 +87,7 @@ export default function OfferGallery({ images, title }: OfferGalleryProps) {
             </button>
             <button
               type="button"
-              onClick={() => setMobileIndex((mobileIndex + 1) % images.length)}
+              onClick={() => changeMobileImage(1)}
               className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 text-[var(--koluj-text)] shadow-lg"
               aria-label="Další fotografie"
             >

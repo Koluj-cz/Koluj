@@ -52,6 +52,8 @@ export default function OfferFormSidebar({
             text="Cena"
           />
 
+          <CheckLine done={Boolean(form.description.trim())} text="Popis" />
+
           {form.offer_type === "service" && (
             <CheckLine
               done={

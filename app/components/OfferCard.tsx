@@ -13,7 +13,7 @@ import {
   Wrench,
 } from "lucide-react";
 import { categoryLabels, serviceCategoryLabels } from "@/lib/constants";
-import { translatePriceUnit } from "@/lib/format";
+import { formatDate, translatePriceUnit } from "@/lib/format";
 
 export type OfferCardOffer = {
   id: string;
@@ -201,7 +201,10 @@ function OfferCard({ item, variant = "public", footer }: OfferCardProps) {
             <span className="font-black text-[var(--koluj-green)]">{ratingText}</span>
           </button>
         ) : (
-          <p className="mt-4 font-black text-[var(--koluj-muted)]">{bookingCount} rezervací</p>
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-sm font-black text-[var(--koluj-muted)]">
+            <span>{bookingCount} rezervací</span>
+            <span>Přidáno {formatDate(item.created_at)}</span>
+          </div>
         )}
       </div>
 

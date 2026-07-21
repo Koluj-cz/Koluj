@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   ArrowRight,
   CalendarOff,
-  Heart,
+  BarChart3,
   Handshake,
   Package,
   Plus,
@@ -112,21 +112,13 @@ export default function DashboardPage() {
             action="Upravit"
           />
 
-          <div className="koluj-card flex min-h-[210px] flex-col justify-between overflow-hidden p-6 md:p-8">
-            <div>
-              <span className="koluj-icon-bubble">
-                <Heart size={26} />
-              </span>
-
-              <h2 className="mt-5 text-2xl font-black tracking-[-0.04em] text-[var(--koluj-ink)] md:text-3xl">
-                Tip
-              </h2>
-
-              <p className="mt-3 leading-relaxed text-[var(--koluj-muted)]">
-                Aktuální fotky a jasný popis výrazně zvyšují šanci na rezervaci.
-              </p>
-            </div>
-          </div>
+          <DashboardCard
+            href="/dashboard/performance"
+            title="Výkon"
+            icon={<BarChart3 />}
+            text="Sleduj zájem o nabídky, konverze a konkrétní doporučení ke zlepšení."
+            action="Zobrazit"
+          />
         </section>
 
         <DashboardFooter />
