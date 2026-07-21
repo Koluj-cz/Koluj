@@ -440,10 +440,6 @@ export default function ItemDetailPage() {
                       />
                     </label>
 
-                    <p className="text-right text-xs text-[var(--koluj-muted)]">
-                      {borrowNote.length}/500
-                    </p>
-
                     <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-[var(--koluj-border)] bg-white px-4 py-3 text-sm font-black text-[var(--koluj-green)] hover:bg-[var(--koluj-bg)]">
                       <Paperclip size={18} />
                       Přiložit soubor
