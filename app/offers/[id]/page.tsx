@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import PageLoader from "@/app/components/PageLoader";
 import BackLink from "@/app/components/BackLink";
+import StickySidebar from "@/app/components/StickySidebar";
 import {
   categoryLabels,
   conditionLabels,
@@ -13,7 +14,15 @@ import {
 } from "@/lib/constants";
 import { formatDate, formatDateTime, translatePriceUnit } from "@/lib/format";
 
-import { CalendarDays, Edit, Eye, Paperclip, ShieldCheck, Tag, X } from "lucide-react";
+import {
+  CalendarDays,
+  Edit,
+  Eye,
+  Paperclip,
+  ShieldCheck,
+  Tag,
+  X,
+} from "lucide-react";
 import toast from "react-hot-toast";
 import {
   HandoverCard,
@@ -47,6 +56,7 @@ export default function ItemDetailPage() {
   const [images, setImages] = useState<ItemImage[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isDesktopLayout, setIsDesktopLayout] = useState(false);
 
   const [borrowFrom, setBorrowFrom] = useState("");
   const [borrowTo, setBorrowTo] = useState("");
@@ -85,6 +95,16 @@ export default function ItemDetailPage() {
   useEffect(() => {
     void loadPage();
   }, [loadPage]);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(min-width: 1280px)");
+    const updateLayout = () => setIsDesktopLayout(mediaQuery.matches);
+
+    updateLayout();
+    mediaQuery.addEventListener("change", updateLayout);
+
+    return () => mediaQuery.removeEventListener("change", updateLayout);
+  }, []);
 
   async function handleBorrowClick() {
     if (!item || submittingBorrowRequest) return;
@@ -220,320 +240,337 @@ export default function ItemDetailPage() {
     />
   );
 
-  return (
-    <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
-      <div className="koluj-wide-frame relative z-10">
-        <section className="grid gap-6 lg:gap-8 xl:grid-cols-[minmax(0,1fr)_460px]">
-          <div className="order-1 min-w-0 xl:col-start-1 xl:row-start-1">
-            <div className="overflow-hidden rounded-[34px] bg-[var(--koluj-surface)] shadow-[0_18px_55px_rgba(31,31,26,0.12)]">
-              {(images.length > 0 || item.offer_type !== "service") && (
-                <div className="relative">
-                  <div className="absolute left-5 top-5 z-20 hidden md:block">
-                    <BackLink href="/">Domů</BackLink>
-                  </div>
+  const bookingPanel = (
+    <div className="koluj-card p-5 md:p-8">
+      <div className="rounded-3xl bg-[var(--koluj-bg)] p-5">
+        <p className="text-sm font-bold text-[var(--koluj-muted)]">Cena</p>
 
-                  <OfferGallery
-                    title={item.title}
-                    images={[...images]
-                      .sort((a, b) => {
-                        if (a.image_url === item.primary_image_url) return -1;
-                        if (b.image_url === item.primary_image_url) return 1;
-                        return (a.sort_order ?? 0) - (b.sort_order ?? 0);
-                      })
-                      .map((image) => ({
-                        id: image.id,
-                        src: image.image_url,
-                        alt: item.title,
-                      }))}
-                  />
-                </div>
-              )}
+        <p className="mt-2 text-4xl font-black">
+          {item.price_unit === "individual"
+            ? "Individuálně"
+            : item.price_amount
+              ? `${item.price_amount} Kč`
+              : "Dohodou"}
+        </p>
 
-              <div className="border-t border-[var(--koluj-border)] px-5 py-6 md:px-8 md:py-7">
-                <h1 className="max-w-4xl text-4xl font-black leading-none tracking-tight md:text-6xl">
-                  {item.title}
-                </h1>
+        {item.price_unit && item.price_unit !== "individual" && (
+          <p className="mt-1 font-bold text-[var(--koluj-green)]">
+            za {translatePriceUnit(item.price_unit, item.offer_type)}
+          </p>
+        )}
 
-                <div className="mt-5 flex flex-wrap gap-2 text-sm font-bold text-[var(--koluj-muted)] md:text-base">
-                  {item.condition && (
-                    <span className="inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-3 py-1.5">
-                      <ShieldCheck size={16} className="text-[var(--koluj-green)]" />
-                      {conditionLabels[item.condition] || item.condition}
-                    </span>
-                  )}
+        {!isService && item.deposit !== null && item.deposit !== undefined && (
+          <p className="mt-3 text-sm font-bold text-[var(--koluj-muted)]">
+            Kauce: {item.deposit} Kč
+          </p>
+        )}
+      </div>
 
-                  <span className="inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-3 py-1.5">
-                    <Tag size={16} className="text-[var(--koluj-green)]" />
-                    {item.offer_type === "service"
-                      ? serviceCategoryLabels[item.category] || item.category
-                      : categoryLabels[item.category] || item.category}
-                  </span>
+      {item.price_note && (
+        <p className="mt-5 rounded-2xl border border-[var(--koluj-border)] p-4 text-sm text-[var(--koluj-muted)]">
+          {item.price_note}
+        </p>
+      )}
 
-                  {item.created_at && (
-                    <span className="inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-3 py-1.5">
-                      <CalendarDays size={16} className="text-[var(--koluj-green)]" />
-                      Přidáno {formatDate(item.created_at)}
-                    </span>
-                  )}
+      <div className="mt-6">
+        <AvailabilityCalendar
+          offerId={item.id}
+          offerType={item.offer_type}
+          serviceBookingMode={item.service_booking_mode}
+          serviceHoursMode={item.service_hours_mode}
+          weekdayStartTime={item.weekday_start_time}
+          weekdayEndTime={item.weekday_end_time}
+          weekendStartTime={item.weekend_start_time}
+          weekendEndTime={item.weekend_end_time}
+          isOwner={Boolean(isOwner)}
+          selectedRange={
+            (!isService || isRequestOnlyService) && borrowFrom && borrowTo
+              ? { dateFrom: borrowFrom, dateTo: borrowTo }
+              : null
+          }
+          selectedSlot={
+            isTimedService && startsAt && endsAt ? { startsAt, endsAt } : null
+          }
+          onRangeChange={(range) => {
+            setBorrowFrom(range?.dateFrom || "");
+            setBorrowTo(range?.dateTo || "");
+          }}
+          onSlotChange={(slot) => {
+            setStartsAt(slot?.startsAt || "");
+            setEndsAt(slot?.endsAt || "");
+          }}
+        />
+      </div>
 
-                  <span className="inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-3 py-1.5">
-                    <Eye size={16} className="text-[var(--koluj-green)]" />
-                    {item.views_count ?? 0} zobrazení
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+      <div className="mt-5 rounded-3xl bg-[var(--koluj-bg)] p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="font-black">
+              {isRequestOnlyService && !isOwner ? "Poptávka" : "Vybraný termín"}
+            </p>
 
-          <div className="order-2 min-w-0 xl:col-start-1 xl:row-start-2">
-            <MetaAndDescriptionCard item={item} />
-          </div>
-
-          <aside className="order-3 min-w-0 space-y-5 md:space-y-6 xl:col-start-2 xl:row-start-1 xl:row-span-3">
-            <div className="koluj-card p-5 md:p-8">
-              <div className="rounded-3xl bg-[var(--koluj-bg)] p-5">
-                <p className="text-sm font-bold text-[var(--koluj-muted)]">Cena</p>
-
-                <p className="mt-2 text-4xl font-black">
-                  {item.price_unit === "individual"
-                    ? "Individuálně"
-                    : item.price_amount
-                      ? `${item.price_amount} Kč`
-                      : "Dohodou"}
+            {isTimedService && startsAt && endsAt ? (
+              <div className="mt-3 space-y-1">
+                <p className="text-lg font-black">
+                  {formatDateTime(startsAt)} <span className="mx-2">→</span>{" "}
+                  {formatDateTime(endsAt)}
                 </p>
-
-                {item.price_unit && item.price_unit !== "individual" && (
-                  <p className="mt-1 font-bold text-[var(--koluj-green)]">
-                    za {translatePriceUnit(item.price_unit, item.offer_type)}
-                  </p>
-                )}
-
-                {!isService && item.deposit !== null && item.deposit !== undefined && (
-                  <p className="mt-3 text-sm font-bold text-[var(--koluj-muted)]">
-                    Kauce: {item.deposit} Kč
+                {selectedServiceMinutes && (
+                  <p className="font-bold text-[var(--koluj-muted)]">
+                    {selectedServiceMinutes / 60} h
+                    {selectedServicePrice !== null
+                      ? ` · celkem ${selectedServicePrice} Kč`
+                      : ""}
                   </p>
                 )}
               </div>
-
-              {item.price_note && (
-                <p className="mt-5 rounded-2xl border border-[var(--koluj-border)] p-4 text-sm text-[var(--koluj-muted)]">
-                  {item.price_note}
-                </p>
-              )}
-
-              <div className="mt-6">
-                <AvailabilityCalendar
-                  offerId={item.id}
-                  offerType={item.offer_type}
-                  serviceBookingMode={item.service_booking_mode}
-                  serviceHoursMode={item.service_hours_mode}
-                  weekdayStartTime={item.weekday_start_time}
-                  weekdayEndTime={item.weekday_end_time}
-                  weekendStartTime={item.weekend_start_time}
-                  weekendEndTime={item.weekend_end_time}
-                  isOwner={Boolean(isOwner)}
-                  selectedRange={
-                    (!isService || isRequestOnlyService) && borrowFrom && borrowTo
-                      ? { dateFrom: borrowFrom, dateTo: borrowTo }
-                      : null
-                  }
-                  selectedSlot={
-                    isTimedService && startsAt && endsAt
-                      ? { startsAt, endsAt }
-                      : null
-                  }
-                  onRangeChange={(range) => {
-                    setBorrowFrom(range?.dateFrom || "");
-                    setBorrowTo(range?.dateTo || "");
-                  }}
-                  onSlotChange={(slot) => {
-                    setStartsAt(slot?.startsAt || "");
-                    setEndsAt(slot?.endsAt || "");
-                  }}
-                />
-              </div>
-
-              <div className="mt-5 rounded-3xl bg-[var(--koluj-bg)] p-5">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <p className="font-black">
-                      {isRequestOnlyService && !isOwner ? "Poptávka" : "Vybraný termín"}
-                    </p>
-
-                    {isTimedService && startsAt && endsAt ? (
-                      <div className="mt-3 space-y-1">
-                        <p className="text-lg font-black">
-                          {formatDateTime(startsAt)} <span className="mx-2">→</span>{" "}
-                          {formatDateTime(endsAt)}
-                        </p>
-                        {selectedServiceMinutes && (
-                          <p className="font-bold text-[var(--koluj-muted)]">
-                            {selectedServiceMinutes / 60} h
-                            {selectedServicePrice !== null
-                              ? ` · celkem ${selectedServicePrice} Kč`
-                              : ""}
-                          </p>
-                        )}
-                      </div>
-                    ) : (!isService || isRequestOnlyService) && borrowFrom && borrowTo ? (
-                      <p className="mt-3 text-lg font-black">
-                        {formatDate(borrowFrom)} <span className="mx-2">→</span>{" "}
-                        {formatDate(borrowTo)}
-                      </p>
-                    ) : (
-                      <p className="mt-3 text-[var(--koluj-muted)]">
-                        {isRequestOnlyService
-                          ? "Vyber požadovaný termín dokončení."
-                          : isService && !isRequestOnlyService
-                            ? "Zatím není vybraný žádný čas."
-                            : "Zatím není vybraný žádný termín."}
-                      </p>
-                    )}
-                  </div>
-
-                  {(!isService || isRequestOnlyService) && selectedDays && (
-                    <span className="shrink-0 rounded-full bg-white px-3 py-1 text-sm font-black text-[var(--koluj-green)]">
-                      {selectedDays} {selectedDays === 1 ? "den" : "dní"}
-                    </span>
-                  )}
-                </div>
-
-                {((isTimedService && startsAt && endsAt) ||
-                  ((!isService || isRequestOnlyService) && borrowFrom && borrowTo)) && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setBorrowFrom("");
-                      setBorrowTo("");
-                      setStartsAt("");
-                      setEndsAt("");
-                    }}
-                    className="mt-3 text-sm font-black text-[var(--koluj-green)] underline-offset-4 hover:underline"
-                  >
-                    Zrušit výběr
-                  </button>
-                )}
-              </div>
-
-              {isOwner && (
-                <Link
-                  href={`/offers/${item.id}/edit`}
-                  prefetch={false}
-                  className="koluj-button mt-6 flex w-full items-center justify-center gap-2 px-6 py-4"
-                >
-                  <Edit size={18} />
-                  Upravit vlastní nabídku
-                </Link>
-              )}
-
-              {!isOwner && (
-                <>
-                  <div className="mt-6 grid gap-3">
-                    <label className="grid gap-2 text-sm font-bold text-[var(--koluj-muted)]">
-                      <textarea
-                        value={borrowNote}
-                        maxLength={500}
-                        disabled={submittingBorrowRequest}
-                        onChange={(event) => setBorrowNote(event.target.value)}
-                        placeholder="Napište zprávu pro majitele..."
-                        className="koluj-input min-h-[120px] disabled:opacity-70"
-                      />
-                    </label>
-
-                    <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-[var(--koluj-border)] bg-white px-4 py-3 text-sm font-black text-[var(--koluj-green)] hover:bg-[var(--koluj-bg)]">
-                      <Paperclip size={18} />
-                      Přiložit soubor
-                      <input
-                        type="file"
-                        accept="image/jpeg,image/png,image/webp,application/pdf,.docx,.xlsx,.zip"
-                        className="hidden"
-                        disabled={submittingBorrowRequest}
-                        onChange={(event) => {
-                          const file = event.target.files?.[0] || null;
-                          if (file && file.size > 15 * 1024 * 1024) {
-                            toast.error("Příloha může mít maximálně 15 MB");
-                            event.currentTarget.value = "";
-                            return;
-                          }
-                          setBorrowAttachment(file);
-                          event.currentTarget.value = "";
-                        }}
-                      />
-                    </label>
-
-                    {borrowAttachment && (
-                      <div className="flex items-center justify-between gap-3 rounded-2xl bg-[var(--koluj-bg)] px-4 py-3 text-sm">
-                        <span className="min-w-0 truncate font-bold">
-                          {borrowAttachment.name}
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setBorrowAttachment(null)}
-                          className="shrink-0 text-red-600"
-                          aria-label="Odebrat přílohu"
-                        >
-                          <X size={18} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handleBorrowClick}
-                    disabled={
-                      submittingBorrowRequest ||
-                      (isTimedService
-                        ? !startsAt || !endsAt || startsAt === endsAt
-                        : !isService
-                          ? !borrowFrom || !borrowTo
-                          : false)
-                    }
-                    className="koluj-button mt-6 w-full px-6 py-4 disabled:cursor-not-allowed disabled:opacity-70"
-                  >
-                    {submittingBorrowRequest
-                      ? "Odesílám žádost..."
-                      : isTimedService && startsAt && endsAt && startsAt !== endsAt
-                        ? "Objednat službu"
-                        : isRequestOnlyService && borrowFrom
-                          ? "Odeslat poptávku"
-                          : !isService && borrowFrom && borrowTo
-                            ? "Půjčit si"
-                            : isTimedService
-                              ? "Vyber čas"
-                              : isRequestOnlyService
-                                ? "Vyber termín dokončení"
-                                : "Vyber termín"}
-                  </button>
-                </>
-              )}
-
-              <div className="mt-6 flex gap-3 rounded-2xl bg-[var(--koluj-bg)] p-4 text-sm font-bold text-[var(--koluj-muted)]">
-                <ShieldCheck size={20} className="shrink-0 text-[var(--koluj-green)]" />
-                {isService
-                  ? "Po odeslání poptávky se domluvte s poskytovatelem na průběhu služby, ceně a všech detailech."
-                  : "Domluv se s vlastníkem na detailech. Platbu a předání věci řešte bezpečně a férově."}
-              </div>
-            </div>
-          </aside>
-
-          <div className="order-4 min-w-0 xl:col-start-1 xl:row-start-3">
-            {isService ? (
-              <div className="grid items-stretch gap-6 md:grid-cols-2 xl:grid-cols-3">
-                <div className="h-full [&>div]:h-full">{handoverCard}</div>
-                <div className="h-full md:col-span-1 xl:col-span-2 [&>div]:h-full">
-                  {ownerCard}
-                </div>
-              </div>
+            ) : (!isService || isRequestOnlyService) &&
+              borrowFrom &&
+              borrowTo ? (
+              <p className="mt-3 text-lg font-black">
+                {formatDate(borrowFrom)} <span className="mx-2">→</span>{" "}
+                {formatDate(borrowTo)}
+              </p>
             ) : (
-              <div className="grid items-stretch gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(260px,1fr)]">
-                <div className="h-full [&>div]:h-full">{handoverCard}</div>
-                <div className="h-full [&>div]:h-full">{ownerCard}</div>
+              <p className="mt-3 text-[var(--koluj-muted)]">
+                {isRequestOnlyService
+                  ? "Vyber požadovaný termín dokončení."
+                  : isService && !isRequestOnlyService
+                    ? "Zatím není vybraný žádný čas."
+                    : "Zatím není vybraný žádný termín."}
+              </p>
+            )}
+          </div>
+
+          {(!isService || isRequestOnlyService) && selectedDays && (
+            <span className="shrink-0 rounded-full bg-white px-3 py-1 text-sm font-black text-[var(--koluj-green)]">
+              {selectedDays} {selectedDays === 1 ? "den" : "dní"}
+            </span>
+          )}
+        </div>
+
+        {((isTimedService && startsAt && endsAt) ||
+          ((!isService || isRequestOnlyService) && borrowFrom && borrowTo)) && (
+          <button
+            type="button"
+            onClick={() => {
+              setBorrowFrom("");
+              setBorrowTo("");
+              setStartsAt("");
+              setEndsAt("");
+            }}
+            className="mt-3 text-sm font-black text-[var(--koluj-green)] underline-offset-4 hover:underline"
+          >
+            Zrušit výběr
+          </button>
+        )}
+      </div>
+
+      {isOwner && (
+        <Link
+          href={`/offers/${item.id}/edit`}
+          prefetch={false}
+          className="koluj-button mt-6 flex w-full items-center justify-center gap-2 px-6 py-4"
+        >
+          <Edit size={18} />
+          Upravit vlastní nabídku
+        </Link>
+      )}
+
+      {!isOwner && (
+        <>
+          <div className="mt-6 grid gap-3">
+            <label className="grid gap-2 text-sm font-bold text-[var(--koluj-muted)]">
+              <textarea
+                value={borrowNote}
+                maxLength={500}
+                disabled={submittingBorrowRequest}
+                onChange={(event) => setBorrowNote(event.target.value)}
+                placeholder="Napište zprávu pro majitele..."
+                className="koluj-input min-h-[120px] disabled:opacity-70"
+              />
+            </label>
+
+            <p className="text-right text-xs text-[var(--koluj-muted)]">
+              {borrowNote.length}/500
+            </p>
+
+            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-[var(--koluj-border)] bg-white px-4 py-3 text-sm font-black text-[var(--koluj-green)] hover:bg-[var(--koluj-bg)]">
+              <Paperclip size={18} />
+              Přiložit soubor
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp,application/pdf,.docx,.xlsx,.zip"
+                className="hidden"
+                disabled={submittingBorrowRequest}
+                onChange={(event) => {
+                  const file = event.target.files?.[0] || null;
+                  if (file && file.size > 15 * 1024 * 1024) {
+                    toast.error("Příloha může mít maximálně 15 MB");
+                    event.currentTarget.value = "";
+                    return;
+                  }
+                  setBorrowAttachment(file);
+                  event.currentTarget.value = "";
+                }}
+              />
+            </label>
+
+            {borrowAttachment && (
+              <div className="flex items-center justify-between gap-3 rounded-2xl bg-[var(--koluj-bg)] px-4 py-3 text-sm">
+                <span className="min-w-0 truncate font-bold">
+                  {borrowAttachment.name}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setBorrowAttachment(null)}
+                  className="shrink-0 text-red-600"
+                  aria-label="Odebrat přílohu"
+                >
+                  <X size={18} />
+                </button>
               </div>
             )}
           </div>
-        </section>
 
+          <button
+            type="button"
+            onClick={handleBorrowClick}
+            disabled={
+              submittingBorrowRequest ||
+              (isTimedService
+                ? !startsAt || !endsAt || startsAt === endsAt
+                : !isService
+                  ? !borrowFrom || !borrowTo
+                  : false)
+            }
+            className="koluj-button mt-6 w-full px-6 py-4 disabled:cursor-not-allowed disabled:opacity-70"
+          >
+            {submittingBorrowRequest
+              ? "Odesílám žádost..."
+              : isTimedService && startsAt && endsAt && startsAt !== endsAt
+                ? "Objednat službu"
+                : isRequestOnlyService && borrowFrom
+                  ? "Odeslat poptávku"
+                  : !isService && borrowFrom && borrowTo
+                    ? "Půjčit si"
+                    : isTimedService
+                      ? "Vyber čas"
+                      : isRequestOnlyService
+                        ? "Vyber termín dokončení"
+                        : "Vyber termín"}
+          </button>
+        </>
+      )}
+
+      <div className="mt-6 flex gap-3 rounded-2xl bg-[var(--koluj-bg)] p-4 text-sm font-bold text-[var(--koluj-muted)]">
+        <ShieldCheck size={20} className="shrink-0 text-[var(--koluj-green)]" />
+        {isService
+          ? "Po odeslání poptávky se domluvte s poskytovatelem na průběhu služby, ceně a všech detailech."
+          : "Domluv se s vlastníkem na detailech. Platbu a předání věci řešte bezpečně a férově."}
+      </div>
+    </div>
+  );
+
+  return (
+    <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
+      <div className="koluj-wide-frame relative z-10">
+        <section className="grid items-start gap-6 lg:gap-8 xl:grid-cols-[minmax(0,1fr)_460px]">
+          <div className="min-w-0 space-y-6">
+            <div className="min-w-0">
+              <div className="overflow-hidden rounded-[34px] bg-[var(--koluj-surface)] shadow-[0_18px_55px_rgba(31,31,26,0.12)]">
+                {(images.length > 0 || item.offer_type !== "service") && (
+                  <div className="relative">
+                    <div className="absolute left-5 top-5 z-20 hidden md:block">
+                      <BackLink href="/">Domů</BackLink>
+                    </div>
+
+                    <OfferGallery
+                      title={item.title}
+                      images={[...images]
+                        .sort((a, b) => {
+                          if (a.image_url === item.primary_image_url) return -1;
+                          if (b.image_url === item.primary_image_url) return 1;
+                          return (a.sort_order ?? 0) - (b.sort_order ?? 0);
+                        })
+                        .map((image) => ({
+                          id: image.id,
+                          src: image.image_url,
+                          alt: item.title,
+                        }))}
+                    />
+                  </div>
+                )}
+
+                <div className="border-t border-[var(--koluj-border)] px-5 py-6 md:px-8 md:py-7">
+                  <h1 className="max-w-4xl text-4xl font-black leading-none tracking-tight md:text-6xl">
+                    {item.title}
+                  </h1>
+
+                  <div className="mt-5 flex flex-wrap gap-2 text-sm font-bold text-[var(--koluj-muted)] md:text-base">
+                    {item.condition && (
+                      <span className="inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-3 py-1.5">
+                        <ShieldCheck
+                          size={16}
+                          className="text-[var(--koluj-green)]"
+                        />
+                        {conditionLabels[item.condition] || item.condition}
+                      </span>
+                    )}
+
+                    <span className="inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-3 py-1.5">
+                      <Tag size={16} className="text-[var(--koluj-green)]" />
+                      {item.offer_type === "service"
+                        ? serviceCategoryLabels[item.category] || item.category
+                        : categoryLabels[item.category] || item.category}
+                    </span>
+
+                    {item.created_at && (
+                      <span className="inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-3 py-1.5">
+                        <CalendarDays
+                          size={16}
+                          className="text-[var(--koluj-green)]"
+                        />
+                        Přidáno {formatDate(item.created_at)}
+                      </span>
+                    )}
+
+                    <span className="inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-3 py-1.5">
+                      <Eye size={16} className="text-[var(--koluj-green)]" />
+                      {item.views_count ?? 0} zobrazení
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="min-w-0">
+              <MetaAndDescriptionCard item={item} />
+            </div>
+
+            {!isDesktopLayout && <div>{bookingPanel}</div>}
+
+            <div className="min-w-0">
+              {isService ? (
+                <div className="grid items-stretch gap-6 md:grid-cols-2 xl:grid-cols-3">
+                  <div className="h-full [&>div]:h-full">{handoverCard}</div>
+                  <div className="h-full md:col-span-1 xl:col-span-2 [&>div]:h-full">
+                    {ownerCard}
+                  </div>
+                </div>
+              ) : (
+                <div className="grid items-stretch gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(260px,1fr)]">
+                  <div className="h-full [&>div]:h-full">{handoverCard}</div>
+                  <div className="h-full [&>div]:h-full">{ownerCard}</div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {isDesktopLayout && (
+            <StickySidebar className="min-w-0">{bookingPanel}</StickySidebar>
+          )}
+        </section>
       </div>
     </main>
   );
