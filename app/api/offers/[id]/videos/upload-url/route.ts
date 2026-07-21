@@ -40,7 +40,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       .select("id", { count: "exact", head: true })
       .eq("offer_id", id);
 
-    if ((count || 0) > 0) throw new Error("K nabídce můžeš přidat maximálně jedno video");
+    if ((count || 0) >= 3) throw new Error("K nabídce můžeš přidat maximálně tři videa");
 
     const basePath = `${user.id}/${id}/videos/${randomUUID()}`;
     const videoPath = `${basePath}.${extension}`;

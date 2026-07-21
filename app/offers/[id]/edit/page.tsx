@@ -63,8 +63,8 @@ export default function EditItemPage() {
   const [mainPhotoIndex, setMainPhotoIndex] = useState(-1);
   const [primaryImageUrl, setPrimaryImageUrl] = useState("");
   const [initialPrimaryImageUrl, setInitialPrimaryImageUrl] = useState("");
-  const [existingVideo, setExistingVideo] = useState<ExistingOfferVideo | null>(null);
-  const [newVideo, setNewVideo] = useState<SelectedOfferVideo | null>(null);
+  const [existingVideos, setExistingVideos] = useState<ExistingOfferVideo[]>([]);
+  const [newVideos, setNewVideos] = useState<SelectedOfferVideo[]>([]);
 
   const [form, setForm] = useState<OfferFormState>(emptyForm);
   const [initialSnapshot, setInitialSnapshot] = useState("");
@@ -91,15 +91,15 @@ export default function EditItemPage() {
           type: photo.type,
           lastModified: photo.lastModified,
         })),
-        existingVideoId: existingVideo?.id || null,
-        newVideo: newVideo ? {
-          name: newVideo.file.name,
-          size: newVideo.file.size,
-          type: newVideo.file.type,
-          lastModified: newVideo.file.lastModified,
-        } : null,
+        existingVideoIds: existingVideos.map((video) => video.id),
+        newVideos: newVideos.map((video) => ({
+          name: video.file.name,
+          size: video.file.size,
+          type: video.file.type,
+          lastModified: video.file.lastModified,
+        })),
       }),
-    [form, images, primaryImageUrl, mainPhotoIndex, newPhotos, newPhotoPreviews.length, existingVideo, newVideo],
+    [form, images, primaryImageUrl, mainPhotoIndex, newPhotos, newPhotoPreviews.length, existingVideos, newVideos],
   );
 
   const hasUnsavedChanges =
@@ -168,14 +168,14 @@ export default function EditItemPage() {
     };
 
     const nextImages = (result.images || []) as ExistingOfferPhoto[];
-    const nextVideo = ((result.videos || [])[0] || null) as ExistingOfferVideo | null;
+    const nextVideos = (result.videos || []) as ExistingOfferVideo[];
     const nextPrimaryImageUrl = data.primary_image_url || "";
 
     setForm(nextForm);
     setImages(nextImages);
     setPrimaryImageUrl(nextPrimaryImageUrl);
     setInitialPrimaryImageUrl(nextPrimaryImageUrl);
-    setExistingVideo(nextVideo);
+    setExistingVideos(nextVideos);
     setInitialSnapshot(
       JSON.stringify({
         form: nextForm,
@@ -188,8 +188,8 @@ export default function EditItemPage() {
         mainPhotoIndex: -1,
         newPhotoPreviewsCount: 0,
         newPhotos: [],
-        existingVideoId: nextVideo?.id || null,
-        newVideo: null,
+        existingVideoIds: nextVideos.map((video) => video.id),
+        newVideos: [],
       }),
     );
     setLoading(false);
@@ -227,7 +227,7 @@ export default function EditItemPage() {
       toast.error(result?.error || "Video se nepodařilo smazat");
       return;
     }
-    setExistingVideo(null);
+    setExistingVideos((current) => current.filter((item) => item.id !== video.id));
     toast.success("Video smazáno");
   }
 
@@ -314,8 +314,10 @@ export default function EditItemPage() {
         throw new Error(result?.error || "Změny se nepodařilo uložit");
       }
 
-      if (newVideo) {
-        await uploadOfferVideo(offerId, newVideo);
+      if (newVideos.length > 0) {
+        for (const video of newVideos) {
+          await uploadOfferVideo(offerId, video);
+        }
       }
 
       if (
@@ -412,9 +414,9 @@ export default function EditItemPage() {
             />
 
             <OfferVideoUploader
-              existingVideo={existingVideo}
-              video={newVideo}
-              setVideo={setNewVideo}
+              existingVideos={existingVideos}
+              videos={newVideos}
+              setVideos={setNewVideos}
               onDeleteExisting={deleteVideo}
             />
 

@@ -49,7 +49,7 @@ export default function NewItemPage() {
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [mainPhotoIndex, setMainPhotoIndex] = useState(0);
-  const [video, setVideo] = useState<SelectedOfferVideo | null>(null);
+  const [videos, setVideos] = useState<SelectedOfferVideo[]>([]);
   const [form, setForm] = useState<OfferFormState>(initialForm);
   const [allowNavigation, setAllowNavigation] = useState(false);
   const [pendingNavigationHref, setPendingNavigationHref] = useState<string | null>(null);
@@ -58,7 +58,7 @@ export default function NewItemPage() {
     return (
       photos.length > 0 ||
       photoPreviews.length > 0 ||
-      Boolean(video) ||
+      videos.length > 0 ||
       form.offer_type !== initialForm.offer_type ||
       form.title.trim() !== "" ||
       form.description.trim() !== "" ||
@@ -74,7 +74,7 @@ export default function NewItemPage() {
       form.handover_options.length > 0 ||
       form.contact_note.trim() !== ""
     );
-  }, [form, photos, photoPreviews.length, video]);
+  }, [form, photos, photoPreviews.length, videos.length]);
 
   useUnsavedChangesWarning(
     hasUnsavedChanges && !loading && !allowNavigation,
@@ -159,9 +159,11 @@ export default function NewItemPage() {
         throw new Error(result?.error || "Nepodařilo se uložit nabídku");
       }
 
-      if (video && result?.offerId) {
+      if (videos.length > 0 && result?.offerId) {
         try {
-          await uploadOfferVideo(result.offerId, video);
+          for (const video of videos) {
+            await uploadOfferVideo(result.offerId, video);
+          }
         } catch (videoError) {
           setAllowNavigation(true);
           toast.error(
@@ -227,7 +229,7 @@ export default function NewItemPage() {
               setMainPhotoIndex={setMainPhotoIndex}
             />
 
-            <OfferVideoUploader video={video} setVideo={setVideo} />
+            <OfferVideoUploader videos={videos} setVideos={setVideos} />
 
             <BasicInfoSection form={form} setForm={setForm} />
             <PriceSection form={form} setForm={setForm} />

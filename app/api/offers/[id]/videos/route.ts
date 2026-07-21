@@ -33,7 +33,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       .from("offer_videos")
       .select("id", { count: "exact", head: true })
       .eq("offer_id", id);
-    if ((count || 0) > 0) throw new Error("K nabídce můžeš přidat maximálně jedno video");
+    if ((count || 0) >= 3) throw new Error("K nabídce můžeš přidat maximálně tři videa");
 
     const videoUrl = supabaseAdmin.storage.from("offers").getPublicUrl(videoPath).data.publicUrl;
     const thumbnailUrl = thumbnailPath
@@ -47,7 +47,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         video_url: videoUrl,
         thumbnail_url: thumbnailUrl,
         duration_seconds: durationSeconds,
-        sort_order: 0,
+        sort_order: count || 0,
       })
       .select("id, video_url, thumbnail_url, duration_seconds, sort_order")
       .single();
