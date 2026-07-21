@@ -15,6 +15,7 @@ type OfferRow = {
 type BookingRow = {
   id: string;
   offer_id: string;
+  customer_id: string | null;
   status: string | null;
   created_at: string;
 };
@@ -41,7 +42,7 @@ export async function GET(request: Request) {
         .order("created_at", { ascending: false }),
       supabaseAdmin
         .from("bookings")
-        .select("id, offer_id, status, created_at")
+        .select("id, offer_id, customer_id, status, created_at")
         .eq("owner_id", user.id)
         .order("created_at", { ascending: true }),
       supabaseAdmin
@@ -108,6 +109,49 @@ export async function GET(request: Request) {
     const successRate = bookings.length > 0
       ? Math.round((successfulBookings / bookings.length) * 100)
       : 0;
+
+    const relevantBookings = bookings.filter((booking) => booking.status !== "cancelled");
+
+    const topOffer = [...offerPerformance]
+      .sort((a, b) => b.bookings - a.bookings || b.views - a.views)
+      .find((offer) => offer.bookings > 0) || null;
+
+    const bookingsByCustomer = new Map<string, number>();
+    for (const booking of relevantBookings) {
+      if (!booking.customer_id) continue;
+      bookingsByCustomer.set(
+        booking.customer_id,
+        (bookingsByCustomer.get(booking.customer_id) || 0) + 1,
+      );
+    }
+
+    const returningCustomers = Array.from(bookingsByCustomer.values()).filter(
+      (bookingCount) => bookingCount > 1,
+    ).length;
+
+    const allTimeMonths = new Map<string, { label: string; count: number }>();
+    const fullMonthFormatter = new Intl.DateTimeFormat("cs-CZ", {
+      timeZone: "Europe/Prague",
+      month: "long",
+      year: "numeric",
+    });
+
+    for (const booking of relevantBookings) {
+      const date = new Date(booking.created_at);
+      const key = `${date.getFullYear()}-${date.getMonth()}`;
+      const current = allTimeMonths.get(key);
+      if (current) {
+        current.count += 1;
+      } else {
+        allTimeMonths.set(key, {
+          label: fullMonthFormatter.format(date),
+          count: 1,
+        });
+      }
+    }
+
+    const mostActiveMonth = Array.from(allTimeMonths.values())
+      .sort((a, b) => b.count - a.count)[0] || null;
 
     type Recommendation = {
       title: string;
@@ -200,6 +244,14 @@ export async function GET(request: Request) {
       rating: ratingResult.data || null,
       offerPerformance: offerPerformance.slice(0, 6),
       activity: activity.map(({ label, count }) => ({ label, count })),
+      highlights: {
+        topOffer,
+        returningCustomers: {
+          count: returningCustomers,
+          uniqueCustomers: bookingsByCustomer.size,
+        },
+        mostActiveMonth,
+      },
       recommendations: recommendations.slice(0, 3),
     });
   } catch (error) {

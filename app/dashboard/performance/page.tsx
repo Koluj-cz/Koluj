@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, BarChart3, Eye, Gauge, Lightbulb, Package, Star } from "lucide-react";
+import { ArrowRight, BarChart3, CalendarDays, Eye, Gauge, Lightbulb, Package, Repeat2, Star, Trophy } from "lucide-react";
 import BackLink from "@/app/components/BackLink";
 import PageLoader from "@/app/components/PageLoader";
 
@@ -25,6 +25,25 @@ type PerformanceData = {
     conversion: number;
   }[];
   activity: { label: string; count: number }[];
+  highlights: {
+    topOffer: {
+      id: string;
+      title: string;
+      primaryImageUrl: string | null;
+      publicationStatus: string | null;
+      views: number;
+      bookings: number;
+      conversion: number;
+    } | null;
+    returningCustomers: {
+      count: number;
+      uniqueCustomers: number;
+    };
+    mostActiveMonth: {
+      label: string;
+      count: number;
+    } | null;
+  };
   recommendations: {
     title: string;
     text: string;
@@ -83,6 +102,34 @@ export default function PerformancePage() {
               <Metric icon={<Package />} label="Aktivní nabídky" value={data.summary.activeOffers} />
               <Metric icon={<Gauge />} label="Úspěšné rezervace" value={`${data.summary.successRate} %`} />
               <Metric icon={<Star />} label="Hodnocení" value={data.rating?.rating_count ? Number(data.rating.rating_avg).toFixed(1) : "Nový"} />
+            </section>
+
+            <section className="mt-6 grid gap-4 lg:grid-cols-3">
+              <HighlightCard
+                icon={<Trophy />}
+                eyebrow="Nejúspěšnější nabídka"
+                title={data.highlights.topOffer?.title || "Zatím bez rezervací"}
+                description={data.highlights.topOffer
+                  ? `${data.highlights.topOffer.bookings} rezervací · ${data.highlights.topOffer.views} zobrazení`
+                  : "Až přijde první rezervace, ukážeme zde tvoji nejúspěšnější nabídku."}
+                href={data.highlights.topOffer ? `/offers/${data.highlights.topOffer.id}` : "/dashboard/my-offers"}
+              />
+              <HighlightCard
+                icon={<Repeat2 />}
+                eyebrow="Vracející se zákazníci"
+                title={`${data.highlights.returningCustomers.count}`}
+                description={data.highlights.returningCustomers.uniqueCustomers > 0
+                  ? `Z ${data.highlights.returningCustomers.uniqueCustomers} zákazníků si u tebe rezervovali opakovaně.`
+                  : "Zatím nemáš zákazníka, který by si u tebe rezervoval opakovaně."}
+              />
+              <HighlightCard
+                icon={<CalendarDays />}
+                eyebrow="Nejaktivnější měsíc"
+                title={data.highlights.mostActiveMonth?.label || "Zatím bez dat"}
+                description={data.highlights.mostActiveMonth
+                  ? `${data.highlights.mostActiveMonth.count} nových rezervací v tomto měsíci.`
+                  : "Nejaktivnější měsíc zobrazíme po první rezervaci."}
+              />
             </section>
 
             <section className="mt-6 grid gap-6 xl:grid-cols-[minmax(0,1.35fr)_minmax(320px,0.65fr)]">
@@ -170,6 +217,36 @@ export default function PerformancePage() {
       </div>
     </main>
   );
+}
+
+function HighlightCard({
+  icon,
+  eyebrow,
+  title,
+  description,
+  href,
+}: {
+  icon: React.ReactNode;
+  eyebrow: string;
+  title: string;
+  description: string;
+  href?: string;
+}) {
+  const content = (
+    <div className="koluj-card h-full p-5 transition md:p-6">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-xs font-black uppercase tracking-[0.12em] text-[var(--koluj-green)]">{eyebrow}</p>
+          <p className="mt-3 truncate text-2xl font-black tracking-[-0.04em] text-[var(--koluj-ink)]">{title}</p>
+          <p className="mt-2 text-sm leading-relaxed text-[var(--koluj-muted)]">{description}</p>
+        </div>
+        <span className="koluj-icon-bubble shrink-0">{icon}</span>
+      </div>
+      {href && <p className="koluj-link mt-4 flex items-center gap-2">Otevřít <ArrowRight size={16} /></p>}
+    </div>
+  );
+
+  return href ? <Link href={href}>{content}</Link> : content;
 }
 
 function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; value: number | string }) {
