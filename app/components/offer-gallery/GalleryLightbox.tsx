@@ -21,7 +21,8 @@ export type GalleryVideo = {
 export type GalleryMedia = GalleryImage | GalleryVideo;
 
 type GalleryLightboxProps = {
-  media: GalleryMedia[];
+  media?: GalleryMedia[];
+  images?: GalleryImage[];
   activeIndex: number | null;
   onClose: () => void;
   onChange: (index: number) => void;
@@ -29,11 +30,14 @@ type GalleryLightboxProps = {
 
 export default function GalleryLightbox({
   media,
+  images,
   activeIndex,
   onClose,
   onChange,
 }: GalleryLightboxProps) {
-  const isOpen = activeIndex !== null && media.length > 0;
+  const resolvedMedia: GalleryMedia[] =
+    media ?? images?.map((image) => ({ ...image, kind: "image" as const })) ?? [];
+  const isOpen = activeIndex !== null && resolvedMedia.length > 0;
   const currentIndex = activeIndex ?? 0;
 
   useEffect(() => {
@@ -45,10 +49,10 @@ export default function GalleryLightbox({
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") onClose();
       if (event.key === "ArrowLeft") {
-        onChange((currentIndex - 1 + media.length) % media.length);
+        onChange((currentIndex - 1 + resolvedMedia.length) % resolvedMedia.length);
       }
       if (event.key === "ArrowRight") {
-        onChange((currentIndex + 1) % media.length);
+        onChange((currentIndex + 1) % resolvedMedia.length);
       }
     }
 
@@ -57,11 +61,11 @@ export default function GalleryLightbox({
       document.body.style.overflow = previousOverflow;
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [currentIndex, isOpen, media.length, onChange, onClose]);
+  }, [currentIndex, isOpen, resolvedMedia.length, onChange, onClose]);
 
   if (!isOpen) return null;
 
-  const currentMedia = media[currentIndex];
+  const currentMedia = resolvedMedia[currentIndex];
   const isVideo = currentMedia.kind === "video";
 
   return (
@@ -83,12 +87,12 @@ export default function GalleryLightbox({
         <X size={26} />
       </button>
 
-      {media.length > 1 && (
+      {resolvedMedia.length > 1 && (
         <>
           <button
             type="button"
             onClick={() =>
-              onChange((currentIndex - 1 + media.length) % media.length)
+              onChange((currentIndex - 1 + resolvedMedia.length) % resolvedMedia.length)
             }
             className="absolute left-3 z-20 rounded-full bg-white/10 p-3 text-white transition hover:bg-white/20 md:left-7"
             aria-label="Předchozí médium"
@@ -98,7 +102,7 @@ export default function GalleryLightbox({
 
           <button
             type="button"
-            onClick={() => onChange((currentIndex + 1) % media.length)}
+            onClick={() => onChange((currentIndex + 1) % resolvedMedia.length)}
             className="absolute right-3 z-20 rounded-full bg-white/10 p-3 text-white transition hover:bg-white/20 md:right-7"
             aria-label="Další médium"
           >
@@ -131,7 +135,7 @@ export default function GalleryLightbox({
         )}
 
         <div className="mt-4 rounded-full bg-black/45 px-4 py-2 text-sm font-bold text-white">
-          {currentIndex + 1} / {media.length}
+          {currentIndex + 1} / {resolvedMedia.length}
         </div>
       </div>
     </div>
