@@ -1,11 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ArrowLeft, Mail, User } from "lucide-react";
+import { Mail, User } from "lucide-react";
 import toast from "react-hot-toast";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import PageLoader from "@/app/components/PageLoader";
+import BackLink from "@/app/components/BackLink";
 import PushNotificationButton from "@/app/components/PushNotificationButton";
 import ConfirmLeaveDialog from "@/app/components/ConfirmLeaveDialog";
 import { useUnsavedChangesWarning } from "@/lib/hooks/useUnsavedChangesWarning";
@@ -293,14 +293,9 @@ export default function ProfilePage() {
       <div className="koluj-wide-frame relative z-10">
         <section className="koluj-hero-card p-5 md:p-8 xl:p-10">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <Link
-              href="/dashboard"
-              prefetch={false}
-              className="koluj-header-button !hidden md:!inline-flex"
-            >
-              <ArrowLeft size={17} />
+            <BackLink href="/dashboard" hideOnMobile>
               Dashboard
-            </Link>
+            </BackLink>
           </div>
 
           <h1 className="koluj-heading mt-6">Profil</h1>

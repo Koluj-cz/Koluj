@@ -681,6 +681,27 @@ footer,
   color: var(--koluj-green);
 }
 
+.koluj-back-link {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  padding: 8px 12px;
+  color: var(--koluj-text);
+  font-size: 0.95rem;
+  font-weight: 900;
+  box-shadow: none;
+}
+
+.koluj-back-link:hover {
+  background: var(--koluj-green-pale);
+  color: var(--koluj-green);
+}
+
 @media print {
   .koluj-bottom-nav,
   [data-print="hide"] {

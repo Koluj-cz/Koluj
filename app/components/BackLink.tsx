@@ -19,7 +19,7 @@ export default function BackLink({
   return (
     <Link
       href={href}
-      className={`koluj-header-button ${responsiveClass} ${className}`}
+      className={`koluj-back-link ${responsiveClass} ${className}`}
     >
       <ArrowLeft size={17} />
       <span>{children}</span>

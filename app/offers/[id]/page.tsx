@@ -18,7 +18,6 @@ import toast from "react-hot-toast";
 import {
   HandoverCard,
   MetaAndDescriptionCard,
-  OfferMapCard,
   OwnerCard,
 } from "@/app/components/offer-detail/OfferDetailCards";
 import type {
@@ -200,22 +199,6 @@ export default function ItemDetailPage() {
     );
   }, [item, selectedServiceMinutes]);
 
-  const mapOffers = useMemo(() => {
-    if (!item) return [];
-
-    return [
-      {
-        id: item.id,
-        title: item.title,
-        pickup_place: item.pickup_place,
-        price_amount: item.price_amount,
-        price_unit: item.price_unit,
-        pickup_latitude: item.pickup_latitude,
-        pickup_longitude: item.pickup_longitude,
-      },
-    ];
-  }, [item]);
-
   if (loading) {
     return (
       <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
@@ -236,7 +219,6 @@ export default function ItemDetailPage() {
       ratingCountText={ratingCountText}
     />
   );
-  const mapCard = <OfferMapCard item={item} mapOffers={mapOffers} />;
 
   return (
     <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
@@ -246,8 +228,13 @@ export default function ItemDetailPage() {
             <div className="overflow-hidden rounded-[34px] bg-[var(--koluj-surface)] shadow-[0_18px_55px_rgba(31,31,26,0.12)]">
               {(images.length > 0 || item.offer_type !== "service") && (
                 <div className="relative">
-                  <div className="absolute left-5 top-5 z-20 hidden rounded-full bg-white/95 px-3 py-2 shadow-lg backdrop-blur md:block">
-                    <BackLink href="/">Domů</BackLink>
+                  <div className="absolute left-5 top-5 z-20 hidden md:block">
+                    <BackLink
+                      href="/"
+                      className="!text-white drop-shadow-[0_1px_3px_rgba(0,0,0,0.8)] hover:!bg-transparent hover:!text-white"
+                    >
+                      Domů
+                    </BackLink>
                   </div>
 
                   <OfferGallery
@@ -557,9 +544,6 @@ export default function ItemDetailPage() {
           </div>
         </section>
 
-        {isService && mapCard && (
-          <section className="mt-6">{mapCard}</section>
-        )}
       </div>
     </main>
   );
