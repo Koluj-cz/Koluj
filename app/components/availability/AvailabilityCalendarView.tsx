@@ -10,6 +10,7 @@ type Props = {
   days: (Date | null)[];
   isService: boolean;
   isDeadlineService: boolean;
+  showDeadlineSelectionSummary: boolean;
   isScheduledService: boolean;
   selectedServiceDate: string;
   selectedRange?: SelectedRange | null;
@@ -87,7 +88,7 @@ export default function AvailabilityCalendarView(props: Props) {
         {props.availableServiceStartTimes.length === 0 ? <p className="mt-3 rounded-2xl bg-red-50 px-4 py-3 text-xs font-bold text-red-700">V tento den už není žádný volný 30minutový termín.</p> : <p className="mt-3 text-xs font-bold text-[var(--koluj-muted)]">Časy jsou po 30 minutách. Obsazené a blokované intervaly se automaticky nezobrazují.</p>}
       </div>}
 
-      {props.isDeadlineService && <div className="mt-5 rounded-3xl bg-white p-4"><p className="font-black">Požadovaný termín dokončení</p><p className="mt-2 text-sm font-bold text-[var(--koluj-muted)]">Vyber jeden den. Konkrétní čas provedení domluvíš s poskytovatelem v chatu.</p>{props.selectedRange?.dateFrom && <p className="mt-3 rounded-2xl bg-[var(--koluj-bg)] px-4 py-3 font-black text-[var(--koluj-green)]">{formatShortDate(props.selectedRange.dateFrom)}</p>}</div>}
+      {props.isDeadlineService && <div className="mt-5 rounded-3xl bg-white p-4"><p className="font-black">Požadovaný termín dokončení</p><p className="mt-2 text-sm font-bold text-[var(--koluj-muted)]">Vyber jeden den. Konkrétní čas provedení domluvíš s poskytovatelem v chatu.</p>{props.showDeadlineSelectionSummary && props.selectedRange?.dateFrom && <p className="mt-3 rounded-2xl bg-[var(--koluj-bg)] px-4 py-3 font-black text-[var(--koluj-green)]">{formatShortDate(props.selectedRange.dateFrom)}</p>}</div>}
 
       <div className="mt-4 flex flex-wrap gap-2 text-xs font-bold text-[var(--koluj-muted)]"><span className="inline-flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-white" /> Volné</span><span className="inline-flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-red-100" /> Rezervováno</span><span className="inline-flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-stone-200" /> Blokováno</span><span className="inline-flex items-center gap-1"><span className="h-3 w-3 rounded-full bg-orange-100" /> Vybráno</span></div>
 

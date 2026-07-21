@@ -21,6 +21,7 @@ export default function AvailabilityCalendar({
   weekdayEndTime = "20:00",
   weekendStartTime = "08:00",
   weekendEndTime = "20:00",
+  showDeadlineSelectionSummary = true,
 }: AvailabilityCalendarProps) {
   const isService = offerType === "service";
   const isDeadlineService = isService && serviceBookingMode === "deadline";
@@ -378,6 +379,7 @@ export default function AvailabilityCalendar({
       days={days}
       isService={isService}
       isDeadlineService={isDeadlineService}
+      showDeadlineSelectionSummary={showDeadlineSelectionSummary}
       isScheduledService={isScheduledService}
       selectedServiceDate={selectedServiceDate}
       selectedRange={selectedRange}

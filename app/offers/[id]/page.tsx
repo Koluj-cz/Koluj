@@ -6,7 +6,6 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import PageLoader from "@/app/components/PageLoader";
 import BackLink from "@/app/components/BackLink";
-import StickySidebar from "@/app/components/StickySidebar";
 import {
   categoryLabels,
   conditionLabels,
@@ -282,6 +281,7 @@ export default function ItemDetailPage() {
           weekdayEndTime={item.weekday_end_time}
           weekendStartTime={item.weekend_start_time}
           weekendEndTime={item.weekend_end_time}
+          showDeadlineSelectionSummary={false}
           isOwner={Boolean(isOwner)}
           selectedRange={
             (!isService || isRequestOnlyService) && borrowFrom && borrowTo
@@ -568,7 +568,7 @@ export default function ItemDetailPage() {
           </div>
 
           {isDesktopLayout && (
-            <StickySidebar className="min-w-0">{bookingPanel}</StickySidebar>
+            <aside className="min-w-0">{bookingPanel}</aside>
           )}
         </section>
       </div>

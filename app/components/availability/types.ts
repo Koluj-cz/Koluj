@@ -41,4 +41,5 @@ export type AvailabilityCalendarProps = {
   weekdayEndTime?: string | null;
   weekendStartTime?: string | null;
   weekendEndTime?: string | null;
+  showDeadlineSelectionSummary?: boolean;
 };
