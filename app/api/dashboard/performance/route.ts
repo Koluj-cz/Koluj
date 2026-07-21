@@ -109,13 +109,37 @@ export async function GET(request: Request) {
       ? Math.round((successfulBookings / bookings.length) * 100)
       : 0;
 
-    const recommendations: { title: string; text: string; href: string }[] = [];
-    const noPhoto = offers.find((offer) => !offer.primary_image_url);
-    if (noPhoto) {
+    type Recommendation = {
+      title: string;
+      text: string;
+      href: string;
+      actionLabel: string;
+      priority: "attention" | "tip" | "good";
+    };
+
+    const recommendations: Recommendation[] = [];
+
+    if (offers.length === 0) {
       recommendations.push({
-        title: "Doplň hlavní fotografii",
-        text: `Nabídka „${noPhoto.title}“ zatím nemá hlavní fotografii.`,
-        href: `/offers/${noPhoto.id}/edit`,
+        title: "Přidej první nabídku",
+        text: "Po přidání nabídky se tu začnou zobrazovat konkrétní doporučení podle jejího výkonu.",
+        href: "/offers/new",
+        actionLabel: "Přidat nabídku",
+        priority: "tip",
+      });
+    }
+
+    const offersWithoutPhoto = offers.filter((offer) => !offer.primary_image_url);
+    if (offersWithoutPhoto.length > 0) {
+      const firstOffer = offersWithoutPhoto[0];
+      recommendations.push({
+        title: offersWithoutPhoto.length === 1 ? "Chybí hlavní fotografie" : "Některým nabídkám chybí fotografie",
+        text: offersWithoutPhoto.length === 1
+          ? `Nabídka „${firstOffer.title}“ zatím nemá hlavní fotografii.`
+          : `Bez hlavní fotografie jsou ${offersWithoutPhoto.length} nabídky. Začni u „${firstOffer.title}“.`,
+        href: `/offers/${firstOffer.id}/edit`,
+        actionLabel: "Doplnit fotografii",
+        priority: "attention",
       });
     }
 
@@ -124,26 +148,50 @@ export async function GET(request: Request) {
     );
     if (highViewsLowBookings) {
       recommendations.push({
-        title: "Zájem bez rezervace",
-        text: `„${highViewsLowBookings.title}“ má ${highViewsLowBookings.views} zobrazení, ale zatím žádnou rezervaci. Zkus upravit cenu nebo popis.`,
+        title: "Zájem se zatím nemění v rezervace",
+        text: `„${highViewsLowBookings.title}“ má ${highViewsLowBookings.views} zobrazení, ale žádnou rezervaci. Zkus upravit cenu, popis nebo podmínky předání.`,
         href: `/offers/${highViewsLowBookings.id}/edit`,
+        actionLabel: "Upravit nabídku",
+        priority: "tip",
       });
     }
 
-    const inactiveOffer = offers.find((offer) => offer.publication_status === "inactive");
-    if (inactiveOffer) {
+    const inactiveOffers = offers.filter((offer) => offer.publication_status === "inactive");
+    if (inactiveOffers.length > 0) {
       recommendations.push({
-        title: "Skrytá nabídka",
-        text: `„${inactiveOffer.title}“ není veřejně viditelná.`,
+        title: inactiveOffers.length === 1 ? "Jedna nabídka je skrytá" : "Některé nabídky jsou skryté",
+        text: inactiveOffers.length === 1
+          ? `„${inactiveOffers[0].title}“ není veřejně viditelná.`
+          : `${inactiveOffers.length} nabídky nejsou veřejně viditelné.`,
         href: "/dashboard/my-offers",
+        actionLabel: "Zkontrolovat nabídky",
+        priority: "tip",
       });
     }
 
-    if (recommendations.length === 0) {
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const recentBookings = bookings.filter(
+      (booking) => new Date(booking.created_at).getTime() >= thirtyDaysAgo.getTime(),
+    ).length;
+
+    if (offers.length > 0 && bookings.length > 0 && recentBookings === 0) {
+      recommendations.push({
+        title: "Poslední měsíc bez nové rezervace",
+        text: "Zkus aktualizovat méně aktivní nabídku nebo přidat novou věc či službu.",
+        href: "/dashboard/my-offers",
+        actionLabel: "Projít nabídky",
+        priority: "tip",
+      });
+    }
+
+    if (recommendations.length === 0 && offers.length > 0) {
       recommendations.push({
         title: "Nabídky vypadají dobře",
-        text: "Máš doplněné fotografie a návštěvnost se proměňuje v rezervace.",
+        text: "Všechny nabídky mají fotografie a návštěvnost se proměňuje v rezervace.",
         href: "/dashboard/my-offers",
+        actionLabel: "Zobrazit nabídky",
+        priority: "good",
       });
     }
 

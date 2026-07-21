@@ -25,7 +25,13 @@ type PerformanceData = {
     conversion: number;
   }[];
   activity: { label: string; count: number }[];
-  recommendations: { title: string; text: string; href: string }[];
+  recommendations: {
+    title: string;
+    text: string;
+    href: string;
+    actionLabel: string;
+    priority: "attention" | "tip" | "good";
+  }[];
 };
 
 export default function PerformancePage() {
@@ -109,11 +115,16 @@ export default function PerformancePage() {
                     </Link>
                   ))}
                 </div>
+                {data.offerPerformance.length > 0 && (
+                  <p className="mt-5 text-sm leading-relaxed text-[var(--koluj-muted)]">
+                    Konverze ukazuje, kolik rezervací vzniklo v poměru k počtu zobrazení nabídky.
+                  </p>
+                )}
               </div>
 
               <div className="koluj-card p-5 md:p-8">
-                <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--koluj-green)]">Aktivita</p>
-                <h2 className="mt-2 text-2xl font-black">Posledních 6 měsíců</h2>
+                <p className="text-sm font-black uppercase tracking-[0.14em] text-[var(--koluj-green)]">Rezervace</p>
+                <h2 className="mt-2 text-2xl font-black">Nové rezervace za posledních 6 měsíců</h2>
                 <div className="mt-8 flex h-56 items-end gap-3">
                   {data.activity.map((item) => (
                     <div key={item.label} className="flex h-full min-w-0 flex-1 flex-col justify-end text-center">
@@ -123,6 +134,9 @@ export default function PerformancePage() {
                     </div>
                   ))}
                 </div>
+                <p className="mt-5 text-sm leading-relaxed text-[var(--koluj-muted)]">
+                  Graf zobrazuje počet nových rezervací vytvořených u tvých nabídek v jednotlivých měsících.
+                </p>
               </div>
             </section>
 
@@ -136,10 +150,17 @@ export default function PerformancePage() {
               </div>
               <div className="mt-6 grid gap-4 md:grid-cols-3">
                 {data.recommendations.map((item) => (
-                  <Link key={`${item.title}-${item.href}`} href={item.href} className="rounded-2xl border border-[var(--koluj-border)] p-5 transition hover:border-[var(--koluj-green)]">
-                    <h3 className="font-black">{item.title}</h3>
+                  <Link
+                    key={`${item.title}-${item.href}`}
+                    href={item.href}
+                    className={`rounded-2xl border p-5 transition hover:border-[var(--koluj-green)] ${recommendationClassName(item.priority)}`}
+                  >
+                    <p className={`text-xs font-black uppercase tracking-[0.12em] ${recommendationLabelClassName(item.priority)}`}>
+                      {recommendationLabel(item.priority)}
+                    </p>
+                    <h3 className="mt-2 font-black">{item.title}</h3>
                     <p className="mt-2 leading-relaxed text-[var(--koluj-muted)]">{item.text}</p>
-                    <p className="koluj-link mt-4 flex items-center gap-2">Otevřít <ArrowRight size={16} /></p>
+                    <p className="koluj-link mt-4 flex items-center gap-2">{item.actionLabel} <ArrowRight size={16} /></p>
                   </Link>
                 ))}
               </div>
@@ -163,4 +184,22 @@ function Metric({ icon, label, value }: { icon: React.ReactNode; label: string; 
       </div>
     </div>
   );
+}
+
+function recommendationLabel(priority: PerformanceData["recommendations"][number]["priority"]) {
+  if (priority === "attention") return "Vyžaduje pozornost";
+  if (priority === "good") return "Vše v pořádku";
+  return "Doporučujeme";
+}
+
+function recommendationClassName(priority: PerformanceData["recommendations"][number]["priority"]) {
+  if (priority === "attention") return "border-red-200 bg-red-50/60";
+  if (priority === "good") return "border-emerald-200 bg-emerald-50/60";
+  return "border-amber-200 bg-amber-50/60";
+}
+
+function recommendationLabelClassName(priority: PerformanceData["recommendations"][number]["priority"]) {
+  if (priority === "attention") return "text-red-700";
+  if (priority === "good") return "text-emerald-700";
+  return "text-amber-700";
 }
