@@ -123,6 +123,15 @@ img { max-width: 100%; }
 .koluj-input,
 .koluj-select {
   min-height: 46px;
+}
+.koluj-button,
+.koluj-button-secondary {
+  border-radius: 999px;
+}
+.koluj-chip,
+.koluj-category-chip,
+.koluj-input,
+.koluj-select {
   border-radius: 14px;
 }
 .koluj-button {

@@ -322,7 +322,7 @@ export default function ProfilePage() {
               <button
                 type="button"
                 onClick={logout}
-                className="mt-5 rounded-2xl border border-[var(--koluj-border)] px-5 py-3 font-black hover:bg-[var(--koluj-bg)]"
+                className="mt-5 rounded-full border border-[var(--koluj-border)] px-5 py-3 font-black hover:bg-[var(--koluj-bg)]"
               >
                 Odhlásit se
               </button>
@@ -483,7 +483,7 @@ export default function ProfilePage() {
 
               <button
                 onClick={() => setShowDeleteAccount(true)}
-                className="mt-6 rounded-2xl bg-red-600 px-6 py-3 font-black text-white hover:bg-red-700"
+                className="mt-6 rounded-full bg-red-600 px-6 py-3 font-black text-white hover:bg-red-700"
               >
                 Deaktivovat účet
               </button>
@@ -496,7 +496,7 @@ export default function ProfilePage() {
                   <div className="mt-4 flex flex-col gap-3 sm:flex-row">
                     <button
                       onClick={() => setShowDeleteAccount(false)}
-                      className="rounded-xl border border-[var(--koluj-border)] px-4 py-2 font-bold"
+                      className="rounded-full border border-[var(--koluj-border)] px-4 py-2 font-bold"
                     >
                       Zrušit
                     </button>
@@ -504,7 +504,7 @@ export default function ProfilePage() {
                     <button
                       onClick={deactivateAccount}
                       disabled={deletingAccount}
-                      className="rounded-xl bg-red-600 px-4 py-2 font-bold text-white disabled:opacity-50"
+                      className="rounded-full bg-red-600 px-4 py-2 font-bold text-white disabled:opacity-50"
                     >
                       {deletingAccount
                         ? "Deaktivuji účet..."

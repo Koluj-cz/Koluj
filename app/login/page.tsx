@@ -140,8 +140,8 @@ function LoginPageContent() {
   return (
     <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
       <div className="mx-auto w-full max-w-2xl px-4 py-6 md:py-10">
-        <header className="mb-8 flex items-center">
-          <BackLink href="/">Domů</BackLink>
+        <header className="mb-8 hidden items-center md:flex">
+          <BackLink href="/" hideOnMobile>Domů</BackLink>
         </header>
 
         <section>

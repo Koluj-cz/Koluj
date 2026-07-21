@@ -57,7 +57,7 @@ export default function CookieBanner() {
             <button
               type="button"
               onClick={declineCookies}
-              className="rounded-2xl border border-[var(--koluj-border)] px-5 py-3 font-black text-[var(--koluj-muted)] hover:bg-[var(--koluj-bg)]"
+              className="rounded-full border border-[var(--koluj-border)] px-5 py-3 font-black text-[var(--koluj-muted)] hover:bg-[var(--koluj-bg)]"
             >
               Pouze nezbytné
             </button>
