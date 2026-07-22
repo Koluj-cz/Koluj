@@ -23,7 +23,6 @@ import {
   X,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import { OwnerCard } from "@/app/components/offer-detail/OfferDetailCards";
 import OfferDetailTabs from "@/app/components/offer-detail/OfferDetailTabs";
 import type {
   ItemDetail,
@@ -179,16 +178,6 @@ export default function ItemDetailPage() {
 
   const isOwner = item?.owner_id && currentUserId === item.owner_id;
 
-  const rating = item?.profiles?.profile_ratings?.[0];
-
-  const ratingText =
-    rating && rating.rating_count
-      ? `★ ${Number(rating.rating_avg).toFixed(1)}`
-      : "★ Nový";
-
-  const ratingCountText =
-    rating && rating.rating_count ? `(${rating.rating_count})` : "";
-
   const selectedDays = useMemo(() => {
     if (!borrowFrom || !borrowTo) return null;
 
@@ -235,14 +224,6 @@ export default function ItemDetailPage() {
   if (!item) return null;
 
   const isService = item.offer_type === "service";
-
-  const ownerCard = (
-    <OwnerCard
-      item={item}
-      ratingText={ratingText}
-      ratingCountText={ratingCountText}
-    />
-  );
 
   const bookingPanel = (
     <div className="koluj-card p-5 md:p-8">
@@ -567,19 +548,11 @@ export default function ItemDetailPage() {
               <OfferDetailTabs item={item} realizations={realizations} reviews={reviews} />
             </div>
 
-            {!isDesktopLayout && (
-              <div className="space-y-6">
-                {bookingPanel}
-                {ownerCard}
-              </div>
-            )}
+            {!isDesktopLayout && bookingPanel}
           </div>
 
           {isDesktopLayout && (
-            <aside className="min-w-0 space-y-6">
-              {bookingPanel}
-              {ownerCard}
-            </aside>
+            <aside className="min-w-0">{bookingPanel}</aside>
           )}
         </section>
       </div>

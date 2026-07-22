@@ -1,13 +1,14 @@
 "use client";
 
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, ExternalLink, MapPin, Play, Star, X } from "lucide-react";
+import Link from "next/link";
+import { ChevronLeft, ChevronRight, ExternalLink, MapPin, Play, ShieldCheck, Star, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { handoverLabels } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
 import type { ItemDetail, OfferReview, ServiceRealization } from "./types";
 
-type TabId = "description" | "realizations" | "location" | "reviews";
+type TabId = "description" | "realizations" | "location" | "reviews" | "owner";
 
 type Props = {
   item: ItemDetail;
@@ -24,6 +25,7 @@ export default function OfferDetailTabs({ item, realizations, reviews }: Props) 
         : []),
       { id: "location" as const, label: "Lokalita" },
       { id: "reviews" as const, label: `Hodnocení (${reviews.length})` },
+      { id: "owner" as const, label: "Vlastník" },
     ],
     [item.offer_type, realizations.length, reviews.length],
   );
@@ -60,8 +62,65 @@ export default function OfferDetailTabs({ item, realizations, reviews }: Props) 
         )}
         {activeTab === "location" && <LocationTab item={item} />}
         {activeTab === "reviews" && <ReviewsTab reviews={reviews} />}
+        {activeTab === "owner" && <OwnerTab item={item} />}
       </div>
     </section>
+  );
+}
+
+
+function OwnerTab({ item }: { item: ItemDetail }) {
+  const ownerName = item.profiles?.full_name || "Uživatel";
+  const rating = item.profiles?.profile_ratings?.[0];
+  const hasRating = Boolean(rating?.rating_count);
+  const ratingText = hasRating
+    ? `★ ${Number(rating?.rating_avg || 0).toFixed(1)}`
+    : "★ Nový";
+
+  return (
+    <div>
+      <h2 className="text-2xl font-black">Vlastník nabídky</h2>
+      <Link
+        href={`/users/${item.owner_id}`}
+        className="mt-5 flex w-fit items-center gap-4 rounded-3xl border border-[var(--koluj-border)] p-5 transition hover:bg-[var(--koluj-bg)]"
+      >
+        {item.profiles?.avatar_url ? (
+          <Image
+            src={item.profiles.avatar_url}
+            alt={ownerName}
+            width={64}
+            height={64}
+            className="h-16 w-16 rounded-full object-cover"
+          />
+        ) : (
+          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-2xl font-black text-[var(--koluj-green)]">
+            {ownerName.charAt(0).toUpperCase()}
+          </div>
+        )}
+
+        <div>
+          <p className="text-xl font-black">{ownerName}</p>
+          <p className="mt-1 font-bold text-[var(--koluj-green)]">
+            {ratingText}
+            {hasRating && (
+              <span className="ml-1 text-[var(--koluj-muted)]">
+                ({rating?.rating_count})
+              </span>
+            )}
+          </p>
+          <p className="mt-2 text-sm font-bold text-[var(--koluj-muted)]">
+            Zobrazit profil vlastníka
+          </p>
+        </div>
+      </Link>
+
+      {item.profiles?.is_verified && (
+        <p className="mt-5 inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-4 py-2 text-sm font-bold text-[var(--koluj-green)]">
+          <ShieldCheck size={16} />
+          Ověřený profil
+        </p>
+      )}
+    </div>
   );
 }
 

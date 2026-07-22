@@ -170,7 +170,3 @@ function VideoCard({ src, poster, onRemove }: { src: string; poster?: string; on
   );
 }
 
-function revokePreparedVideoUrls(video: SelectedOfferVideo) {
-  URL.revokeObjectURL(video.previewUrl);
-  if (video.thumbnailUrl) URL.revokeObjectURL(video.thumbnailUrl);
-}
