@@ -1,9 +1,10 @@
 "use client";
 
 import Image from "next/image";
-import { Plus, Trash2, X } from "lucide-react";
+import { Film, Play, Plus, Trash2, X } from "lucide-react";
 import toast from "react-hot-toast";
 import type { ServiceRealizationDraft } from "@/lib/uploadServiceRealization";
+import { prepareBrowserVideo, revokePreparedVideoUrls } from "@/lib/mediaUpload";
 
 export type ExistingServiceRealization = {
   id: string;
@@ -12,6 +13,7 @@ export type ExistingServiceRealization = {
   indicative_price_from: number | null;
   sort_order: number | null;
   images: { id: string; image_url: string; sort_order: number | null }[];
+  videos: { id: string; video_url: string; thumbnail_url: string | null; duration_seconds: number | null; sort_order: number | null }[];
 };
 
 type Props = {
@@ -24,6 +26,9 @@ type Props = {
 
 const MAX_REALIZATIONS = 12;
 const MAX_IMAGES = 5;
+const MAX_VIDEOS = 2;
+const MAX_VIDEO_SIZE = 75 * 1024 * 1024;
+const MAX_VIDEO_DURATION = 60;
 
 function createDraft(): ServiceRealizationDraft {
   return {
@@ -33,6 +38,7 @@ function createDraft(): ServiceRealizationDraft {
     indicativePriceFrom: "",
     files: [],
     previews: [],
+    videos: [],
   };
 }
 
@@ -57,6 +63,7 @@ export default function ServiceRealizationsEditor({
     setDrafts((current) => {
       const target = current.find((draft) => draft.localId === localId);
       target?.previews.forEach((preview) => URL.revokeObjectURL(preview));
+      target?.videos.forEach(revokePreparedVideoUrls);
       return current.filter((draft) => draft.localId !== localId);
     });
   }
@@ -99,6 +106,7 @@ export default function ServiceRealizationsEditor({
                   )}
                   <p className="mt-1 text-sm text-[var(--koluj-muted)]">
                     {realization.images.length} {realization.images.length === 1 ? "fotka" : "fotek"}
+                    {(realization.videos || []).length > 0 ? ` · ${realization.videos.length} ${realization.videos.length === 1 ? "video" : "videa"}` : ""}
                   </p>
                 </div>
                 {onDeleteExisting && (
@@ -193,6 +201,56 @@ export default function ServiceRealizationsEditor({
                 }}
               />
             </label>
+
+            <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-[var(--koluj-border)] px-4 py-4 font-black text-[var(--koluj-green)] hover:bg-[var(--koluj-bg)]">
+              <Film size={18} /> Přidat videa ({draft.videos.length}/{MAX_VIDEOS})
+              <input
+                type="file"
+                accept="video/mp4,video/webm"
+                multiple
+                className="hidden"
+                onChange={(event) => {
+                  const input = event.currentTarget;
+                  const selected = Array.from(input.files || []);
+                  input.value = "";
+                  void (async () => {
+                    const remaining = MAX_VIDEOS - draft.videos.length;
+                    if (selected.length > remaining) toast.error(`Jedna realizace může mít maximálně ${MAX_VIDEOS} videa`);
+                    const prepared = [];
+                    for (const file of selected.slice(0, remaining)) {
+                      if (!["video/mp4", "video/webm"].includes(file.type)) { toast.error(`${file.name}: podporujeme pouze MP4 nebo WebM`); continue; }
+                      if (file.size > MAX_VIDEO_SIZE) { toast.error(`${file.name}: video může mít maximálně 75 MB`); continue; }
+                      try {
+                        const video = await prepareBrowserVideo(file);
+                        if (video.durationSeconds > MAX_VIDEO_DURATION) { revokePreparedVideoUrls(video); toast.error(`${file.name}: video může mít maximálně 60 sekund`); continue; }
+                        prepared.push(video);
+                      } catch { toast.error(`${file.name}: video se nepodařilo načíst`); }
+                    }
+                    if (prepared.length) updateDraft(draft.localId, { videos: [...draft.videos, ...prepared] });
+                  })();
+                }}
+              />
+            </label>
+
+            {draft.videos.length > 0 && (
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                {draft.videos.map((video, videoIndex) => (
+                  <div key={`${video.file.name}-${video.file.lastModified}-${videoIndex}`} className="relative overflow-hidden rounded-xl bg-black">
+                    <video src={video.previewUrl} poster={video.thumbnailUrl || undefined} controls playsInline preload="metadata" className="aspect-video w-full object-contain" />
+                    <span className="absolute left-2 top-2 rounded-full bg-black/70 p-2 text-white"><Play size={15} fill="currentColor" /></span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        revokePreparedVideoUrls(video);
+                        updateDraft(draft.localId, { videos: draft.videos.filter((_, indexToKeep) => indexToKeep !== videoIndex) });
+                      }}
+                      className="absolute right-2 top-2 rounded-full bg-white/90 p-1.5 text-red-600 shadow"
+                      aria-label="Odebrat video"
+                    ><X size={15} /></button>
+                  </div>
+                ))}
+              </div>
+            )}
 
             {draft.previews.length > 0 && (
               <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">

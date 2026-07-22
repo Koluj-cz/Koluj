@@ -1,5 +1,5 @@
 import type { SelectedOfferVideo } from "@/app/components/offer-form/OfferVideoUploader";
-import { createSupabaseBrowserClient } from "@/lib/supabase/client";
+import { uploadToSignedStorageUrl } from "@/lib/mediaUpload";
 
 export async function uploadOfferVideo(offerId: string, video: SelectedOfferVideo) {
   const prepareResponse = await fetch(`/api/offers/${offerId}/videos/upload-url`, {
@@ -16,21 +16,10 @@ export async function uploadOfferVideo(offerId: string, video: SelectedOfferVide
   const prepared = await prepareResponse.json().catch(() => null);
   if (!prepareResponse.ok) throw new Error(prepared?.error || "Video se nepodařilo připravit");
 
-  const supabase = createSupabaseBrowserClient();
-  const videoUpload = await supabase.storage
-    .from("offers")
-    .uploadToSignedUrl(prepared.video.path, prepared.video.token, video.file, {
-      contentType: video.file.type,
-    });
-  if (videoUpload.error) throw new Error("Video se nepodařilo nahrát");
+  await uploadToSignedStorageUrl({ path: prepared.video.path, token: prepared.video.token, file: video.file });
 
   if (video.thumbnailFile && prepared.thumbnail) {
-    const thumbnailUpload = await supabase.storage
-      .from("offers")
-      .uploadToSignedUrl(prepared.thumbnail.path, prepared.thumbnail.token, video.thumbnailFile, {
-        contentType: video.thumbnailFile.type,
-      });
-    if (thumbnailUpload.error) throw new Error("Náhled videa se nepodařilo nahrát");
+    await uploadToSignedStorageUrl({ path: prepared.thumbnail.path, token: prepared.thumbnail.token, file: video.thumbnailFile });
   }
 
   const commitResponse = await fetch(`/api/offers/${offerId}/videos`, {

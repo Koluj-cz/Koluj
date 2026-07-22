@@ -5,18 +5,13 @@ import { Film, Plus, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import SectionTitle from "@/app/components/SectionTitle";
 import type { ExistingOfferVideo } from "@/app/components/offer-form/types";
+import { prepareBrowserVideo, revokePreparedVideoUrls, type PreparedBrowserVideo } from "@/lib/mediaUpload";
 
 export const MAX_OFFER_VIDEOS = 3;
 export const MAX_VIDEO_SIZE_BYTES = 75 * 1024 * 1024;
 export const MAX_VIDEO_DURATION_SECONDS = 60;
 
-export type SelectedOfferVideo = {
-  file: File;
-  previewUrl: string;
-  thumbnailFile: File | null;
-  thumbnailUrl: string | null;
-  durationSeconds: number;
-};
+export type SelectedOfferVideo = PreparedBrowserVideo;
 
 type Props = {
   existingVideos?: ExistingOfferVideo[];
@@ -41,7 +36,7 @@ export default function OfferVideoUploader({
   }, [videos]);
 
   useEffect(() => {
-    return () => currentVideosRef.current.forEach(revokeVideoUrls);
+    return () => currentVideosRef.current.forEach(revokePreparedVideoUrls);
   }, []);
 
   async function handleVideos(files: FileList | null) {
@@ -70,9 +65,9 @@ export default function OfferVideoUploader({
         }
 
         try {
-          const selected = await prepareVideo(file);
+          const selected = await prepareBrowserVideo(file);
           if (selected.durationSeconds > MAX_VIDEO_DURATION_SECONDS) {
-            revokeVideoUrls(selected);
+            revokePreparedVideoUrls(selected);
             toast.error(`${file.name}: video může mít maximálně 60 sekund`);
             continue;
           }
@@ -93,7 +88,7 @@ export default function OfferVideoUploader({
   function removeNewVideo(index: number) {
     setVideos((current) => {
       const selected = current[index];
-      if (selected) revokeVideoUrls(selected);
+      if (selected) revokePreparedVideoUrls(selected);
       return current.filter((_, currentIndex) => currentIndex !== index);
     });
   }
@@ -175,60 +170,7 @@ function VideoCard({ src, poster, onRemove }: { src: string; poster?: string; on
   );
 }
 
-function revokeVideoUrls(video: SelectedOfferVideo) {
+function revokePreparedVideoUrls(video: SelectedOfferVideo) {
   URL.revokeObjectURL(video.previewUrl);
   if (video.thumbnailUrl) URL.revokeObjectURL(video.thumbnailUrl);
-}
-
-async function prepareVideo(file: File): Promise<SelectedOfferVideo> {
-  const previewUrl = URL.createObjectURL(file);
-  const video = document.createElement("video");
-  video.preload = "metadata";
-  video.muted = true;
-  video.playsInline = true;
-  video.src = previewUrl;
-
-  await waitForEvent(video, "loadedmetadata");
-  const durationSeconds = Math.ceil(video.duration || 0);
-
-  let thumbnailFile: File | null = null;
-  let thumbnailUrl: string | null = null;
-
-  try {
-    video.currentTime = Math.min(Math.max(video.duration * 0.1, 0.1), 1);
-    await waitForEvent(video, "seeked");
-    const canvas = document.createElement("canvas");
-    const maxWidth = 1280;
-    const ratio = Math.min(1, maxWidth / Math.max(video.videoWidth, 1));
-    canvas.width = Math.max(1, Math.round(video.videoWidth * ratio));
-    canvas.height = Math.max(1, Math.round(video.videoHeight * ratio));
-    canvas.getContext("2d")?.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.82));
-    if (blob) {
-      thumbnailFile = new File([blob], "video-thumbnail.jpg", { type: "image/jpeg" });
-      thumbnailUrl = URL.createObjectURL(blob);
-    }
-  } catch {
-    // Náhled je nepovinný, video lze uložit i bez něj.
-  }
-
-  return { file, previewUrl, thumbnailFile, thumbnailUrl, durationSeconds };
-}
-
-function waitForEvent(element: HTMLMediaElement, eventName: "loadedmetadata" | "seeked") {
-  return new Promise<void>((resolve, reject) => {
-    const timeout = window.setTimeout(() => reject(new Error("Video timeout")), 10000);
-    const handleSuccess = () => {
-      window.clearTimeout(timeout);
-      element.removeEventListener("error", handleError);
-      resolve();
-    };
-    const handleError = () => {
-      window.clearTimeout(timeout);
-      element.removeEventListener(eventName, handleSuccess);
-      reject(new Error("Video error"));
-    };
-    element.addEventListener(eventName, handleSuccess, { once: true });
-    element.addEventListener("error", handleError, { once: true });
-  });
 }

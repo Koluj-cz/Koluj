@@ -18,6 +18,14 @@ export type ServiceRealizationImage = {
   sort_order: number | null;
 };
 
+export type ServiceRealizationVideo = {
+  id: string;
+  video_url: string;
+  thumbnail_url: string | null;
+  duration_seconds: number | null;
+  sort_order: number | null;
+};
+
 export type ServiceRealization = {
   id: string;
   title: string;
@@ -25,6 +33,7 @@ export type ServiceRealization = {
   indicative_price_from: number | null;
   sort_order: number | null;
   images: ServiceRealizationImage[];
+  videos: ServiceRealizationVideo[];
 };
 
 export type OfferReview = {

@@ -103,6 +103,7 @@ export default function EditItemPage() {
           description: realization.description,
           indicativePriceFrom: realization.indicativePriceFrom,
           files: realization.files.map((file) => ({ name: file.name, size: file.size, lastModified: file.lastModified })),
+          videos: realization.videos.map((video) => ({ name: video.file.name, size: video.file.size, lastModified: video.file.lastModified })),
         })),
         newVideos: newVideos.map((video) => ({
           name: video.file.name,

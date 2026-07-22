@@ -162,9 +162,20 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     if (realizationImagesError) throw new Error(realizationImagesError.message);
 
+    const { data: realizationVideos, error: realizationVideosError } = realizationIds.length
+      ? await supabaseAdmin
+          .from("service_realization_videos")
+          .select("id, realization_id, video_url, thumbnail_url, duration_seconds, sort_order, created_at")
+          .in("realization_id", realizationIds)
+          .order("sort_order", { ascending: true })
+      : { data: [], error: null };
+
+    if (realizationVideosError) throw new Error(realizationVideosError.message);
+
     const realizations = (realizationRows || []).map((realization) => ({
       ...realization,
       images: (realizationImages || []).filter((image) => image.realization_id === realization.id),
+      videos: (realizationVideos || []).filter((video) => video.realization_id === realization.id),
     }));
 
     const { data: reviewsData, error: reviewsError } = await supabaseAdmin
@@ -436,12 +447,12 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
       supabaseAdmin.from("service_realizations").select("id").eq("offer_id", id),
     ]);
     const realizationIds = (realizationRows || []).map((realization) => realization.id);
-    const { data: realizationImages } = realizationIds.length
-      ? await supabaseAdmin
-          .from("service_realization_images")
-          .select("image_url")
-          .in("realization_id", realizationIds)
-      : { data: [] };
+    const [{ data: realizationImages }, { data: realizationVideos }] = realizationIds.length
+      ? await Promise.all([
+          supabaseAdmin.from("service_realization_images").select("image_url").in("realization_id", realizationIds),
+          supabaseAdmin.from("service_realization_videos").select("video_url, thumbnail_url").in("realization_id", realizationIds),
+        ])
+      : [{ data: [] }, { data: [] }];
     const paths = [
       ...(images || []).map((image) => storagePathFromPublicUrl(image.image_url)),
       ...(videos || []).flatMap((video) => [
@@ -449,6 +460,7 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
         storagePathFromPublicUrl(video.thumbnail_url),
       ]),
       ...(realizationImages || []).map((image) => storagePathFromPublicUrl(image.image_url)),
+      ...(realizationVideos || []).flatMap((video) => [storagePathFromPublicUrl(video.video_url), storagePathFromPublicUrl(video.thumbnail_url)]),
     ].filter(Boolean) as string[];
     if (paths.length > 0) await supabaseAdmin.storage.from("offers").remove(paths);
     await Promise.all([

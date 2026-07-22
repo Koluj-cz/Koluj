@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { ChevronLeft, ChevronRight, ExternalLink, MapPin, Star, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, MapPin, Play, Star, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { handoverLabels } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
@@ -80,7 +80,7 @@ function DescriptionTab({ item }: { item: ItemDetail }) {
 function RealizationsTab({ realizations }: { realizations: ServiceRealization[] }) {
   const scroller = useRef<HTMLDivElement | null>(null);
   const [opened, setOpened] = useState<ServiceRealization | null>(null);
-  const [openedImage, setOpenedImage] = useState(0);
+  const [openedMedia, setOpenedMedia] = useState(0);
 
   function scroll(direction: -1 | 1) {
     scroller.current?.scrollBy({ left: direction * 520, behavior: "smooth" });
@@ -123,7 +123,7 @@ function RealizationsTab({ realizations }: { realizations: ServiceRealization[] 
             type="button"
             onClick={() => {
               setOpened(realization);
-              setOpenedImage(0);
+              setOpenedMedia(0);
             }}
             className="flex w-[300px] shrink-0 snap-start overflow-hidden rounded-2xl border border-[var(--koluj-border)] bg-white text-left transition hover:border-[var(--koluj-green)] sm:w-[390px]"
           >
@@ -131,9 +131,12 @@ function RealizationsTab({ realizations }: { realizations: ServiceRealization[] 
               {realization.images[0]?.image_url && (
                 <Image src={realization.images[0].image_url} alt={realization.title} fill sizes="176px" className="object-cover" />
               )}
-              {realization.images.length > 1 && (
+              {realization.videos.length > 0 && (
+                <span className="absolute left-2 top-2 rounded-full bg-black/70 p-2 text-white"><Play size={15} fill="currentColor" /></span>
+              )}
+              {realization.images.length + realization.videos.length > 1 && (
                 <span className="absolute bottom-2 right-2 rounded-full bg-black/70 px-2 py-1 text-xs font-black text-white">
-                  +{realization.images.length - 1}
+                  +{realization.images.length + realization.videos.length - 1}
                 </span>
               )}
             </div>
@@ -160,21 +163,25 @@ function RealizationsTab({ realizations }: { realizations: ServiceRealization[] 
             <button type="button" onClick={() => setOpened(null)} className="absolute right-4 top-4 z-10 rounded-full bg-white p-2 shadow" aria-label="Zavřít realizaci">
               <X size={22} />
             </button>
-            <div className="relative aspect-video overflow-hidden rounded-2xl bg-[var(--koluj-bg)]">
-              {opened.images[openedImage]?.image_url && (
-                <Image src={opened.images[openedImage].image_url} alt={opened.title} fill sizes="900px" className="object-contain" />
-              )}
-              {opened.images.length > 1 && (
-                <>
-                  <button type="button" onClick={() => setOpenedImage((current) => (current - 1 + opened.images.length) % opened.images.length)} className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow" aria-label="Předchozí fotografie">
-                    <ChevronLeft />
-                  </button>
-                  <button type="button" onClick={() => setOpenedImage((current) => (current + 1) % opened.images.length)} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow" aria-label="Další fotografie">
-                    <ChevronRight />
-                  </button>
-                </>
-              )}
-            </div>
+            {(() => {
+              const media = [
+                ...opened.images.map((image) => ({ type: "image" as const, url: image.image_url, poster: null })),
+                ...opened.videos.map((video) => ({ type: "video" as const, url: video.video_url, poster: video.thumbnail_url })),
+              ];
+              const current = media[openedMedia] || media[0];
+              return (
+                <div className="relative aspect-video overflow-hidden rounded-2xl bg-black">
+                  {current?.type === "image" && <Image src={current.url} alt={opened.title} fill sizes="900px" className="object-contain" />}
+                  {current?.type === "video" && <video src={current.url} poster={current.poster || undefined} controls autoPlay playsInline className="h-full w-full object-contain" />}
+                  {media.length > 1 && (
+                    <>
+                      <button type="button" onClick={() => setOpenedMedia((value) => (value - 1 + media.length) % media.length)} className="absolute left-3 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow" aria-label="Předchozí médium"><ChevronLeft /></button>
+                      <button type="button" onClick={() => setOpenedMedia((value) => (value + 1) % media.length)} className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full bg-white/90 p-2 shadow" aria-label="Další médium"><ChevronRight /></button>
+                    </>
+                  )}
+                </div>
+              );
+            })()}
             <h3 className="mt-5 text-2xl font-black">{opened.title}</h3>
             {opened.description && <p className="mt-3 leading-relaxed text-[var(--koluj-muted)]">{opened.description}</p>}
             {opened.indicative_price_from !== null && (
