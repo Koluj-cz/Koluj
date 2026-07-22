@@ -12,6 +12,29 @@ export type ItemVideo = {
   sort_order: number | null;
 };
 
+export type ServiceRealizationImage = {
+  id: string;
+  image_url: string;
+  sort_order: number | null;
+};
+
+export type ServiceRealization = {
+  id: string;
+  title: string;
+  description: string | null;
+  indicative_price_from: number | null;
+  sort_order: number | null;
+  images: ServiceRealizationImage[];
+};
+
+export type OfferReview = {
+  id: string;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  reviewer: { full_name: string | null; avatar_url: string | null } | null;
+};
+
 export type ItemDetail = {
   id: string;
   owner_id: string | null;

@@ -15,9 +15,11 @@ import OfferVideoUploader, { type SelectedOfferVideo } from "@/app/components/of
 import OfferTypeSection from "@/app/components/offer-form/OfferTypeSection";
 import PriceSection from "@/app/components/offer-form/PriceSection";
 import ServiceBookingSettingsSection from "@/app/components/offer-form/ServiceBookingSettingsSection";
+import ServiceRealizationsEditor from "@/app/components/offer-form/ServiceRealizationsEditor";
 import type { OfferFormState } from "@/app/components/offer-form/types";
 import { useUnsavedChangesWarning } from "@/lib/hooks/useUnsavedChangesWarning";
 import { uploadOfferVideo } from "@/lib/uploadOfferVideo";
+import { uploadServiceRealization, type ServiceRealizationDraft } from "@/lib/uploadServiceRealization";
 
 const initialForm: OfferFormState = {
   offer_type: "item",
@@ -50,6 +52,7 @@ export default function NewItemPage() {
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [mainPhotoIndex, setMainPhotoIndex] = useState(0);
   const [videos, setVideos] = useState<SelectedOfferVideo[]>([]);
+  const [realizations, setRealizations] = useState<ServiceRealizationDraft[]>([]);
   const [form, setForm] = useState<OfferFormState>(initialForm);
   const [allowNavigation, setAllowNavigation] = useState(false);
   const [pendingNavigationHref, setPendingNavigationHref] = useState<string | null>(null);
@@ -59,6 +62,7 @@ export default function NewItemPage() {
       photos.length > 0 ||
       photoPreviews.length > 0 ||
       videos.length > 0 ||
+      realizations.length > 0 ||
       form.offer_type !== initialForm.offer_type ||
       form.title.trim() !== "" ||
       form.description.trim() !== "" ||
@@ -74,7 +78,7 @@ export default function NewItemPage() {
       form.handover_options.length > 0 ||
       form.contact_note.trim() !== ""
     );
-  }, [form, photos, photoPreviews.length, videos.length]);
+  }, [form, photos, photoPreviews.length, videos.length, realizations.length]);
 
   useUnsavedChangesWarning(
     hasUnsavedChanges && !loading && !allowNavigation,
@@ -125,6 +129,13 @@ export default function NewItemPage() {
     if (form.offer_type === "item" && form.handover_options.length === 0) {
       throw new Error("Vyber alespoň jednu možnost předání");
     }
+
+    if (form.offer_type === "service") {
+      for (const realization of realizations) {
+        if (!realization.title.trim()) throw new Error("Doplň název každé realizace");
+        if (realization.files.length === 0) throw new Error("Ke každé realizaci přidej alespoň jednu fotografii");
+      }
+    }
   }
 
   async function handleSubmit() {
@@ -157,6 +168,12 @@ export default function NewItemPage() {
 
       if (!response.ok) {
         throw new Error(result?.error || "Nepodařilo se uložit nabídku");
+      }
+
+      if (form.offer_type === "service" && realizations.length > 0 && result?.offerId) {
+        for (let index = 0; index < realizations.length; index += 1) {
+          await uploadServiceRealization(result.offerId, realizations[index], index);
+        }
       }
 
       if (videos.length > 0 && result?.offerId) {
@@ -234,6 +251,11 @@ export default function NewItemPage() {
             <BasicInfoSection form={form} setForm={setForm} />
             <PriceSection form={form} setForm={setForm} />
             <ServiceBookingSettingsSection form={form} setForm={setForm} />
+            <ServiceRealizationsEditor
+              offerType={form.offer_type}
+              drafts={realizations}
+              setDrafts={setRealizations}
+            />
             <LocationSection form={form} setForm={setForm} />
             <AvailabilityInfoSection mode="new" />
 

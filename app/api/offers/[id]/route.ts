@@ -142,6 +142,49 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     if (videoError) throw new Error(videoError.message);
 
+    const { data: realizationRows, error: realizationsError } = await supabaseAdmin
+      .from("service_realizations")
+      .select("id, offer_id, title, description, indicative_price_from, sort_order, created_at")
+      .eq("offer_id", id)
+      .order("sort_order", { ascending: true })
+      .order("created_at", { ascending: true });
+
+    if (realizationsError) throw new Error(realizationsError.message);
+
+    const realizationIds = (realizationRows || []).map((row) => row.id);
+    const { data: realizationImages, error: realizationImagesError } = realizationIds.length
+      ? await supabaseAdmin
+          .from("service_realization_images")
+          .select("id, realization_id, image_url, sort_order, created_at")
+          .in("realization_id", realizationIds)
+          .order("sort_order", { ascending: true })
+      : { data: [], error: null };
+
+    if (realizationImagesError) throw new Error(realizationImagesError.message);
+
+    const realizations = (realizationRows || []).map((realization) => ({
+      ...realization,
+      images: (realizationImages || []).filter((image) => image.realization_id === realization.id),
+    }));
+
+    const { data: reviewsData, error: reviewsError } = await supabaseAdmin
+      .from("reviews")
+      .select(`
+        id,
+        rating,
+        comment,
+        created_at,
+        reviewer:profiles!reviews_reviewer_id_fkey (
+          full_name,
+          avatar_url
+        )
+      `)
+      .eq("reviewed_user_id", data.owner_id)
+      .order("created_at", { ascending: false })
+      .limit(20);
+
+    if (reviewsError) throw new Error(reviewsError.message);
+
     const today = new Date().toISOString().split("T")[0];
 
     const { data: blocksData, error: blocksError } = await supabaseAdmin
@@ -162,6 +205,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       },
       images: imageData || [],
       videos: videoData || [],
+      realizations,
+      reviews: reviewsData || [],
       availabilityBlocks: blocksData || [],
       currentUserId,
     });
@@ -385,21 +430,31 @@ export async function DELETE(_request: Request, { params }: { params: Promise<{ 
     if (error || !offer) throw new Error("Nabídka nebyla nalezena");
     if (offer.owner_id !== user.id) throw new Error("Tuhle nabídku může smazat pouze vlastník");
 
-    const [{ data: images }, { data: videos }] = await Promise.all([
+    const [{ data: images }, { data: videos }, { data: realizationRows }] = await Promise.all([
       supabaseAdmin.from("offer_images").select("image_url").eq("offer_id", id),
       supabaseAdmin.from("offer_videos").select("video_url, thumbnail_url").eq("offer_id", id),
+      supabaseAdmin.from("service_realizations").select("id").eq("offer_id", id),
     ]);
+    const realizationIds = (realizationRows || []).map((realization) => realization.id);
+    const { data: realizationImages } = realizationIds.length
+      ? await supabaseAdmin
+          .from("service_realization_images")
+          .select("image_url")
+          .in("realization_id", realizationIds)
+      : { data: [] };
     const paths = [
       ...(images || []).map((image) => storagePathFromPublicUrl(image.image_url)),
       ...(videos || []).flatMap((video) => [
         storagePathFromPublicUrl(video.video_url),
         storagePathFromPublicUrl(video.thumbnail_url),
       ]),
+      ...(realizationImages || []).map((image) => storagePathFromPublicUrl(image.image_url)),
     ].filter(Boolean) as string[];
     if (paths.length > 0) await supabaseAdmin.storage.from("offers").remove(paths);
     await Promise.all([
       supabaseAdmin.from("offer_images").delete().eq("offer_id", id),
       supabaseAdmin.from("offer_videos").delete().eq("offer_id", id),
+      supabaseAdmin.from("service_realizations").delete().eq("offer_id", id),
     ]);
     await supabaseAdmin.from("offers").delete().eq("id", id);
 

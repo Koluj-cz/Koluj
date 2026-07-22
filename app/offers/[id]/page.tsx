@@ -23,15 +23,14 @@ import {
   X,
 } from "lucide-react";
 import toast from "react-hot-toast";
-import {
-  HandoverCard,
-  MetaAndDescriptionCard,
-  OwnerCard,
-} from "@/app/components/offer-detail/OfferDetailCards";
+import { OwnerCard } from "@/app/components/offer-detail/OfferDetailCards";
+import OfferDetailTabs from "@/app/components/offer-detail/OfferDetailTabs";
 import type {
   ItemDetail,
   ItemImage,
   ItemVideo,
+  OfferReview,
+  ServiceRealization,
 } from "@/app/components/offer-detail/types";
 import OfferGallery from "@/app/components/offer-gallery/OfferGallery";
 
@@ -55,6 +54,8 @@ export default function ItemDetailPage() {
   const [item, setItem] = useState<ItemDetail | null>(null);
   const [images, setImages] = useState<ItemImage[]>([]);
   const [videos, setVideos] = useState<ItemVideo[]>([]);
+  const [realizations, setRealizations] = useState<ServiceRealization[]>([]);
+  const [reviews, setReviews] = useState<OfferReview[]>([]);
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isDesktopLayout, setIsDesktopLayout] = useState(false);
@@ -85,6 +86,8 @@ export default function ItemDetailPage() {
       setItem(result.item as ItemDetail);
       setImages(result.images || []);
       setVideos(result.videos || []);
+      setRealizations(result.realizations || []);
+      setReviews(result.reviews || []);
     } catch (error) {
       console.error("Unexpected item detail error:", error);
       toast.error("Detail nabídky se nepodařilo načíst");
@@ -233,7 +236,6 @@ export default function ItemDetailPage() {
 
   const isService = item.offer_type === "service";
 
-  const handoverCard = <HandoverCard item={item} />;
   const ownerCard = (
     <OwnerCard
       item={item}
@@ -562,30 +564,22 @@ export default function ItemDetailPage() {
 
 
             <div className="min-w-0">
-              <MetaAndDescriptionCard item={item} />
+              <OfferDetailTabs item={item} realizations={realizations} reviews={reviews} />
             </div>
 
-            {!isDesktopLayout && <div>{bookingPanel}</div>}
-
-            <div className="min-w-0">
-              {isService ? (
-                <div className="grid items-stretch gap-6 md:grid-cols-2 xl:grid-cols-3">
-                  <div className="h-full [&>div]:h-full">{handoverCard}</div>
-                  <div className="h-full md:col-span-1 xl:col-span-2 [&>div]:h-full">
-                    {ownerCard}
-                  </div>
-                </div>
-              ) : (
-                <div className="grid items-stretch gap-6 xl:grid-cols-[minmax(0,3fr)_minmax(260px,1fr)]">
-                  <div className="h-full [&>div]:h-full">{handoverCard}</div>
-                  <div className="h-full [&>div]:h-full">{ownerCard}</div>
-                </div>
-              )}
-            </div>
+            {!isDesktopLayout && (
+              <div className="space-y-6">
+                {bookingPanel}
+                {ownerCard}
+              </div>
+            )}
           </div>
 
           {isDesktopLayout && (
-            <aside className="min-w-0">{bookingPanel}</aside>
+            <aside className="min-w-0 space-y-6">
+              {bookingPanel}
+              {ownerCard}
+            </aside>
           )}
         </section>
       </div>

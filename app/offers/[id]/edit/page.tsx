@@ -16,6 +16,7 @@ import OfferVideoUploader, { type SelectedOfferVideo } from "@/app/components/of
 import OfferTypeSection from "@/app/components/offer-form/OfferTypeSection";
 import PriceSection from "@/app/components/offer-form/PriceSection";
 import ServiceBookingSettingsSection from "@/app/components/offer-form/ServiceBookingSettingsSection";
+import ServiceRealizationsEditor, { type ExistingServiceRealization } from "@/app/components/offer-form/ServiceRealizationsEditor";
 import type {
   ExistingOfferPhoto,
   ExistingOfferVideo,
@@ -24,6 +25,7 @@ import type {
 import { itemPriceUnits, servicePriceUnits } from "@/lib/constants";
 import { useUnsavedChangesWarning } from "@/lib/hooks/useUnsavedChangesWarning";
 import { uploadOfferVideo } from "@/lib/uploadOfferVideo";
+import { uploadServiceRealization, type ServiceRealizationDraft } from "@/lib/uploadServiceRealization";
 
 const emptyForm: OfferFormState = {
   offer_type: "item",
@@ -65,6 +67,8 @@ export default function EditItemPage() {
   const [initialPrimaryImageUrl, setInitialPrimaryImageUrl] = useState("");
   const [existingVideos, setExistingVideos] = useState<ExistingOfferVideo[]>([]);
   const [newVideos, setNewVideos] = useState<SelectedOfferVideo[]>([]);
+  const [existingRealizations, setExistingRealizations] = useState<ExistingServiceRealization[]>([]);
+  const [newRealizations, setNewRealizations] = useState<ServiceRealizationDraft[]>([]);
 
   const [form, setForm] = useState<OfferFormState>(emptyForm);
   const [initialSnapshot, setInitialSnapshot] = useState("");
@@ -92,6 +96,14 @@ export default function EditItemPage() {
           lastModified: photo.lastModified,
         })),
         existingVideoIds: existingVideos.map((video) => video.id),
+        existingRealizationIds: existingRealizations.map((realization) => realization.id),
+        newRealizations: newRealizations.map((realization) => ({
+          localId: realization.localId,
+          title: realization.title,
+          description: realization.description,
+          indicativePriceFrom: realization.indicativePriceFrom,
+          files: realization.files.map((file) => ({ name: file.name, size: file.size, lastModified: file.lastModified })),
+        })),
         newVideos: newVideos.map((video) => ({
           name: video.file.name,
           size: video.file.size,
@@ -99,7 +111,7 @@ export default function EditItemPage() {
           lastModified: video.file.lastModified,
         })),
       }),
-    [form, images, primaryImageUrl, mainPhotoIndex, newPhotos, newPhotoPreviews.length, existingVideos, newVideos],
+    [form, images, primaryImageUrl, mainPhotoIndex, newPhotos, newPhotoPreviews.length, existingVideos, newVideos, existingRealizations, newRealizations],
   );
 
   const hasUnsavedChanges =
@@ -169,6 +181,7 @@ export default function EditItemPage() {
 
     const nextImages = (result.images || []) as ExistingOfferPhoto[];
     const nextVideos = (result.videos || []) as ExistingOfferVideo[];
+    const nextRealizations = (result.realizations || []) as ExistingServiceRealization[];
     const nextPrimaryImageUrl = data.primary_image_url || "";
 
     setForm(nextForm);
@@ -176,6 +189,7 @@ export default function EditItemPage() {
     setPrimaryImageUrl(nextPrimaryImageUrl);
     setInitialPrimaryImageUrl(nextPrimaryImageUrl);
     setExistingVideos(nextVideos);
+    setExistingRealizations(nextRealizations);
     setInitialSnapshot(
       JSON.stringify({
         form: nextForm,
@@ -189,6 +203,8 @@ export default function EditItemPage() {
         newPhotoPreviewsCount: 0,
         newPhotos: [],
         existingVideoIds: nextVideos.map((video) => video.id),
+        existingRealizationIds: nextRealizations.map((realization) => realization.id),
+        newRealizations: [],
         newVideos: [],
       }),
     );
@@ -229,6 +245,17 @@ export default function EditItemPage() {
     }
     setExistingVideos((current) => current.filter((item) => item.id !== video.id));
     toast.success("Video smazáno");
+  }
+
+  async function deleteRealization(realization: ExistingServiceRealization) {
+    const response = await fetch(`/api/offers/${offerId}/realizations/${realization.id}`, { method: "DELETE" });
+    const result = await response.json().catch(() => null);
+    if (!response.ok) {
+      toast.error(result?.error || "Realizaci se nepodařilo smazat");
+      return;
+    }
+    setExistingRealizations((current) => current.filter((item) => item.id !== realization.id));
+    toast.success("Realizace smazána");
   }
 
   function makePrimary(imageUrl: string) {
@@ -276,6 +303,13 @@ export default function EditItemPage() {
     if (form.offer_type === "item" && form.handover_options.length === 0) {
       throw new Error("Vyber alespoň jednu možnost předání");
     }
+
+    if (form.offer_type === "service") {
+      for (const realization of newRealizations) {
+        if (!realization.title.trim()) throw new Error("Doplň název každé realizace");
+        if (realization.files.length === 0) throw new Error("Ke každé realizaci přidej alespoň jednu fotografii");
+      }
+    }
   }
 
   async function saveItem() {
@@ -312,6 +346,12 @@ export default function EditItemPage() {
 
       if (!response.ok) {
         throw new Error(result?.error || "Změny se nepodařilo uložit");
+      }
+
+      if (form.offer_type === "service" && newRealizations.length > 0) {
+        for (let index = 0; index < newRealizations.length; index += 1) {
+          await uploadServiceRealization(offerId, newRealizations[index], existingRealizations.length + index);
+        }
       }
 
       if (newVideos.length > 0) {
@@ -423,6 +463,13 @@ export default function EditItemPage() {
             <BasicInfoSection form={form} setForm={setForm} />
             <PriceSection form={form} setForm={setForm} />
             <ServiceBookingSettingsSection form={form} setForm={setForm} />
+            <ServiceRealizationsEditor
+              offerType={form.offer_type}
+              existing={existingRealizations}
+              drafts={newRealizations}
+              setDrafts={setNewRealizations}
+              onDeleteExisting={deleteRealization}
+            />
             <LocationSection form={form} setForm={setForm} />
             <AvailabilityInfoSection mode="edit" />
 
