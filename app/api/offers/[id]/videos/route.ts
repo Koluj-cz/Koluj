@@ -1,7 +1,7 @@
 import { after, NextResponse } from "next/server";
 import { requireUser, createSupabaseAdminClient } from "@/lib/supabase/server";
 import { errorMessage } from "@/lib/security";
-import { processMediaById } from "@/lib/services/mediaModerationService";
+import { processMediaById, processVideoMediaById } from "@/lib/services/mediaModerationService";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -65,7 +65,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     );
 
     after(async () => {
-      await processMediaById("offer_videos", video.id, moderationFrameUrls);
+      await processVideoMediaById("offer_videos", video.id, moderationFrameUrls);
     });
 
     return NextResponse.json({ ok: true, video });

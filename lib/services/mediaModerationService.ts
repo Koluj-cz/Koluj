@@ -116,7 +116,7 @@ async function notifyAdmin(rows: Array<{ table: ModerationTable; id: string; sta
 }
 
 
-export async function processMediaById(tableValue: string, id: string) {
+async function processMedia(tableValue: string, id: string, suppliedFrameUrls: string[] = []) {
   if (!isModerationTable(tableValue)) throw new Error("Neplatný typ média");
 
   const supabase = createSupabaseAdminClient();
@@ -164,13 +164,38 @@ export async function processMediaById(tableValue: string, id: string) {
   }
 
   try {
-    const moderation = await moderateImageUrl(url);
-    const finalStatus: ModerationStatus = tableValue.endsWith("videos") && moderation.status === "approved"
-      ? "review"
-      : moderation.status;
-    const finalReason = tableValue.endsWith("videos") && moderation.status === "approved"
-      ? "Automaticky byl zkontrolován pouze náhled videa. Celé video vyžaduje ruční schválení."
+    const isVideo = tableValue.endsWith("videos");
+    const urls = isVideo && suppliedFrameUrls.length > 0
+      ? Array.from(new Set(suppliedFrameUrls.filter(Boolean))).slice(0, 8)
+      : [url];
+    const checks = await Promise.all(urls.map((frameUrl) => moderateImageUrl(frameUrl)));
+    const priority: Record<ModerationStatus, number> = {
+      pending: 0,
+      processing: 0,
+      approved: 1,
+      review: 2,
+      rejected: 3,
+      failed: 4,
+    };
+    const moderation = checks.reduce((worst, current) =>
+      priority[current.status] > priority[worst.status] ? current : worst,
+    );
+    const finalStatus: ModerationStatus = moderation.status;
+    const finalReason = isVideo && checks.length > 1 && moderation.status === "approved"
+      ? `Automaticky schváleno po kontrole ${checks.length} snímků napříč videem.`
       : moderation.reason;
+    const storedResult = isVideo
+      ? {
+          sampled_frames: checks.length,
+          frame_urls: urls,
+          results: checks.map((check, index) => ({
+            frame: index + 1,
+            status: check.status,
+            reason: check.reason,
+            result: check.result,
+          })),
+        }
+      : moderation.result;
 
     await supabase
       .from(tableValue)
@@ -178,7 +203,7 @@ export async function processMediaById(tableValue: string, id: string) {
         moderation_status: finalStatus,
         moderation_reason: finalReason,
         moderation_provider: "openai:omni-moderation-latest",
-        moderation_result: moderation.result,
+        moderation_result: storedResult,
         moderation_checked_at: new Date().toISOString(),
       })
       .eq("id", id);
@@ -376,4 +401,13 @@ export async function requireModerator() {
     .filter(Boolean);
   if (!user.email || !configured.includes(user.email.toLowerCase())) throw new Error("Unauthorized");
   return user;
+}
+
+
+export async function processMediaById(tableValue: string, id: string) {
+  return processMedia(tableValue, id);
+}
+
+export async function processVideoMediaById(tableValue: string, id: string, frameUrls: string[]) {
+  return processMedia(tableValue, id, frameUrls);
 }

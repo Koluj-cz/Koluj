@@ -1,7 +1,7 @@
 import { after, NextResponse } from "next/server";
 import { errorMessage } from "@/lib/security";
 import { createSupabaseAdminClient, requireUser } from "@/lib/supabase/server";
-import { processMediaById } from "@/lib/services/mediaModerationService";
+import { processMediaById, processVideoMediaById } from "@/lib/services/mediaModerationService";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string; realizationId: string }> }) {
   const { id: offerId, realizationId } = await params;
@@ -51,7 +51,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         supabaseAdmin.storage.from("offers").getPublicUrl(path).data.publicUrl,
       );
       after(async () => {
-        await processMediaById("service_realization_videos", video.id, moderationFrameUrls);
+        await processVideoMediaById("service_realization_videos", video.id, moderationFrameUrls);
       });
     }
 
