@@ -13,9 +13,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const mediaPath = String(body?.mediaPath || "");
     const thumbnailPath = body?.thumbnailPath ? String(body.thumbnailPath) : null;
     const sortOrder = Number(body?.sortOrder || 0);
+    const moderationFramePaths = Array.isArray(body?.moderationFramePaths)
+      ? body.moderationFramePaths.map(String).slice(0, 8)
+      : [];
     const prefix = `${user.id}/${offerId}/realizations/${realizationId}/${mediaType}s/`;
     if (!mediaPath.startsWith(prefix)) throw new Error("Neplatná cesta souboru");
     if (thumbnailPath && !thumbnailPath.startsWith(prefix)) throw new Error("Neplatná cesta náhledu");
+    if (moderationFramePaths.some((path: string) => !path.startsWith(prefix))) throw new Error("Neplatná cesta kontrolního snímku");
 
     const { data: realization } = await supabaseAdmin.from("service_realizations").select("id").eq("id", realizationId).eq("offer_id", offerId).maybeSingle();
     const { data: offer } = await supabaseAdmin.from("offers").select("owner_id").eq("id", offerId).maybeSingle();
@@ -43,8 +47,11 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         .select("id")
         .single();
       if (error || !video) throw new Error(error?.message || "Video realizace se nepodařilo uložit");
+      const moderationFrameUrls = moderationFramePaths.map((path: string) =>
+        supabaseAdmin.storage.from("offers").getPublicUrl(path).data.publicUrl,
+      );
       after(async () => {
-        await processMediaById("service_realization_videos", video.id);
+        await processMediaById("service_realization_videos", video.id, moderationFrameUrls);
       });
     }
 

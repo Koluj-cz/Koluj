@@ -13,10 +13,14 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const videoPath = String(body?.videoPath || "");
     const thumbnailPath = body?.thumbnailPath ? String(body.thumbnailPath) : null;
     const durationSeconds = Number(body?.durationSeconds || 0);
+    const moderationFramePaths = Array.isArray(body?.moderationFramePaths)
+      ? body.moderationFramePaths.map(String).slice(0, 8)
+      : [];
     const requiredPrefix = `${user.id}/${id}/videos/`;
 
     if (!videoPath.startsWith(requiredPrefix)) throw new Error("Neplatná cesta videa");
     if (thumbnailPath && !thumbnailPath.startsWith(requiredPrefix)) throw new Error("Neplatná cesta náhledu");
+    if (moderationFramePaths.some((path: string) => !path.startsWith(requiredPrefix))) throw new Error("Neplatná cesta kontrolního snímku");
     if (!Number.isFinite(durationSeconds) || durationSeconds <= 0 || durationSeconds > 60) {
       throw new Error("Video může mít maximálně 60 sekund");
     }
@@ -56,8 +60,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     if (insertError || !video) throw new Error(insertError?.message || "Video se nepodařilo uložit");
 
+    const moderationFrameUrls = moderationFramePaths.map((path: string) =>
+      supabaseAdmin.storage.from("offers").getPublicUrl(path).data.publicUrl,
+    );
+
     after(async () => {
-      await processMediaById("offer_videos", video.id);
+      await processMediaById("offer_videos", video.id, moderationFrameUrls);
     });
 
     return NextResponse.json({ ok: true, video });

@@ -59,9 +59,22 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       thumbnail = { path: thumbnailPath, token: thumbnailUpload.token };
     }
 
+
+    const requestedFrameCount = Math.min(Math.max(Number(body?.moderationFrameCount || 0), 0), 8);
+    const moderationFrames: Array<{ path: string; token: string }> = [];
+    for (let index = 0; index < requestedFrameCount; index += 1) {
+      const framePath = `${basePath}-moderation-${index + 1}.jpg`;
+      const { data: frameUpload, error: frameError } = await supabaseAdmin.storage
+        .from("offers")
+        .createSignedUploadUrl(framePath);
+      if (frameError || !frameUpload) throw new Error("Kontrolní snímky videa se nepodařilo připravit");
+      moderationFrames.push({ path: framePath, token: frameUpload.token });
+    }
+
     return NextResponse.json({
       video: { path: videoPath, token: videoUpload.token },
       thumbnail,
+      moderationFrames,
     });
   } catch (error) {
     const message = errorMessage(error, "Video se nepodařilo připravit");

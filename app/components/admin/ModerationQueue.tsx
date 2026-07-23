@@ -10,6 +10,12 @@ export type ModerationRow = {
   id: string;
   table: string;
   url: string | null;
+  videoUrl: string | null;
+  offerId: string | null;
+  offerTitle: string | null;
+  userId: string | null;
+  userName: string | null;
+  userEmail: string | null;
   status: "review" | "rejected" | "failed";
   reason: string | null;
   created_at: string;
@@ -155,7 +161,16 @@ export default function ModerationQueue({ initialRows }: { initialRows: Moderati
                 const meta = statusMeta[row.status];
                 return (
                   <article key={key} className="grid gap-4 p-4 md:grid-cols-[180px_1fr_auto] md:items-center md:p-5">
-                    {row.url ? (
+                    {row.videoUrl ? (
+                      <video
+                        src={row.videoUrl}
+                        poster={row.url || undefined}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        className="h-48 w-full rounded-2xl bg-black object-contain md:h-32"
+                      />
+                    ) : row.url ? (
                       <img src={row.url} alt="Náhled média" className="h-36 w-full rounded-2xl object-cover md:h-28" />
                     ) : (
                       <div className="h-36 w-full rounded-2xl bg-gray-100 md:h-28" />
@@ -167,7 +182,20 @@ export default function ModerationQueue({ initialRows }: { initialRows: Moderati
                         <span className={`rounded-full px-2.5 py-1 text-xs font-black ${meta.className}`}>{meta.label}</span>
                       </div>
                       <p className="mt-2 text-sm leading-relaxed text-[var(--koluj-muted)]">{row.reason || "Bez uvedeného důvodu"}</p>
-                      <p className="mt-2 text-xs font-bold text-[var(--koluj-muted)]">{new Date(row.created_at).toLocaleString("cs-CZ")}</p>
+                      <div className="mt-3 grid gap-1 text-xs text-[var(--koluj-muted)]">
+                        <p><span className="font-black text-[var(--koluj-text)]">Vložil:</span> {row.userName || "Neznámý uživatel"}</p>
+                        <p><span className="font-black text-[var(--koluj-text)]">E-mail:</span> {row.userEmail || "neuveden"}</p>
+                        <p className="break-all"><span className="font-black text-[var(--koluj-text)]">ID:</span> {row.userId || "neuvedeno"}</p>
+                        {row.offerId && (
+                          <p>
+                            <span className="font-black text-[var(--koluj-text)]">Nabídka:</span>{" "}
+                            <Link href={`/offers/${row.offerId}`} className="font-bold text-[var(--koluj-green)] hover:underline">
+                              {row.offerTitle || row.offerId}
+                            </Link>
+                          </p>
+                        )}
+                        <p><span className="font-black text-[var(--koluj-text)]">Nahráno:</span> {new Date(row.created_at).toLocaleString("cs-CZ")}</p>
+                      </div>
                     </div>
 
                     <div className="flex flex-wrap gap-2 md:justify-end">

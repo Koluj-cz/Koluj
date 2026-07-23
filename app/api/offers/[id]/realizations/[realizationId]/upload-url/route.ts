@@ -46,7 +46,19 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       thumbnail = { path: thumbnailPath, token: data.token };
     }
 
-    return NextResponse.json({ media: { path: mediaPath, token: mediaUpload.token }, thumbnail });
+
+    const moderationFrames: Array<{ path: string; token: string }> = [];
+    if (mediaType === "video") {
+      const requestedFrameCount = Math.min(Math.max(Number(body?.moderationFrameCount || 0), 0), 8);
+      for (let index = 0; index < requestedFrameCount; index += 1) {
+        const framePath = `${basePath}-moderation-${index + 1}.jpg`;
+        const { data, error } = await supabaseAdmin.storage.from("offers").createSignedUploadUrl(framePath);
+        if (error || !data) throw new Error("Kontrolní snímky videa se nepodařilo připravit");
+        moderationFrames.push({ path: framePath, token: data.token });
+      }
+    }
+
+    return NextResponse.json({ media: { path: mediaPath, token: mediaUpload.token }, thumbnail, moderationFrames });
   } catch (error) {
     const message = errorMessage(error, "Soubor realizace se nepodařilo připravit");
     return NextResponse.json({ error: message }, { status: message === "Unauthorized" ? 401 : 400 });
