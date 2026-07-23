@@ -173,17 +173,18 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     if (realizationVideosError) throw new Error(realizationVideosError.message);
 
+    const visibleImageStatuses = new Set(["approved", "pending", "failed"]);
     const visibleImages = (imageData || []).filter((image) =>
-      isOwner || image.moderation_status !== "rejected",
+      visibleImageStatuses.has(image.moderation_status),
     );
     const visibleVideos = (videoData || []).filter((video) =>
-      isOwner || video.moderation_status === "approved",
+      video.moderation_status === "approved",
     );
     const visibleRealizationImages = (realizationImages || []).filter((image) =>
-      isOwner || image.moderation_status !== "rejected",
+      visibleImageStatuses.has(image.moderation_status),
     );
     const visibleRealizationVideos = (realizationVideos || []).filter((video) =>
-      isOwner || video.moderation_status === "approved",
+      video.moderation_status === "approved",
     );
 
     const realizations = (realizationRows || []).map((realization) => ({

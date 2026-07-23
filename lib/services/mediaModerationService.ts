@@ -93,7 +93,7 @@ async function notifyAdmin(rows: Array<{ table: ModerationTable; id: string; sta
     from: process.env.MODERATION_FROM || "Koluj <noreply@koluj.cz>",
     to: recipient,
     subject: `Koluj.cz: ${noteworthy.length} médií vyžaduje pozornost`,
-    html: `<h2>Moderace obsahu</h2><ul>${list}</ul><p><a href="${baseUrl}/admin/moderation">Otevřít frontu moderace</a></p>`,
+    html: `<h2>Moderace obsahu</h2><ul>${list}</ul><p><a href="${baseUrl}/dashboard/moderation">Otevřít frontu moderace</a></p>`,
   });
 }
 
@@ -272,6 +272,51 @@ export async function processPendingMedia(limitPerTable = 10) {
   return { ok: true, processed, count: processed.length };
 }
 
+async function syncOfferPrimaryImageAfterModeration(
+  supabase: ReturnType<typeof createSupabaseAdminClient>,
+  imageId: string,
+  status: "approved" | "rejected",
+) {
+  const { data: image, error: imageError } = await supabase
+    .from("offer_images")
+    .select("offer_id, image_url")
+    .eq("id", imageId)
+    .single();
+
+  if (imageError || !image) return;
+
+  const { data: offer } = await supabase
+    .from("offers")
+    .select("primary_image_url")
+    .eq("id", image.offer_id)
+    .single();
+
+  if (status === "approved" && !offer?.primary_image_url) {
+    await supabase
+      .from("offers")
+      .update({ primary_image_url: image.image_url })
+      .eq("id", image.offer_id);
+    return;
+  }
+
+  if (status !== "rejected" || offer?.primary_image_url !== image.image_url) return;
+
+  const { data: replacement } = await supabase
+    .from("offer_images")
+    .select("image_url")
+    .eq("offer_id", image.offer_id)
+    .in("moderation_status", ["approved", "pending", "failed"])
+    .neq("id", imageId)
+    .order("sort_order", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  await supabase
+    .from("offers")
+    .update({ primary_image_url: replacement?.image_url || null })
+    .eq("id", image.offer_id);
+}
+
 export async function setMediaModerationStatus(tableValue: string, id: string, status: "approved" | "rejected") {
   if (!isModerationTable(tableValue)) throw new Error("Neplatný typ média");
   const supabase = createSupabaseAdminClient();
@@ -281,7 +326,12 @@ export async function setMediaModerationStatus(tableValue: string, id: string, s
     moderation_checked_at: new Date().toISOString(),
   }).eq("id", id);
   if (error) throw new Error(error.message);
-  return { ok: true };
+
+  if (tableValue === "offer_images") {
+    await syncOfferPrimaryImageAfterModeration(supabase, id, status);
+  }
+
+  return { ok: true, status };
 }
 
 export async function requireModerator() {

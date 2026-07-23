@@ -6,6 +6,7 @@ import {
   ArrowRight,
   CalendarOff,
   BarChart3,
+  ShieldCheck,
   Handshake,
   Package,
   Plus,
@@ -17,6 +18,7 @@ import NotificationBell from "@/app/components/NotificationBell";
 export default function DashboardPage() {
   const [fullName, setFullName] = useState("");
   const [profileComplete, setProfileComplete] = useState(false);
+  const [isModerator, setIsModerator] = useState(false);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
   const loadProfile = useCallback(async () => {
@@ -29,6 +31,7 @@ export default function DashboardPage() {
     }
 
     setFullName(result?.profile?.full_name || "");
+    setIsModerator((result?.user?.email || "").toLowerCase() === "info@koluj.cz");
     setProfileComplete(Boolean(result?.profileComplete));
     setLoadingProfile(false);
   }, []);
@@ -119,6 +122,16 @@ export default function DashboardPage() {
             text="Sleduj zájem o nabídky a konkrétní doporučení ke zlepšení."
             action="Zobrazit"
           />
+
+          {isModerator && (
+            <DashboardCard
+              href="/dashboard/moderation"
+              title="Moderace"
+              icon={<ShieldCheck />}
+              text="Schvaluj nejistá média, řeš technické chyby a spravuj zamítnutý obsah."
+              action="Otevřít frontu"
+            />
+          )}
         </section>
 
         <DashboardFooter />
