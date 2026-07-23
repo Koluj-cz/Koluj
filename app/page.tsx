@@ -213,8 +213,8 @@ export default function HomePage() {
         </section>
 
         <div className="koluj-wide-layout koluj-home-layout">
-          <aside className="koluj-wide-sidebar koluj-home-sidebar" aria-label="Filtry nabídek">
-            <div className="koluj-sidebar-content">
+          <aside className="koluj-wide-sidebar koluj-home-sidebar min-w-0 max-w-full overflow-hidden" aria-label="Filtry nabídek">
+            <div className="koluj-sidebar-content min-w-0 max-w-full">
               <div className="koluj-sidebar-section pt-4">
                 <p className="koluj-sidebar-label">Hledání</p>
                 <div className="flex min-h-[48px] items-center gap-2 rounded-[16px] border border-[var(--koluj-border)] bg-white px-4 shadow-sm">
@@ -240,13 +240,13 @@ export default function HomePage() {
 
               <div className="koluj-sidebar-section">
                 <p className="koluj-sidebar-label">Typ nabídky</p>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid min-w-0 grid-cols-3 gap-2">
                   {offerTypeTabs.map((tab) => (
                     <button
                       key={tab.value}
                       type="button"
                       onClick={() => selectOfferType(tab.value)}
-                      className="koluj-sidebar-tile min-h-[44px]"
+                      className="koluj-sidebar-tile min-h-[44px] min-w-0 px-2 text-sm"
                       data-active={selectedOfferType === tab.value}
                     >
                       {tab.label}
@@ -273,27 +273,27 @@ export default function HomePage() {
 
               <div id="jak" className="koluj-sidebar-section hidden md:block">
                 <p className="koluj-sidebar-label">Jak to funguje</p>
-                <div className="grid gap-3">
+                <div className="grid min-w-0 gap-3">
                   <InfoCard icon={<Search />} title="Najdi" text="Vyhledej věc nebo službu ve svém okolí." compact />
                   <InfoCard icon={<ArrowRight />} title="Domluv se" text="Otevři detail a domluv termín." compact />
                   <InfoCard icon={<Leaf />} title="Nech kolovat" text="Sdílej věci, které už existují." compact />
                 </div>
               </div>
 
-              <div className="mt-6 hidden flex-wrap gap-4 text-sm font-bold text-[var(--koluj-muted)] md:flex">
-                <Link href="/legal/terms" className="hover:text-[var(--koluj-green)]">
+              <div className="mt-6 hidden min-w-0 max-w-full flex-wrap gap-x-3 gap-y-2 text-sm font-bold text-[var(--koluj-muted)] md:flex">
+                <Link href="/legal/terms" className="min-w-0 break-words hover:text-[var(--koluj-green)]">
                   Podmínky
                 </Link>
 
-                <Link href="/legal/privacy" className="hover:text-[var(--koluj-green)]">
+                <Link href="/legal/privacy" className="min-w-0 break-words hover:text-[var(--koluj-green)]">
                   Soukromí
                 </Link>
 
-                <Link href="/legal/cookies" className="hover:text-[var(--koluj-green)]">
+                <Link href="/legal/cookies" className="min-w-0 break-words hover:text-[var(--koluj-green)]">
                   Cookies
                 </Link>
 
-                <a href="mailto:info@koluj.cz" className="hover:text-[var(--koluj-green)]">
+                <a href="mailto:info@koluj.cz" className="min-w-0 break-words hover:text-[var(--koluj-green)]">
                   Kontakt
                 </a>
               </div>
@@ -402,9 +402,9 @@ function InfoCard({
   return (
     <div className={`koluj-card flex items-start gap-4 ${compact ? "p-4" : "p-5"}`}>
       <div className="koluj-icon-bubble shrink-0">{icon}</div>
-      <div>
-        <p className={compact ? "font-black" : "text-xl font-black"}>{title}</p>
-        <p className="mt-1 text-sm font-bold leading-relaxed text-[var(--koluj-muted)]">{text}</p>
+      <div className="min-w-0 flex-1">
+        <p className={`${compact ? "font-black" : "text-xl font-black"} break-words`}>{title}</p>
+        <p className="mt-1 break-words text-sm font-bold leading-relaxed text-[var(--koluj-muted)]">{text}</p>
       </div>
     </div>
   );

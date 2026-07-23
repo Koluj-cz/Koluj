@@ -225,7 +225,7 @@ async function processMedia(tableValue: string, id: string, suppliedFrameUrls: s
             .from("offer_images")
             .select("image_url")
             .eq("offer_id", rejectedImage.offer_id)
-            .neq("moderation_status", "rejected")
+            .in("moderation_status", ["approved", "pending", "processing", "failed"])
             .order("sort_order", { ascending: true })
             .limit(1)
             .maybeSingle();
@@ -308,7 +308,7 @@ export async function processPendingMedia(limitPerTable = 10) {
               const { data: replacement } = await supabase.from("offer_images")
                 .select("image_url")
                 .eq("offer_id", rejectedImage.offer_id)
-                .neq("moderation_status", "rejected")
+                .in("moderation_status", ["approved", "pending", "processing", "failed"])
                 .order("sort_order", { ascending: true })
                 .limit(1)
                 .maybeSingle();
@@ -363,7 +363,7 @@ async function syncOfferPrimaryImageAfterModeration(
     .from("offer_images")
     .select("image_url")
     .eq("offer_id", image.offer_id)
-    .in("moderation_status", ["approved", "pending", "failed"])
+    .in("moderation_status", ["approved", "pending", "processing", "failed"])
     .neq("id", imageId)
     .order("sort_order", { ascending: true })
     .limit(1)
