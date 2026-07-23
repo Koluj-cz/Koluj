@@ -7,6 +7,8 @@ import {
   CalendarOff,
   BarChart3,
   ShieldCheck,
+  Users,
+  FileBarChart,
   Handshake,
   Package,
   Plus,
@@ -124,13 +126,15 @@ export default function DashboardPage() {
           />
 
           {isModerator && (
-            <DashboardCard
-              href="/dashboard/moderation"
-              title="Moderace"
-              icon={<ShieldCheck />}
-              text="Schvaluj nejistá média, řeš technické chyby a spravuj zamítnutý obsah."
-              action="Otevřít frontu"
-            />
+            <>
+              <div className="md:col-span-2 xl:col-span-3 mt-4 rounded-3xl border border-violet-200 bg-violet-50/80 p-4 md:p-5">
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-700">Administrace Koluj.cz</p>
+                <p className="mt-1 text-sm font-bold text-violet-900/70">Tyto nástroje jsou dostupné pouze administrátorům.</p>
+              </div>
+              <DashboardCard href="/dashboard/moderation" title="Moderace" icon={<ShieldCheck />} text="Schvaluj nejistá média, řeš technické chyby a spravuj zamítnutý obsah." action="Otevřít frontu" admin />
+              <DashboardCard href="/dashboard/admin/users" title="Uživatelé" icon={<Users />} text="Přehled účtů, aktivity a možnost uživatele zablokovat nebo odblokovat." action="Spravovat uživatele" admin />
+              <DashboardCard href="/dashboard/admin/reports" title="Měsíční reporty" icon={<FileBarChart />} text="Historie reportů, statistiky moderace a ruční spuštění reportu." action="Otevřít reporty" admin />
+            </>
           )}
         </section>
 
@@ -147,6 +151,7 @@ function DashboardCard({
   text,
   action,
   featured = false,
+  admin = false,
 }: {
   href: string;
   title: string;
@@ -154,6 +159,7 @@ function DashboardCard({
   text: string;
   action: string;
   featured?: boolean;
+  admin?: boolean;
 }) {
   const isProtectedHref =
     href.startsWith("/dashboard") ||
@@ -164,9 +170,9 @@ function DashboardCard({
     <Link
       href={href}
       prefetch={isProtectedHref ? false : undefined}
-      className={`koluj-card group flex min-h-[210px] flex-col justify-between overflow-hidden p-6 hover:border-[var(--koluj-green)] md:p-8 ${
-        featured ? "bg-gradient-to-br from-white to-[var(--koluj-green-pale)]" : ""
-      }`}
+      className={`koluj-card group flex min-h-[210px] flex-col justify-between overflow-hidden p-6 md:p-8 ${
+        featured ? "bg-gradient-to-br from-white to-[var(--koluj-green-pale)] hover:border-[var(--koluj-green)]" : "hover:border-[var(--koluj-green)]"
+      } ${admin ? "border-violet-200 bg-gradient-to-br from-white to-violet-50 hover:border-violet-500" : ""}`}
     >
       <div>
         <div className="flex items-start justify-between gap-5">
@@ -174,7 +180,7 @@ function DashboardCard({
             {title}
           </h2>
 
-          <span className="koluj-icon-bubble shrink-0">{icon}</span>
+          <span className={`koluj-icon-bubble shrink-0 ${admin ? "bg-violet-100 text-violet-700" : ""}`}>{icon}</span>
         </div>
 
         <p className="mt-5 leading-relaxed text-[var(--koluj-muted)] md:text-lg">
@@ -182,7 +188,7 @@ function DashboardCard({
         </p>
       </div>
 
-      <p className="koluj-link mt-6 flex items-center gap-2">
+      <p className={`koluj-link mt-6 flex items-center gap-2 ${admin ? "text-violet-700" : ""}`}>
         {action} <ArrowRight size={17} />
       </p>
     </Link>

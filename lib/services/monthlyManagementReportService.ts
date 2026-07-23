@@ -261,14 +261,17 @@ async function loadPreviousMetrics(supabase: SupabaseClient, period: Period) {
 }
 
 async function collectReportData(supabase: SupabaseClient, period: Period) {
-  const [profiles, offers, bookings, reviews, messages, realizations, offerImages, previousMetrics] = await Promise.all([
+  const [profiles, offers, bookings, reviews, messages, realizations, offerImages, offerVideos, realizationImages, realizationVideos, previousMetrics] = await Promise.all([
     fetchAll<ProfileRow>(supabase, "profiles", "id,full_name,city,is_verified,created_at,last_seen_at,deleted_at,is_deactivated,deactivated_at,is_seed_user"),
     fetchAll<OfferRow>(supabase, "offers", "id,owner_id,title,category,pickup_place,offer_type,status,is_active,publication_status,primary_image_url,views_count,created_at,deleted_at,hidden_by_account_deactivation"),
     fetchAll<BookingRow>(supabase, "bookings", "id,offer_id,owner_id,customer_id,status,created_at,approved_at,returned_at"),
     fetchAll<ReviewRow>(supabase, "reviews", "id,reviewed_user_id,offer_id,rating,created_at"),
     fetchAll<MessageRow>(supabase, "booking_messages", "id,booking_id,created_at,is_system"),
     fetchAll<{ offer_id: string }>(supabase, "service_realizations", "offer_id"),
-    fetchAll<{ offer_id: string }>(supabase, "offer_images", "offer_id"),
+    fetchAll<{ offer_id: string; moderation_status: string | null; created_at: string }>(supabase, "offer_images", "offer_id,moderation_status,created_at"),
+    fetchAll<{ moderation_status: string | null; created_at: string }>(supabase, "offer_videos", "moderation_status,created_at"),
+    fetchAll<{ moderation_status: string | null; created_at: string }>(supabase, "service_realization_images", "moderation_status,created_at"),
+    fetchAll<{ moderation_status: string | null; created_at: string }>(supabase, "service_realization_videos", "moderation_status,created_at"),
     loadPreviousMetrics(supabase, period),
   ]);
 
@@ -401,6 +404,17 @@ async function collectReportData(supabase: SupabaseClient, period: Period) {
   const servicesWithoutRealization = activeOffers.filter((offer) => offer.offer_type === "service" && !realizationOfferIds.has(offer.id)).length;
   const usersWithoutOffer = currentUsers.filter((profile) => !visibleOffers.some((offer) => offer.owner_id === profile.id)).length;
 
+  const allModeratedMedia = [...offerImages, ...offerVideos, ...realizationImages, ...realizationVideos];
+  const monthlyModeratedMedia = allModeratedMedia.filter((media) => inPeriod(media.created_at, period.start, period.end));
+  const moderationCounts = (rows: typeof allModeratedMedia) => ({
+    total: rows.length,
+    approved: rows.filter((row) => row.moderation_status === "approved").length,
+    review: rows.filter((row) => row.moderation_status === "review").length,
+    rejected: rows.filter((row) => row.moderation_status === "rejected").length,
+    failed: rows.filter((row) => row.moderation_status === "failed").length,
+    pending: rows.filter((row) => row.moderation_status === "pending" || row.moderation_status === "processing").length,
+  });
+
   const summary = {
     totalUsers: currentUsers.length,
     newUsers: newUsers.length,
@@ -464,6 +478,10 @@ async function collectReportData(supabase: SupabaseClient, period: Period) {
       new: monthlyReviews.length,
       average: average(monthlyReviews.map((review) => review.rating)),
       allTimeAverage: average(reviews.map((review) => review.rating)),
+    },
+    moderation: {
+      current: moderationCounts(allModeratedMedia),
+      monthly: moderationCounts(monthlyModeratedMedia),
     },
     communication: {
       messages: humanMessages.length,
@@ -596,6 +614,16 @@ function buildEmailHtml(period: Period, metrics: any, narrative: string) {
         ${section(metrics.traffic.viewsAreMonthly ? "Návštěvnost nabídek za měsíc" : "Návštěvnost nabídek – aktuální stav", `${!metrics.traffic.viewsAreMonthly ? `<p style="font-size:13px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:10px;padding:10px 12px;">Toto je první uložený report, proto jsou uvedena kumulativní zobrazení. Od dalšího měsíce se návštěvnost vypočítá jako rozdíl měsíčních snapshotů.</p>` : ""}${tableHtml(["Nabídka", "Vlastník", "Zobrazení"], trafficRows)}`)}
         ${section("Kategorie s nejvíce dokončenými rezervacemi", tableHtml(["Kategorie", "Rezervace"], categoryRows))}
         ${section("Nejpočetnější lokality uživatelů", tableHtml(["Město", "Uživatelé"], cityRows))}
+
+        ${section("Moderace médií", `<table role="presentation" width="100%" style="border-collapse:collapse;"><tr>
+          ${metricCard("Nová média", formatNumber(metrics.moderation.monthly.total))}
+          ${metricCard("Schválená", formatNumber(metrics.moderation.monthly.approved))}
+          ${metricCard("Ke kontrole", formatNumber(metrics.moderation.current.review))}
+          ${metricCard("Zamítnutá", formatNumber(metrics.moderation.monthly.rejected))}
+        </tr><tr>
+          ${metricCard("Chyby kontroly", formatNumber(metrics.moderation.current.failed))}
+          ${metricCard("Čekající", formatNumber(metrics.moderation.current.pending))}
+        </tr></table>`)}
 
         ${section("Komunikace", `<table role="presentation" width="100%" style="border-collapse:collapse;"><tr>
           ${metricCard("Zprávy", formatNumber(metrics.communication.messages))}
