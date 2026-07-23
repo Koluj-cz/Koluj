@@ -9,7 +9,7 @@ export const MODERATION_TABLES = [
 ] as const;
 
 export type ModerationTable = (typeof MODERATION_TABLES)[number];
-type ModerationStatus = "pending" | "approved" | "review" | "rejected" | "failed";
+type ModerationStatus = "pending" | "processing" | "approved" | "review" | "rejected" | "failed";
 
 type MediaRow = {
   id: string;
@@ -37,6 +37,7 @@ function classify(result: OpenAIModerationResult): { status: ModerationStatus; r
   const scores = result.category_scores || {};
   const top = Object.entries(scores).sort((a, b) => b[1] - a[1])[0];
   const active = Object.entries(result.categories || {}).filter(([, active]) => active).map(([name]) => name);
+  const score = (category: string) => Number(scores[category] || 0);
 
   if (result.flagged) {
     return {
@@ -45,8 +46,25 @@ function classify(result: OpenAIModerationResult): { status: ModerationStatus; r
     };
   }
 
-  if (top && top[1] >= 0.35) {
-    return { status: "review", reason: `Nejistý výsledek: ${top[0]} (${Math.round(top[1] * 100)} %)` };
+  // Moderation API can return flagged=false even for borderline images. Koluj uses
+  // stricter application thresholds so suspicious sexual/graphic content always
+  // reaches a human instead of being silently approved.
+  if (score("sexual/minors") >= 0.01 || score("sexual") >= 0.25 || score("violence/graphic") >= 0.2) {
+    const category = score("sexual/minors") >= 0.01
+      ? "sexual/minors"
+      : score("sexual") >= 0.25
+        ? "sexual"
+        : "violence/graphic";
+    return {
+      status: "rejected",
+      reason: `Překročen bezpečnostní limit: ${category} (${Math.round(score(category) * 100)} %)` ,
+    };
+  }
+
+  if (score("sexual") >= 0.08 || score("violence") >= 0.15 || score("self-harm") >= 0.1 || (top && top[1] >= 0.2)) {
+    const category = top?.[0] || "obsah";
+    const value = top?.[1] || 0;
+    return { status: "review", reason: `Nejistý výsledek: ${category} (${Math.round(value * 100)} %)` };
   }
 
   return { status: "approved", reason: null };
@@ -115,9 +133,17 @@ export async function processMediaById(tableValue: string, id: string) {
   if (!data) return { ok: false, skipped: true, reason: "Médium nebylo nalezeno" };
 
   const row = data as unknown as MediaRow;
-  if (row.moderation_status === "approved" || row.moderation_status === "rejected") {
+  // Rejected is a final manual/automatic decision. Approved is intentionally not
+  // skipped here: a database default or an older trigger must not be able to
+  // bypass moderation for a freshly uploaded row.
+  if (row.moderation_status === "rejected") {
     return { ok: true, skipped: true, status: row.moderation_status };
   }
+
+  await supabase
+    .from(tableValue)
+    .update({ moderation_status: "processing" })
+    .eq("id", id);
 
   const url = mediaUrl(tableValue, row);
   if (!url) {
@@ -139,11 +165,18 @@ export async function processMediaById(tableValue: string, id: string) {
 
   try {
     const moderation = await moderateImageUrl(url);
+    const finalStatus: ModerationStatus = tableValue.endsWith("videos") && moderation.status === "approved"
+      ? "review"
+      : moderation.status;
+    const finalReason = tableValue.endsWith("videos") && moderation.status === "approved"
+      ? "Automaticky byl zkontrolován pouze náhled videa. Celé video vyžaduje ruční schválení."
+      : moderation.reason;
+
     await supabase
       .from(tableValue)
       .update({
-        moderation_status: moderation.status,
-        moderation_reason: moderation.reason,
+        moderation_status: finalStatus,
+        moderation_reason: finalReason,
         moderation_provider: "openai:omni-moderation-latest",
         moderation_result: moderation.result,
         moderation_checked_at: new Date().toISOString(),
@@ -182,8 +215,8 @@ export async function processMediaById(tableValue: string, id: string) {
     const processed = {
       table: tableValue,
       id,
-      status: moderation.status,
-      reason: moderation.reason,
+      status: finalStatus,
+      reason: finalReason,
     };
     await notifyAdmin([processed]);
     return { ok: true, ...processed };
