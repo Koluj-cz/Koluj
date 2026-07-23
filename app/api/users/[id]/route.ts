@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { errorMessage } from "@/lib/security";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
+import { sanitizeOfferPrimaryImages } from "@/lib/services/offerPrimaryImageService";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -73,11 +74,16 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     if (offersError) throw new Error(offersError.message);
 
+    const offersWithSafeImages = await sanitizeOfferPrimaryImages(
+      supabaseAdmin,
+      offers || [],
+    );
+
     return NextResponse.json({
       profile,
       rating: rating || null,
       reviews: reviews || [],
-      offers: offers || [],
+      offers: offersWithSafeImages,
     });
   } catch (error) {
     return NextResponse.json(

@@ -4,6 +4,7 @@ import { errorMessage } from "@/lib/security";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
 import { attachTodayAvailabilityServer } from "@/lib/services/offerAvailabilityStatusService";
 import { normalizeEditablePublicationStatus } from "@/lib/offerPublication";
+import { sanitizeOfferPrimaryImages } from "@/lib/services/offerPrimaryImageService";
 
 export async function GET(request: Request) {
   const rate = await checkRateLimit({
@@ -33,7 +34,11 @@ export async function GET(request: Request) {
 
     if (error) throw new Error(error.message);
 
-    const offers = await attachTodayAvailabilityServer(data || []);
+    const offersWithSafeImages = await sanitizeOfferPrimaryImages(
+      supabaseAdmin,
+      data || [],
+    );
+    const offers = await attachTodayAvailabilityServer(offersWithSafeImages);
     return NextResponse.json({ offers });
   } catch (error) {
     const message = errorMessage(error, "Nabídky se nepodařilo načíst");

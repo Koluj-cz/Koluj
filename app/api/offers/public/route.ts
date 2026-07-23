@@ -3,6 +3,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { errorMessage } from "@/lib/security";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
 import { attachTodayAvailabilityServer } from "@/lib/services/offerAvailabilityStatusService";
+import { sanitizeOfferPrimaryImages } from "@/lib/services/offerPrimaryImageService";
 
 const MAX_LIMIT = 30;
 
@@ -62,39 +63,10 @@ export async function GET(request: Request) {
     const { data, count, error } = await query;
     if (error) throw new Error(error.message);
 
-    const rawOffers = data || [];
-    const offerIds = rawOffers.map((offer) => offer.id);
-
-    const { data: allowedImages, error: imagesError } = offerIds.length
-      ? await supabaseAdmin
-          .from("offer_images")
-          .select("offer_id, image_url, sort_order, moderation_status")
-          .in("offer_id", offerIds)
-          .in("moderation_status", ["approved", "pending", "processing", "failed"])
-          .order("sort_order", { ascending: true })
-      : { data: [], error: null };
-
-    if (imagesError) throw new Error(imagesError.message);
-
-    const allowedImagesByOffer = new Map<string, string[]>();
-    for (const image of allowedImages || []) {
-      const current = allowedImagesByOffer.get(image.offer_id) || [];
-      current.push(image.image_url);
-      allowedImagesByOffer.set(image.offer_id, current);
-    }
-
-    const sanitizedOffers = rawOffers.map((offer) => {
-      const allowedUrls = allowedImagesByOffer.get(offer.id) || [];
-      const primaryImageUrl =
-        offer.primary_image_url && allowedUrls.includes(offer.primary_image_url)
-          ? offer.primary_image_url
-          : allowedUrls[0] || null;
-
-      return {
-        ...offer,
-        primary_image_url: primaryImageUrl,
-      };
-    });
+    const sanitizedOffers = await sanitizeOfferPrimaryImages(
+      supabaseAdmin,
+      data || [],
+    );
 
     const offers = await attachTodayAvailabilityServer(sanitizedOffers);
 
