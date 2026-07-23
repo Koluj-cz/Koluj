@@ -127,10 +127,6 @@ export default function DashboardPage() {
 
           {isModerator && (
             <>
-              <div className="md:col-span-2 xl:col-span-3 mt-4 rounded-3xl border border-violet-200 bg-violet-50/80 p-4 md:p-5">
-                <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-700">Administrace Koluj.cz</p>
-                <p className="mt-1 text-sm font-bold text-violet-900/70">Tyto nástroje jsou dostupné pouze administrátorům.</p>
-              </div>
               <DashboardCard href="/dashboard/moderation" title="Moderace" icon={<ShieldCheck />} text="Schvaluj nejistá média, řeš technické chyby a spravuj zamítnutý obsah." action="Otevřít frontu" admin />
               <DashboardCard href="/dashboard/admin/users" title="Uživatelé" icon={<Users />} text="Přehled účtů, aktivity a možnost uživatele zablokovat nebo odblokovat." action="Spravovat uživatele" admin />
               <DashboardCard href="/dashboard/admin/reports" title="Měsíční reporty" icon={<FileBarChart />} text="Historie reportů, statistiky moderace a ruční spuštění reportu." action="Otevřít reporty" admin />
@@ -172,7 +168,7 @@ function DashboardCard({
       prefetch={isProtectedHref ? false : undefined}
       className={`koluj-card group flex min-h-[210px] flex-col justify-between overflow-hidden p-6 md:p-8 ${
         featured ? "bg-gradient-to-br from-white to-[var(--koluj-green-pale)] hover:border-[var(--koluj-green)]" : "hover:border-[var(--koluj-green)]"
-      } ${admin ? "border-violet-200 bg-gradient-to-br from-white to-violet-50 hover:border-violet-500" : ""}`}
+      } ${admin ? "hover:border-violet-400" : ""}`}
     >
       <div>
         <div className="flex items-start justify-between gap-5">
@@ -188,7 +184,7 @@ function DashboardCard({
         </p>
       </div>
 
-      <p className={`koluj-link mt-6 flex items-center gap-2 ${admin ? "text-violet-700" : ""}`}>
+      <p className={`mt-6 flex w-fit items-center gap-2 font-black ${admin ? "rounded-2xl bg-violet-600 px-4 py-2.5 text-white transition group-hover:bg-violet-700" : "koluj-link"}`}>
         {action} <ArrowRight size={17} />
       </p>
     </Link>
