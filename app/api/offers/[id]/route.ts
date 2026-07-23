@@ -1,10 +1,11 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { requireUser, createSupabaseAdminClient } from "@/lib/supabase/server";
 import { sanitizeRichText, errorMessage } from "@/lib/security";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
 import { attachTodayAvailabilityServer } from "@/lib/services/offerAvailabilityStatusService";
 import { normalizeEditablePublicationStatus } from "@/lib/offerPublication";
+import { processMediaById } from "@/lib/services/mediaModerationService";
 
 type UpdatePayload = {
   offer_type: string;
@@ -128,7 +129,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const { data: imageData, error: imageError } = await supabaseAdmin
       .from("offer_images")
-      .select("id, offer_id, image_url, sort_order, created_at")
+      .select("id, offer_id, image_url, sort_order, created_at, moderation_status, moderation_reason")
       .eq("offer_id", id)
       .order("sort_order", { ascending: true });
 
@@ -136,7 +137,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const { data: videoData, error: videoError } = await supabaseAdmin
       .from("offer_videos")
-      .select("id, offer_id, video_url, thumbnail_url, duration_seconds, sort_order, created_at")
+      .select("id, offer_id, video_url, thumbnail_url, duration_seconds, sort_order, created_at, moderation_status, moderation_reason")
       .eq("offer_id", id)
       .order("sort_order", { ascending: true });
 
@@ -155,7 +156,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const { data: realizationImages, error: realizationImagesError } = realizationIds.length
       ? await supabaseAdmin
           .from("service_realization_images")
-          .select("id, realization_id, image_url, sort_order, created_at")
+          .select("id, realization_id, image_url, sort_order, created_at, moderation_status, moderation_reason")
           .in("realization_id", realizationIds)
           .order("sort_order", { ascending: true })
       : { data: [], error: null };
@@ -165,17 +166,30 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     const { data: realizationVideos, error: realizationVideosError } = realizationIds.length
       ? await supabaseAdmin
           .from("service_realization_videos")
-          .select("id, realization_id, video_url, thumbnail_url, duration_seconds, sort_order, created_at")
+          .select("id, realization_id, video_url, thumbnail_url, duration_seconds, sort_order, created_at, moderation_status, moderation_reason")
           .in("realization_id", realizationIds)
           .order("sort_order", { ascending: true })
       : { data: [], error: null };
 
     if (realizationVideosError) throw new Error(realizationVideosError.message);
 
+    const visibleImages = (imageData || []).filter((image) =>
+      isOwner || image.moderation_status !== "rejected",
+    );
+    const visibleVideos = (videoData || []).filter((video) =>
+      isOwner || video.moderation_status === "approved",
+    );
+    const visibleRealizationImages = (realizationImages || []).filter((image) =>
+      isOwner || image.moderation_status !== "rejected",
+    );
+    const visibleRealizationVideos = (realizationVideos || []).filter((video) =>
+      isOwner || video.moderation_status === "approved",
+    );
+
     const realizations = (realizationRows || []).map((realization) => ({
       ...realization,
-      images: (realizationImages || []).filter((image) => image.realization_id === realization.id),
-      videos: (realizationVideos || []).filter((video) => video.realization_id === realization.id),
+      images: visibleRealizationImages.filter((image) => image.realization_id === realization.id),
+      videos: visibleRealizationVideos.filter((video) => video.realization_id === realization.id),
     }));
 
     const { data: reviewsData, error: reviewsError } = await supabaseAdmin
@@ -214,8 +228,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         ...itemWithAvailability,
         views_count: Number(data.views_count || 0) + (!isOwner && isPublic ? 1 : 0),
       },
-      images: imageData || [],
-      videos: videoData || [],
+      images: visibleImages,
+      videos: visibleVideos,
       realizations,
       reviews: reviewsData || [],
       availabilityBlocks: blocksData || [],
@@ -405,13 +419,22 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       const { data: publicUrl } = supabaseAdmin.storage.from("offers").getPublicUrl(filePath);
       if (index === 0) firstNewImageUrl = publicUrl.publicUrl;
 
-      const { error: imageError } = await supabaseAdmin.from("offer_images").insert({
-        offer_id: id,
-        image_url: publicUrl.publicUrl,
-        sort_order: currentCount + index,
-      });
+      const { data: image, error: imageError } = await supabaseAdmin
+        .from("offer_images")
+        .insert({
+          offer_id: id,
+          image_url: publicUrl.publicUrl,
+          sort_order: currentCount + index,
+          moderation_status: "pending",
+        })
+        .select("id")
+        .single();
 
-      if (imageError) throw new Error(imageError.message);
+      if (imageError || !image) throw new Error(imageError?.message || "Fotku se nepodařilo uložit");
+
+      after(async () => {
+        await processMediaById("offer_images", image.id);
+      });
     }
 
     if (!existingOffer.primary_image_url && firstNewImageUrl) {

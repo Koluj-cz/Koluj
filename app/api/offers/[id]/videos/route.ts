@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { requireUser, createSupabaseAdminClient } from "@/lib/supabase/server";
 import { errorMessage } from "@/lib/security";
+import { processMediaById } from "@/lib/services/mediaModerationService";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -48,11 +49,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
         thumbnail_url: thumbnailUrl,
         duration_seconds: durationSeconds,
         sort_order: count || 0,
+        moderation_status: "pending",
       })
       .select("id, video_url, thumbnail_url, duration_seconds, sort_order")
       .single();
 
     if (insertError || !video) throw new Error(insertError?.message || "Video se nepodařilo uložit");
+
+    after(async () => {
+      await processMediaById("offer_videos", video.id);
+    });
+
     return NextResponse.json({ ok: true, video });
   } catch (error) {
     const message = errorMessage(error, "Video se nepodařilo uložit");

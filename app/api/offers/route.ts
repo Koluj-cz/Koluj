@@ -1,8 +1,9 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 import { requireUser, createSupabaseAdminClient } from "@/lib/supabase/server";
 import { sanitizeRichText, errorMessage } from "@/lib/security";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
+import { processMediaById } from "@/lib/services/mediaModerationService";
 
 type OfferPayload = {
   offer_type: string;
@@ -221,15 +222,24 @@ export async function POST(request: Request) {
       const { data: publicUrl } = supabaseAdmin.storage.from("offers").getPublicUrl(filePath);
       if (index === 0) primaryImageUrl = publicUrl.publicUrl;
 
-      const { error: imageError } = await supabaseAdmin.from("offer_images").insert({
-        offer_id: offer.id,
-        image_url: publicUrl.publicUrl,
-        sort_order: index,
-      });
+      const { data: image, error: imageError } = await supabaseAdmin
+        .from("offer_images")
+        .insert({
+          offer_id: offer.id,
+          image_url: publicUrl.publicUrl,
+          sort_order: index,
+          moderation_status: "pending",
+        })
+        .select("id")
+        .single();
 
-      if (imageError) {
-        throw new Error(imageError.message);
+      if (imageError || !image) {
+        throw new Error(imageError?.message || "Fotku se nepodařilo uložit");
       }
+
+      after(async () => {
+        await processMediaById("offer_images", image.id);
+      });
     }
 
     if (primaryImageUrl) {

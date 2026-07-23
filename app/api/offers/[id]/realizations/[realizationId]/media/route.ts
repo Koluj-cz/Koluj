@@ -1,6 +1,7 @@
-import { NextResponse } from "next/server";
+import { after, NextResponse } from "next/server";
 import { errorMessage } from "@/lib/security";
 import { createSupabaseAdminClient, requireUser } from "@/lib/supabase/server";
+import { processMediaById } from "@/lib/services/mediaModerationService";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string; realizationId: string }> }) {
   const { id: offerId, realizationId } = await params;
@@ -23,14 +24,28 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     const mediaUrl = supabaseAdmin.storage.from("offers").getPublicUrl(mediaPath).data.publicUrl;
     if (mediaType === "image") {
-      const { error } = await supabaseAdmin.from("service_realization_images").insert({ realization_id: realizationId, image_url: mediaUrl, sort_order: Number.isFinite(sortOrder) ? sortOrder : 0 });
-      if (error) throw new Error(error.message);
+      const { data: image, error } = await supabaseAdmin
+        .from("service_realization_images")
+        .insert({ realization_id: realizationId, image_url: mediaUrl, sort_order: Number.isFinite(sortOrder) ? sortOrder : 0, moderation_status: "pending" })
+        .select("id")
+        .single();
+      if (error || !image) throw new Error(error?.message || "Fotku realizace se nepodařilo uložit");
+      after(async () => {
+        await processMediaById("service_realization_images", image.id);
+      });
     } else {
       const durationSeconds = Number(body?.durationSeconds || 0);
       if (!Number.isFinite(durationSeconds) || durationSeconds <= 0 || durationSeconds > 60) throw new Error("Video může mít maximálně 60 sekund");
       const thumbnailUrl = thumbnailPath ? supabaseAdmin.storage.from("offers").getPublicUrl(thumbnailPath).data.publicUrl : null;
-      const { error } = await supabaseAdmin.from("service_realization_videos").insert({ realization_id: realizationId, video_url: mediaUrl, thumbnail_url: thumbnailUrl, duration_seconds: durationSeconds, sort_order: Number.isFinite(sortOrder) ? sortOrder : 0 });
-      if (error) throw new Error(error.message);
+      const { data: video, error } = await supabaseAdmin
+        .from("service_realization_videos")
+        .insert({ realization_id: realizationId, video_url: mediaUrl, thumbnail_url: thumbnailUrl, duration_seconds: durationSeconds, sort_order: Number.isFinite(sortOrder) ? sortOrder : 0, moderation_status: "pending" })
+        .select("id")
+        .single();
+      if (error || !video) throw new Error(error?.message || "Video realizace se nepodařilo uložit");
+      after(async () => {
+        await processMediaById("service_realization_videos", video.id);
+      });
     }
 
     return NextResponse.json({ ok: true });
