@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/nextjs";
 import { createSupabaseBrowserClient } from "@/lib/supabase/client";
 
 export type PreparedBrowserVideo = {
@@ -8,19 +9,85 @@ export type PreparedBrowserVideo = {
   durationSeconds: number;
 };
 
+export type UploadStage = "video" | "thumbnail" | "moderation-frame";
+
+export class MediaUploadError extends Error {
+  stage: UploadStage;
+  technicalMessage: string;
+
+  constructor(stage: UploadStage, userMessage: string, technicalMessage: string) {
+    super(userMessage);
+    this.name = "MediaUploadError";
+    this.stage = stage;
+    this.technicalMessage = technicalMessage;
+  }
+}
+
+function wait(milliseconds: number) {
+  return new Promise<void>((resolve) => window.setTimeout(resolve, milliseconds));
+}
+
 export async function uploadToSignedStorageUrl(params: {
   bucket?: string;
   path: string;
   token: string;
   file: File;
+  stage?: UploadStage;
+  maxAttempts?: number;
 }) {
   const supabase = createSupabaseBrowserClient();
-  const result = await supabase.storage
-    .from(params.bucket || "offers")
-    .uploadToSignedUrl(params.path, params.token, params.file, {
-      contentType: params.file.type,
-    });
-  if (result.error) throw new Error("Soubor se nepodařilo nahrát");
+  const stage = params.stage || "video";
+  const maxAttempts = Math.max(1, params.maxAttempts || 2);
+  let lastTechnicalMessage = "Neznámá chyba uploadu";
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      const result = await supabase.storage
+        .from(params.bucket || "offers")
+        .uploadToSignedUrl(params.path, params.token, params.file, {
+          contentType: params.file.type || "application/octet-stream",
+          upsert: true,
+        });
+
+      if (!result.error) return;
+
+      lastTechnicalMessage = result.error.message || String(result.error);
+    } catch (error) {
+      lastTechnicalMessage = error instanceof Error ? error.message : String(error);
+    }
+
+    if (attempt < maxAttempts) {
+      await wait(700 * attempt);
+    }
+  }
+
+  const userMessage =
+    stage === "video"
+      ? "video se nepodařilo nahrát. Zkontroluj připojení a zkus to znovu"
+      : stage === "thumbnail"
+        ? "náhled videa se nepodařilo nahrát"
+        : "kontrolní snímek videa se nepodařilo nahrát";
+
+  const uploadError = new MediaUploadError(stage, userMessage, lastTechnicalMessage);
+
+  Sentry.captureException(uploadError, {
+    tags: {
+      operation: "signed-storage-upload",
+      upload_stage: stage,
+    },
+    extra: {
+      path: params.path,
+      bucket: params.bucket || "offers",
+      fileName: params.file.name,
+      fileType: params.file.type,
+      fileSize: params.file.size,
+      attempts: maxAttempts,
+      online: typeof navigator !== "undefined" ? navigator.onLine : undefined,
+      technicalMessage: lastTechnicalMessage,
+    },
+  });
+
+  throw uploadError;
 }
 
 export function revokePreparedVideoUrls(video: PreparedBrowserVideo) {
@@ -63,7 +130,7 @@ export async function prepareBrowserVideo(file: File): Promise<PreparedBrowserVi
 
 function waitForEvent(element: HTMLMediaElement, eventName: "loadedmetadata" | "seeked") {
   return new Promise<void>((resolve, reject) => {
-    const timeout = window.setTimeout(() => reject(new Error("Video timeout")), 10000);
+    const timeout = window.setTimeout(() => reject(new Error("Video timeout")), 15000);
     const handleSuccess = () => {
       window.clearTimeout(timeout);
       element.removeEventListener("error", handleError);

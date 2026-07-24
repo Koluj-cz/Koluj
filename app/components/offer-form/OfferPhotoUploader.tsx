@@ -123,7 +123,7 @@ export default function OfferPhotoUploader({
           imageCompression(file, {
             maxSizeMB: 0.7,
             maxWidthOrHeight: 1400,
-            useWebWorker: true,
+            useWebWorker: false,
             fileType: "image/webp",
           }),
         ),
