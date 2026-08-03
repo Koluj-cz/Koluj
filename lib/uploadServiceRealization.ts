@@ -47,10 +47,38 @@ export async function uploadServiceRealization(offerId: string, realization: Ser
 
     for (let index = 0; index < realization.videos.length; index += 1) {
       const video = realization.videos[index];
-      const prepared = await prepareUpload(offerId, realizationId, "video", video.file, Boolean(video.thumbnailFile));
+      const prepared = await prepareUpload(
+        offerId,
+        realizationId,
+        "video",
+        video.file,
+        Boolean(video.thumbnailFile),
+        video.moderationFrameFiles.length,
+      );
       await uploadToSignedStorageUrl({ path: prepared.media.path, token: prepared.media.token, file: video.file });
       if (video.thumbnailFile && prepared.thumbnail) {
         await uploadToSignedStorageUrl({ path: prepared.thumbnail.path, token: prepared.thumbnail.token, file: video.thumbnailFile });
+      }
+      const uploadedModerationFramePaths: string[] = [];
+      const moderationFrames = Array.isArray(prepared.moderationFrames)
+        ? prepared.moderationFrames
+        : [];
+      for (let frameIndex = 0; frameIndex < video.moderationFrameFiles.length; frameIndex += 1) {
+        const frameFile = video.moderationFrameFiles[frameIndex];
+        const preparedFrame = moderationFrames[frameIndex];
+        if (!preparedFrame) break;
+        try {
+          await uploadToSignedStorageUrl({
+            path: preparedFrame.path,
+            token: preparedFrame.token,
+            file: frameFile,
+            stage: "moderation-frame",
+            maxAttempts: 2,
+          });
+          uploadedModerationFramePaths.push(preparedFrame.path);
+        } catch {
+          // Missing samples fall back to the remaining uploaded frames or thumbnail.
+        }
       }
       await commitMedia(offerId, realizationId, {
         mediaType: "video",
@@ -58,6 +86,7 @@ export async function uploadServiceRealization(offerId: string, realization: Ser
         thumbnailPath: prepared.thumbnail?.path || null,
         durationSeconds: video.durationSeconds,
         sortOrder: index,
+        moderationFramePaths: uploadedModerationFramePaths,
       });
     }
 
@@ -68,11 +97,24 @@ export async function uploadServiceRealization(offerId: string, realization: Ser
   }
 }
 
-async function prepareUpload(offerId: string, realizationId: string, mediaType: "image" | "video", file: File, hasThumbnail: boolean) {
+async function prepareUpload(
+  offerId: string,
+  realizationId: string,
+  mediaType: "image" | "video",
+  file: File,
+  hasThumbnail: boolean,
+  moderationFrameCount = 0,
+) {
   const response = await fetch(`/api/offers/${offerId}/realizations/${realizationId}/upload-url`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ mediaType, contentType: file.type, size: file.size, hasThumbnail }),
+    body: JSON.stringify({
+      mediaType,
+      contentType: file.type,
+      size: file.size,
+      hasThumbnail,
+      moderationFrameCount,
+    }),
   });
   return jsonResponse(response, "Soubor realizace se nepodařilo připravit");
 }

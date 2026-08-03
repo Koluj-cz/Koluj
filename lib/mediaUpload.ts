@@ -6,6 +6,7 @@ export type PreparedBrowserVideo = {
   previewUrl: string;
   thumbnailFile: File | null;
   thumbnailUrl: string | null;
+  moderationFrameFiles: File[];
   durationSeconds: number;
 };
 
@@ -98,7 +99,7 @@ export function revokePreparedVideoUrls(video: PreparedBrowserVideo) {
 export async function prepareBrowserVideo(file: File): Promise<PreparedBrowserVideo> {
   const previewUrl = URL.createObjectURL(file);
   const video = document.createElement("video");
-  video.preload = "metadata";
+  video.preload = "auto";
   video.muted = true;
   video.playsInline = true;
   video.src = previewUrl;
@@ -107,25 +108,76 @@ export async function prepareBrowserVideo(file: File): Promise<PreparedBrowserVi
   const durationSeconds = Math.ceil(video.duration || 0);
   let thumbnailFile: File | null = null;
   let thumbnailUrl: string | null = null;
+  const moderationFrameFiles: File[] = [];
 
   try {
-    video.currentTime = Math.min(Math.max(video.duration * 0.1, 0.1), 1);
-    await waitForEvent(video, "seeked");
-    const canvas = document.createElement("canvas");
-    const ratio = Math.min(1, 1280 / Math.max(video.videoWidth, 1));
-    canvas.width = Math.max(1, Math.round(video.videoWidth * ratio));
-    canvas.height = Math.max(1, Math.round(video.videoHeight * ratio));
-    canvas.getContext("2d")?.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/jpeg", 0.82));
-    if (blob) {
-      thumbnailFile = new File([blob], "video-thumbnail.jpg", { type: "image/jpeg" });
-      thumbnailUrl = URL.createObjectURL(blob);
+    const thumbnailBlob = await captureVideoFrame(video, 0.1, 1280, 0.82);
+    if (thumbnailBlob) {
+      thumbnailFile = new File([thumbnailBlob], "video-thumbnail.jpg", { type: "image/jpeg" });
+      thumbnailUrl = URL.createObjectURL(thumbnailBlob);
     }
   } catch {
     // Thumbnail is optional.
   }
 
-  return { file, previewUrl, thumbnailFile, thumbnailUrl, durationSeconds };
+  const framePositions = [0.08, 0.25, 0.42, 0.58, 0.75, 0.92];
+  for (let index = 0; index < framePositions.length; index += 1) {
+    try {
+      const blob = await captureVideoFrame(video, framePositions[index], 720, 0.72);
+      if (blob) {
+        moderationFrameFiles.push(
+          new File([blob], `video-moderation-${index + 1}.jpg`, { type: "image/jpeg" }),
+        );
+      }
+    } catch {
+      // A missing sample must not prevent the video itself from being uploaded.
+    }
+  }
+
+  video.removeAttribute("src");
+  video.load();
+
+  return {
+    file,
+    previewUrl,
+    thumbnailFile,
+    thumbnailUrl,
+    moderationFrameFiles,
+    durationSeconds,
+  };
+}
+
+async function captureVideoFrame(
+  video: HTMLVideoElement,
+  position: number,
+  maxWidth: number,
+  quality: number,
+) {
+  const duration = Number.isFinite(video.duration) ? video.duration : 0;
+  if (duration <= 0 || video.videoWidth <= 0 || video.videoHeight <= 0) return null;
+
+  const safePosition = Math.min(0.98, Math.max(0.02, position));
+  const targetTime = Math.min(
+    Math.max(duration * safePosition, 0.05),
+    Math.max(0.05, duration - 0.05),
+  );
+
+  if (Math.abs(video.currentTime - targetTime) > 0.02) {
+    video.currentTime = targetTime;
+    await waitForEvent(video, "seeked");
+  }
+
+  const canvas = document.createElement("canvas");
+  const ratio = Math.min(1, maxWidth / Math.max(video.videoWidth, 1));
+  canvas.width = Math.max(1, Math.round(video.videoWidth * ratio));
+  canvas.height = Math.max(1, Math.round(video.videoHeight * ratio));
+  const context = canvas.getContext("2d", { alpha: false });
+  if (!context) return null;
+  context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  return new Promise<Blob | null>((resolve) => {
+    canvas.toBlob(resolve, "image/jpeg", quality);
+  });
 }
 
 function waitForEvent(element: HTMLMediaElement, eventName: "loadedmetadata" | "seeked") {

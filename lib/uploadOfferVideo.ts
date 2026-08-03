@@ -16,6 +16,7 @@ export async function uploadOfferVideo(offerId: string, video: SelectedOfferVide
         contentType: video.file.type,
         size: video.file.size,
         hasThumbnail: Boolean(video.thumbnailFile),
+        moderationFrameCount: video.moderationFrameFiles.length,
       }),
     });
 
@@ -50,6 +51,33 @@ export async function uploadOfferVideo(offerId: string, video: SelectedOfferVide
       }
     }
 
+    const uploadedModerationFramePaths: string[] = [];
+    const moderationFrames = Array.isArray(prepared.moderationFrames)
+      ? prepared.moderationFrames
+      : [];
+
+    for (let index = 0; index < video.moderationFrameFiles.length; index += 1) {
+      const frameFile = video.moderationFrameFiles[index];
+      const preparedFrame = moderationFrames[index];
+      if (!preparedFrame) break;
+
+      try {
+        await uploadToSignedStorageUrl({
+          path: preparedFrame.path,
+          token: preparedFrame.token,
+          file: frameFile,
+          stage: "moderation-frame",
+          maxAttempts: 2,
+        });
+        uploadedModerationFramePaths.push(preparedFrame.path);
+      } catch (frameError) {
+        Sentry.captureException(frameError, {
+          tags: { operation: "offer-video-moderation-frame-upload" },
+          extra: { offerId, fileName: video.file.name, frame: index + 1 },
+        });
+      }
+    }
+
     const commitResponse = await fetch(`/api/offers/${offerId}/videos`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -57,6 +85,7 @@ export async function uploadOfferVideo(offerId: string, video: SelectedOfferVide
         videoPath: prepared.video.path,
         thumbnailPath: uploadedThumbnailPath,
         durationSeconds: video.durationSeconds,
+        moderationFramePaths: uploadedModerationFramePaths,
       }),
     });
 
