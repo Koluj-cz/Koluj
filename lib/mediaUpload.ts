@@ -100,7 +100,7 @@ export async function prepareBrowserVideo(
   file: File,
   onProgress?: (value: number, label: string) => void,
 ): Promise<PreparedBrowserVideo> {
-  onProgress?.(5, "Načítám video...");
+  onProgress?.(5, "Připravuji video...");
   const previewUrl = URL.createObjectURL(file);
   const video = document.createElement("video");
   video.preload = "auto";
@@ -109,14 +109,14 @@ export async function prepareBrowserVideo(
   video.src = previewUrl;
 
   await waitForEvent(video, "loadedmetadata");
-  onProgress?.(20, "Načítám informace o videu...");
+  onProgress?.(20, "Připravuji video...");
   const durationSeconds = Math.ceil(video.duration || 0);
   let thumbnailFile: File | null = null;
   let thumbnailUrl: string | null = null;
   const moderationFrameFiles: File[] = [];
 
   try {
-    onProgress?.(30, "Vytvářím náhled videa...");
+    onProgress?.(30, "Připravuji video...");
     const thumbnailBlob = await captureVideoFrame(video, 0.1, 1280, 0.82);
     if (thumbnailBlob) {
       thumbnailFile = new File([thumbnailBlob], "video-thumbnail.jpg", { type: "image/jpeg" });
@@ -128,7 +128,7 @@ export async function prepareBrowserVideo(
 
   const framePositions = [0.08, 0.25, 0.42, 0.58, 0.75, 0.92];
   for (let index = 0; index < framePositions.length; index += 1) {
-    onProgress?.(40 + ((index + 1) / framePositions.length) * 50, `Připravuji kontrolní snímek ${index + 1}/${framePositions.length}...`);
+    onProgress?.(40 + ((index + 1) / framePositions.length) * 50, "Připravuji video...");
     try {
       const blob = await captureVideoFrame(video, framePositions[index], 720, 0.72);
       if (blob) {
@@ -141,11 +141,11 @@ export async function prepareBrowserVideo(
     }
   }
 
-  onProgress?.(95, "Dokončuji zpracování videa...");
+  onProgress?.(95, "Připravuji video...");
   video.removeAttribute("src");
   video.load();
 
-  onProgress?.(100, "Video je připravené k nahrání");
+  onProgress?.(100, "Video je připravené");
 
   return {
     file,

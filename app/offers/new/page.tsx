@@ -187,8 +187,8 @@ export default function NewItemPage() {
           for (let index = 0; index < videos.length; index += 1) {
             const videoBase = 75 + (index / videos.length) * 25;
             const videoShare = 25 / videos.length;
-            await uploadOfferVideo(result.offerId, videos[index], (value, label) => {
-              setSubmitProgressLabel(label);
+            await uploadOfferVideo(result.offerId, videos[index], (value) => {
+              setSubmitProgressLabel(videos.length > 1 ? `Nahrávám video ${index + 1} z ${videos.length}...` : "Nahrávám video...");
               setSubmitProgress(Math.round(videoBase + (value / 100) * videoShare));
             });
           }

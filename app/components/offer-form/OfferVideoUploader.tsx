@@ -67,7 +67,7 @@ export default function OfferVideoUploader({
       for (let index = 0; index < selectedFiles.length; index += 1) {
         const file = selectedFiles[index];
         const baseProgress = (index / Math.max(selectedFiles.length, 1)) * 100;
-        setProgressLabel(`Připravuji ${file.name}`);
+        setProgressLabel("Připravuji video...");
         setProgress(baseProgress + 5);
 
         if (!["video/mp4", "video/webm"].includes(file.type)) {
@@ -82,10 +82,10 @@ export default function OfferVideoUploader({
 
         try {
           setProgress(baseProgress + 20 / selectedFiles.length);
-          const selected = await prepareBrowserVideo(file, (stageProgress, stageLabel) => {
+          const selected = await prepareBrowserVideo(file, (stageProgress) => {
             const fileShare = 100 / Math.max(selectedFiles.length, 1);
             setProgress(baseProgress + (stageProgress / 100) * fileShare);
-            setProgressLabel(stageLabel);
+            setProgressLabel("Připravuji video...");
           });
 
           if (selected.durationSeconds > MAX_VIDEO_DURATION_SECONDS) {
@@ -104,7 +104,7 @@ export default function OfferVideoUploader({
         setVideos((current) => [...current, ...preparedVideos].slice(0, MAX_OFFER_VIDEOS));
       }
       setProgress(100);
-      setProgressLabel("Video je připravené k nahrání");
+      setProgressLabel("Video je připravené");
     } finally {
       window.setTimeout(() => {
         setProcessing(false);
@@ -126,7 +126,7 @@ export default function OfferVideoUploader({
       <SectionTitle icon={<Film size={24} />} title="Videa" />
 
       <p className="mt-4 text-sm leading-relaxed text-[var(--koluj-muted)]">
-        Přidej až {MAX_OFFER_VIDEOS} krátká videa. MP4 nebo WebM, maximálně {MAX_VIDEO_DURATION_SECONDS} sekund a {MAX_VIDEO_SIZE_MB} MB. Video automaticky kontrolujeme pomocí několika snímků z různých částí.
+        Přidej až {MAX_OFFER_VIDEOS} krátká videa. MP4 nebo WebM, maximálně {MAX_VIDEO_DURATION_SECONDS} sekund a {MAX_VIDEO_SIZE_MB} MB.
       </p>
 
       {(existingVideos.length > 0 || videos.length > 0) && (

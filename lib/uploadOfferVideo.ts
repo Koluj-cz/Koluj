@@ -2,8 +2,97 @@ import * as Sentry from "@sentry/nextjs";
 import type { SelectedOfferVideo } from "@/app/components/offer-form/OfferVideoUploader";
 import { uploadToSignedStorageUrl } from "@/lib/mediaUpload";
 
+type PreparedUpload = {
+  video: { path: string; token: string };
+  thumbnail?: { path: string; token: string } | null;
+  moderationFrames?: Array<{ path: string; token: string }>;
+};
+
 async function readJson(response: Response) {
   return response.json().catch(() => null);
+}
+
+function wait(milliseconds: number) {
+  return new Promise<void>((resolve) => window.setTimeout(resolve, milliseconds));
+}
+
+async function requestPreparedUpload(
+  offerId: string,
+  video: SelectedOfferVideo,
+): Promise<PreparedUpload> {
+  const prepareResponse = await fetch(`/api/offers/${offerId}/videos/upload-url`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      fileName: video.file.name,
+      contentType: video.file.type,
+      size: video.file.size,
+      hasThumbnail: Boolean(video.thumbnailFile),
+      moderationFrameCount: video.moderationFrameFiles.length,
+    }),
+  });
+
+  const prepared = await readJson(prepareResponse);
+
+  if (!prepareResponse.ok || !prepared?.video?.path || !prepared?.video?.token) {
+    throw new Error(prepared?.error || "Video se nepodařilo připravit");
+  }
+
+  return prepared as PreparedUpload;
+}
+
+async function prepareAndUploadMainVideo(
+  offerId: string,
+  video: SelectedOfferVideo,
+  onProgress?: (value: number, label: string) => void,
+) {
+  const maxAttempts = 3;
+  let lastError: unknown = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      onProgress?.(5, "Nahrávám video...");
+      const prepared = await requestPreparedUpload(offerId, video);
+
+      onProgress?.(12, "Nahrávám video...");
+      await uploadToSignedStorageUrl({
+        path: prepared.video.path,
+        token: prepared.video.token,
+        file: video.file,
+        stage: "video",
+        maxAttempts: 1,
+      });
+
+      return prepared;
+    } catch (error) {
+      lastError = error;
+
+      Sentry.captureException(error, {
+        level: attempt < maxAttempts ? "warning" : "error",
+        tags: {
+          operation: "offer-video-main-upload-attempt",
+          upload_attempt: String(attempt),
+        },
+        extra: {
+          offerId,
+          fileName: video.file.name,
+          fileType: video.file.type,
+          fileSize: video.file.size,
+          online: typeof navigator !== "undefined" ? navigator.onLine : undefined,
+          userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+        },
+      });
+
+      if (attempt < maxAttempts) {
+        onProgress?.(8, "Nahrávání opakuji...");
+        await wait(900 * attempt);
+      }
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Video se nepodařilo nahrát. Zkontroluj připojení a zkus to znovu");
 }
 
 export async function uploadOfferVideo(
@@ -12,36 +101,12 @@ export async function uploadOfferVideo(
   onProgress?: (value: number, label: string) => void,
 ) {
   try {
-    onProgress?.(5, "Připravuji nahrání videa...");
-    const prepareResponse = await fetch(`/api/offers/${offerId}/videos/upload-url`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        fileName: video.file.name,
-        contentType: video.file.type,
-        size: video.file.size,
-        hasThumbnail: Boolean(video.thumbnailFile),
-        moderationFrameCount: video.moderationFrameFiles.length,
-      }),
-    });
-
-    const prepared = await readJson(prepareResponse);
-    if (!prepareResponse.ok) throw new Error(prepared?.error || "Video se nepodařilo připravit");
-
-    onProgress?.(12, "Nahrávám video...");
-    await uploadToSignedStorageUrl({
-      path: prepared.video.path,
-      token: prepared.video.token,
-      file: video.file,
-      stage: "video",
-      maxAttempts: 2,
-    });
-
-    onProgress?.(62, "Video je nahrané");
+    const prepared = await prepareAndUploadMainVideo(offerId, video, onProgress);
+    onProgress?.(62, "Nahrávám video...");
 
     let uploadedThumbnailPath: string | null = null;
+
     if (video.thumbnailFile && prepared.thumbnail) {
-      onProgress?.(66, "Nahrávám náhled videa...");
       try {
         await uploadToSignedStorageUrl({
           path: prepared.thumbnail.path,
@@ -60,7 +125,7 @@ export async function uploadOfferVideo(
       }
     }
 
-    onProgress?.(72, "Nahrávám kontrolní snímky...");
+    onProgress?.(72, "Nahrávám video...");
     const uploadedModerationFramePaths: string[] = [];
     const moderationFrames = Array.isArray(prepared.moderationFrames)
       ? prepared.moderationFrames
@@ -69,10 +134,14 @@ export async function uploadOfferVideo(
     for (let index = 0; index < video.moderationFrameFiles.length; index += 1) {
       const frameFile = video.moderationFrameFiles[index];
       const preparedFrame = moderationFrames[index];
+
       if (!preparedFrame) break;
 
       try {
-        onProgress?.(72 + ((index + 1) / Math.max(video.moderationFrameFiles.length, 1)) * 18, `Nahrávám kontrolní snímek ${index + 1}/${video.moderationFrameFiles.length}...`);
+        onProgress?.(
+          72 + ((index + 1) / Math.max(video.moderationFrameFiles.length, 1)) * 18,
+          "Nahrávám video...",
+        );
         await uploadToSignedStorageUrl({
           path: preparedFrame.path,
           token: preparedFrame.token,
@@ -89,7 +158,7 @@ export async function uploadOfferVideo(
       }
     }
 
-    onProgress?.(92, "Ukládám video k nabídce...");
+    onProgress?.(92, "Ukládám video...");
     const commitResponse = await fetch(`/api/offers/${offerId}/videos`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -102,7 +171,11 @@ export async function uploadOfferVideo(
     });
 
     const committed = await readJson(commitResponse);
-    if (!commitResponse.ok) throw new Error(committed?.error || "Video se nepodařilo uložit");
+
+    if (!commitResponse.ok) {
+      throw new Error(committed?.error || "Video se nepodařilo uložit");
+    }
+
     onProgress?.(100, "Video bylo nahráno");
     return committed.video;
   } catch (error) {
