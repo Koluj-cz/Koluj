@@ -4,13 +4,21 @@ import { useEffect, useRef, useState } from "react";
 import { Film, Plus, Trash2 } from "lucide-react";
 import toast from "react-hot-toast";
 import SectionTitle from "@/app/components/SectionTitle";
+import MediaDropzone from "@/app/components/offer-form/MediaDropzone";
+import MediaProgress from "@/app/components/offer-form/MediaProgress";
 import type { ExistingOfferVideo } from "@/app/components/offer-form/types";
-import { prepareBrowserVideo, revokePreparedVideoUrls, type PreparedBrowserVideo } from "@/lib/mediaUpload";
+import {
+  prepareBrowserVideo,
+  revokePreparedVideoUrls,
+  type PreparedBrowserVideo,
+} from "@/lib/mediaUpload";
+import {
+  MAX_VIDEO_DURATION_SECONDS,
+  MAX_VIDEO_SIZE_BYTES,
+  MAX_VIDEO_SIZE_MB,
+} from "@/lib/mediaLimits";
 
 export const MAX_OFFER_VIDEOS = 3;
-export const MAX_VIDEO_SIZE_BYTES = 75 * 1024 * 1024;
-export const MAX_VIDEO_DURATION_SECONDS = 60;
-
 export type SelectedOfferVideo = PreparedBrowserVideo;
 
 type Props = {
@@ -27,6 +35,8 @@ export default function OfferVideoUploader({
   onDeleteExisting,
 }: Props) {
   const [processing, setProcessing] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [progressLabel, setProgressLabel] = useState("Připravuji video...");
   const currentVideosRef = useRef<SelectedOfferVideo[]>([]);
   const totalCount = existingVideos.length + videos.length;
   const canAddMore = totalCount < MAX_OFFER_VIDEOS;
@@ -50,27 +60,40 @@ export default function OfferVideoUploader({
     }
 
     setProcessing(true);
+    setProgress(0);
     const preparedVideos: SelectedOfferVideo[] = [];
 
     try {
-      for (const file of selectedFiles) {
-        if (!( ["video/mp4", "video/webm"] as string[]).includes(file.type)) {
+      for (let index = 0; index < selectedFiles.length; index += 1) {
+        const file = selectedFiles[index];
+        const baseProgress = (index / Math.max(selectedFiles.length, 1)) * 100;
+        setProgressLabel(`Připravuji ${file.name}`);
+        setProgress(baseProgress + 5);
+
+        if (!["video/mp4", "video/webm"].includes(file.type)) {
           toast.error(`${file.name}: podporujeme pouze MP4 nebo WebM`);
           continue;
         }
 
         if (file.size > MAX_VIDEO_SIZE_BYTES) {
-          toast.error(`${file.name}: video může mít maximálně 45 MB`);
+          toast.error(`${file.name}: video může mít maximálně ${MAX_VIDEO_SIZE_MB} MB`);
           continue;
         }
 
         try {
-          const selected = await prepareBrowserVideo(file);
+          setProgress(baseProgress + 20 / selectedFiles.length);
+          const selected = await prepareBrowserVideo(file, (stageProgress, stageLabel) => {
+            const fileShare = 100 / Math.max(selectedFiles.length, 1);
+            setProgress(baseProgress + (stageProgress / 100) * fileShare);
+            setProgressLabel(stageLabel);
+          });
+
           if (selected.durationSeconds > MAX_VIDEO_DURATION_SECONDS) {
             revokePreparedVideoUrls(selected);
-            toast.error(`${file.name}: video může mít maximálně 60 sekund`);
+            toast.error(`${file.name}: video může mít maximálně ${MAX_VIDEO_DURATION_SECONDS} sekund`);
             continue;
           }
+
           preparedVideos.push(selected);
         } catch {
           toast.error(`${file.name}: video se nepodařilo načíst`);
@@ -80,8 +103,13 @@ export default function OfferVideoUploader({
       if (preparedVideos.length > 0) {
         setVideos((current) => [...current, ...preparedVideos].slice(0, MAX_OFFER_VIDEOS));
       }
+      setProgress(100);
+      setProgressLabel("Video je připravené k nahrání");
     } finally {
-      setProcessing(false);
+      window.setTimeout(() => {
+        setProcessing(false);
+        setProgress(0);
+      }, 350);
     }
   }
 
@@ -97,76 +125,75 @@ export default function OfferVideoUploader({
     <div className="koluj-card p-5 md:p-8">
       <SectionTitle icon={<Film size={24} />} title="Videa" />
 
-      <p className="mt-3 text-sm leading-relaxed text-[var(--koluj-muted)]">
-        Přidej až tři krátká videa, která nabídku lépe představí.
+      <p className="mt-4 text-sm leading-relaxed text-[var(--koluj-muted)]">
+        Přidej až {MAX_OFFER_VIDEOS} krátká videa. MP4 nebo WebM, maximálně {MAX_VIDEO_DURATION_SECONDS} sekund a {MAX_VIDEO_SIZE_MB} MB. Video automaticky kontrolujeme pomocí několika snímků z různých částí.
       </p>
 
-      {totalCount > 0 && (
-        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+      {(existingVideos.length > 0 || videos.length > 0) && (
+        <div className="mt-6 grid gap-4 sm:grid-cols-2">
           {existingVideos.map((video) => (
-            <VideoCard
-              key={video.id}
-              src={video.video_url}
-              poster={video.thumbnail_url || undefined}
-              onRemove={onDeleteExisting ? () => void onDeleteExisting(video) : undefined}
-            />
+            <article key={video.id} className="relative overflow-hidden rounded-2xl bg-black">
+              <video
+                src={video.video_url}
+                poster={video.thumbnail_url || undefined}
+                controls
+                playsInline
+                preload="metadata"
+                className="aspect-video w-full object-contain"
+              />
+              {onDeleteExisting && (
+                <button
+                  type="button"
+                  onClick={() => onDeleteExisting(video)}
+                  className="absolute right-2 top-2 rounded-full bg-white/95 p-2 text-red-600 shadow-lg transition hover:scale-105"
+                  aria-label="Smazat video"
+                >
+                  <Trash2 size={16} />
+                </button>
+              )}
+            </article>
           ))}
+
           {videos.map((video, index) => (
-            <VideoCard
-              key={`${video.file.name}-${video.file.lastModified}-${index}`}
-              src={video.previewUrl}
-              poster={video.thumbnailUrl || undefined}
-              onRemove={() => removeNewVideo(index)}
-            />
+            <article key={`${video.file.name}-${video.file.lastModified}-${index}`} className="relative overflow-hidden rounded-2xl bg-black">
+              <video
+                src={video.previewUrl}
+                poster={video.thumbnailUrl || undefined}
+                controls
+                playsInline
+                preload="metadata"
+                className="aspect-video w-full object-contain"
+              />
+              <button
+                type="button"
+                onClick={() => removeNewVideo(index)}
+                className="absolute right-2 top-2 rounded-full bg-white/95 p-2 text-red-600 shadow-lg transition hover:scale-105"
+                aria-label="Odebrat video"
+              >
+                <Trash2 size={16} />
+              </button>
+            </article>
           ))}
         </div>
       )}
 
       {canAddMore && (
-        <label className="mt-6 flex min-h-40 cursor-pointer flex-col items-center justify-center rounded-[28px] border border-dashed border-[var(--koluj-border)] bg-[var(--koluj-surface)] px-5 text-center text-[var(--koluj-green)] transition hover:border-[var(--koluj-green)] hover:bg-[var(--koluj-bg)]">
-          <Plus size={32} />
-          <span className="mt-2 font-black">{processing ? "Načítám videa..." : "Přidat video"}</span>
+        <MediaDropzone
+          accept="video/mp4,video/webm"
+          multiple
+          disabled={processing}
+          onFiles={handleVideos}
+          className="mt-6 min-h-40 px-5 py-7"
+        >
+          <Plus size={34} className="transition group-hover:scale-105" />
+          <span className="mt-2 text-sm font-black">Přidat video</span>
           <span className="mt-1 text-xs font-bold text-[var(--koluj-muted)]">
-            MP4 nebo WebM · maximálně 60 s · do 45 MB · {totalCount}/{MAX_OFFER_VIDEOS}
+            {totalCount}/{MAX_OFFER_VIDEOS} · max. {MAX_VIDEO_SIZE_MB} MB
           </span>
-          <input
-            type="file"
-            accept="video/mp4,video/webm"
-            multiple
-            disabled={processing}
-            onChange={(event) => {
-              void handleVideos(event.target.files);
-              event.currentTarget.value = "";
-            }}
-            className="hidden"
-          />
-        </label>
+        </MediaDropzone>
       )}
+
+      {processing && <MediaProgress label={progressLabel} value={progress} />}
     </div>
   );
 }
-
-function VideoCard({ src, poster, onRemove }: { src: string; poster?: string; onRemove?: () => void }) {
-  return (
-    <div className="overflow-hidden rounded-[24px] border border-[var(--koluj-border)] bg-black">
-      <video src={src} poster={poster} controls playsInline preload="metadata" className="aspect-video w-full object-contain" />
-      <div className="flex items-center justify-between gap-3 bg-[var(--koluj-surface)] p-4">
-        <div>
-          <p className="font-black">Video nabídky</p>
-          <p className="mt-1 text-xs font-bold text-[var(--koluj-muted)]">MP4 nebo WebM · maximálně 60 s</p>
-        </div>
-        {onRemove && (
-          <button
-            type="button"
-            onClick={onRemove}
-            aria-label="Odebrat video"
-            className="inline-flex items-center gap-2 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm font-black text-red-700 transition hover:bg-red-100"
-          >
-            <Trash2 size={17} /> Odebrat
-          </button>
-        )}
-      </div>
-    </div>
-  );
-}
-

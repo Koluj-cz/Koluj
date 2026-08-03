@@ -7,6 +7,8 @@ import toast from "react-hot-toast";
 import SectionTitle from "@/app/components/SectionTitle";
 import type { ExistingOfferPhoto } from "@/app/components/offer-form/types";
 import GalleryLightbox from "@/app/components/offer-gallery/GalleryLightbox";
+import MediaDropzone from "@/app/components/offer-form/MediaDropzone";
+import MediaProgress from "@/app/components/offer-form/MediaProgress";
 
 type OfferPhotoUploaderProps = {
   offerType: string;
@@ -48,6 +50,7 @@ export default function OfferPhotoUploader({
 }: OfferPhotoUploaderProps) {
   const [uploadingPhotos, setUploadingPhotos] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [progressLabel, setProgressLabel] = useState("Zpracovávám fotky...");
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const photoPreviewsRef = useRef<string[]>([]);
 
@@ -111,23 +114,28 @@ export default function OfferPhotoUploader({
     }
 
     setUploadingPhotos(true);
-    setUploadProgress(10);
+    setUploadProgress(0);
+    setProgressLabel("Připravuji fotky...");
 
     try {
       const imageCompression = (
         await import("browser-image-compression")
       ).default;
 
-      const compressedFiles = await Promise.all(
-        selectedFiles.map((file) =>
-          imageCompression(file, {
-            maxSizeMB: 0.7,
-            maxWidthOrHeight: 1400,
-            useWebWorker: false,
-            fileType: "image/webp",
-          }),
-        ),
-      );
+      const compressedFiles: File[] = [];
+      for (let index = 0; index < selectedFiles.length; index += 1) {
+        const file = selectedFiles[index];
+        setProgressLabel(`Zpracovávám ${file.name}`);
+        setUploadProgress(Math.round((index / selectedFiles.length) * 90) + 5);
+        const compressed = await imageCompression(file, {
+          maxSizeMB: 0.7,
+          maxWidthOrHeight: 1400,
+          useWebWorker: false,
+          fileType: "image/webp",
+        });
+        compressedFiles.push(compressed);
+        setUploadProgress(Math.round(((index + 1) / selectedFiles.length) * 90) + 5);
+      }
 
       const previewUrls = compressedFiles.map((file) =>
         URL.createObjectURL(file),
@@ -141,12 +149,16 @@ export default function OfferPhotoUploader({
       });
 
       setPhotoPreviews((current) => [...current, ...previewUrls]);
+      setProgressLabel("Fotky jsou připravené k nahrání");
       setUploadProgress(100);
     } catch {
       toast.error("Fotku se nepodařilo zpracovat");
       setUploadProgress(0);
     } finally {
-      setUploadingPhotos(false);
+      window.setTimeout(() => {
+        setUploadingPhotos(false);
+        setUploadProgress(0);
+      }, 350);
     }
   }
 
@@ -233,42 +245,35 @@ export default function OfferPhotoUploader({
                 ))}
 
               {canAddMore && (
-                <label className="flex min-h-28 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--koluj-border)] bg-[var(--koluj-surface)] text-[var(--koluj-green)] transition hover:border-[var(--koluj-green)] hover:bg-white">
-                  <Plus size={24} />
+                <MediaDropzone
+                  accept="image/*"
+                  multiple
+                  disabled={uploadingPhotos}
+                  onFiles={handlePhotos}
+                  className="min-h-28 rounded-2xl px-3 py-4"
+                >
+                  <Plus size={24} className="transition group-hover:scale-105" />
                   <span className="mt-1 text-xs font-black">Přidat fotky</span>
                   <span className="mt-1 text-[11px] font-bold text-[var(--koluj-muted)]">
                     {totalPhotos}/{maxPhotos}
                   </span>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*"
-                    onChange={(event) => {
-                      void handlePhotos(event.target.files);
-                      event.currentTarget.value = "";
-                    }}
-                    className="hidden"
-                  />
-                </label>
+                </MediaDropzone>
               )}
             </div>
           </div>
         </div>
       ) : (
-        <label className="mt-6 flex h-48 cursor-pointer flex-col items-center justify-center rounded-[28px] border border-dashed border-[var(--koluj-border)] bg-[var(--koluj-surface)] text-[var(--koluj-green)] hover:bg-[var(--koluj-bg)]">
-          <Plus size={34} />
-          <span className="mt-2 text-sm font-bold">Přidat fotku</span>
-          <input
-            type="file"
-            multiple
-            accept="image/*"
-            onChange={(event) => {
-              void handlePhotos(event.target.files);
-              event.currentTarget.value = "";
-            }}
-            className="hidden"
-          />
-        </label>
+        <MediaDropzone
+          accept="image/*"
+          multiple
+          disabled={uploadingPhotos}
+          onFiles={handlePhotos}
+          className="mt-6 h-48 px-5"
+        >
+          <Plus size={34} className="transition group-hover:scale-105" />
+          <span className="mt-2 text-sm font-black">Přidat fotky</span>
+          <span className="mt-1 text-xs font-bold text-[var(--koluj-muted)]">JPG, PNG nebo WebP · max. 15 MB</span>
+        </MediaDropzone>
       )}
 
       <GalleryLightbox
@@ -288,21 +293,7 @@ export default function OfferPhotoUploader({
           : "Nahraj 1–8 fotek. Hlavní fotku vybereš ikonou hvězdy."}
       </p>
 
-      {uploadingPhotos && (
-        <div className="mt-4">
-          <div className="mb-2 flex justify-between text-sm font-bold text-[var(--koluj-muted)]">
-            <span>Zpracovávám fotky...</span>
-            <span>{uploadProgress}%</span>
-          </div>
-
-          <div className="h-3 overflow-hidden rounded-full bg-[var(--koluj-bg)]">
-            <div
-              className="h-full rounded-full bg-[var(--koluj-green)]"
-              style={{ width: `${uploadProgress}%` }}
-            />
-          </div>
-        </div>
-      )}
+      {uploadingPhotos && <MediaProgress label={progressLabel} value={uploadProgress} />}
     </div>
   );
 }

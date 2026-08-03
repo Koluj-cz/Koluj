@@ -2,8 +2,8 @@ import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { requireUser, createSupabaseAdminClient } from "@/lib/supabase/server";
 import { errorMessage } from "@/lib/security";
+import { MAX_VIDEO_SIZE_BYTES } from "@/lib/mediaLimits";
 
-const MAX_VIDEO_SIZE = 75 * 1024 * 1024;
 const ALLOWED_VIDEO_TYPES = new Map([
   ["video/mp4", "mp4"],
   ["video/webm", "webm"],
@@ -21,7 +21,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const extension = ALLOWED_VIDEO_TYPES.get(contentType);
 
     if (!extension) throw new Error("Video musí být ve formátu MP4 nebo WebM");
-    if (!Number.isFinite(size) || size <= 0 || size > MAX_VIDEO_SIZE) {
+    if (!Number.isFinite(size) || size <= 0 || size > MAX_VIDEO_SIZE_BYTES) {
       throw new Error("Video může mít maximálně 45 MB");
     }
 

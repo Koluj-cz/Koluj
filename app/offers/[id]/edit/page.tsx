@@ -26,6 +26,7 @@ import { itemPriceUnits, servicePriceUnits } from "@/lib/constants";
 import { useUnsavedChangesWarning } from "@/lib/hooks/useUnsavedChangesWarning";
 import { uploadOfferVideo } from "@/lib/uploadOfferVideo";
 import { uploadServiceRealization, type ServiceRealizationDraft } from "@/lib/uploadServiceRealization";
+import { sendFormDataWithProgress } from "@/lib/xhrUpload";
 
 const emptyForm: OfferFormState = {
   offer_type: "item",
@@ -58,6 +59,8 @@ export default function EditItemPage() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [submitProgress, setSubmitProgress] = useState(0);
+  const [submitProgressLabel, setSubmitProgressLabel] = useState("Ukládám změny...");
 
   const [images, setImages] = useState<ExistingOfferPhoto[]>([]);
   const [newPhotos, setNewPhotos] = useState<File[]>([]);
@@ -338,26 +341,34 @@ export default function EditItemPage() {
         formData.append("photos", photo);
       });
 
-      const response = await fetch(`/api/offers/${offerId}`, {
+      setSubmitProgressLabel(newPhotos.length > 0 ? "Nahrávám nové fotografie..." : "Ukládám změny...");
+      await sendFormDataWithProgress<Record<string, unknown>>({
+        url: `/api/offers/${offerId}`,
         method: "PATCH",
         body: formData,
+        onProgress: (value) => setSubmitProgress(Math.round(value * 0.55)),
       });
-
-      const result = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        throw new Error(result?.error || "Změny se nepodařilo uložit");
-      }
+      setSubmitProgress(55);
 
       if (form.offer_type === "service" && newRealizations.length > 0) {
         for (let index = 0; index < newRealizations.length; index += 1) {
-          await uploadServiceRealization(offerId, newRealizations[index], existingRealizations.length + index);
+          const realizationBase = 55 + (index / newRealizations.length) * 20;
+          const realizationShare = 20 / newRealizations.length;
+          await uploadServiceRealization(offerId, newRealizations[index], existingRealizations.length + index, (value, label) => {
+            setSubmitProgressLabel(label);
+            setSubmitProgress(Math.round(realizationBase + (value / 100) * realizationShare));
+          });
         }
       }
 
       if (newVideos.length > 0) {
-        for (const video of newVideos) {
-          await uploadOfferVideo(offerId, video);
+        for (let index = 0; index < newVideos.length; index += 1) {
+          const videoBase = 75 + (index / newVideos.length) * 25;
+          const videoShare = 25 / newVideos.length;
+          await uploadOfferVideo(offerId, newVideos[index], (value, label) => {
+            setSubmitProgressLabel(label);
+            setSubmitProgress(Math.round(videoBase + (value / 100) * videoShare));
+          });
         }
       }
 
@@ -396,6 +407,7 @@ export default function EditItemPage() {
       toast.error(error instanceof Error ? error.message : "Změny se nepodařilo uložit");
     } finally {
       setSaving(false);
+      setSubmitProgress(0);
     }
   }
 
@@ -474,7 +486,13 @@ export default function EditItemPage() {
             <LocationSection form={form} setForm={setForm} />
             <AvailabilityInfoSection mode="edit" />
 
-            <MobileSubmitButton mode="edit" isSubmitting={saving} onSubmit={saveItem} />
+            <MobileSubmitButton
+              mode="edit"
+              isSubmitting={saving}
+              onSubmit={saveItem}
+              submitProgress={submitProgress}
+              submitProgressLabel={submitProgressLabel}
+            />
           </div>
 
           <OfferFormSidebar
@@ -483,6 +501,8 @@ export default function EditItemPage() {
             photosCount={images.length + newPhotos.length}
             isSubmitting={saving}
             onSubmit={saveItem}
+            submitProgress={submitProgress}
+            submitProgressLabel={submitProgressLabel}
           />
             </div>
           </div>

@@ -1,10 +1,14 @@
 "use client";
 
 import Image from "next/image";
+import { useState } from "react";
 import { Film, Play, Plus, Trash2, X } from "lucide-react";
 import toast from "react-hot-toast";
 import type { ServiceRealizationDraft } from "@/lib/uploadServiceRealization";
 import { prepareBrowserVideo, revokePreparedVideoUrls } from "@/lib/mediaUpload";
+import MediaDropzone from "@/app/components/offer-form/MediaDropzone";
+import MediaProgress from "@/app/components/offer-form/MediaProgress";
+import { MAX_VIDEO_DURATION_SECONDS, MAX_VIDEO_SIZE_BYTES, MAX_VIDEO_SIZE_MB } from "@/lib/mediaLimits";
 
 export type ExistingServiceRealization = {
   id: string;
@@ -27,8 +31,6 @@ type Props = {
 const MAX_REALIZATIONS = 12;
 const MAX_IMAGES = 5;
 const MAX_VIDEOS = 2;
-const MAX_VIDEO_SIZE = 75 * 1024 * 1024;
-const MAX_VIDEO_DURATION = 60;
 
 function createDraft(): ServiceRealizationDraft {
   return {
@@ -49,6 +51,8 @@ export default function ServiceRealizationsEditor({
   existing = [],
   onDeleteExisting,
 }: Props) {
+  const [processingByDraft, setProcessingByDraft] = useState<Record<string, { value: number; label: string }>>({});
+
   if (offerType !== "service") return null;
 
   const totalCount = existing.length + drafts.length;
@@ -176,61 +180,73 @@ export default function ServiceRealizationsEditor({
               />
             </label>
 
-            <label className="mt-4 flex cursor-pointer items-center justify-center rounded-2xl border border-dashed border-[var(--koluj-border)] px-4 py-4 font-black text-[var(--koluj-green)] hover:bg-[var(--koluj-bg)]">
-              Přidat fotografie ({draft.files.length}/{MAX_IMAGES})
-              <input
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                multiple
-                className="hidden"
-                onChange={(event) => {
-                  const selected = Array.from(event.target.files || []);
-                  event.currentTarget.value = "";
-                  if (draft.files.length + selected.length > MAX_IMAGES) {
-                    toast.error(`Jedna realizace může mít maximálně ${MAX_IMAGES} fotek`);
-                    return;
-                  }
-                  if (selected.some((file) => file.size > 10 * 1024 * 1024)) {
-                    toast.error("Jedna fotografie realizace může mít maximálně 10 MB");
-                    return;
-                  }
-                  updateDraft(draft.localId, {
-                    files: [...draft.files, ...selected],
-                    previews: [...draft.previews, ...selected.map((file) => URL.createObjectURL(file))],
-                  });
-                }}
-              />
-            </label>
+            <MediaDropzone
+              accept="image/jpeg,image/png,image/webp"
+              multiple
+              onFiles={(files) => {
+                const selected = Array.from(files || []);
+                if (draft.files.length + selected.length > MAX_IMAGES) {
+                  toast.error(`Jedna realizace může mít maximálně ${MAX_IMAGES} fotek`);
+                  return;
+                }
+                if (selected.some((file) => file.size > 10 * 1024 * 1024)) {
+                  toast.error("Jedna fotografie realizace může mít maximálně 10 MB");
+                  return;
+                }
+                updateDraft(draft.localId, {
+                  files: [...draft.files, ...selected],
+                  previews: [...draft.previews, ...selected.map((file) => URL.createObjectURL(file))],
+                });
+              }}
+              className="mt-4 min-h-20 rounded-2xl px-4 py-4"
+            >
+              <Plus size={20} className="transition group-hover:scale-105" />
+              <span className="mt-1 text-sm font-black">Přidat fotografie ({draft.files.length}/{MAX_IMAGES})</span>
+            </MediaDropzone>
 
-            <label className="mt-4 flex cursor-pointer items-center justify-center gap-2 rounded-2xl border border-dashed border-[var(--koluj-border)] px-4 py-4 font-black text-[var(--koluj-green)] hover:bg-[var(--koluj-bg)]">
-              <Film size={18} /> Přidat videa ({draft.videos.length}/{MAX_VIDEOS})
-              <input
-                type="file"
-                accept="video/mp4,video/webm"
-                multiple
-                className="hidden"
-                onChange={(event) => {
-                  const input = event.currentTarget;
-                  const selected = Array.from(input.files || []);
-                  input.value = "";
-                  void (async () => {
-                    const remaining = MAX_VIDEOS - draft.videos.length;
-                    if (selected.length > remaining) toast.error(`Jedna realizace může mít maximálně ${MAX_VIDEOS} videa`);
-                    const prepared = [];
-                    for (const file of selected.slice(0, remaining)) {
-                      if (!["video/mp4", "video/webm"].includes(file.type)) { toast.error(`${file.name}: podporujeme pouze MP4 nebo WebM`); continue; }
-                      if (file.size > MAX_VIDEO_SIZE) { toast.error(`${file.name}: video může mít maximálně 45 MB`); continue; }
-                      try {
-                        const video = await prepareBrowserVideo(file);
-                        if (video.durationSeconds > MAX_VIDEO_DURATION) { revokePreparedVideoUrls(video); toast.error(`${file.name}: video může mít maximálně 60 sekund`); continue; }
-                        prepared.push(video);
-                      } catch { toast.error(`${file.name}: video se nepodařilo načíst`); }
-                    }
-                    if (prepared.length) updateDraft(draft.localId, { videos: [...draft.videos, ...prepared] });
-                  })();
-                }}
+            <MediaDropzone
+              accept="video/mp4,video/webm"
+              multiple
+              disabled={Boolean(processingByDraft[draft.localId])}
+              onFiles={(files) => {
+                const selected = Array.from(files || []);
+                void (async () => {
+                  const remaining = MAX_VIDEOS - draft.videos.length;
+                  if (selected.length > remaining) toast.error(`Jedna realizace může mít maximálně ${MAX_VIDEOS} videa`);
+                  const prepared = [];
+                  for (let fileIndex = 0; fileIndex < selected.slice(0, remaining).length; fileIndex += 1) {
+                    const file = selected[fileIndex];
+                    if (!["video/mp4", "video/webm"].includes(file.type)) { toast.error(`${file.name}: podporujeme pouze MP4 nebo WebM`); continue; }
+                    if (file.size > MAX_VIDEO_SIZE_BYTES) { toast.error(`${file.name}: video může mít maximálně ${MAX_VIDEO_SIZE_MB} MB`); continue; }
+                    try {
+                      const video = await prepareBrowserVideo(file, (value, label) => {
+                        setProcessingByDraft((current) => ({ ...current, [draft.localId]: { value, label } }));
+                      });
+                      if (video.durationSeconds > MAX_VIDEO_DURATION_SECONDS) { revokePreparedVideoUrls(video); toast.error(`${file.name}: video může mít maximálně ${MAX_VIDEO_DURATION_SECONDS} sekund`); continue; }
+                      prepared.push(video);
+                    } catch { toast.error(`${file.name}: video se nepodařilo načíst`); }
+                  }
+                  if (prepared.length) updateDraft(draft.localId, { videos: [...draft.videos, ...prepared] });
+                  setProcessingByDraft((current) => {
+                    const next = { ...current };
+                    delete next[draft.localId];
+                    return next;
+                  });
+                })();
+              }}
+              className="mt-4 min-h-20 rounded-2xl px-4 py-4"
+            >
+              <Film size={20} className="transition group-hover:scale-105" />
+              <span className="mt-1 text-sm font-black">Přidat videa ({draft.videos.length}/{MAX_VIDEOS})</span>
+              <span className="mt-1 text-xs font-bold text-[var(--koluj-muted)]">max. {MAX_VIDEO_SIZE_MB} MB · {MAX_VIDEO_DURATION_SECONDS} s</span>
+            </MediaDropzone>
+
+            {processingByDraft[draft.localId] && (
+              <MediaProgress
+                label={processingByDraft[draft.localId].label}
+                value={processingByDraft[draft.localId].value}
               />
-            </label>
+            )}
 
             {draft.videos.length > 0 && (
               <div className="mt-4 grid gap-3 sm:grid-cols-2">

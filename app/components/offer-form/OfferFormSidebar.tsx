@@ -3,6 +3,7 @@
 import { Plus, Save } from "lucide-react";
 import CheckLine from "@/app/components/CheckLine";
 import StickySidebar from "@/app/components/StickySidebar";
+import MediaProgress from "@/app/components/offer-form/MediaProgress";
 import type {
   OfferFormMode,
   OfferFormState,
@@ -14,6 +15,8 @@ type OfferFormSidebarProps = {
   photosCount: number;
   isSubmitting: boolean;
   onSubmit: () => void;
+  submitProgress?: number;
+  submitProgressLabel?: string;
 };
 
 export default function OfferFormSidebar({
@@ -22,6 +25,8 @@ export default function OfferFormSidebar({
   photosCount,
   isSubmitting,
   onSubmit,
+  submitProgress = 0,
+  submitProgressLabel = "Ukládám nabídku...",
 }: OfferFormSidebarProps) {
   const isNew = mode === "new";
   const ButtonIcon = isNew ? Plus : Save;
@@ -82,6 +87,8 @@ export default function OfferFormSidebar({
             }
           />
         </ul>
+
+        {isSubmitting && <MediaProgress label={submitProgressLabel} value={submitProgress} />}
 
         <button
           type="button"

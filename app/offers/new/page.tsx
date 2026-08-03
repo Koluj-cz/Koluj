@@ -20,6 +20,7 @@ import type { OfferFormState } from "@/app/components/offer-form/types";
 import { useUnsavedChangesWarning } from "@/lib/hooks/useUnsavedChangesWarning";
 import { uploadOfferVideo } from "@/lib/uploadOfferVideo";
 import { uploadServiceRealization, type ServiceRealizationDraft } from "@/lib/uploadServiceRealization";
+import { sendFormDataWithProgress } from "@/lib/xhrUpload";
 
 const initialForm: OfferFormState = {
   offer_type: "item",
@@ -48,6 +49,8 @@ export default function NewItemPage() {
   const router = useRouter();
 
   const [loading, setLoading] = useState(false);
+  const [submitProgress, setSubmitProgress] = useState(0);
+  const [submitProgressLabel, setSubmitProgressLabel] = useState("Ukládám nabídku...");
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoPreviews, setPhotoPreviews] = useState<string[]>([]);
   const [mainPhotoIndex, setMainPhotoIndex] = useState(0);
@@ -159,27 +162,35 @@ export default function NewItemPage() {
         formData.append("photos", photo);
       });
 
-      const response = await fetch("/api/offers", {
+      setSubmitProgressLabel(photos.length > 0 ? "Nahrávám fotografie nabídky..." : "Ukládám nabídku...");
+      const result = await sendFormDataWithProgress<{ offerId?: string }>({
+        url: "/api/offers",
         method: "POST",
         body: formData,
+        onProgress: (value) => setSubmitProgress(Math.round(value * 0.55)),
       });
-
-      const result = await response.json().catch(() => null);
-
-      if (!response.ok) {
-        throw new Error(result?.error || "Nepodařilo se uložit nabídku");
-      }
+      setSubmitProgress(55);
 
       if (form.offer_type === "service" && realizations.length > 0 && result?.offerId) {
         for (let index = 0; index < realizations.length; index += 1) {
-          await uploadServiceRealization(result.offerId, realizations[index], index);
+          const realizationBase = 55 + (index / realizations.length) * 20;
+          const realizationShare = 20 / realizations.length;
+          await uploadServiceRealization(result.offerId, realizations[index], index, (value, label) => {
+            setSubmitProgressLabel(label);
+            setSubmitProgress(Math.round(realizationBase + (value / 100) * realizationShare));
+          });
         }
       }
 
       if (videos.length > 0 && result?.offerId) {
         try {
-          for (const video of videos) {
-            await uploadOfferVideo(result.offerId, video);
+          for (let index = 0; index < videos.length; index += 1) {
+            const videoBase = 75 + (index / videos.length) * 25;
+            const videoShare = 25 / videos.length;
+            await uploadOfferVideo(result.offerId, videos[index], (value, label) => {
+              setSubmitProgressLabel(label);
+              setSubmitProgress(Math.round(videoBase + (value / 100) * videoShare));
+            });
           }
         } catch (videoError) {
           setAllowNavigation(true);
@@ -193,6 +204,8 @@ export default function NewItemPage() {
         }
       }
 
+      setSubmitProgressLabel("Nabídka byla uložena");
+      setSubmitProgress(100);
       setAllowNavigation(true);
       toast.success("Nabídka byla přidána");
       router.push("/dashboard/my-offers");
@@ -200,6 +213,7 @@ export default function NewItemPage() {
       toast.error(error instanceof Error ? error.message : "Nepodařilo se uložit nabídku");
     } finally {
       setLoading(false);
+      setSubmitProgress(0);
     }
   }
 
@@ -259,7 +273,13 @@ export default function NewItemPage() {
             <LocationSection form={form} setForm={setForm} />
             <AvailabilityInfoSection mode="new" />
 
-            <MobileSubmitButton mode="new" isSubmitting={loading} onSubmit={handleSubmit} />
+            <MobileSubmitButton
+              mode="new"
+              isSubmitting={loading}
+              onSubmit={handleSubmit}
+              submitProgress={submitProgress}
+              submitProgressLabel={submitProgressLabel}
+            />
           </div>
 
           <OfferFormSidebar
@@ -268,6 +288,8 @@ export default function NewItemPage() {
             photosCount={photos.length}
             isSubmitting={loading}
             onSubmit={handleSubmit}
+            submitProgress={submitProgress}
+            submitProgressLabel={submitProgressLabel}
           />
             </div>
           </div>
