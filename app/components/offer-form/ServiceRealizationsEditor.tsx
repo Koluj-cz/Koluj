@@ -219,7 +219,7 @@ export default function ServiceRealizationsEditor({
                     const prepared = [];
                     for (const file of selected.slice(0, remaining)) {
                       if (!["video/mp4", "video/webm"].includes(file.type)) { toast.error(`${file.name}: podporujeme pouze MP4 nebo WebM`); continue; }
-                      if (file.size > MAX_VIDEO_SIZE) { toast.error(`${file.name}: video může mít maximálně 75 MB`); continue; }
+                      if (file.size > MAX_VIDEO_SIZE) { toast.error(`${file.name}: video může mít maximálně 45 MB`); continue; }
                       try {
                         const video = await prepareBrowserVideo(file);
                         if (video.durationSeconds > MAX_VIDEO_DURATION) { revokePreparedVideoUrls(video); toast.error(`${file.name}: video může mít maximálně 60 sekund`); continue; }

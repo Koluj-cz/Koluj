@@ -20,7 +20,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const extension = mediaType === "video" ? VIDEO_TYPES.get(contentType) : IMAGE_TYPES.get(contentType);
     if (!extension) throw new Error(mediaType === "video" ? "Video musí být ve formátu MP4 nebo WebM" : "Fotografie musí být ve formátu JPG, PNG nebo WebP");
     const maxSize = mediaType === "video" ? MAX_VIDEO_SIZE : MAX_IMAGE_SIZE;
-    if (!Number.isFinite(size) || size <= 0 || size > maxSize) throw new Error(mediaType === "video" ? "Video může mít maximálně 75 MB" : "Fotografie může mít maximálně 10 MB");
+    if (!Number.isFinite(size) || size <= 0 || size > maxSize) throw new Error(mediaType === "video" ? "Video může mít maximálně 45 MB" : "Fotografie může mít maximálně 10 MB");
 
     const { data: realization } = await supabaseAdmin.from("service_realizations").select("id, offer_id").eq("id", realizationId).eq("offer_id", offerId).maybeSingle();
     const { data: offer } = await supabaseAdmin.from("offers").select("owner_id, publication_status").eq("id", offerId).maybeSingle();

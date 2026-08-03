@@ -60,7 +60,7 @@ export default function OfferVideoUploader({
         }
 
         if (file.size > MAX_VIDEO_SIZE_BYTES) {
-          toast.error(`${file.name}: video může mít maximálně 75 MB`);
+          toast.error(`${file.name}: video může mít maximálně 45 MB`);
           continue;
         }
 
@@ -98,7 +98,7 @@ export default function OfferVideoUploader({
       <SectionTitle icon={<Film size={24} />} title="Videa" />
 
       <p className="mt-3 text-sm leading-relaxed text-[var(--koluj-muted)]">
-        Přidej až tři krátká videa, která nabídku lépe představí. Fotografie zůstávají hlavním obsahem nabídky.
+        Přidej až tři krátká videa, která nabídku lépe představí.
       </p>
 
       {totalCount > 0 && (
@@ -127,7 +127,7 @@ export default function OfferVideoUploader({
           <Plus size={32} />
           <span className="mt-2 font-black">{processing ? "Načítám videa..." : "Přidat video"}</span>
           <span className="mt-1 text-xs font-bold text-[var(--koluj-muted)]">
-            MP4 nebo WebM · maximálně 60 s · do 75 MB · {totalCount}/{MAX_OFFER_VIDEOS}
+            MP4 nebo WebM · maximálně 60 s · do 45 MB · {totalCount}/{MAX_OFFER_VIDEOS}
           </span>
           <input
             type="file"

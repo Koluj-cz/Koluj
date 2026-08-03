@@ -22,7 +22,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     if (!extension) throw new Error("Video musí být ve formátu MP4 nebo WebM");
     if (!Number.isFinite(size) || size <= 0 || size > MAX_VIDEO_SIZE) {
-      throw new Error("Video může mít maximálně 75 MB");
+      throw new Error("Video může mít maximálně 45 MB");
     }
 
     const { data: offer, error: offerError } = await supabaseAdmin
