@@ -6,8 +6,13 @@ async function readJson(response: Response) {
   return response.json().catch(() => null);
 }
 
-export async function uploadOfferVideo(offerId: string, video: SelectedOfferVideo) {
+export async function uploadOfferVideo(
+  offerId: string,
+  video: SelectedOfferVideo,
+  onProgress?: (value: number, label: string) => void,
+) {
   try {
+    onProgress?.(5, "Připravuji nahrání videa...");
     const prepareResponse = await fetch(`/api/offers/${offerId}/videos/upload-url`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -23,6 +28,7 @@ export async function uploadOfferVideo(offerId: string, video: SelectedOfferVide
     const prepared = await readJson(prepareResponse);
     if (!prepareResponse.ok) throw new Error(prepared?.error || "Video se nepodařilo připravit");
 
+    onProgress?.(12, "Nahrávám video...");
     await uploadToSignedStorageUrl({
       path: prepared.video.path,
       token: prepared.video.token,
@@ -31,8 +37,11 @@ export async function uploadOfferVideo(offerId: string, video: SelectedOfferVide
       maxAttempts: 2,
     });
 
+    onProgress?.(62, "Video je nahrané");
+
     let uploadedThumbnailPath: string | null = null;
     if (video.thumbnailFile && prepared.thumbnail) {
+      onProgress?.(66, "Nahrávám náhled videa...");
       try {
         await uploadToSignedStorageUrl({
           path: prepared.thumbnail.path,
@@ -51,6 +60,7 @@ export async function uploadOfferVideo(offerId: string, video: SelectedOfferVide
       }
     }
 
+    onProgress?.(72, "Nahrávám kontrolní snímky...");
     const uploadedModerationFramePaths: string[] = [];
     const moderationFrames = Array.isArray(prepared.moderationFrames)
       ? prepared.moderationFrames
@@ -62,6 +72,7 @@ export async function uploadOfferVideo(offerId: string, video: SelectedOfferVide
       if (!preparedFrame) break;
 
       try {
+        onProgress?.(72 + ((index + 1) / Math.max(video.moderationFrameFiles.length, 1)) * 18, `Nahrávám kontrolní snímek ${index + 1}/${video.moderationFrameFiles.length}...`);
         await uploadToSignedStorageUrl({
           path: preparedFrame.path,
           token: preparedFrame.token,
@@ -78,6 +89,7 @@ export async function uploadOfferVideo(offerId: string, video: SelectedOfferVide
       }
     }
 
+    onProgress?.(92, "Ukládám video k nabídce...");
     const commitResponse = await fetch(`/api/offers/${offerId}/videos`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -91,6 +103,7 @@ export async function uploadOfferVideo(offerId: string, video: SelectedOfferVide
 
     const committed = await readJson(commitResponse);
     if (!commitResponse.ok) throw new Error(committed?.error || "Video se nepodařilo uložit");
+    onProgress?.(100, "Video bylo nahráno");
     return committed.video;
   } catch (error) {
     Sentry.captureException(error, {

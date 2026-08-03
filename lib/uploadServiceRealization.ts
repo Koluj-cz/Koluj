@@ -17,7 +17,13 @@ async function jsonResponse(response: Response, fallback: string) {
   return result;
 }
 
-export async function uploadServiceRealization(offerId: string, realization: ServiceRealizationDraft, sortOrder: number) {
+export async function uploadServiceRealization(
+  offerId: string,
+  realization: ServiceRealizationDraft,
+  sortOrder: number,
+  onProgress?: (value: number, label: string) => void,
+) {
+  onProgress?.(3, "Vytvářím realizaci...");
   const createResponse = await fetch(`/api/offers/${offerId}/realizations`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -32,7 +38,11 @@ export async function uploadServiceRealization(offerId: string, realization: Ser
   const realizationId = String(created.realizationId);
 
   try {
+    const totalMedia = realization.files.length + realization.videos.length;
+    let completedMedia = 0;
+
     for (let index = 0; index < realization.files.length; index += 1) {
+      onProgress?.(8 + (completedMedia / Math.max(totalMedia, 1)) * 84, `Nahrávám fotografii realizace ${index + 1}/${realization.files.length}...`);
       const file = realization.files[index];
       const prepared = await prepareUpload(offerId, realizationId, "image", file, false);
       await uploadToSignedStorageUrl({ path: prepared.media.path, token: prepared.media.token, file });
@@ -43,9 +53,11 @@ export async function uploadServiceRealization(offerId: string, realization: Ser
         durationSeconds: null,
         sortOrder: index,
       });
+      completedMedia += 1;
     }
 
     for (let index = 0; index < realization.videos.length; index += 1) {
+      onProgress?.(8 + (completedMedia / Math.max(totalMedia, 1)) * 84, `Nahrávám video realizace ${index + 1}/${realization.videos.length}...`);
       const video = realization.videos[index];
       const prepared = await prepareUpload(
         offerId,
@@ -88,8 +100,10 @@ export async function uploadServiceRealization(offerId: string, realization: Ser
         sortOrder: index,
         moderationFramePaths: uploadedModerationFramePaths,
       });
+      completedMedia += 1;
     }
 
+    onProgress?.(100, "Realizace byla nahrána");
     return { ok: true, realizationId };
   } catch (error) {
     await fetch(`/api/offers/${offerId}/realizations/${realizationId}`, { method: "DELETE" }).catch(() => null);
