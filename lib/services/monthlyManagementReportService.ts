@@ -137,14 +137,14 @@ async function fetchAll<T>(
   supabase: SupabaseClient,
   table: string,
   select: string,
-  configure?: (query: any) => any,
 ): Promise<T[]> {
   const rows: T[] = [];
 
   for (let from = 0; ; from += PAGE_SIZE) {
-    let query = supabase.from(table).select(select).range(from, from + PAGE_SIZE - 1);
-    if (configure) query = configure(query);
-    const { data, error } = await query;
+    const { data, error } = await supabase
+      .from(table)
+      .select(select)
+      .range(from, from + PAGE_SIZE - 1);
     if (error) throw new Error(`${table}: ${error.message}`);
     const page = (data || []) as T[];
     rows.push(...page);
@@ -528,7 +528,9 @@ async function collectReportData(supabase: SupabaseClient, period: Period) {
   return { metrics, narrative };
 }
 
-function buildEmailHtml(period: Period, metrics: any, narrative: string) {
+type ReportMetrics = Awaited<ReturnType<typeof collectReportData>>["metrics"];
+
+function buildEmailHtml(period: Period, metrics: ReportMetrics, narrative: string) {
   const topOfferRows = metrics.topOffers.map((offer: RankedOffer, index: number) => [
     `<strong>${index + 1}. ${safe(offer.title)}</strong>`,
     safe(offer.owner),
@@ -541,13 +543,13 @@ function buildEmailHtml(period: Period, metrics: any, narrative: string) {
     `<strong>${formatNumber(provider.completedReservations)}</strong>`,
     provider.averageRating === null ? "—" : `${provider.averageRating.toLocaleString("cs-CZ")}/5 (${provider.reviewCount})`,
   ]);
-  const trafficRows = metrics.traffic.topOffers.map((offer: any, index: number) => [
+  const trafficRows = metrics.traffic.topOffers.map((offer, index: number) => [
     `<strong>${index + 1}. ${safe(offer.title)}</strong>`,
     safe(offer.owner),
     `<strong>${formatNumber(offer.views)}</strong>`,
   ]);
-  const categoryRows = metrics.topCategories.map((row: any) => [safe(row.category), `<strong>${formatNumber(row.reservations)}</strong>`]);
-  const cityRows = metrics.topCities.map((row: any) => [safe(row.city), `<strong>${formatNumber(row.users)}</strong>`]);
+  const categoryRows = metrics.topCategories.map((row) => [safe(row.category), `<strong>${formatNumber(row.reservations)}</strong>`]);
+  const cityRows = metrics.topCities.map((row) => [safe(row.city), `<strong>${formatNumber(row.users)}</strong>`]);
 
   const attentionItems = [
     `${formatNumber(metrics.attention.usersWithoutOffer)} uživatelů zatím nevytvořilo nabídku.`,

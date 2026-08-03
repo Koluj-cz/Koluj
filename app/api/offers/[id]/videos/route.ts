@@ -1,7 +1,7 @@
 import { after, NextResponse } from "next/server";
 import { requireUser, createSupabaseAdminClient } from "@/lib/supabase/server";
 import { errorMessage } from "@/lib/security";
-import { processMediaById, processVideoMediaById } from "@/lib/services/mediaModerationService";
+import { processVideoMediaById } from "@/lib/services/mediaModerationService";
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

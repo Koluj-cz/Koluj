@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { AlertTriangle, CheckCircle2, RotateCcw, XCircle } from "lucide-react";
@@ -171,7 +172,7 @@ export default function ModerationQueue({ initialRows }: { initialRows: Moderati
                         className="h-48 w-full rounded-2xl bg-black object-contain md:h-32"
                       />
                     ) : row.url ? (
-                      <img src={row.url} alt="Náhled média" className="h-36 w-full rounded-2xl object-cover md:h-28" />
+                      <Image src={row.url} alt="Náhled média" width={720} height={480} unoptimized className="h-36 w-full rounded-2xl object-cover md:h-28" />
                     ) : (
                       <div className="h-36 w-full rounded-2xl bg-gray-100 md:h-28" />
                     )}

@@ -1,12 +1,12 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 type OfferWithPrimaryImage = {
   id: string;
   primary_image_url: string | null;
   [key: string]: unknown;
 };
 
-type SupabaseLikeClient = {
-  from: (table: string) => any;
-};
+type SupabaseLikeClient = Pick<SupabaseClient, "from">;
 
 const PUBLIC_IMAGE_STATUSES = [
   "approved",

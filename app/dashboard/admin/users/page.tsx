@@ -6,6 +6,11 @@ import UserAdminTable from "./UserAdminTable";
 
 export const dynamic = "force-dynamic";
 
+function isCurrentlyBanned(bannedUntil: string | undefined): boolean {
+  if (!bannedUntil) return false;
+  return new Date(bannedUntil).getTime() > Date.now();
+}
+
 export default async function AdminUsersPage() {
   try { await requireAdmin(); } catch { redirect("/dashboard"); }
   const supabase = createSupabaseAdminClient();
@@ -24,6 +29,6 @@ export default async function AdminUsersPage() {
     for (const id of new Set([row.owner_id, row.customer_id].filter(Boolean))) bookingCounts.set(id, (bookingCounts.get(id) || 0) + 1);
     if (row.status === "returned") for (const id of new Set([row.owner_id, row.customer_id].filter(Boolean))) completed.set(id, (completed.get(id) || 0) + 1);
   }
-  const users = authData.users.map((user) => ({ id: user.id, email: user.email || "Bez e-mailu", name: profiles.get(user.id) || String(user.user_metadata?.full_name || ""), createdAt: user.created_at, lastSignInAt: user.last_sign_in_at || null, banned: Boolean(user.banned_until && new Date(user.banned_until).getTime() > Date.now()), offers: offerCounts.get(user.id) || 0, bookings: bookingCounts.get(user.id) || 0, completedBookings: completed.get(user.id) || 0 }));
+  const users = authData.users.map((user) => ({ id: user.id, email: user.email || "Bez e-mailu", name: profiles.get(user.id) || String(user.user_metadata?.full_name || ""), createdAt: user.created_at, lastSignInAt: user.last_sign_in_at || null, banned: isCurrentlyBanned(user.banned_until), offers: offerCounts.get(user.id) || 0, bookings: bookingCounts.get(user.id) || 0, completedBookings: completed.get(user.id) || 0 }));
   return <main className="koluj-home min-h-screen text-[var(--koluj-text)]"><div className="koluj-wide-frame relative z-10"><section className="koluj-hero-card p-5 md:p-8"><BackLink href="/dashboard">Dashboard</BackLink><h1 className="koluj-heading mt-7">Správa uživatelů</h1><p className="mt-3 text-[var(--koluj-muted)] md:text-lg">Přehled účtů, jejich aktivity a možnost okamžitě zablokovat nebo odblokovat přihlášení.</p></section><UserAdminTable initialUsers={users} /></div></main>;
 }
