@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { CalendarDays, MapPin, Package, Star } from "lucide-react";
+import { CalendarDays, MapPin, Package, Star, Trophy } from "lucide-react";
 import BackLink from "@/app/components/BackLink";
 import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
 import { useParams } from "next/navigation";
@@ -154,7 +154,6 @@ export default function UserProfilePage() {
 
   const ratingAverage = Number(rating?.rating_avg || 0);
   const ratingCount = Number(rating?.rating_count || 0);
-  const ratingText = ratingCount ? `★ ${ratingAverage.toFixed(1)}` : "★ Nový";
   const initials = (profile.full_name || "Uživatel").charAt(0).toUpperCase();
   const visibleReviews = reviews.slice(0, visibleReviewsCount);
   const hasMoreReviews = visibleReviewsCount < reviews.length;
@@ -193,14 +192,6 @@ export default function UserProfilePage() {
                       {trust && <UserTrustBadge level={trust.level} compact />}
                     </div>
 
-                    <p className="mt-2 font-black text-[var(--koluj-green)]">
-                      {ratingText}
-                      {ratingCount > 0 && (
-                        <span className="ml-1 text-[var(--koluj-muted)]">
-                          ({ratingCount})
-                        </span>
-                      )}
-                    </p>
                   </div>
                 </div>
 
@@ -227,24 +218,24 @@ export default function UserProfilePage() {
                   <ProfileStat
                     icon={<Star size={18} />}
                     value={ratingCount ? ratingAverage.toFixed(1) : "–"}
-                    label="Hodnocení"
+                    label={ratingCount === 1 ? "1 recenze" : `${ratingCount} recenzí`}
                   />
                   <ProfileStat
-                    icon={<Star size={18} />}
-                    value={String(ratingCount)}
-                    label="Recenzí"
+                    icon={<Trophy size={18} />}
+                    value={String(trust?.completedBookings || 0)}
+                    label="Dokončeno"
                   />
                   <ProfileStat
                     icon={<Package size={18} />}
                     value={String(items.length)}
-                    label="Nabídek"
+                    label="Aktivní nabídky"
                   />
                 </div>
               </div>
 
               {trust && (
                 <div className="border-t border-[var(--koluj-border)] p-6 md:p-8">
-                  <UserTrustCard trust={trust} embedded />
+                  <UserTrustCard trust={trust} embedded compactDetails />
                 </div>
               )}
 
@@ -256,9 +247,6 @@ export default function UserProfilePage() {
                       Zkušenosti ostatních uživatelů s tímto poskytovatelem.
                     </p>
                   </div>
-                  <span className="rounded-full bg-[var(--koluj-bg)] px-3 py-1.5 text-sm font-black">
-                    {reviews.length}
-                  </span>
                 </div>
 
                 {reviews.length === 0 ? (

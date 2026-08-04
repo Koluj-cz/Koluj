@@ -20,9 +20,11 @@ import UserTrustBadge from "./UserTrustBadge";
 export default function UserTrustCard({
   trust,
   embedded = false,
+  compactDetails = false,
 }: {
   trust: UserTrustSummary;
   embedded?: boolean;
+  compactDetails?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -45,9 +47,13 @@ export default function UserTrustCard({
         <div className="mt-5 grid gap-3 text-sm">
           <TrustLine icon={<MailCheck size={18} />} ok={trust.emailVerified} text="Ověřený e-mail" />
           <TrustLine icon={<Phone size={18} />} ok={trust.phoneProvided} text={trust.phoneProvided ? "Telefon uveden" : "Telefon neuveden"} />
-          <TrustLine icon={<Trophy size={18} />} ok={trust.completedBookings > 0} text={`${trust.completedBookings} dokončených rezervací`} />
-          <TrustLine icon={<Star size={18} />} ok={trust.ratingCount > 0} text={trust.ratingCount > 0 ? `Hodnocení ${trust.ratingAverage.toFixed(1)} (${trust.ratingCount})` : "Zatím bez hodnocení"} />
-          <TrustLine icon={<CalendarDays size={18} />} ok text={`Na Koluj od ${formatDate(trust.joinedAt)}`} />
+          {!compactDetails && (
+            <>
+              <TrustLine icon={<Trophy size={18} />} ok={trust.completedBookings > 0} text={`${trust.completedBookings} dokončených rezervací`} />
+              <TrustLine icon={<Star size={18} />} ok={trust.ratingCount > 0} text={trust.ratingCount > 0 ? `Hodnocení ${trust.ratingAverage.toFixed(1)} (${trust.ratingCount})` : "Zatím bez hodnocení"} />
+              <TrustLine icon={<CalendarDays size={18} />} ok text={`Na Koluj od ${formatDate(trust.joinedAt)}`} />
+            </>
+          )}
         </div>
 
         <button
@@ -61,8 +67,13 @@ export default function UserTrustCard({
       </section>
 
       {open && (
-        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/65 p-4" role="dialog" aria-modal="true" aria-label="Jak získat vyšší úroveň důvěryhodnosti">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-[28px] bg-white p-6 shadow-2xl md:p-8">
+        <div
+          className="fixed inset-0 z-[2000] flex items-start justify-center bg-black/65 px-4 pb-[calc(104px+env(safe-area-inset-bottom))] pt-4 sm:items-center sm:p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Jak získat vyšší úroveň důvěryhodnosti"
+        >
+          <div className="max-h-[calc(100dvh-120px-env(safe-area-inset-bottom))] w-full max-w-2xl overflow-y-auto rounded-[28px] bg-white p-6 shadow-2xl sm:max-h-[90dvh] md:p-8">
             <div className="flex items-start justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-black">Úrovně důvěryhodnosti</h2>
@@ -97,14 +108,13 @@ export default function UserTrustCard({
                   "Alespoň 25 dokončených rezervací",
                   "Alespoň 10 hodnocení",
                   "Průměrné hodnocení 4,8 nebo vyšší",
-                  "Žádný aktivní ban",
                 ]}
               />
             </div>
 
             {trust.level !== "top" && (
               <div className="mt-6 rounded-2xl bg-[var(--koluj-bg)] p-5">
-                <h3 className="font-black">Co ještě zbývá?</h3>
+                <h3 className="font-black">Další krok k odznaku</h3>
                 <MissingRequirements trust={trust} />
               </div>
             )}
@@ -142,7 +152,6 @@ function MissingRequirements({ trust }: { trust: UserTrustSummary }) {
   if (target.missingCompletedBookings > 0) items.push(`Dokončit ještě ${target.missingCompletedBookings} rezervací`);
   if (target.missingRatings > 0) items.push(`Získat ještě ${target.missingRatings} hodnocení`);
   if (target.missingRatingAverage > 0) items.push(`Zvýšit průměrné hodnocení o ${target.missingRatingAverage.toFixed(1)}`);
-  if ("blockedByBan" in target && target.blockedByBan) items.push("Účet nesmí mít aktivní ban");
   if (!items.length) items.push("Podmínky jsou splněné. Úroveň se aktualizuje automaticky.");
   return <ul className="mt-3 space-y-2 text-sm font-bold text-[var(--koluj-muted)]">{items.map((item) => <li key={item}>• {item}</li>)}</ul>;
 }

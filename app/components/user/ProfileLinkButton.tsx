@@ -16,7 +16,7 @@ export default function ProfileLinkButton({
     <Link
       href={`/users/${userId}`}
       className={`koluj-button inline-flex items-center justify-center gap-2 text-center ${
-        compact ? "px-4 py-2 text-sm" : "px-5 py-3"
+        compact ? "h-10 px-4 text-sm" : "h-12 px-5"
       } ${className}`}
     >
       <UserRound size={compact ? 16 : 18} />
