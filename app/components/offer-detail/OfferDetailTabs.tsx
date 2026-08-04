@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, ExternalLink, MapPin, Play, Star, X } from "lucide-react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { handoverLabels } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
 import type { ItemDetail, OfferReview, ServiceRealization } from "./types";
@@ -31,17 +31,29 @@ export default function OfferDetailTabs({ item, realizations, reviews }: Props) 
     [item.offer_type, realizations.length, reviews.length],
   );
   const [activeTab, setActiveTab] = useState<TabId>("description");
+  const tabScroller = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const activeButton = tabScroller.current?.querySelector<HTMLButtonElement>(
+      `[data-tab-id="${activeTab}"]`,
+    );
+    activeButton?.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "nearest" });
+  }, [activeTab]);
 
   return (
     <section className="koluj-card overflow-hidden">
-      <div className="overflow-x-auto border-b border-[var(--koluj-border)] px-4 md:px-8">
-        <div className="flex min-w-max gap-7">
+      <div
+        ref={tabScroller}
+        className="overflow-x-auto border-b border-[var(--koluj-border)] px-5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:px-8"
+      >
+        <div className="flex min-w-max snap-x snap-mandatory gap-6 pr-5 md:gap-7 md:pr-0">
           {tabs.map((tab) => (
             <button
               key={tab.id}
               type="button"
+              data-tab-id={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`relative py-5 text-sm font-black transition md:text-base ${
+              className={`relative snap-start py-5 text-sm font-black transition md:text-base ${
                 activeTab === tab.id
                   ? "text-[var(--koluj-green)]"
                   : "text-[var(--koluj-muted)] hover:text-[var(--koluj-text)]"
@@ -80,41 +92,46 @@ function OwnerTab({ item }: { item: ItemDetail }) {
 
   return (
     <div>
-      <h2 className="text-2xl font-black">Vlastník nabídky</h2>
-      <div className="mt-5 flex max-w-xl flex-col gap-5 rounded-3xl border border-[var(--koluj-border)] p-5 sm:flex-row sm:items-center">
-        {item.profiles?.avatar_url ? (
-          <Image
-            src={item.profiles.avatar_url}
-            alt={ownerName}
-            width={64}
-            height={64}
-            className="h-16 w-16 rounded-full object-cover"
-          />
-        ) : (
-          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-2xl font-black text-[var(--koluj-green)]">
-            {ownerName.charAt(0).toUpperCase()}
-          </div>
-        )}
+      <h2 className="hidden text-2xl font-black sm:block">Vlastník nabídky</h2>
 
-        <div className="min-w-0 flex-1">
-          <p className="text-xl font-black">{ownerName}</p>
-          <p className="mt-1 font-bold text-[var(--koluj-green)]">
-            {ratingText}
-            {hasRating && (
-              <span className="ml-1 text-[var(--koluj-muted)]">
-                ({rating?.rating_count})
-              </span>
-            )}
-          </p>
-          {item.trust && (
-            <div className="mt-3">
-              <UserTrustBadge level={item.trust.level} compact />
+      <div className="max-w-xl rounded-3xl border border-[var(--koluj-border)] p-4 sm:mt-5 sm:p-5">
+        <div className="flex min-w-0 items-center gap-4">
+          {item.profiles?.avatar_url ? (
+            <Image
+              src={item.profiles.avatar_url}
+              alt={ownerName}
+              width={64}
+              height={64}
+              className="h-14 w-14 shrink-0 rounded-full object-cover sm:h-16 sm:w-16"
+            />
+          ) : (
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-xl font-black text-[var(--koluj-green)] sm:h-16 sm:w-16 sm:text-2xl">
+              {ownerName.charAt(0).toUpperCase()}
             </div>
           )}
+
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="truncate text-lg font-black sm:text-xl">{ownerName}</p>
+              {item.trust && <UserTrustBadge level={item.trust.level} compact />}
+            </div>
+            <p className="mt-1 font-bold text-[var(--koluj-green)]">
+              {ratingText}
+              {hasRating && (
+                <span className="ml-1 text-[var(--koluj-muted)]">
+                  ({rating?.rating_count})
+                </span>
+              )}
+            </p>
+          </div>
         </div>
 
         {item.owner_id && (
-          <ProfileLinkButton userId={item.owner_id} compact className="shrink-0" />
+          <ProfileLinkButton
+            userId={item.owner_id}
+            compact
+            className="mt-4 w-full sm:w-auto"
+          />
         )}
       </div>
     </div>

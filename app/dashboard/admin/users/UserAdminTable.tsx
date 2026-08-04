@@ -64,14 +64,14 @@ export default function UserAdminTable({ initialUsers }: { initialUsers: UserRow
                 <td className="p-4">{new Date(user.createdAt).toLocaleDateString("cs-CZ")}</td><td className="p-4 font-black">{user.offers}</td><td className="p-4 font-black">{user.bookings}</td><td className="p-4 font-black">{user.completedBookings}</td>
                 <td className="p-4"><UserTrustBadge level={user.trust.level} compact />{user.trust.level === "none" && <span className="text-xs font-bold text-[var(--koluj-muted)]">Bez odznaku</span>}</td>
                 <td className="p-4"><span className={`rounded-full px-3 py-1 text-xs font-black ${user.banned ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>{user.banned ? "Zablokován" : "Aktivní"}</span></td>
-                <td className="p-4 text-right"><div className="flex items-center justify-end gap-2"><ProfileLinkButton userId={user.id} compact /><button disabled={busy === user.id} onClick={() => void toggleBan(user)} className={`inline-flex h-10 items-center justify-center rounded-xl px-4 text-sm font-black text-white disabled:opacity-50 ${user.banned ? "bg-[var(--koluj-green)]" : "bg-red-600"}`}>{user.banned ? "Zrušit ban" : "Dát ban"}</button></div></td>
+                <td className="p-4 text-right"><div className="flex items-center justify-end gap-2"><ProfileLinkButton userId={user.id} compact /><button disabled={busy === user.id} onClick={() => void toggleBan(user)} className={`inline-flex h-12 min-h-12 items-center justify-center rounded-2xl px-4 text-sm font-black leading-none text-white disabled:opacity-50 ${user.banned ? "bg-[var(--koluj-green)]" : "bg-red-600"}`}>{user.banned ? "Zrušit ban" : "Dát ban"}</button></div></td>
               </tr>)}
             </tbody>
           </table>
         </div>
         {!filtered.length && <p className="p-10 text-center text-[var(--koluj-muted)]">Žádní uživatelé neodpovídají hledání.</p>}
       </section>
-      <p className="mt-4 text-sm text-[var(--koluj-muted)]">Ban zablokuje přihlášení uživatele. Jeho data a nabídky se nemažou. <Link href="/dashboard/moderation" className="font-black text-[var(--koluj-green)]">Otevřít moderaci</Link></p>
+      <p className="mt-4 text-sm text-[var(--koluj-muted)]">Ban zablokuje přihlášení a dočasně skryje profil i nabídky stejným způsobem jako deaktivace účtu. Data se nemažou. <Link href="/dashboard/moderation" className="font-black text-[var(--koluj-green)]">Otevřít moderaci</Link></p>
     </>
   );
 }
