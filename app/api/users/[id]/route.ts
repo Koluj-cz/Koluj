@@ -5,6 +5,9 @@ import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit"
 import { sanitizeOfferPrimaryImages } from "@/lib/services/offerPrimaryImageService";
 import { calculateUserTrust } from "@/lib/services/userTrustService";
 
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const rate = await checkRateLimit({
@@ -113,13 +116,20 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       created_at: profile.created_at,
     };
 
-    return NextResponse.json({
-      profile: publicProfile,
-      trust,
-      rating: rating || null,
-      reviews: reviews || [],
-      offers: offersWithSafeImages,
-    });
+    return NextResponse.json(
+      {
+        profile: publicProfile,
+        trust,
+        rating: rating || null,
+        reviews: reviews || [],
+        offers: offersWithSafeImages,
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate",
+        },
+      },
+    );
   } catch (error) {
     return NextResponse.json(
       { error: errorMessage(error, "Uživatele se nepodařilo načíst") },

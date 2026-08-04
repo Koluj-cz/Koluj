@@ -17,12 +17,18 @@ import { formatDate } from "@/lib/format";
 import type { UserTrustSummary } from "@/lib/services/userTrustService";
 import UserTrustBadge from "./UserTrustBadge";
 
-export default function UserTrustCard({ trust }: { trust: UserTrustSummary }) {
+export default function UserTrustCard({
+  trust,
+  embedded = false,
+}: {
+  trust: UserTrustSummary;
+  embedded?: boolean;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
     <>
-      <section className="koluj-card p-6">
+      <section className={embedded ? "p-0" : "koluj-card p-6"}>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <h2 className="flex items-center gap-2 text-xl font-black">
