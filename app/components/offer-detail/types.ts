@@ -1,3 +1,5 @@
+import type { UserTrustSummary } from "@/lib/services/userTrustService";
+
 export type ItemImage = {
   id: string;
   image_url: string;
@@ -71,10 +73,13 @@ export type ItemDetail = {
   weekend_start_time?: string | null;
   weekend_end_time?: string | null;
   availability_status?: "available" | "reserved" | "unavailable";
+  trust?: UserTrustSummary;
   profiles: {
     full_name: string | null;
     avatar_url: string | null;
     is_verified: boolean | null;
+    phone?: string | null;
+    created_at?: string | null;
     is_seed_user: boolean | null;
     profile_ratings?: { rating_avg: number | null; rating_count: number | null }[] | null;
   } | null;

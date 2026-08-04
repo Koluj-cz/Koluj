@@ -1,12 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import Link from "next/link";
-import { ChevronLeft, ChevronRight, ExternalLink, MapPin, Play, ShieldCheck, Star, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, MapPin, Play, Star, X } from "lucide-react";
 import { useMemo, useRef, useState } from "react";
 import { handoverLabels } from "@/lib/constants";
 import { formatDate } from "@/lib/format";
 import type { ItemDetail, OfferReview, ServiceRealization } from "./types";
+import UserTrustBadge from "@/app/components/user/UserTrustBadge";
+import ProfileLinkButton from "@/app/components/user/ProfileLinkButton";
 
 type TabId = "description" | "realizations" | "location" | "reviews" | "owner";
 
@@ -80,10 +81,7 @@ function OwnerTab({ item }: { item: ItemDetail }) {
   return (
     <div>
       <h2 className="text-2xl font-black">Vlastník nabídky</h2>
-      <Link
-        href={`/users/${item.owner_id}`}
-        className="mt-5 flex w-fit items-center gap-4 rounded-3xl border border-[var(--koluj-border)] p-5 transition hover:bg-[var(--koluj-bg)]"
-      >
+      <div className="mt-5 flex max-w-xl flex-col gap-5 rounded-3xl border border-[var(--koluj-border)] p-5 sm:flex-row sm:items-center">
         {item.profiles?.avatar_url ? (
           <Image
             src={item.profiles.avatar_url}
@@ -93,12 +91,12 @@ function OwnerTab({ item }: { item: ItemDetail }) {
             className="h-16 w-16 rounded-full object-cover"
           />
         ) : (
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-2xl font-black text-[var(--koluj-green)]">
+          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[var(--koluj-bg)] text-2xl font-black text-[var(--koluj-green)]">
             {ownerName.charAt(0).toUpperCase()}
           </div>
         )}
 
-        <div>
+        <div className="min-w-0 flex-1">
           <p className="text-xl font-black">{ownerName}</p>
           <p className="mt-1 font-bold text-[var(--koluj-green)]">
             {ratingText}
@@ -108,18 +106,17 @@ function OwnerTab({ item }: { item: ItemDetail }) {
               </span>
             )}
           </p>
-          <p className="mt-2 text-sm font-bold text-[var(--koluj-muted)]">
-            Zobrazit profil vlastníka
-          </p>
+          {item.trust && (
+            <div className="mt-3">
+              <UserTrustBadge level={item.trust.level} compact />
+            </div>
+          )}
         </div>
-      </Link>
 
-      {item.profiles?.is_verified && (
-        <p className="mt-5 inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-4 py-2 text-sm font-bold text-[var(--koluj-green)]">
-          <ShieldCheck size={16} />
-          Ověřený profil
-        </p>
-      )}
+        {item.owner_id && (
+          <ProfileLinkButton userId={item.owner_id} compact className="shrink-0" />
+        )}
+      </div>
     </div>
   );
 }

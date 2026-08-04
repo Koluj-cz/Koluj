@@ -3,6 +3,9 @@
 import { useMemo, useState } from "react";
 import toast from "react-hot-toast";
 import Link from "next/link";
+import ProfileLinkButton from "@/app/components/user/ProfileLinkButton";
+import UserTrustBadge from "@/app/components/user/UserTrustBadge";
+import type { UserTrustSummary } from "@/lib/services/userTrustService";
 
 type UserRow = {
   id: string;
@@ -14,6 +17,7 @@ type UserRow = {
   offers: number;
   bookings: number;
   completedBookings: number;
+  trust: UserTrustSummary;
 };
 
 export default function UserAdminTable({ initialUsers }: { initialUsers: UserRow[] }) {
@@ -52,14 +56,15 @@ export default function UserAdminTable({ initialUsers }: { initialUsers: UserRow
       </div>
       <section className="koluj-card mt-4 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-left text-sm">
-            <thead className="border-b border-black/5 bg-black/[0.025] text-xs uppercase tracking-wide text-[var(--koluj-muted)]"><tr><th className="p-4">Uživatel</th><th className="p-4">Registrace</th><th className="p-4">Nabídky</th><th className="p-4">Rezervace</th><th className="p-4">Dokončeno</th><th className="p-4">Stav</th><th className="p-4 text-right">Akce</th></tr></thead>
+          <table className="w-full min-w-[1080px] text-left text-sm">
+            <thead className="border-b border-black/5 bg-black/[0.025] text-xs uppercase tracking-wide text-[var(--koluj-muted)]"><tr><th className="p-4">Uživatel</th><th className="p-4">Registrace</th><th className="p-4">Nabídky</th><th className="p-4">Rezervace</th><th className="p-4">Dokončeno</th><th className="p-4">Důvěryhodnost</th><th className="p-4">Stav</th><th className="p-4 text-right">Akce</th></tr></thead>
             <tbody className="divide-y divide-black/5">
               {filtered.map((user) => <tr key={user.id}>
                 <td className="p-4"><p className="font-black">{user.name || "Bez jména"}</p><p className="text-[var(--koluj-muted)]">{user.email}</p><p className="mt-1 break-all text-xs text-[var(--koluj-muted)]">{user.id}</p></td>
                 <td className="p-4">{new Date(user.createdAt).toLocaleDateString("cs-CZ")}</td><td className="p-4 font-black">{user.offers}</td><td className="p-4 font-black">{user.bookings}</td><td className="p-4 font-black">{user.completedBookings}</td>
+                <td className="p-4"><UserTrustBadge level={user.trust.level} compact />{user.trust.level === "none" && <span className="text-xs font-bold text-[var(--koluj-muted)]">Bez odznaku</span>}</td>
                 <td className="p-4"><span className={`rounded-full px-3 py-1 text-xs font-black ${user.banned ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"}`}>{user.banned ? "Zablokován" : "Aktivní"}</span></td>
-                <td className="p-4 text-right"><button disabled={busy === user.id} onClick={() => void toggleBan(user)} className={`rounded-xl px-4 py-2 font-black text-white disabled:opacity-50 ${user.banned ? "bg-[var(--koluj-green)]" : "bg-red-600"}`}>{user.banned ? "Zrušit ban" : "Dát ban"}</button></td>
+                <td className="p-4 text-right"><div className="flex items-center justify-end gap-2"><ProfileLinkButton userId={user.id} compact /><button disabled={busy === user.id} onClick={() => void toggleBan(user)} className={`rounded-xl px-4 py-2 font-black text-white disabled:opacity-50 ${user.banned ? "bg-[var(--koluj-green)]" : "bg-red-600"}`}>{user.banned ? "Zrušit ban" : "Dát ban"}</button></div></td>
               </tr>)}
             </tbody>
           </table>

@@ -3,6 +3,7 @@ import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { errorMessage } from "@/lib/security";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
 import { sanitizeOfferPrimaryImages } from "@/lib/services/offerPrimaryImageService";
+import { calculateUserTrust } from "@/lib/services/userTrustService";
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -19,7 +20,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const { data: profile, error: profileError } = await supabaseAdmin
       .from("profiles")
-      .select("id, full_name, avatar_url, bio, city, is_verified, created_at, is_seed_user, is_deactivated")
+      .select("id, full_name, avatar_url, bio, city, phone, is_verified, created_at, is_seed_user, is_deactivated")
       .eq("id", id)
       .maybeSingle();
 
@@ -32,6 +33,29 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       .select("rating_avg, rating_count")
       .eq("profile_id", id)
       .maybeSingle();
+
+    const [{ data: authUserData }, { count: completedBookings }] = await Promise.all([
+      supabaseAdmin.auth.admin.getUserById(id),
+      supabaseAdmin
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("owner_id", id)
+        .eq("status", "returned"),
+    ]);
+
+    const authUser = authUserData.user;
+    const banned = Boolean(
+      authUser?.banned_until && new Date(authUser.banned_until).getTime() > Date.now(),
+    );
+    const trust = calculateUserTrust({
+      emailVerified: Boolean(authUser?.email_confirmed_at),
+      phoneProvided: Boolean(profile.phone?.trim()),
+      completedBookings: completedBookings || 0,
+      ratingAverage: Number(rating?.rating_avg || 0),
+      ratingCount: Number(rating?.rating_count || 0),
+      joinedAt: profile.created_at,
+      banned,
+    });
 
     const { data: reviews, error: reviewsError } = await supabaseAdmin
       .from("reviews")
@@ -79,8 +103,19 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       offers || [],
     );
 
+    const publicProfile = {
+      id: profile.id,
+      full_name: profile.full_name,
+      avatar_url: profile.avatar_url,
+      bio: profile.bio,
+      city: profile.city,
+      is_verified: profile.is_verified,
+      created_at: profile.created_at,
+    };
+
     return NextResponse.json({
-      profile,
+      profile: publicProfile,
+      trust,
       rating: rating || null,
       reviews: reviews || [],
       offers: offersWithSafeImages,

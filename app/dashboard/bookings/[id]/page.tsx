@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Printer } from "lucide-react";
 import BackLink from "@/app/components/BackLink";
+import ProfileLinkButton from "@/app/components/user/ProfileLinkButton";
 import toast from "react-hot-toast";
 import PageLoader from "@/app/components/PageLoader";
 import BookingChat from "@/app/components/booking-detail/BookingChat";
@@ -375,12 +376,10 @@ export default function BookingDetailPage() {
               </div>
 
               {otherPerson?.id && (
-                <Link
-                  href={`/users/${otherPerson.id}`}
-                  className="koluj-button mt-5 block text-center"
-                >
-                  Zobrazit profil
-                </Link>
+                <ProfileLinkButton
+                  userId={otherPerson.id}
+                  className="mt-5 w-full"
+                />
               )}
             </div>
 

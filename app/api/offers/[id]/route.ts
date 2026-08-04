@@ -6,6 +6,7 @@ import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit"
 import { attachTodayAvailabilityServer } from "@/lib/services/offerAvailabilityStatusService";
 import { normalizeEditablePublicationStatus } from "@/lib/offerPublication";
 import { processMediaById } from "@/lib/services/mediaModerationService";
+import { calculateUserTrust } from "@/lib/services/userTrustService";
 
 type UpdatePayload = {
   offer_type: string;
@@ -91,6 +92,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           full_name,
           avatar_url,
           is_verified,
+          phone,
+          created_at,
           is_seed_user,
           is_deactivated,
           profile_ratings (
@@ -211,6 +214,29 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     if (reviewsError) throw new Error(reviewsError.message);
 
+    const ownerRating = ownerProfile?.profile_ratings?.[0];
+    const [{ data: ownerAuthData }, { count: completedBookings }] = await Promise.all([
+      supabaseAdmin.auth.admin.getUserById(data.owner_id),
+      supabaseAdmin
+        .from("bookings")
+        .select("id", { count: "exact", head: true })
+        .eq("owner_id", data.owner_id)
+        .eq("status", "returned"),
+    ]);
+    const ownerAuth = ownerAuthData.user;
+    const ownerBanned = Boolean(
+      ownerAuth?.banned_until && new Date(ownerAuth.banned_until).getTime() > Date.now(),
+    );
+    const ownerTrust = calculateUserTrust({
+      emailVerified: Boolean(ownerAuth?.email_confirmed_at),
+      phoneProvided: Boolean(ownerProfile?.phone?.trim()),
+      completedBookings: completedBookings || 0,
+      ratingAverage: Number(ownerRating?.rating_avg || 0),
+      ratingCount: Number(ownerRating?.rating_count || 0),
+      joinedAt: ownerProfile?.created_at || data.created_at,
+      banned: ownerBanned,
+    });
+
     const today = new Date().toISOString().split("T")[0];
 
     const { data: blocksData, error: blocksError } = await supabaseAdmin
@@ -224,9 +250,22 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     const [itemWithAvailability] = await attachTodayAvailabilityServer([data]);
 
+    const publicOwnerProfile = ownerProfile
+      ? {
+          full_name: ownerProfile.full_name,
+          avatar_url: ownerProfile.avatar_url,
+          is_verified: ownerProfile.is_verified,
+          is_seed_user: ownerProfile.is_seed_user,
+          is_deactivated: ownerProfile.is_deactivated,
+          profile_ratings: ownerProfile.profile_ratings,
+        }
+      : null;
+
     return NextResponse.json({
       item: {
         ...itemWithAvailability,
+        profiles: publicOwnerProfile,
+        trust: ownerTrust,
         views_count: Number(data.views_count || 0) + (!isOwner && isPublic ? 1 : 0),
       },
       images: visibleImages,

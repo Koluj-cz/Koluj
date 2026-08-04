@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { MapPin, ShieldCheck } from "lucide-react";
+import { MapPin } from "lucide-react";
 import BackLink from "@/app/components/BackLink";
 import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
 import { useParams } from "next/navigation";
@@ -10,6 +10,8 @@ import AuthHeaderButton from "@/app/components/AuthHeaderButton";
 import PageLoader from "@/app/components/PageLoader";
 import OfferSearchFilters from "@/app/components/OfferSearchFilters";
 import { formatDate } from "@/lib/format";
+import UserTrustCard from "@/app/components/user/UserTrustCard";
+import type { UserTrustSummary } from "@/lib/services/userTrustService";
 import {
   getOfferCategoryFilterOptions,
   offerFilterSortOptions,
@@ -23,6 +25,7 @@ type Profile = {
   avatar_url: string | null;
   bio: string | null;
   is_verified: boolean | null;
+  phone: string | null;
   created_at: string;
 };
 
@@ -50,6 +53,7 @@ export default function UserProfilePage() {
   const userId = params.id as string;
   const [profile, setProfile] = useState<Profile | null>(null);
   const [rating, setRating] = useState<Rating | null>(null);
+  const [trust, setTrust] = useState<UserTrustSummary | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [visibleReviewsCount, setVisibleReviewsCount] = useState(5);
   const [items, setItems] = useState<OfferCardOffer[]>([]);
@@ -119,6 +123,7 @@ export default function UserProfilePage() {
 
     setProfile(result.profile as Profile);
     setRating(result.rating || null);
+    setTrust(result.trust || null);
     setReviews((result.reviews || []) as unknown as Review[]);
     setItems((result.offers || []) as OfferCardOffer[]);
     setLoading(false);
@@ -219,13 +224,6 @@ export default function UserProfilePage() {
                   </p>
                 )}
 
-                {profile.is_verified && (
-                  <p className="inline-flex items-center gap-2 rounded-full bg-[var(--koluj-bg)] px-4 py-2 font-bold text-[var(--koluj-green)]">
-                    <ShieldCheck size={16} />
-                    Ověřený profil
-                  </p>
-                )}
-
                 <p>Na Koluj od {formatDate(profile.created_at)}</p>
               </div>
 
@@ -235,6 +233,8 @@ export default function UserProfilePage() {
                 </p>
               )}
             </div>
+
+            {trust && <UserTrustCard trust={trust} />}
 
             <div className="koluj-card p-6">
               <div className="mt-5 space-y-3 text-sm">
