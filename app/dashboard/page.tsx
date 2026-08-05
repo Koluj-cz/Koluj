@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   Users,
   FileBarChart,
+  SearchCheck,
   Handshake,
   Package,
   Plus,
@@ -130,6 +131,7 @@ export default function DashboardPage() {
               <DashboardCard href="/dashboard/moderation" title="Moderace" icon={<ShieldCheck />} text="Schvaluj nejistá média, řeš technické chyby a spravuj zamítnutý obsah." action="Otevřít frontu" admin />
               <DashboardCard href="/dashboard/admin/users" title="Uživatelé" icon={<Users />} text="Přehled účtů, aktivity a možnost uživatele zablokovat nebo odblokovat." action="Spravovat uživatele" admin />
               <DashboardCard href="/dashboard/admin/reports" title="Měsíční reporty" icon={<FileBarChart />} text="Historie reportů, statistiky moderace a ruční spuštění reportu." action="Otevřít reporty" admin />
+              <DashboardCard href="/dashboard/admin/search-intents" title="Chytré vyhledávání" icon={<SearchCheck />} text="Spravuj záměry, klíčové fráze a doporučení zobrazovaná při hledání." action="Spravovat hledání" admin />
             </>
           )}
         </section>

@@ -14,6 +14,8 @@ import {
 import toast from "react-hot-toast";
 import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
 import InstallAppButton from "@/app/components/InstallAppButton";
+import SmartSearchSuggestions from "@/app/components/search/SmartSearchSuggestions";
+import type { SearchIntentMatch, SearchIntentRecommendation } from "@/lib/services/searchIntentService";
 import { getDistanceKm } from "@/lib/location";
 import {
   categories as itemCategories,
@@ -45,6 +47,8 @@ export default function HomePage() {
   const [totalItems, setTotalItems] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [hasMoreItems, setHasMoreItems] = useState(true);
+  const [smartIntent, setSmartIntent] = useState<SearchIntentMatch | null>(null);
+  const [dismissedIntentQuery, setDismissedIntentQuery] = useState("");
 
   const loadingRef = useRef(false);
   const pageRef = useRef(0);
@@ -65,6 +69,35 @@ export default function HomePage() {
     const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 250);
     return () => window.clearTimeout(timer);
   }, [search]);
+
+  useEffect(() => {
+    const query = debouncedSearch.trim();
+    if (query.length < 3 || query === dismissedIntentQuery) {
+      setSmartIntent(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      try {
+        const response = await fetch(`/api/search/intents?q=${encodeURIComponent(query)}`, {
+          cache: "no-store",
+          signal: controller.signal,
+        });
+        const result = await response.json().catch(() => null);
+        if (response.ok) setSmartIntent(result?.intent || null);
+      } catch (error) {
+        if (!(error instanceof DOMException && error.name === "AbortError")) {
+          console.error("Smart search intent error:", error);
+        }
+      }
+    }, 180);
+
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+  }, [debouncedSearch, dismissedIntentQuery]);
 
   const loadUser = useCallback(async () => {
     const response = await fetch("/api/me", { cache: "no-store" });
@@ -192,6 +225,19 @@ export default function HomePage() {
     setSelectedCategory("");
   }
 
+  function selectSmartRecommendation(recommendation: SearchIntentRecommendation) {
+    const nextType = recommendation.offerType || "all";
+    const nextSearch = recommendation.searchQuery || "";
+    setSelectedOfferType(nextType);
+    setSelectedCategory(recommendation.category || "");
+    setSearch(nextSearch);
+    setDismissedIntentQuery(nextSearch || debouncedSearch);
+    setSmartIntent(null);
+    window.requestAnimationFrame(() => {
+      document.getElementById("nabidky")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    });
+  }
+
   return (
     <main className="koluj-home koluj-home-marketplace min-h-screen text-[var(--koluj-text)]">
       <div className="koluj-wide-frame relative z-10">
@@ -222,7 +268,7 @@ export default function HomePage() {
                   <input
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Co hledáte?"
+                    placeholder="Co chcete udělat nebo co hledáte?"
                     className="min-w-0 flex-1 bg-transparent py-3 text-sm font-bold outline-none placeholder:text-slate-400"
                   />
                   <button
@@ -236,6 +282,9 @@ export default function HomePage() {
                     <LocateFixed size={18} />
                   </button>
                 </div>
+                <p className="mt-2 text-xs font-bold leading-relaxed text-[var(--koluj-muted)]">
+                  Např. „Potřebuji vymalovat pokoj“, „Sháním vrtačku“ nebo „Chci postavit pergolu“.
+                </p>
               </div>
 
               <div className="koluj-sidebar-section">
@@ -358,6 +407,17 @@ export default function HomePage() {
                   </p>
                 </div>
               </div>
+
+              {smartIntent && (
+                <SmartSearchSuggestions
+                  intent={smartIntent}
+                  onSelect={selectSmartRecommendation}
+                  onDismiss={() => {
+                    setDismissedIntentQuery(debouncedSearch);
+                    setSmartIntent(null);
+                  }}
+                />
+              )}
 
               {sortedItems.length > 0 ? (
                 <div className="koluj-offer-grid-wide">
