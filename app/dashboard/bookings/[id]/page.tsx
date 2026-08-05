@@ -10,6 +10,7 @@ import ProfileLinkButton from "@/app/components/user/ProfileLinkButton";
 import toast from "react-hot-toast";
 import PageLoader from "@/app/components/PageLoader";
 import BookingChat from "@/app/components/booking-detail/BookingChat";
+import BookingIssueDialog from "@/app/components/booking-detail/BookingIssueDialog";
 import type { Booking, Message } from "@/app/components/booking-detail/types";
 import {
   formatDateRange,
@@ -441,6 +442,8 @@ export default function BookingDetailPage() {
                   {isService ? "Vytisknout protokol o provedení služby" : "Vytisknout protokol o předání"}
                 </Link>
               )}
+
+              <BookingIssueDialog bookingId={booking.id} />
             </div>
           </aside>
 

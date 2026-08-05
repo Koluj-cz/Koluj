@@ -6,10 +6,6 @@ import {
   ArrowRight,
   CalendarOff,
   BarChart3,
-  ShieldCheck,
-  Users,
-  FileBarChart,
-  SearchCheck,
   Handshake,
   Package,
   Plus,
@@ -17,6 +13,7 @@ import {
 } from "lucide-react";
 import BackLink from "@/app/components/BackLink";
 import NotificationBell from "@/app/components/NotificationBell";
+import AdminMenu from "@/app/components/admin/AdminMenu";
 
 export default function DashboardPage() {
   const [fullName, setFullName] = useState("");
@@ -49,7 +46,10 @@ export default function DashboardPage() {
         <section className="koluj-hero-card koluj-hero-card-popover p-5 md:p-8 xl:p-10">
           <div className="mb-8 flex items-center justify-between gap-3">
             <BackLink href="/" hideOnMobile>Domů</BackLink>
-            <NotificationBell />
+            <div className="flex items-center gap-3">
+              {isModerator && <AdminMenu />}
+              <NotificationBell />
+            </div>
           </div>
 
           <div className="grid gap-8 xl:grid-cols-[0.8fr_1.2fr]">
@@ -126,14 +126,6 @@ export default function DashboardPage() {
             action="Zobrazit"
           />
 
-          {isModerator && (
-            <>
-              <DashboardCard href="/dashboard/moderation" title="Moderace" icon={<ShieldCheck />} text="Schvaluj nejistá média, řeš technické chyby a spravuj zamítnutý obsah." action="Otevřít frontu" admin />
-              <DashboardCard href="/dashboard/admin/users" title="Uživatelé" icon={<Users />} text="Přehled účtů, aktivity a možnost uživatele zablokovat nebo odblokovat." action="Spravovat uživatele" admin />
-              <DashboardCard href="/dashboard/admin/reports" title="Měsíční reporty" icon={<FileBarChart />} text="Historie reportů, statistiky moderace a ruční spuštění reportu." action="Otevřít reporty" admin />
-              <DashboardCard href="/dashboard/admin/search-intents" title="Chytré vyhledávání" icon={<SearchCheck />} text="Spravuj záměry, klíčové fráze a doporučení zobrazovaná při hledání." action="Spravovat hledání" admin />
-            </>
-          )}
         </section>
 
         <DashboardFooter />
@@ -149,7 +141,6 @@ function DashboardCard({
   text,
   action,
   featured = false,
-  admin = false,
 }: {
   href: string;
   title: string;
@@ -157,7 +148,6 @@ function DashboardCard({
   text: string;
   action: string;
   featured?: boolean;
-  admin?: boolean;
 }) {
   const isProtectedHref =
     href.startsWith("/dashboard") ||
@@ -170,7 +160,7 @@ function DashboardCard({
       prefetch={isProtectedHref ? false : undefined}
       className={`koluj-card group flex min-h-[210px] flex-col justify-between overflow-hidden p-6 md:p-8 ${
         featured ? "bg-gradient-to-br from-white to-[var(--koluj-green-pale)] hover:border-[var(--koluj-green)]" : "hover:border-[var(--koluj-green)]"
-      } ${admin ? "hover:border-violet-400" : ""}`}
+      }`}
     >
       <div>
         <div className="flex items-start justify-between gap-5">
@@ -178,7 +168,7 @@ function DashboardCard({
             {title}
           </h2>
 
-          <span className={`koluj-icon-bubble shrink-0 ${admin ? "bg-violet-100 text-violet-700" : ""}`}>{icon}</span>
+          <span className="koluj-icon-bubble shrink-0">{icon}</span>
         </div>
 
         <p className="mt-5 leading-relaxed text-[var(--koluj-muted)] md:text-lg">
@@ -186,7 +176,7 @@ function DashboardCard({
         </p>
       </div>
 
-      <p className={`mt-6 flex w-fit items-center gap-2 font-black ${admin ? "rounded-2xl bg-violet-600 px-4 py-2.5 text-white transition group-hover:bg-violet-700" : "koluj-link"}`}>
+      <p className="koluj-link mt-6 flex w-fit items-center gap-2 font-black">
         {action} <ArrowRight size={17} />
       </p>
     </Link>
