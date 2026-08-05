@@ -66,7 +66,7 @@ export default async function SearchIntentsAdminPage() {
           <BackLink href="/dashboard">Dashboard</BackLink>
           <h1 className="koluj-heading mt-7">Chytré vyhledávání</h1>
           <p className="mt-3 max-w-3xl text-[var(--koluj-muted)] md:text-lg">
-            Spravuj fráze, podle kterých Koluj rozpozná záměr uživatele, a nabídni mu vhodné kategorie a služby bez placeného AI modelu.
+            Spravuj fráze, podle kterých Koluj rozpozná záměr uživatele, a nabídni mu vhodné kategorie a služby.
           </p>
         </section>
         <SearchIntentAdmin initialIntents={initialIntents} />

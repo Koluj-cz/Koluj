@@ -29,6 +29,72 @@ const OffersMap = dynamic(() => import("@/app/components/OffersMap"), { ssr: fal
 
 const ITEMS_PER_PAGE = 10;
 
+const SEARCH_PLACEHOLDER_EXAMPLES = [
+  "Potřebuji vymalovat pokoj",
+  "Hledám vrtačku",
+  "Chci postavit pergolu",
+  "Potřebuji přestěhovat lednici",
+  "Chci upravit zahradu",
+  "Potřebuji elektrikáře",
+  "Hledám přívěsný vozík",
+] as const;
+
+function useTypewriterPlaceholder(paused: boolean) {
+  const [exampleIndex, setExampleIndex] = useState(0);
+  const [visibleText, setVisibleText] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches);
+
+    updatePreference();
+    mediaQuery.addEventListener("change", updatePreference);
+    return () => mediaQuery.removeEventListener("change", updatePreference);
+  }, []);
+
+  useEffect(() => {
+    if (prefersReducedMotion) {
+      setVisibleText(SEARCH_PLACEHOLDER_EXAMPLES[0]);
+      setIsDeleting(false);
+      return;
+    }
+
+    if (paused) return;
+
+    const currentExample = SEARCH_PLACEHOLDER_EXAMPLES[exampleIndex];
+    let delay = isDeleting ? 35 : 75;
+
+    if (!isDeleting && visibleText === currentExample) delay = 1800;
+    if (isDeleting && visibleText.length === 0) delay = 450;
+
+    const timer = window.setTimeout(() => {
+      if (!isDeleting && visibleText === currentExample) {
+        setIsDeleting(true);
+        return;
+      }
+
+      if (isDeleting && visibleText.length === 0) {
+        setIsDeleting(false);
+        setExampleIndex((current) => (current + 1) % SEARCH_PLACEHOLDER_EXAMPLES.length);
+        return;
+      }
+
+      setVisibleText(
+        isDeleting
+          ? currentExample.slice(0, Math.max(0, visibleText.length - 1))
+          : currentExample.slice(0, visibleText.length + 1),
+      );
+    }, delay);
+
+    return () => window.clearTimeout(timer);
+  }, [exampleIndex, isDeleting, paused, prefersReducedMotion, visibleText]);
+
+  if (prefersReducedMotion) return visibleText;
+  return `${visibleText}|`;
+}
+
 type OfferTypeFilter = "all" | "item" | "service";
 
 function getCategoryLabel(category: string, offerType: OfferTypeFilter) {
@@ -49,11 +115,17 @@ export default function HomePage() {
   const [hasMoreItems, setHasMoreItems] = useState(true);
   const [smartIntent, setSmartIntent] = useState<SearchIntentMatch | null>(null);
   const [dismissedIntentQuery, setDismissedIntentQuery] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+  const [placeholderResumeReady, setPlaceholderResumeReady] = useState(true);
 
   const loadingRef = useRef(false);
   const pageRef = useRef(0);
   const requestIdRef = useRef(0);
   const sentinelRef = useRef<HTMLDivElement | null>(null);
+  const placeholderResumeTimerRef = useRef<number | null>(null);
+  const animatedSearchPlaceholder = useTypewriterPlaceholder(
+    searchFocused || !placeholderResumeReady || Boolean(search),
+  );
 
   const availableCategories = useMemo(() => {
     if (selectedOfferType === "item") return [...itemCategories];
@@ -69,6 +141,33 @@ export default function HomePage() {
     const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 250);
     return () => window.clearTimeout(timer);
   }, [search]);
+
+  useEffect(() => {
+    return () => {
+      if (placeholderResumeTimerRef.current !== null) {
+        window.clearTimeout(placeholderResumeTimerRef.current);
+      }
+    };
+  }, []);
+
+  function pauseSearchPlaceholder() {
+    if (placeholderResumeTimerRef.current !== null) {
+      window.clearTimeout(placeholderResumeTimerRef.current);
+      placeholderResumeTimerRef.current = null;
+    }
+    setSearchFocused(true);
+    setPlaceholderResumeReady(false);
+  }
+
+  function resumeSearchPlaceholder() {
+    setSearchFocused(false);
+    if (search.trim()) return;
+
+    placeholderResumeTimerRef.current = window.setTimeout(() => {
+      setPlaceholderResumeReady(true);
+      placeholderResumeTimerRef.current = null;
+    }, 1400);
+  }
 
   useEffect(() => {
     const query = debouncedSearch.trim();
@@ -268,7 +367,13 @@ export default function HomePage() {
                   <input
                     value={search}
                     onChange={(event) => setSearch(event.target.value)}
-                    placeholder="Co chcete udělat nebo co hledáte?"
+                    onFocus={pauseSearchPlaceholder}
+                    onBlur={resumeSearchPlaceholder}
+                    placeholder={
+                      searchFocused
+                        ? "Co chcete udělat nebo co hledáte?"
+                        : animatedSearchPlaceholder
+                    }
                     className="min-w-0 flex-1 bg-transparent py-3 text-sm font-bold outline-none placeholder:text-slate-400"
                   />
                   <button
@@ -283,7 +388,7 @@ export default function HomePage() {
                   </button>
                 </div>
                 <p className="mt-2 text-xs font-bold leading-relaxed text-[var(--koluj-muted)]">
-                  Např. „Potřebuji vymalovat pokoj“, „Sháním vrtačku“ nebo „Chci postavit pergolu“.
+                  Vyzkoušejte chytré vyhledávání.
                 </p>
               </div>
 
