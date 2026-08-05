@@ -2,11 +2,11 @@ import { redirect } from "next/navigation";
 import BackLink from "@/app/components/BackLink";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/services/adminAccess";
-import {
-  getBookingIssueAttachmentUrl,
-  type BookingIssueStatus,
-  type BookingIssueType,
-} from "@/lib/services/bookingIssueService";
+import { getBookingIssueAttachmentUrl } from "@/lib/services/bookingIssueService";
+import type {
+  BookingIssueStatus,
+  BookingIssueType,
+} from "@/lib/services/bookingIssueShared";
 import IssueAdminList, { type AdminIssueRow } from "./IssueAdminList";
 
 export const dynamic = "force-dynamic";

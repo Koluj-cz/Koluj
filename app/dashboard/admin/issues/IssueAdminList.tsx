@@ -9,7 +9,7 @@ import {
   BOOKING_ISSUE_STATUS_LABELS,
   type BookingIssueStatus,
   type BookingIssueType,
-} from "@/lib/services/bookingIssueService";
+} from "@/lib/services/bookingIssueShared";
 
 export type AdminIssueRow = {
   id: string;

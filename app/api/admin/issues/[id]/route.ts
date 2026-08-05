@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
 import { requireAdmin } from "@/lib/services/adminAccess";
-import type { BookingIssueStatus } from "@/lib/services/bookingIssueService";
+import type { BookingIssueStatus } from "@/lib/services/bookingIssueShared";
 
 const STATUSES = new Set<BookingIssueStatus>(["new", "in_progress", "resolved"]);
 
