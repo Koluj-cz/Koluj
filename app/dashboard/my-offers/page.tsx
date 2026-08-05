@@ -15,6 +15,7 @@ import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
 import PageLoader from "@/app/components/PageLoader";
 import OfferSearchFilters from "@/app/components/OfferSearchFilters";
 import BackLink from "@/app/components/BackLink";
+import { matchesSearchQuery } from "@/lib/services/searchService";
 import {
   getOfferCategoryFilterOptions,
   offerFilterSortOptions,
@@ -145,13 +146,7 @@ export default function MyOffersPage() {
     let result = [...items];
 
     if (deferredSearchQuery.trim()) {
-      const query = deferredSearchQuery.toLowerCase();
-
-      result = result.filter((item) =>
-        `${item.title} ${item.category} ${item.pickup_place}`
-          .toLowerCase()
-          .includes(query)
-      );
+      result = result.filter((item) => matchesSearchQuery(item, deferredSearchQuery));
     }
 
     if (offerType !== "all") {

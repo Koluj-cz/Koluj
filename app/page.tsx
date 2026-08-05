@@ -16,6 +16,7 @@ import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
 import InstallAppButton from "@/app/components/InstallAppButton";
 import SmartSearchSuggestions from "@/app/components/search/SmartSearchSuggestions";
 import type { SearchIntentMatch, SearchIntentRecommendation } from "@/lib/services/searchIntentService";
+import { getCleanSearchQuery } from "@/lib/services/searchService";
 import { getDistanceKm } from "@/lib/location";
 import {
   categories as itemCategories,
@@ -43,31 +44,21 @@ function useTypewriterPlaceholder(paused: boolean) {
   const [exampleIndex, setExampleIndex] = useState(0);
   const [visibleText, setVisibleText] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
-  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
-    const updatePreference = () => setPrefersReducedMotion(mediaQuery.matches);
-
-    updatePreference();
-    mediaQuery.addEventListener("change", updatePreference);
-    return () => mediaQuery.removeEventListener("change", updatePreference);
-  }, []);
-
-  useEffect(() => {
-    if (prefersReducedMotion) {
-      setVisibleText(SEARCH_PLACEHOLDER_EXAMPLES[0]);
-      setIsDeleting(false);
-      return;
-    }
-
     if (paused) return;
 
     const currentExample = SEARCH_PLACEHOLDER_EXAMPLES[exampleIndex];
+
     let delay = isDeleting ? 35 : 75;
 
-    if (!isDeleting && visibleText === currentExample) delay = 1800;
-    if (isDeleting && visibleText.length === 0) delay = 450;
+    if (!isDeleting && visibleText === currentExample) {
+      delay = 1800;
+    }
+
+    if (isDeleting && visibleText.length === 0) {
+      delay = 450;
+    }
 
     const timer = window.setTimeout(() => {
       if (!isDeleting && visibleText === currentExample) {
@@ -77,21 +68,26 @@ function useTypewriterPlaceholder(paused: boolean) {
 
       if (isDeleting && visibleText.length === 0) {
         setIsDeleting(false);
-        setExampleIndex((current) => (current + 1) % SEARCH_PLACEHOLDER_EXAMPLES.length);
+        setExampleIndex(
+          (current) =>
+            (current + 1) % SEARCH_PLACEHOLDER_EXAMPLES.length,
+        );
         return;
       }
 
       setVisibleText(
         isDeleting
-          ? currentExample.slice(0, Math.max(0, visibleText.length - 1))
+          ? currentExample.slice(
+              0,
+              Math.max(0, visibleText.length - 1),
+            )
           : currentExample.slice(0, visibleText.length + 1),
       );
     }, delay);
 
     return () => window.clearTimeout(timer);
-  }, [exampleIndex, isDeleting, paused, prefersReducedMotion, visibleText]);
+  }, [exampleIndex, isDeleting, paused, visibleText]);
 
-  if (prefersReducedMotion) return visibleText;
   return `${visibleText}|`;
 }
 
@@ -125,6 +121,11 @@ export default function HomePage() {
   const placeholderResumeTimerRef = useRef<number | null>(null);
   const animatedSearchPlaceholder = useTypewriterPlaceholder(
     searchFocused || !placeholderResumeReady || Boolean(search),
+  );
+
+  const serverSearchQuery = useMemo(
+    () => getCleanSearchQuery(debouncedSearch),
+    [debouncedSearch],
   );
 
   const availableCategories = useMemo(() => {
@@ -227,7 +228,7 @@ export default function HomePage() {
       });
 
       if (selectedCategory) params.set("category", selectedCategory);
-      if (debouncedSearch) params.set("q", debouncedSearch);
+      if (serverSearchQuery) params.set("q", serverSearchQuery);
 
       const response = await fetch(`/api/offers/public?${params.toString()}`, {
         cache: "no-store",
@@ -257,7 +258,7 @@ export default function HomePage() {
       setIsLoading(false);
       loadingRef.current = false;
     },
-    [debouncedSearch, selectedCategory, selectedOfferType],
+    [selectedCategory, selectedOfferType, serverSearchQuery],
   );
 
   useEffect(() => {
@@ -387,9 +388,6 @@ export default function HomePage() {
                     <LocateFixed size={18} />
                   </button>
                 </div>
-                <p className="mt-2 text-xs font-bold leading-relaxed text-[var(--koluj-muted)]">
-                  Vyzkoušejte chytré vyhledávání.
-                </p>
               </div>
 
               <div className="koluj-sidebar-section">

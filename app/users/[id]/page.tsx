@@ -9,6 +9,7 @@ import { useParams } from "next/navigation";
 import PageLoader from "@/app/components/PageLoader";
 import OfferSearchFilters from "@/app/components/OfferSearchFilters";
 import { formatDate } from "@/lib/format";
+import { matchesSearchQuery } from "@/lib/services/searchService";
 import UserTrustCard from "@/app/components/user/UserTrustCard";
 import UserTrustBadge from "@/app/components/user/UserTrustBadge";
 import type { UserTrustSummary } from "@/lib/services/userTrustService";
@@ -66,13 +67,7 @@ export default function UserProfilePage() {
     let result = [...items];
 
     if (offerSearch.trim()) {
-      const query = offerSearch.toLowerCase();
-
-      result = result.filter((item) =>
-        `${item.title} ${item.category} ${item.pickup_place} ${item.description || ""}`
-          .toLowerCase()
-          .includes(query),
-      );
+      result = result.filter((item) => matchesSearchQuery(item, offerSearch));
     }
 
     if (offerType !== "all") {

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { normalizeSearchText } from "@/lib/services/searchService";
 
 export type SearchIntentRecommendation = {
   id: string;
@@ -40,16 +41,6 @@ type IntentRow = {
   search_intent_keywords: KeywordRow[] | null;
   search_intent_recommendations: RecommendationRow[] | null;
 };
-
-export function normalizeSearchText(value: string) {
-  return value
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
 
 export async function findSearchIntent(
   supabase: SupabaseClient,

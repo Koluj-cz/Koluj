@@ -4,6 +4,7 @@ import { errorMessage } from "@/lib/security";
 import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit";
 import { attachTodayAvailabilityServer } from "@/lib/services/offerAvailabilityStatusService";
 import { sanitizeOfferPrimaryImages } from "@/lib/services/offerPrimaryImageService";
+import { buildServerSearchTerms } from "@/lib/services/searchService";
 
 const MAX_LIMIT = 30;
 
@@ -54,10 +55,14 @@ export async function GET(request: Request) {
     if (category) query = query.eq("category", category);
 
     if (search) {
-      const normalizedSearch = search.replaceAll(",", " ");
-      query = query.or(
-        `title.ilike.%${normalizedSearch}%,description.ilike.%${normalizedSearch}%,category.ilike.%${normalizedSearch}%,pickup_place.ilike.%${normalizedSearch}%`,
-      );
+      const searchTerms = buildServerSearchTerms(search);
+      if (searchTerms.length) {
+        const searchableColumns = ["title", "description", "category", "pickup_place"];
+        const filters = searchTerms.flatMap((term) =>
+          searchableColumns.map((column) => `${column}.ilike.%${term}%`),
+        );
+        query = query.or(filters.join(","));
+      }
     }
 
     const { data, count, error } = await query;

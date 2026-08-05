@@ -6,6 +6,7 @@ import Link from "next/link";
 import ProfileLinkButton from "@/app/components/user/ProfileLinkButton";
 import UserTrustBadge from "@/app/components/user/UserTrustBadge";
 import type { UserTrustSummary } from "@/lib/services/userTrustService";
+import { normalizeSearchText } from "@/lib/services/searchService";
 
 type UserRow = {
   id: string;
@@ -25,9 +26,11 @@ export default function UserAdminTable({ initialUsers }: { initialUsers: UserRow
   const [query, setQuery] = useState("");
   const [busy, setBusy] = useState<string | null>(null);
   const filtered = useMemo(() => {
-    const value = query.trim().toLowerCase();
+    const value = normalizeSearchText(query);
     if (!value) return users;
-    return users.filter((user) => `${user.name} ${user.email} ${user.id}`.toLowerCase().includes(value));
+    return users.filter((user) =>
+      normalizeSearchText(`${user.name} ${user.email} ${user.id}`).includes(value),
+    );
   }, [query, users]);
 
   async function toggleBan(user: UserRow) {
