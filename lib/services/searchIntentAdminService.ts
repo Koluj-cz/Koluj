@@ -1,5 +1,5 @@
 import { createSupabaseAdminClient } from "@/lib/supabase/server";
-import { normalizeSearchText } from "@/lib/services/searchIntentService";
+import { normalizeSearchText } from "@/lib/services/searchService";
 
 export async function replaceSearchIntentChildren(
   supabase: ReturnType<typeof createSupabaseAdminClient>,
