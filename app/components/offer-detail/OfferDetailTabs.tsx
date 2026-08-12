@@ -338,6 +338,15 @@ function ReviewsTab({ reviews }: { reviews: OfferReview[] }) {
             ))}
           </p>
           {review.comment && <p className="mt-3 leading-relaxed text-[var(--koluj-muted)]">{review.comment}</p>}
+          {review.images && review.images.length > 0 && (
+            <div className="mt-4 grid grid-cols-3 gap-2 sm:max-w-xl">
+              {review.images.map((image, index) => (
+                <a key={image.id} href={image.url} target="_blank" rel="noreferrer" className="relative aspect-square overflow-hidden rounded-xl bg-[var(--koluj-bg)]">
+                  <Image src={image.url} alt={`Fotografie k recenzi ${index + 1}`} fill unoptimized className="object-cover transition-transform hover:scale-[1.03]" />
+                </a>
+              ))}
+            </div>
+          )}
         </article>
       ))}
     </div>

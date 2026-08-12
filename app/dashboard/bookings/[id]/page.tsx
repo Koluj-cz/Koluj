@@ -4,7 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { Printer } from "lucide-react";
+import { ImagePlus, Printer, X } from "lucide-react";
 import BackLink from "@/app/components/BackLink";
 import ProfileLinkButton from "@/app/components/user/ProfileLinkButton";
 import toast from "react-hot-toast";
@@ -34,6 +34,9 @@ export default function BookingDetailPage() {
   const [rating, setRating] = useState(0);
   const [reviewText, setReviewText] = useState("");
   const [reviewSent, setReviewSent] = useState(false);
+  const [reviewImages, setReviewImages] = useState<File[]>([]);
+  const [reviewImagePreviews, setReviewImagePreviews] = useState<string[]>([]);
+  const [sendingReview, setSendingReview] = useState(false);
 
   const messagesContainerRef = useRef<HTMLDivElement>(null);
 
@@ -278,26 +281,31 @@ export default function BookingDetailPage() {
   async function submitReview() {
     if (!booking || rating === 0) return;
 
+    setSendingReview(true);
+    const formData = new FormData();
+    formData.append("bookingId", booking.id);
+    formData.append("rating", String(rating));
+    formData.append("comment", reviewText);
+    reviewImages.forEach((file) => formData.append("images", file));
+
     const response = await fetch("/api/reviews", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        bookingId: booking.id,
-        rating,
-        comment: reviewText,
-      }),
+      body: formData,
     });
 
     const result = await response.json().catch(() => null);
 
     if (!response.ok) {
       toast.error(result?.error || "Hodnocení se nepodařilo uložit");
+      setSendingReview(false);
       return;
     }
 
     toast.success("Děkujeme za hodnocení");
+    reviewImagePreviews.forEach((url) => URL.revokeObjectURL(url));
+    setReviewImages([]);
+    setReviewImagePreviews([]);
+    setSendingReview(false);
     setReviewSent(true);
     await loadBooking(false);
     scrollMessagesToBottom("smooth");
@@ -569,8 +577,52 @@ export default function BookingDetailPage() {
                     className="koluj-input mt-4 min-h-[100px] w-full"
                   />
 
-                  <button type="button" onClick={submitReview} className="koluj-button mt-4 w-full py-3">
-                    Odeslat hodnocení
+                  <div className="mt-4">
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-2xl border border-[var(--koluj-border)] bg-white px-4 py-3 text-sm font-black hover:bg-[var(--koluj-bg)]">
+                      <ImagePlus size={18} className="text-[var(--koluj-green)]" />
+                      Přidat fotografie
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        multiple
+                        className="hidden"
+                        onChange={(event) => {
+                          const selected = Array.from(event.target.files || []);
+                          const next = [...reviewImages, ...selected].slice(0, 3);
+                          reviewImagePreviews.forEach((url) => URL.revokeObjectURL(url));
+                          setReviewImages(next);
+                          setReviewImagePreviews(next.map((file) => URL.createObjectURL(file)));
+                          event.currentTarget.value = "";
+                        }}
+                      />
+                    </label>
+                    <p className="mt-2 text-xs text-[var(--koluj-muted)]">Volitelně, maximálně 3 fotografie (JPG, PNG nebo WebP).</p>
+                    {reviewImagePreviews.length > 0 && (
+                      <div className="mt-3 grid grid-cols-3 gap-2">
+                        {reviewImagePreviews.map((src, index) => (
+                          <div key={src} className="relative aspect-square overflow-hidden rounded-2xl bg-[var(--koluj-bg)]">
+                            <Image src={src} alt={`Fotografie recenze ${index + 1}`} fill unoptimized className="object-cover" />
+                            <button
+                              type="button"
+                              aria-label="Odebrat fotografii"
+                              onClick={() => {
+                                URL.revokeObjectURL(src);
+                                const next = reviewImages.filter((_, imageIndex) => imageIndex !== index);
+                                setReviewImages(next);
+                                setReviewImagePreviews((current) => current.filter((_, imageIndex) => imageIndex !== index));
+                              }}
+                              className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-full bg-black/65 text-white"
+                            >
+                              <X size={16} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  <button type="button" onClick={submitReview} disabled={sendingReview} className="koluj-button mt-4 w-full py-3 disabled:opacity-60">
+                    {sendingReview ? "Odesílám..." : "Odeslat hodnocení"}
                   </button>
                 </div>
               )}

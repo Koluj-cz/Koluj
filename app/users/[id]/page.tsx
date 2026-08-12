@@ -46,6 +46,7 @@ type Review = {
   offers: {
     title: string | null;
   } | null;
+  images?: Array<{ id: string; url: string; sort_order: number | null }>;
 };
 
 export default function UserProfilePage() {
@@ -55,7 +56,8 @@ export default function UserProfilePage() {
   const [rating, setRating] = useState<Rating | null>(null);
   const [trust, setTrust] = useState<UserTrustSummary | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [visibleReviewsCount, setVisibleReviewsCount] = useState(5);
+  const [visibleReviewsCount, setVisibleReviewsCount] = useState(6);
+  const [activePanel, setActivePanel] = useState<"offers" | "reviews">("offers");
   const [items, setItems] = useState<OfferCardOffer[]>([]);
   const [loading, setLoading] = useState(true);
   const [offerSearch, setOfferSearch] = useState("");
@@ -234,142 +236,110 @@ export default function UserProfilePage() {
                 </div>
               )}
 
-              <div className="border-t border-[var(--koluj-border)] p-6 md:p-8">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <h2 className="text-xl font-black">Hodnocení</h2>
-                    <p className="mt-1 text-sm text-[var(--koluj-muted)]">
-                      Zkušenosti ostatních uživatelů s tímto poskytovatelem.
-                    </p>
-                  </div>
-                </div>
-
-                {reviews.length === 0 ? (
-                  <p className="mt-5 rounded-2xl bg-[var(--koluj-bg)] p-4 text-sm text-[var(--koluj-muted)]">
-                    Uživatel zatím nemá žádné recenze.
-                  </p>
-                ) : (
-                  <div className="mt-5 space-y-4">
-                    {visibleReviews.map((review) => (
-                      <article
-                        key={review.id}
-                        className="rounded-2xl border border-[var(--koluj-border)] p-4"
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex min-w-0 items-center gap-3">
-                            {review.reviewer?.avatar_url ? (
-                              <Image
-                                src={review.reviewer.avatar_url}
-                                alt={review.reviewer.full_name || "Uživatel"}
-                                width={40}
-                                height={40}
-                                className="h-10 w-10 shrink-0 rounded-full object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--koluj-bg)] font-black text-[var(--koluj-green)]">
-                                {(review.reviewer?.full_name || "Uživatel")
-                                  .charAt(0)
-                                  .toUpperCase()}
-                              </div>
-                            )}
-
-                            <div className="min-w-0">
-                              <p className="truncate font-black">
-                                {review.reviewer?.full_name || "Uživatel"}
-                              </p>
-                              <p className="mt-0.5 text-xs text-[var(--koluj-muted)]">
-                                {formatDate(review.created_at)}
-                                {review.offers?.title
-                                  ? ` · ${review.offers.title}`
-                                  : ""}
-                              </p>
-                            </div>
-                          </div>
-
-                          <p className="shrink-0 text-sm font-black text-[var(--koluj-green)]">
-                            {review.rating}/5
-                          </p>
-                        </div>
-
-                        {review.comment && (
-                          <p className="mt-3 whitespace-pre-line text-sm leading-relaxed text-[var(--koluj-muted)]">
-                            {review.comment}
-                          </p>
-                        )}
-                      </article>
-                    ))}
-
-                    {hasMoreReviews && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setVisibleReviewsCount((count) => count + 5)
-                        }
-                        className="koluj-button w-full px-6 py-3"
-                      >
-                        Zobrazit další recenze
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
             </div>
           </aside>
 
-          <div className="min-w-0 space-y-6">
-            <div>
-              <p className="text-sm font-black uppercase tracking-[0.16em] text-[var(--koluj-green)]">
-                Nabídky poskytovatele
-              </p>
-              <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
-                <div>
-                  <h2 className="text-3xl font-black md:text-4xl">
-                    Co nabízí {profile.full_name || "uživatel"}
-                  </h2>
-                  <p className="mt-2 text-[var(--koluj-muted)]">
-                    Prohlédněte si aktuální věci a služby tohoto poskytovatele.
-                  </p>
-                </div>
-                <span className="rounded-full bg-[var(--koluj-bg)] px-4 py-2 text-sm font-black">
-                  {items.length} {items.length === 1 ? "nabídka" : "nabídek"}
-                </span>
+          <div className="min-w-0">
+            <div className="koluj-card overflow-hidden">
+              <div className="flex overflow-x-auto border-b border-[var(--koluj-border)] px-4 md:px-6">
+                <button
+                  type="button"
+                  onClick={() => setActivePanel("offers")}
+                  className={`relative shrink-0 px-4 py-5 font-black ${activePanel === "offers" ? "text-[var(--koluj-green)]" : "text-[var(--koluj-muted)]"}`}
+                >
+                  Nabídky ({items.length})
+                  {activePanel === "offers" && <span className="absolute inset-x-4 bottom-0 h-1 rounded-t-full bg-[var(--koluj-green)]" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActivePanel("reviews")}
+                  className={`relative shrink-0 px-4 py-5 font-black ${activePanel === "reviews" ? "text-[var(--koluj-green)]" : "text-[var(--koluj-muted)]"}`}
+                >
+                  Recenze ({reviews.length})
+                  {activePanel === "reviews" && <span className="absolute inset-x-4 bottom-0 h-1 rounded-t-full bg-[var(--koluj-green)]" />}
+                </button>
+              </div>
+
+              <div className="p-5 md:p-7">
+                {activePanel === "offers" ? (
+                  <>
+                    <div className="mb-6">
+                      <h2 className="text-2xl font-black md:text-3xl">Aktuální nabídky</h2>
+                      <p className="mt-2 text-sm text-[var(--koluj-muted)]">Věci a služby, které tento poskytovatel právě nabízí.</p>
+                    </div>
+                    {items.length > 0 && (
+                      <OfferSearchFilters
+                        search={offerSearch}
+                        onSearchChange={setOfferSearch}
+                        offerType={offerType}
+                        onOfferTypeChange={(value) => { setOfferType(value); setCategory("all"); }}
+                        offerTypeOptions={offerFilterTypeOptions}
+                        category={category}
+                        onCategoryChange={setCategory}
+                        categoryOptions={getOfferCategoryFilterOptions(offerType)}
+                        sortBy={sortBy}
+                        onSortByChange={setSortBy}
+                        sortOptions={offerFilterSortOptions}
+                      />
+                    )}
+                    {items.length === 0 ? (
+                      <div className="rounded-2xl bg-[var(--koluj-bg)] p-6 text-[var(--koluj-muted)]">Uživatel zatím nenabízí žádné aktivní nabídky.</div>
+                    ) : filteredItems.length === 0 ? (
+                      <div className="mt-5 rounded-2xl bg-[var(--koluj-bg)] p-6 text-[var(--koluj-muted)]">Nic nenalezeno. Zkus změnit hledání nebo filtr.</div>
+                    ) : (
+                      <div className="koluj-offer-grid-wide mt-6">
+                        {filteredItems.map((item) => <OfferCard key={item.id} item={item} />)}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+                      <div>
+                        <h2 className="text-2xl font-black md:text-3xl">Recenze uživatelů</h2>
+                        <p className="mt-2 text-sm text-[var(--koluj-muted)]">Zkušenosti z dokončených rezervací s tímto poskytovatelem.</p>
+                      </div>
+                      {ratingCount > 0 && <div className="rounded-full bg-[var(--koluj-bg)] px-4 py-2 text-sm font-black text-[var(--koluj-green)]">★ {ratingAverage.toFixed(1)} · {ratingCount} {ratingCount === 1 ? "recenze" : "recenzí"}</div>}
+                    </div>
+                    {reviews.length === 0 ? (
+                      <div className="rounded-2xl bg-[var(--koluj-bg)] p-6 text-[var(--koluj-muted)]">Uživatel zatím nemá žádné recenze.</div>
+                    ) : (
+                      <div className="grid gap-4">
+                        {visibleReviews.map((review) => (
+                          <article key={review.id} className="rounded-2xl border border-[var(--koluj-border)] p-5 md:p-6">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex min-w-0 items-center gap-3">
+                                {review.reviewer?.avatar_url ? (
+                                  <Image src={review.reviewer.avatar_url} alt={review.reviewer.full_name || "Uživatel"} width={48} height={48} className="h-12 w-12 shrink-0 rounded-full object-cover" />
+                                ) : (
+                                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[var(--koluj-bg)] font-black text-[var(--koluj-green)]">{(review.reviewer?.full_name || "U").charAt(0).toUpperCase()}</div>
+                                )}
+                                <div className="min-w-0">
+                                  <p className="truncate font-black">{review.reviewer?.full_name || "Uživatel"}</p>
+                                  <p className="mt-0.5 text-xs text-[var(--koluj-muted)]">{formatDate(review.created_at)}{review.offers?.title ? ` · ${review.offers.title}` : ""}</p>
+                                </div>
+                              </div>
+                              <div className="shrink-0 text-amber-500" aria-label={`${review.rating} z 5 hvězd`}>{"★".repeat(review.rating)}<span className="text-gray-300">{"★".repeat(5 - review.rating)}</span></div>
+                            </div>
+                            {review.comment && <p className="mt-4 whitespace-pre-line leading-relaxed text-[var(--koluj-muted)]">{review.comment}</p>}
+                            {review.images && review.images.length > 0 && (
+                              <div className="mt-4 grid grid-cols-3 gap-2 sm:max-w-xl">
+                                {review.images.map((image, index) => (
+                                  <a key={image.id} href={image.url} target="_blank" rel="noreferrer" className="relative aspect-square overflow-hidden rounded-xl bg-[var(--koluj-bg)]">
+                                    <Image src={image.url} alt={`Fotografie k recenzi ${index + 1}`} fill unoptimized className="object-cover transition-transform hover:scale-[1.03]" />
+                                  </a>
+                                ))}
+                              </div>
+                            )}
+                          </article>
+                        ))}
+                        {hasMoreReviews && <button type="button" onClick={() => setVisibleReviewsCount((count) => count + 6)} className="koluj-button w-full px-6 py-3">Zobrazit další recenze</button>}
+                      </div>
+                    )}
+                  </>
+                )}
               </div>
             </div>
-
-            {items.length > 0 && (
-              <OfferSearchFilters
-                search={offerSearch}
-                onSearchChange={setOfferSearch}
-                offerType={offerType}
-                onOfferTypeChange={(value) => {
-                  setOfferType(value);
-                  setCategory("all");
-                }}
-                offerTypeOptions={offerFilterTypeOptions}
-                category={category}
-                onCategoryChange={setCategory}
-                categoryOptions={getOfferCategoryFilterOptions(offerType)}
-                sortBy={sortBy}
-                onSortByChange={setSortBy}
-                sortOptions={offerFilterSortOptions}
-              />
-            )}
-
-            {items.length === 0 ? (
-              <div className="koluj-card p-8 text-[var(--koluj-muted)]">
-                Uživatel zatím nenabízí žádné aktivní nabídky.
-              </div>
-            ) : filteredItems.length === 0 ? (
-              <div className="koluj-card p-8 text-[var(--koluj-muted)]">
-                Nic nenalezeno. Zkus změnit hledání nebo filtr.
-              </div>
-            ) : (
-              <div className="koluj-offer-grid-wide">
-                {filteredItems.map((item) => (
-                  <OfferCard key={item.id} item={item} />
-                ))}
-              </div>
-            )}
           </div>
         </section>
       </div>

@@ -8,6 +8,7 @@ import { normalizeEditablePublicationStatus } from "@/lib/offerPublication";
 import { processMediaById } from "@/lib/services/mediaModerationService";
 import { calculateUserTrust } from "@/lib/services/userTrustService";
 
+import { attachSignedReviewImages } from "@/lib/services/reviewImageService";
 type UpdatePayload = {
   offer_type: string;
   title: string;
@@ -203,6 +204,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         rating,
         comment,
         created_at,
+        review_images ( id, storage_path, sort_order ),
         reviewer:profiles!reviews_reviewer_id_fkey (
           full_name,
           avatar_url
@@ -213,6 +215,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       .limit(20);
 
     if (reviewsError) throw new Error(reviewsError.message);
+
+    const reviewsWithImages = await attachSignedReviewImages(reviewsData || []);
 
     const ownerRating = ownerProfile?.profile_ratings?.[0];
     const [{ data: ownerAuthData }, { count: completedBookings }] = await Promise.all([
@@ -271,7 +275,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       images: visibleImages,
       videos: visibleVideos,
       realizations,
-      reviews: reviewsData || [],
+      reviews: reviewsWithImages,
       availabilityBlocks: blocksData || [],
       currentUserId,
     });

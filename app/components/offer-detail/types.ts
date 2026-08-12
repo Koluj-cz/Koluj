@@ -44,6 +44,7 @@ export type OfferReview = {
   comment: string | null;
   created_at: string;
   reviewer: { full_name: string | null; avatar_url: string | null } | null;
+  images?: Array<{ id: string; url: string; sort_order: number | null }>;
 };
 
 export type ItemDetail = {

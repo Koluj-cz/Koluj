@@ -5,6 +5,7 @@ import { checkRateLimit, getClientIp, rateLimitResponse } from "@/lib/rateLimit"
 import { sanitizeOfferPrimaryImages } from "@/lib/services/offerPrimaryImageService";
 import { calculateUserTrust } from "@/lib/services/userTrustService";
 
+import { attachSignedReviewImages } from "@/lib/services/reviewImageService";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
@@ -67,6 +68,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         rating,
         comment,
         created_at,
+        review_images ( id, storage_path, sort_order ),
         reviewer:profiles!reviews_reviewer_id_fkey (
           full_name,
           avatar_url
@@ -79,6 +81,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       .order("created_at", { ascending: false });
 
     if (reviewsError) throw new Error(reviewsError.message);
+
+    const reviewsWithImages = await attachSignedReviewImages(reviews || []);
 
     const { data: offers, error: offersError } = await supabaseAdmin
       .from("offers")
@@ -121,7 +125,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         profile: publicProfile,
         trust,
         rating: rating || null,
-        reviews: reviews || [],
+        reviews: reviewsWithImages,
         offers: offersWithSafeImages,
       },
       {
