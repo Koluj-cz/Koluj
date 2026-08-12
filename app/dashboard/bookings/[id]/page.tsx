@@ -598,9 +598,9 @@ export default function BookingDetailPage() {
                     </label>
                     <p className="mt-2 text-xs text-[var(--koluj-muted)]">Volitelně, maximálně 3 fotografie (JPG, PNG nebo WebP).</p>
                     {reviewImagePreviews.length > 0 && (
-                      <div className="mt-3 grid grid-cols-3 gap-2">
+                      <div className="mt-3 grid grid-cols-3 gap-2 md:flex md:flex-wrap">
                         {reviewImagePreviews.map((src, index) => (
-                          <div key={src} className="relative aspect-square overflow-hidden rounded-2xl bg-[var(--koluj-bg)]">
+                          <div key={src} className="relative aspect-square overflow-hidden rounded-2xl bg-[var(--koluj-bg)] md:h-36 md:w-36 md:shrink-0">
                             <Image src={src} alt={`Fotografie recenze ${index + 1}`} fill unoptimized className="object-cover" />
                             <button
                               type="button"

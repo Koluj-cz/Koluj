@@ -31,13 +31,36 @@ const OffersMap = dynamic(() => import("@/app/components/OffersMap"), { ssr: fal
 const ITEMS_PER_PAGE = 10;
 
 const SEARCH_PLACEHOLDER_EXAMPLES = [
-  "Potřebuji vymalovat pokoj",
   "Hledám vrtačku",
+  "Potřebuji vymalovat pokoj",
   "Chci postavit pergolu",
   "Potřebuji přestěhovat lednici",
   "Chci upravit zahradu",
   "Potřebuji elektrikáře",
   "Hledám přívěsný vozík",
+  "Sháním sekačku na víkend",
+  "Potřebuji opravit kapající kohoutek",
+  "Hledám žebřík",
+  "Potřebuji odvézt starý nábytek",
+  "Sháním tepovač na koberec",
+  "Potřebuji smontovat skříň",
+  "Hledám dodávku na stěhování",
+  "Potřebuji posekat zahradu",
+  "Sháním motorovou pilu",
+  "Potřebuji opravit zásuvku",
+  "Hledám střešní box",
+  "Potřebuji vykopat základy",
+  "Sháním párty stan",
+  "Potřebuji položit podlahu",
+  "Hledám štípačku na dřevo",
+  "Potřebuji instalatéra",
+  "Sháním míchačku na beton",
+  "Potřebuji prořezat stromy",
+  "Hledám vysokotlaký čistič",
+  "Potřebuji opravit plot",
+  "Sháním vozík za auto",
+  "Potřebuji složit nábytek",
+  "Hledám lešení",
 ] as const;
 
 function useTypewriterPlaceholder(paused: boolean) {
