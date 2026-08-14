@@ -8,6 +8,7 @@ import { formatDate } from "@/lib/format";
 import type { ItemDetail, OfferReview, ServiceRealization } from "./types";
 import UserTrustBadge from "@/app/components/user/UserTrustBadge";
 import ProfileLinkButton from "@/app/components/user/ProfileLinkButton";
+import GalleryLightbox, { type GalleryImage } from "@/app/components/offer-gallery/GalleryLightbox";
 
 type TabId = "description" | "realizations" | "location" | "reviews" | "owner";
 
@@ -312,43 +313,58 @@ function InfoBlock({ title, text }: { title: string; text: string }) {
 }
 
 function ReviewsTab({ reviews }: { reviews: OfferReview[] }) {
+  const [lightboxImages, setLightboxImages] = useState<GalleryImage[]>([]);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
   if (reviews.length === 0) {
     return <p className="rounded-2xl bg-[var(--koluj-bg)] p-5 font-bold text-[var(--koluj-muted)]">Vlastník zatím nemá žádné hodnocení.</p>;
   }
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      {reviews.map((review) => (
-        <article key={review.id} className="rounded-2xl border border-[var(--koluj-border)] p-5">
-          <div className="flex items-center gap-3">
-            {review.reviewer?.avatar_url ? (
-              <Image src={review.reviewer.avatar_url} alt="" width={42} height={42} className="h-11 w-11 rounded-full object-cover" />
-            ) : (
-              <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--koluj-bg)] font-black text-[var(--koluj-green)]">
-                {(review.reviewer?.full_name || "U").charAt(0).toUpperCase()}
+    <>
+      <div className="grid gap-4 md:grid-cols-2">
+        {reviews.map((review) => (
+          <article key={review.id} className="rounded-2xl border border-[var(--koluj-border)] p-5">
+            <div className="flex items-center gap-3">
+              {review.reviewer?.avatar_url ? (
+                <Image src={review.reviewer.avatar_url} alt="" width={42} height={42} className="h-11 w-11 rounded-full object-cover" />
+              ) : (
+                <div className="flex h-11 w-11 items-center justify-center rounded-full bg-[var(--koluj-bg)] font-black text-[var(--koluj-green)]">
+                  {(review.reviewer?.full_name || "U").charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div>
+                <p className="font-black">{review.reviewer?.full_name || "Uživatel"}</p>
+                <p className="text-sm text-[var(--koluj-muted)]">{formatDate(review.created_at)}</p>
+              </div>
+            </div>
+            <p className="mt-4 flex gap-1 text-amber-500" aria-label={`${review.rating} z 5 hvězd`}>
+              {Array.from({ length: 5 }).map((_, index) => (
+                <Star key={index} size={17} fill={index < review.rating ? "currentColor" : "none"} />
+              ))}
+            </p>
+            {review.comment && <p className="mt-3 leading-relaxed text-[var(--koluj-muted)]">{review.comment}</p>}
+            {review.images && review.images.length > 0 && (
+              <div className="mt-4 grid grid-cols-3 gap-2 sm:max-w-xl">
+                {review.images.map((image, index) => (
+                  <button
+                    key={image.id}
+                    type="button"
+                    onClick={() => {
+                      setLightboxImages(review.images!.map((item, imageIndex) => ({ id: item.id, src: item.url, alt: `Fotografie k recenzi ${imageIndex + 1}` })));
+                      setLightboxIndex(index);
+                    }}
+                    className="relative aspect-square overflow-hidden rounded-xl bg-[var(--koluj-bg)]"
+                    aria-label={`Otevřít fotografii ${index + 1}`}
+                  >
+                    <Image src={image.url} alt={`Fotografie k recenzi ${index + 1}`} fill unoptimized className="object-cover transition-transform hover:scale-[1.03]" />
+                  </button>
+                ))}
               </div>
             )}
-            <div>
-              <p className="font-black">{review.reviewer?.full_name || "Uživatel"}</p>
-              <p className="text-sm text-[var(--koluj-muted)]">{formatDate(review.created_at)}</p>
-            </div>
-          </div>
-          <p className="mt-4 flex gap-1 text-amber-500" aria-label={`${review.rating} z 5 hvězd`}>
-            {Array.from({ length: 5 }).map((_, index) => (
-              <Star key={index} size={17} fill={index < review.rating ? "currentColor" : "none"} />
-            ))}
-          </p>
-          {review.comment && <p className="mt-3 leading-relaxed text-[var(--koluj-muted)]">{review.comment}</p>}
-          {review.images && review.images.length > 0 && (
-            <div className="mt-4 grid grid-cols-3 gap-2 sm:max-w-xl">
-              {review.images.map((image, index) => (
-                <a key={image.id} href={image.url} target="_blank" rel="noreferrer" className="relative aspect-square overflow-hidden rounded-xl bg-[var(--koluj-bg)]">
-                  <Image src={image.url} alt={`Fotografie k recenzi ${index + 1}`} fill unoptimized className="object-cover transition-transform hover:scale-[1.03]" />
-                </a>
-              ))}
-            </div>
-          )}
-        </article>
-      ))}
-    </div>
+          </article>
+        ))}
+      </div>
+      <GalleryLightbox images={lightboxImages} activeIndex={lightboxIndex} onClose={() => setLightboxIndex(null)} onChange={setLightboxIndex} />
+    </>
   );
 }

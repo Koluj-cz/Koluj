@@ -12,6 +12,7 @@ import { formatDate } from "@/lib/format";
 import { matchesSearchQuery } from "@/lib/services/searchService";
 import UserTrustCard from "@/app/components/user/UserTrustCard";
 import UserTrustBadge from "@/app/components/user/UserTrustBadge";
+import GalleryLightbox, { type GalleryImage } from "@/app/components/offer-gallery/GalleryLightbox";
 import type { UserTrustSummary } from "@/lib/services/userTrustService";
 import {
   getOfferCategoryFilterOptions,
@@ -57,6 +58,9 @@ export default function UserProfilePage() {
   const [trust, setTrust] = useState<UserTrustSummary | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [visibleReviewsCount, setVisibleReviewsCount] = useState(6);
+  const [reviewSort, setReviewSort] = useState<"newest" | "best" | "worst">("newest");
+  const [reviewLightboxImages, setReviewLightboxImages] = useState<GalleryImage[]>([]);
+  const [reviewLightboxIndex, setReviewLightboxIndex] = useState<number | null>(null);
   const [activePanel, setActivePanel] = useState<"offers" | "reviews">("offers");
   const [items, setItems] = useState<OfferCardOffer[]>([]);
   const [loading, setLoading] = useState(true);
@@ -152,8 +156,19 @@ export default function UserProfilePage() {
   const ratingAverage = Number(rating?.rating_avg || 0);
   const ratingCount = Number(rating?.rating_count || 0);
   const initials = (profile.full_name || "Uživatel").charAt(0).toUpperCase();
-  const visibleReviews = reviews.slice(0, visibleReviewsCount);
-  const hasMoreReviews = visibleReviewsCount < reviews.length;
+  const sortedReviews = useMemo(() => {
+    const result = [...reviews];
+    if (reviewSort === "best") {
+      result.sort((a, b) => b.rating - a.rating || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    } else if (reviewSort === "worst") {
+      result.sort((a, b) => a.rating - b.rating || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    } else {
+      result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    }
+    return result;
+  }, [reviews, reviewSort]);
+  const visibleReviews = sortedReviews.slice(0, visibleReviewsCount);
+  const hasMoreReviews = visibleReviewsCount < sortedReviews.length;
 
   return (
     <main className="koluj-home min-h-screen text-[var(--koluj-text)]">
@@ -299,7 +314,19 @@ export default function UserProfilePage() {
                         <h2 className="text-2xl font-black md:text-3xl">Recenze uživatelů</h2>
                         <p className="mt-2 text-sm text-[var(--koluj-muted)]">Zkušenosti z dokončených rezervací s tímto poskytovatelem.</p>
                       </div>
-                      {ratingCount > 0 && <div className="rounded-full bg-[var(--koluj-bg)] px-4 py-2 text-sm font-black text-[var(--koluj-green)]">★ {ratingAverage.toFixed(1)} · {ratingCount} {ratingCount === 1 ? "recenze" : "recenzí"}</div>}
+                      <div className="flex flex-wrap items-center gap-2">
+                        {ratingCount > 0 && <div className="rounded-full bg-[var(--koluj-bg)] px-4 py-2 text-sm font-black text-[var(--koluj-green)]">★ {ratingAverage.toFixed(1)} · {ratingCount} {ratingCount === 1 ? "recenze" : "recenzí"}</div>}
+                        <select
+                          value={reviewSort}
+                          onChange={(event) => { setReviewSort(event.target.value as "newest" | "best" | "worst"); setVisibleReviewsCount(6); }}
+                          className="koluj-input w-auto min-w-[150px] py-2 text-sm font-bold"
+                          aria-label="Seřadit recenze"
+                        >
+                          <option value="newest">Nejnovější</option>
+                          <option value="best">Nejlepší</option>
+                          <option value="worst">Nejhorší</option>
+                        </select>
+                      </div>
                     </div>
                     {reviews.length === 0 ? (
                       <div className="rounded-2xl bg-[var(--koluj-bg)] p-6 text-[var(--koluj-muted)]">Uživatel zatím nemá žádné recenze.</div>
@@ -325,9 +352,18 @@ export default function UserProfilePage() {
                             {review.images && review.images.length > 0 && (
                               <div className="mt-4 grid grid-cols-3 gap-2 sm:max-w-xl">
                                 {review.images.map((image, index) => (
-                                  <a key={image.id} href={image.url} target="_blank" rel="noreferrer" className="relative aspect-square overflow-hidden rounded-xl bg-[var(--koluj-bg)]">
+                                  <button
+                                    key={image.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setReviewLightboxImages(review.images!.map((item, imageIndex) => ({ id: item.id, src: item.url, alt: `Fotografie k recenzi ${imageIndex + 1}` })));
+                                      setReviewLightboxIndex(index);
+                                    }}
+                                    className="relative aspect-square overflow-hidden rounded-xl bg-[var(--koluj-bg)]"
+                                    aria-label={`Otevřít fotografii ${index + 1}`}
+                                  >
                                     <Image src={image.url} alt={`Fotografie k recenzi ${index + 1}`} fill unoptimized className="object-cover transition-transform hover:scale-[1.03]" />
-                                  </a>
+                                  </button>
                                 ))}
                               </div>
                             )}
@@ -343,6 +379,12 @@ export default function UserProfilePage() {
           </div>
         </section>
       </div>
+      <GalleryLightbox
+        images={reviewLightboxImages}
+        activeIndex={reviewLightboxIndex}
+        onClose={() => setReviewLightboxIndex(null)}
+        onChange={setReviewLightboxIndex}
+      />
     </main>
   );
 }
