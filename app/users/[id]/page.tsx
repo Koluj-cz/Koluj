@@ -156,17 +156,25 @@ export default function UserProfilePage() {
   const ratingAverage = Number(rating?.rating_avg || 0);
   const ratingCount = Number(rating?.rating_count || 0);
   const initials = (profile.full_name || "Uživatel").charAt(0).toUpperCase();
-  const sortedReviews = useMemo(() => {
-    const result = [...reviews];
-    if (reviewSort === "best") {
-      result.sort((a, b) => b.rating - a.rating || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    } else if (reviewSort === "worst") {
-      result.sort((a, b) => a.rating - b.rating || new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    } else {
-      result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    }
-    return result;
-  }, [reviews, reviewSort]);
+  const sortedReviews = [...reviews];
+  if (reviewSort === "best") {
+    sortedReviews.sort(
+      (a, b) =>
+        b.rating - a.rating ||
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+  } else if (reviewSort === "worst") {
+    sortedReviews.sort(
+      (a, b) =>
+        a.rating - b.rating ||
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+  } else {
+    sortedReviews.sort(
+      (a, b) =>
+        new Date(b.created_at).getTime() - new Date(a.created_at).getTime(),
+    );
+  }
   const visibleReviews = sortedReviews.slice(0, visibleReviewsCount);
   const hasMoreReviews = visibleReviewsCount < sortedReviews.length;
 
