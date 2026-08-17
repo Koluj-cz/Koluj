@@ -135,15 +135,16 @@ export default async function BookingHandoverProtocolPage({ params }: PageProps)
     : "—";
 
   return (
-    <main className="min-h-screen bg-[#efebdd] print:bg-white">
-      <div className="mx-auto max-w-[980px] px-4 py-8 print:hidden">
-        <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+    <main className="min-h-screen bg-[#efebdd] pb-[calc(96px+env(safe-area-inset-bottom))] print:bg-white print:pb-0 sm:pb-8">
+      <div className="mx-auto max-w-[980px] px-4 py-4 print:hidden sm:py-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <BackLink href={`/dashboard/bookings/${booking.id}`}>Zpět na rezervaci</BackLink>
 
-          <div className="flex items-center gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
             <HelpTopic
               triggerLabel="Jak protokol použít"
               title="Jak použít protokol"
+              className="!h-11 !w-full !justify-center !gap-2 !rounded-2xl !border !border-[var(--koluj-border)] !bg-white !px-3 !py-0 !text-sm !shadow-sm hover:!bg-[var(--koluj-bg)] sm:!w-auto sm:!px-4"
               items={[
                 { title: "Vyplňte ho při předání", description: "Zapište skutečný stav věci, viditelné vady, příslušenství a případně převzatou kauci." },
                 { title: "Pořiďte fotografie", description: "Fotky stavu při předání pomáhají oběma stranám při pozdějším řešení poškození nebo sporu." },
