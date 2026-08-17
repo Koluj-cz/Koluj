@@ -444,7 +444,7 @@ export default function BookingDetailPage() {
                 <Link
                   href={`/dashboard/bookings/${booking.id}/protocol`}
                   target="_blank"
-                  className="mt-6 flex w-full items-center justify-center gap-2 rounded-[24px] bg-white px-5 py-4 font-black text-[var(--koluj-green)] shadow-sm hover:shadow-md"
+                  className="mt-4 inline-flex h-12 w-full items-center justify-center gap-2 rounded-2xl border border-[var(--koluj-border)] bg-white px-5 font-black text-[var(--koluj-green)] hover:bg-[var(--koluj-bg)]"
                 >
                   <Printer size={18} />
                   {isService ? "Vytisknout protokol o provedení služby" : "Vytisknout protokol o předání"}
