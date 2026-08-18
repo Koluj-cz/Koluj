@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useParams, useRouter } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import PageLoader from "@/app/components/PageLoader";
 import BackLink from "@/app/components/BackLink";
 import {
@@ -48,6 +48,7 @@ const AvailabilityCalendar = dynamic(
 export default function ItemDetailPage() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const offerId = params.id as string;
 
   const [item, setItem] = useState<ItemDetail | null>(null);
@@ -99,6 +100,15 @@ export default function ItemDetailPage() {
   useEffect(() => {
     void loadPage();
   }, [loadPage]);
+
+  useEffect(() => {
+    const initialFrom = searchParams.get("dateFrom") || "";
+    const initialTo = searchParams.get("dateTo") || initialFrom;
+    if (initialFrom) {
+      setBorrowFrom(initialFrom);
+      setBorrowTo(initialTo);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(min-width: 1280px)");

@@ -25,6 +25,8 @@ export async function GET(request: Request) {
     const offerType = url.searchParams.get("offerType") || "all";
     const category = url.searchParams.get("category") || "";
     const search = (url.searchParams.get("q") || "").trim();
+    const dateFrom = (url.searchParams.get("dateFrom") || "").trim();
+    const dateTo = (url.searchParams.get("dateTo") || dateFrom).trim();
     const from = page * limit;
     const to = from + limit - 1;
 
@@ -54,6 +56,40 @@ export async function GET(request: Request) {
     if (offerType !== "all") query = query.eq("offer_type", offerType);
     if (category) query = query.eq("category", category);
 
+    if (dateFrom && dateTo) {
+      const [reservationsResult, blocksResult, bookingsResult] = await Promise.all([
+        supabaseAdmin
+          .from("offer_reservations")
+          .select("offer_id")
+          .eq("status", "active")
+          .lte("date_from", dateTo)
+          .gte("date_to", dateFrom),
+        supabaseAdmin
+          .from("offer_availability_blocks")
+          .select("offer_id")
+          .lte("date_from", dateTo)
+          .gte("date_to", dateFrom),
+        supabaseAdmin
+          .from("bookings")
+          .select("offer_id")
+          .in("status", ["requested", "approved", "active"])
+          .lte("date_from", dateTo)
+          .gte("date_to", dateFrom),
+      ]);
+
+      for (const result of [reservationsResult, blocksResult, bookingsResult]) {
+        if (result.error) throw new Error(result.error.message);
+      }
+
+      const unavailableIds = new Set<string>();
+      for (const row of reservationsResult.data || []) if (row.offer_id) unavailableIds.add(row.offer_id);
+      for (const row of blocksResult.data || []) if (row.offer_id) unavailableIds.add(row.offer_id);
+      for (const row of bookingsResult.data || []) if (row.offer_id) unavailableIds.add(row.offer_id);
+      if (unavailableIds.size) {
+        query = query.not("id", "in", `(${[...unavailableIds].join(",")})`);
+      }
+    }
+
     if (search) {
       const searchTerms = buildServerSearchTerms(search);
       if (searchTerms.length) {
@@ -74,8 +110,11 @@ export async function GET(request: Request) {
     );
 
     const offers = await attachTodayAvailabilityServer(sanitizedOffers);
+    const offersWithRequestedAvailability = dateFrom && dateTo
+      ? offers.map((offer) => ({ ...offer, requested_date_available: true, requested_date_from: dateFrom, requested_date_to: dateTo }))
+      : offers;
 
-    return NextResponse.json({ offers, count: count || 0 });
+    return NextResponse.json({ offers: offersWithRequestedAvailability, count: count || 0 });
   } catch (error) {
     return NextResponse.json(
       { error: errorMessage(error, "Nabídky se nepodařilo načíst"), offers: [], count: 0 },

@@ -32,6 +32,9 @@ export type OfferCardOffer = {
   status?: string | null;
   is_reserved_today?: boolean;
   availability_status?: "available" | "reserved" | "unavailable";
+  requested_date_available?: boolean;
+  requested_date_from?: string;
+  requested_date_to?: string;
   owner_id: string | null;
   bookings?: { id: string; owner_earnings: number | null }[] | null;
   profiles?: {
@@ -166,6 +169,12 @@ function OfferCard({ item, variant = "public", footer }: OfferCardProps) {
       </div>
 
       <div className="flex flex-1 flex-col p-4 sm:p-5">
+        {item.requested_date_available && item.requested_date_from && (
+          <div className="mb-3 inline-flex w-fit items-center rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-800">
+            Volné {item.requested_date_from === item.requested_date_to ? new Date(`${item.requested_date_from}T12:00:00`).toLocaleDateString("cs-CZ") : `${new Date(`${item.requested_date_from}T12:00:00`).toLocaleDateString("cs-CZ")} – ${new Date(`${item.requested_date_to}T12:00:00`).toLocaleDateString("cs-CZ")}`}
+          </div>
+        )}
+
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <h3 className="line-clamp-2 text-lg font-black leading-tight tracking-[-0.03em] text-[var(--koluj-ink)]">
@@ -216,8 +225,12 @@ function OfferCard({ item, variant = "public", footer }: OfferCardProps) {
     return <div className="h-full">{content}</div>;
   }
 
+  const detailHref = item.requested_date_from
+    ? `/offers/${item.id}?dateFrom=${encodeURIComponent(item.requested_date_from)}&dateTo=${encodeURIComponent(item.requested_date_to || item.requested_date_from)}`
+    : `/offers/${item.id}`;
+
   return (
-    <Link href={`/offers/${item.id}`} className="block h-full rounded-[22px]">
+    <Link href={detailHref} className="block h-full rounded-[22px]">
       {content}
     </Link>
   );

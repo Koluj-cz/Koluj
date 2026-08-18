@@ -5,11 +5,13 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import {
   ArrowRight,
+  CalendarDays,
   Leaf,
   LocateFixed,
   Plus,
   Search,
   User,
+  X,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import OfferCard, { type OfferCardOffer } from "@/app/components/OfferCard";
@@ -17,6 +19,7 @@ import InstallAppButton from "@/app/components/InstallAppButton";
 import SmartSearchSuggestions from "@/app/components/search/SmartSearchSuggestions";
 import type { SearchIntentMatch, SearchIntentRecommendation } from "@/lib/services/searchIntentService";
 import { getCleanSearchQuery } from "@/lib/services/searchService";
+import { parseSearchDate, stripSearchDate } from "@/lib/services/searchDateService";
 import { getDistanceKm } from "@/lib/location";
 import {
   categories as itemCategories,
@@ -136,6 +139,11 @@ export default function HomePage() {
   const [dismissedIntentQuery, setDismissedIntentQuery] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [placeholderResumeReady, setPlaceholderResumeReady] = useState(true);
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
+  const [dateLabel, setDateLabel] = useState("");
+  const [suggestions, setSuggestions] = useState<{ offers: Array<{ id: string; title: string; offer_type: string; category: string; pickup_place: string; price_amount: number | null; price_unit: string | null }>; categories: Array<{ value: string; label: string }> }>({ offers: [], categories: [] });
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
 
   const loadingRef = useRef(false);
   const pageRef = useRef(0);
@@ -147,7 +155,7 @@ export default function HomePage() {
   );
 
   const serverSearchQuery = useMemo(
-    () => getCleanSearchQuery(debouncedSearch),
+    () => getCleanSearchQuery(stripSearchDate(debouncedSearch)),
     [debouncedSearch],
   );
 
@@ -165,6 +173,41 @@ export default function HomePage() {
     const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 250);
     return () => window.clearTimeout(timer);
   }, [search]);
+
+  useEffect(() => {
+    const parsed = parseSearchDate(debouncedSearch);
+    if (!parsed) return;
+    setDateFrom(parsed.dateFrom);
+    setDateTo(parsed.dateTo);
+    setDateLabel(parsed.label);
+  }, [debouncedSearch]);
+
+  useEffect(() => {
+    const query = stripSearchDate(debouncedSearch).trim();
+    if (!searchFocused || query.length < 2) {
+      setSuggestions({ offers: [], categories: [] });
+      setSuggestionsOpen(false);
+      return;
+    }
+    const controller = new AbortController();
+    const timer = window.setTimeout(async () => {
+      const params = new URLSearchParams({ q: query, offerType: selectedOfferType });
+      if (selectedCategory) params.set("category", selectedCategory);
+      if (dateFrom) params.set("dateFrom", dateFrom);
+      if (dateTo) params.set("dateTo", dateTo);
+      try {
+        const response = await fetch(`/api/search/suggestions?${params}`, { cache: "no-store", signal: controller.signal });
+        const result = await response.json().catch(() => null);
+        if (response.ok) {
+          setSuggestions({ offers: result?.offers || [], categories: result?.categories || [] });
+          setSuggestionsOpen(Boolean(result?.offers?.length || result?.categories?.length));
+        }
+      } catch (error) {
+        if (!(error instanceof DOMException && error.name === "AbortError")) console.error("Search suggestions error:", error);
+      }
+    }, 220);
+    return () => { window.clearTimeout(timer); controller.abort(); };
+  }, [debouncedSearch, searchFocused, selectedOfferType, selectedCategory, dateFrom, dateTo]);
 
   useEffect(() => {
     return () => {
@@ -203,7 +246,7 @@ export default function HomePage() {
     const controller = new AbortController();
     const timer = window.setTimeout(async () => {
       try {
-        const response = await fetch(`/api/search/intents?q=${encodeURIComponent(query)}`, {
+        const response = await fetch(`/api/search/intents?q=${encodeURIComponent(stripSearchDate(query))}`, {
           cache: "no-store",
           signal: controller.signal,
         });
@@ -252,6 +295,8 @@ export default function HomePage() {
 
       if (selectedCategory) params.set("category", selectedCategory);
       if (serverSearchQuery) params.set("q", serverSearchQuery);
+      if (dateFrom) params.set("dateFrom", dateFrom);
+      if (dateTo) params.set("dateTo", dateTo);
 
       const response = await fetch(`/api/offers/public?${params.toString()}`, {
         cache: "no-store",
@@ -281,7 +326,7 @@ export default function HomePage() {
       setIsLoading(false);
       loadingRef.current = false;
     },
-    [selectedCategory, selectedOfferType, serverSearchQuery],
+    [selectedCategory, selectedOfferType, serverSearchQuery, dateFrom, dateTo],
   );
 
   useEffect(() => {
@@ -386,6 +431,7 @@ export default function HomePage() {
             <div className="koluj-sidebar-content min-w-0 max-w-full">
               <div className="koluj-sidebar-section pt-4">
                 <p className="koluj-sidebar-label">Hledání</p>
+                <div>
                 <div className="flex min-h-[48px] items-center gap-2 rounded-[16px] border border-[var(--koluj-border)] bg-white px-4 shadow-sm">
                   <Search size={18} className="shrink-0 text-[var(--koluj-muted)]" />
                   <input
@@ -410,6 +456,49 @@ export default function HomePage() {
                   >
                     <LocateFixed size={18} />
                   </button>
+                </div>
+                {suggestionsOpen && (
+                  <div className="mt-2 overflow-hidden rounded-[18px] border border-[var(--koluj-border)] bg-white shadow-xl">
+                    {suggestions.offers.length > 0 && (
+                      <div className="p-2">
+                        <p className="px-2 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-[var(--koluj-muted)]">Aktuální nabídky</p>
+                        {suggestions.offers.map((offer) => (
+                          <Link key={offer.id} href={`/offers/${offer.id}`} onMouseDown={(e) => e.preventDefault()} className="block rounded-xl px-3 py-2.5 hover:bg-[var(--koluj-green-pale)]">
+                            <p className="truncate text-sm font-black">{offer.title}</p>
+                            <p className="mt-0.5 truncate text-xs font-bold text-[var(--koluj-muted)]">{offer.offer_type === "service" ? "Služba" : "Věc"} · {offer.pickup_place}</p>
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+                    {suggestions.categories.length > 0 && (
+                      <div className="border-t border-[var(--koluj-border)] p-2">
+                        <p className="px-2 py-1 text-[11px] font-black uppercase tracking-[0.12em] text-[var(--koluj-muted)]">Kategorie</p>
+                        {suggestions.categories.map((category) => (
+                          <button key={category.value} type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => { setSelectedCategory(category.value); setSuggestionsOpen(false); }} className="block w-full rounded-xl px-3 py-2 text-left text-sm font-black hover:bg-[var(--koluj-green-pale)]">{category.label}</button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+                </div>
+              </div>
+
+              <div className="koluj-sidebar-section">
+                <p className="koluj-sidebar-label">Kdy?</p>
+                <div className="rounded-[16px] border border-[var(--koluj-border)] bg-white p-3 shadow-sm">
+                  <div className="mb-2 flex items-center gap-2 text-sm font-black text-[var(--koluj-muted)]"><CalendarDays size={17} /> Dostupnost</div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input aria-label="Od data" type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); if (!dateTo || dateTo < e.target.value) setDateTo(e.target.value); setDateLabel(""); }} className="min-w-0 rounded-xl border border-[var(--koluj-border)] px-2 py-2 text-xs font-bold outline-none focus:border-[var(--koluj-green)]" />
+                    <input aria-label="Do data" type="date" min={dateFrom || undefined} value={dateTo} onChange={(e) => { setDateTo(e.target.value); setDateLabel(""); }} className="min-w-0 rounded-xl border border-[var(--koluj-border)] px-2 py-2 text-xs font-bold outline-none focus:border-[var(--koluj-green)]" />
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {["Dnes", "Zítra", "Tento víkend"].map((label) => (
+                      <button key={label} type="button" onClick={() => { const parsed = parseSearchDate(label); if (parsed) { setDateFrom(parsed.dateFrom); setDateTo(parsed.dateTo); setDateLabel(parsed.label); } }} className="rounded-full bg-[var(--koluj-green-pale)] px-2.5 py-1 text-[11px] font-black text-[var(--koluj-green)]">{label}</button>
+                    ))}
+                  </div>
+                  {dateFrom && (
+                    <button type="button" onClick={() => { setDateFrom(""); setDateTo(""); setDateLabel(""); }} className="mt-2 inline-flex items-center gap-1 text-xs font-black text-[var(--koluj-muted)] hover:text-[var(--koluj-green)]"><X size={14} /> Zrušit termín</button>
+                  )}
                 </div>
               </div>
 
@@ -534,6 +623,15 @@ export default function HomePage() {
                 </div>
               </div>
 
+              {dateFrom && (
+                <div className="mb-4 flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-2 rounded-full bg-[var(--koluj-green-pale)] px-3 py-2 text-sm font-black text-[var(--koluj-green)]">
+                    <CalendarDays size={16} /> {dateLabel || (dateFrom === dateTo ? new Date(`${dateFrom}T12:00:00`).toLocaleDateString("cs-CZ") : `${new Date(`${dateFrom}T12:00:00`).toLocaleDateString("cs-CZ")} – ${new Date(`${dateTo}T12:00:00`).toLocaleDateString("cs-CZ")}`)}
+                    <button type="button" onClick={() => { setDateFrom(""); setDateTo(""); setDateLabel(""); }} aria-label="Zrušit termín"><X size={15} /></button>
+                  </span>
+                </div>
+              )}
+
               {smartIntent && (
                 <SmartSearchSuggestions
                   intent={smartIntent}
@@ -550,7 +648,10 @@ export default function HomePage() {
                   {sortedItems.map((item) => <OfferCard key={item.id} item={item} />)}
                 </div>
               ) : !isLoading ? (
-                <div className="koluj-card p-8 text-[var(--koluj-muted)]">Zatím tu nejsou žádné nabídky.</div>
+                <div className="koluj-card p-8 text-[var(--koluj-muted)]">
+                  <p className="font-black text-[var(--koluj-text)]">{dateFrom ? "V tomto termínu jsme nenašli volnou nabídku." : "Zatím tu nejsou žádné nabídky."}</p>
+                  {dateFrom && <p className="mt-2 text-sm font-bold">Zkus zrušit termín nebo upravit kategorii či hledaný výraz.</p>}
+                </div>
               ) : null}
 
               <div ref={sentinelRef} className="h-10" />
