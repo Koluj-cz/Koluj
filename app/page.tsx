@@ -535,15 +535,6 @@ export default function HomePage() {
                 </select>
               </div>
 
-              <div id="jak" className="koluj-sidebar-section hidden md:block">
-                <p className="koluj-sidebar-label">Jak to funguje</p>
-                <div className="grid min-w-0 gap-3">
-                  <InfoCard icon={<Search />} title="Najdi" text="Vyhledej věc nebo službu ve svém okolí." compact />
-                  <InfoCard icon={<ArrowRight />} title="Domluv se" text="Otevři detail a domluv termín." compact />
-                  <InfoCard icon={<Leaf />} title="Nech kolovat" text="Sdílej věci, které už existují." compact />
-                </div>
-              </div>
-
               <div className="mt-6 hidden min-w-0 max-w-full flex-wrap gap-x-3 gap-y-2 text-sm font-bold text-[var(--koluj-muted)] md:flex">
                 <Link href="/legal/terms" className="min-w-0 break-words hover:text-[var(--koluj-green)]">
                   Podmínky
